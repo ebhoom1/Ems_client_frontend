@@ -1,0 +1,265 @@
+
+.card {
+  background: linear-gradient(-90deg, #ffffff, #51b8d7);
+  border: none;
+  color: white;
+  border-radius: 10px; /* Add rounded corners for better design */
+  overflow: hidden; /* Prevent content from escaping the card boundary */
+  position: relative; /* Ensure child elements are positioned relative to the card */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.4s ease, box-shadow 0.4s ease; /* Optional: Add shadow for a modern look */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Ensures the footer of the card aligns at the bottom */
+  height: 100%; /* Ensure all cards have the same height */
+  min-height: 100px; /* Minimum height to handle varying content size */
+}
+
+.cardwater:hover{
+  transform: scale(1.05);
+}
+@media (max-width: 768px) {
+    .card {
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+  .container-fluidwater {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .row {
+    display: flex;
+   
+  }
+  
+  /* Ensure the content is positioned correctly next to the dashboard */
+  .airambient-section {
+    margin-top: 2rem;
+   
+  }
+  
+  /* Avoid content overlapping and handle responsive behavior */
+  @media screen and (max-width: 768px) {
+  /*   .row {
+      flex-direction: column;
+    } */
+  
+    .airambient-section {
+      width: 100%;
+      margin-top: 1rem;
+    }
+  }
+  
+  /* Styling for content wrapper */
+  .content-wrapper {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+  }
+  .image-container {
+    position: relative;
+    height: 100%;
+    overflow: visible; /* Ensure the image can overflow outside the container */
+}
+
+.custom-img {
+  position: absolute;
+  bottom: 45px; /* Adjust to place the image properly within the card */
+  right: 5px;  /* Align image towards the bottom right inside the card */
+  width: 30%;   /* Adjust the size to fit nicely within the card */
+  transform: rotate(-10deg); /* Optional rotation for style */
+  z-index: 1;  /* Ensure it does not overlap other elements */
+}
+.prev{
+  background: linear-gradient(180deg, #a1d6e7 ,white);
+}
+/* Container for the prev, title, and next buttons */
+.d-flex.justify-content-between.align-items-center.mt-2.ps-5.pe-5 {
+  flex-wrap: nowrap; /* Prevent wrapping to new lines */
+  gap: 10px; /* Optional: Add some space between the elements */
+}
+
+@media (max-width: 768px) {
+  .d-flex.justify-content-between.align-items-center.mt-2.ps-5.pe-5 {
+    flex-wrap: nowrap; /* Ensure elements remain on one line */
+    padding-left: 10px; /* Adjust padding for smaller screens */
+    padding-right: 10px;
+  }
+  
+  h1 {
+    font-size: 1.5rem; /* Adjust the font size for smaller screens */
+  }
+
+  .btn {
+    padding: 5px 10px; /* Adjust button padding for smaller screens */
+    font-size: 0.9rem; /* Adjust button text size for smaller screens */
+  }
+}
+.prevnext{
+  display: flex;
+  justify-content: space-between;
+}
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px; /* Reduced height */
+  margin-top: 10px; /* Reduced margin from the top */
+}
+
+
+.maindashboard {
+  position: sticky;
+  top: 60px; /* replace 60px with the actual height of your header */
+  width: 100%;
+  z-index: 5; 
+  background-color: white;/* below the header but above the regular content */
+}
+
+.stack-box {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Ensure that each stack box fills the parent container */
+}
+/* new */
+.span-class{
+  background-color: greenyellow;
+  font-size: 1rem;
+  border-radius: 2px;
+  color: red;
+}
+.form-group {
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  margin-bottom: 15px; /* Space between form groups */
+}
+
+.form-group label {
+  margin-bottom: 5px; /* Space between label and input */
+}
+.popup-title {
+  margin-bottom: 15px;
+  color: #333;
+  text-align: center;
+}
+
+.interval-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.interval-btn {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.interval-btn.active {
+  background-color: #236A80;
+  color: white;
+}
+
+.interval-btn:hover {
+  background-color: #d9d9d9;
+}
+
+.loading-container, .no-data-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  flex-direction: column;
+  text-align: center;
+}
+
+.chart-container {
+  width: 100%;
+  height: 100%;
+  max-height: 400px;
+}
+/* Pagination Container */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  padding: 10px;
+  list-style: none;
+  gap: 10px;
+  font-family: Arial, sans-serif;
+}
+
+/* Pagination Items */
+.pagination li {
+  cursor: pointer;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f8f9fa;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Active Page */
+.pagination .active {
+  background-color: #007bff;
+  color: white;
+  font-weight: bold;
+  border-color: #007bff;
+}
+
+/* Hover Effect */
+.pagination li:hover {
+  background-color: #e2e6ea;
+}
+
+/* Disabled Previous/Next Buttons */
+.pagination .disabled {
+  pointer-events: none;
+  color: #6c757d;
+}
+
+/* Break Label Styling */
+.pagination .break-me {
+  cursor: default;
+}
+
+/* Small screen responsiveness */
+@media (max-width: 600px) {
+  .pagination li {
+    padding: 6px 8px;
+    font-size: 14px;
+  }
+}
+.color-indicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px; /* This ensures space between the two indicators */
+}
+
+.color-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.color-circle {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 4px; /* Space between the circle and the label */
+}
+
+.color-label {
+  font-size: 0.8rem; /* Smaller font size for the labels */
+  color: #555; /* Medium-dark grey for text */
+}

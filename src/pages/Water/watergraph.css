@@ -1,0 +1,59 @@
+.flight-schedule-card {
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: white; /* Ensures a clean background */
+}
+
+.flight-schedule-header {
+    font-weight: bold;
+    font-size: 14px;
+    text-align: left;
+    color: #4E5D6C; /* Match the header text color with your reference */
+    margin-bottom: 10px;
+}
+
+.flight-schedule-chart {
+    height: 200px; /* Controls the height of the chart */
+}
+/* Align the tabs inside the graph container */
+.tabbed-chart-container {
+    position: relative;
+    padding-top: 15px; /* Adjust padding as needed */
+}
+
+.chart-tabs {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: 100%;
+    text-align: center;
+}
+
+.flight-schedule-chart {
+    padding-top: 50px; /* Make room for the tabs */
+}
+/* watergraph.css */
+
+/* .chart-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.navchart .nav-link {
+    cursor: pointer;
+    color: #007bff;
+}
+
+.navchart .nav-link.active {
+    color: #fff;
+    background-color: #007bff;
+}
+
+.graph-content {
+    margin-top: 20px;
+}
+ */

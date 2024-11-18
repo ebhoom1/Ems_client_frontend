@@ -1,0 +1,99 @@
+
+
+.banner {
+    height: 500px; 
+    background-image: url('https://i.pinimg.com/736x/0e/08/8e/0e088eac5855f615a1e26f56e3054d71.jpg');
+    background-size: cover;
+    position: relative;
+    background-position: center;
+    overflow: hidden;
+}
+
+.banner .wave {
+    position: absolute;
+    width: 100%;
+    left: 0;
+    height: 100vh; 
+}
+/* .back{
+    background-image: url();
+    background-size: cover;
+    background-repeat: no-repeat;
+} */
+.input-box{
+    width: 100%;
+    padding: 10px;
+    border-radius: 20px;
+    border: 0;
+    background-color: rgba(204, 240, 248, 0.318);
+    outline-color: rgb(0, 110, 255);
+  }
+  body, html {
+    height: 100%;
+    margin: 0;
+  }
+  
+  .login-page {
+    /* Ensure the background covers the entire page */
+    background-image: url('https://images.rawpixel.com/image_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIyLTA2L2pvYjk3OS1lbGVtZW50LTExYS5qcGc.jpg');
+    background-size: cover;  /* Make sure the image covers the entire area */
+    background-position: center;  /* Center the image */
+    background-repeat: no-repeat;  /* Prevent the image from repeating */
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .back {
+    /* Set the background color of the container to semi-transparent to see the background image through it */
+    background-color: rgba(255, 255, 255, 0.9);  
+  }
+ /*  
+  @media (max-width: 576px) {
+    .login-page .d-flex {
+      justify-content:center;
+    }
+    
+    .login-page img, 
+    .login-page .btn {
+      margin: 0;
+    }
+  }
+   */
+   @media (max-width: 576px) {
+    .login-page .d-flex {
+      justify-content: space-between;
+      flex-wrap: nowrap;
+      overflow: hidden;
+    }
+  
+    .login-page img {
+      max-width: 50%;
+      flex-shrink: 1;
+    }
+  
+    .login-page .btn {
+      padding: 5px 10px;
+      font-size: 14px;
+      flex-shrink: 1;
+    }
+  }
+  /* General styling */
+.d-flex {
+  display: flex;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.justify-content-between {
+  justify-content: space-between;
+}
+
+.flex-nowrap {
+  flex-wrap: nowrap;
+}
+
+/* Responsive behavior */

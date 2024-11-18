@@ -1,0 +1,10 @@
+/* index.css */
+.sticky-layout {
+    position: sticky;
+    top: 0; /* Sticks the layout at the top */
+    z-index: 999; /* Ensures it's above other content */
+    background-color: #fff; /* Optional: add background to prevent content overlap */
+    width: 100%; /* Make sure it spans the full width */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional: add shadow for better visibility */
+  }
+  

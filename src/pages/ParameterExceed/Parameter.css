@@ -1,0 +1,49 @@
+body {
+    background: #f7f8fa;
+    font-family: Arial, sans-serif;
+  }
+  
+  .input-container {
+    position: relative;
+    margin: 20px 0;
+  }
+  
+  .input-container input {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    
+    color: #010101;
+    font-size: 16px;
+    outline: none;
+  }
+  
+  .input-container label {
+    position: absolute;
+    top: 50%;
+    left: 15px;
+    transform: translateY(-50%);
+    padding: 0 5px;
+    color: rgb(5, 5, 5);
+    font-size: 16px;
+    transition: 0.3s ease all;
+    pointer-events: none;
+  }
+  
+  .input-container input:focus ~ label,
+  .input-container input:not(:placeholder-shown) ~ label {
+    top: -10px;
+    left: 10px;
+    font-size: 15px;
+    padding: 0 5px;
+   
+  }
+  
+  .input-container input::placeholder {
+    color: transparent; /* Hide the placeholder text */
+  }
+  .parameterbtn{
+    background: linear-gradient(90deg, #4990a5,#abcdd6);
+  }
+  

@@ -1,0 +1,18 @@
+.maindashboard {
+    position: sticky;
+    top: 55px; /* replace 60px with the actual height of your header */
+    width: 100%;
+    z-index: 5; 
+    background-color: white/* below the header but above the regular content */
+  }
+
+  @media (max-width: 767px) {
+    .calibcard{
+      margin: 0;
+    }
+  }
+  @media (min-width: 767px) {
+    .calibcard{
+      margin: 90px;
+    }
+  }

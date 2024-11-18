@@ -1,0 +1,42 @@
+.back{
+  background-image: url('https://img.freepik.com/free-vector/blue-curve-background_361591-1369.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  overflow-y: hidden;
+}
+
+/* Adjustments for all screens */
+.columnFirst {
+  padding: 0; /* Remove padding */
+  margin: 0; /* Remove margin */
+}
+
+/* Mobile view specific styles */
+@media (max-width: 768px) {
+  .firstColumn {
+    display: none; /* Hide the first column */
+  }
+
+  .loginColumn, .columnFirst {
+    flex: 0 0 100%; /* Take full width */
+    max-width: 100%; /* Ensure it does not exceed the screen width */
+    margin: 0; /* Remove margin */
+    padding: 0; /* Remove padding */
+  }
+
+  .loginColumn .bg-light {
+    border-radius: 0; /* Optional: remove border radius for full width usage */
+    box-shadow: none; /* Optional: remove shadow for a cleaner look */
+  }
+
+  .loginColumn form {
+    padding: 15px; /* Slight padding inside the form, adjust as needed */
+  }
+}
+@media (max-width: 480px) {
+  .loginColumn {
+
+   
+    padding: 0px;
+  }
+}

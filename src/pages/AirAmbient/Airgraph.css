@@ -1,0 +1,67 @@
+.flight-schedule-card {
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.flight-schedule-header {
+    font-weight: bold;
+    font-size: 14px;
+    text-align: left;
+    color: #4E5D6C; /* Match the header text color with your reference */
+    margin-bottom: 10px;
+}
+
+.flight-schedule-chart {
+    height: 200px; /* Controls the height of the chart */
+}
+.custom-img {
+    position: absolute;
+    bottom: 40px; /* Adjust this to move the image slightly out of the card */
+    right: -20px;  /* Adjust this to move the image slightly out to the right */
+    width: 40%;   /* Adjust the width as needed */
+    transform: rotate(-10deg); /* Optional: rotate the image to match the style */
+    z-index: 20;  /* Ensure the image is above other elements */
+}
+.maindashboard {
+    position: sticky;
+    top: 64px; /* replace 60px with the actual height of your header */
+    width: 100%;
+    z-index: 5; 
+    background-color: white;/* below the header but above the regular content */
+  }
+  .card {
+    position: relative; /* Ensures that absolute positioning of children is relative to the card */
+    overflow: hidden; /* Optional: prevents children from rendering outside the card */
+    border-radius: 15px; /* Example to ensure rounded corners */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s; 
+    z-index: 1;/* Smooth transition for hover effects */
+  }
+  .ReactModal__Overlay {
+    z-index: 10000;  /* Adjust as necessary to be higher than any other element */
+}
+  .card:hover {
+    transform: translateY(-5px); /* Slightly raise the card on hover */
+  }
+  
+  .image-container {
+    position: relative; /* Make the image container relative to position its children absolutely */
+    height: 100%; /* Ensure it covers the height of its container */
+    overflow: hidden; /* Prevent images from overflowing */
+  }
+  
+  .custom-img {
+    position: absolute;
+    bottom: 0; /* Adjust if necessary to bring the image inside the card */
+    right: 0; /* Adjust if necessary to align the image inside the card */
+    width: 100%; /* Adjust width as necessary to fit the card */
+    transform: none; /* Remove rotation if it causes layout issues */
+    z-index: 1; /* Keep the image below the text if necessary */
+  }
+  
+  .card-body {
+    position: relative;
+    z-index: 2; /* Ensures that the text or content is above the image */
+    padding: 15px; /* Ensure there's padding to space content from the edges */
+  }

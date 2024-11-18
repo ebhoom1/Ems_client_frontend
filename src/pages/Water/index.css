@@ -1,0 +1,21 @@
+.custom-loader {
+    width: 100%;
+    height: 50px;
+    background-color: #f3f3f3;
+    position: relative;
+    overflow: hidden;
+}
+
+.custom-loader::before {
+    content: '';
+    position: absolute;
+    height: 100%;
+    width: 10%;
+    background-color: #236a80;
+    animation: loadingAnimation 1s infinite;
+}
+
+@keyframes loadingAnimation {
+    0% { left: 0; }
+    100% { left: 100%; }
+}

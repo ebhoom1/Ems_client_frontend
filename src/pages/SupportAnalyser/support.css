@@ -1,0 +1,16 @@
+ .card{
+    background: linear-gradient(-90deg,#0d4e62, #3b879e);
+
+} 
+@media (max-width: 767px) {
+    .scrollable-card {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch; /* Provides smooth scrolling on iOS */
+    }
+  
+    .scrollable-card table {
+      width: 100%;
+      min-width: 600px; /* Adjust this based on your table content */
+      margin: 10px;
+    }
+  }

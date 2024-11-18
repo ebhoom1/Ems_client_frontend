@@ -1,0 +1,27 @@
+.page-header {
+    width: 100%;
+  }
+  
+  .quick-links {
+    list-style-type: none; /* Removes the bullet points */
+    margin: 0;
+    padding: 0;
+  }
+  
+  .quick-links li {
+    margin-left: 15px; /* Adds spacing between the items */
+  }
+  
+  .quick-link-wrapper {
+    flex-grow: 1; /* Makes the wrapper take up available space */
+    display: flex;
+    justify-content: flex-end; /* Pushes the links to the right */
+  }
+  
+  .page-title {
+    margin: 0; /* Ensure there's no extra margin around the title */
+  }
+ .liverow{
+    background: linear-gradient(-90deg, #8ab9c8,#f2f7f9);
+  } 
+   

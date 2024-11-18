@@ -1,0 +1,245 @@
+.online {
+  background-color: green;
+  color: #fff;
+  font-weight: bold;
+  padding: 3px 6px;
+  border-radius: 5px;
+  animation: blinkingBackgroundOnline 1s infinite;
+}
+.offline {
+  background-color: red;
+  color: #fff;
+  font-weight: bold;
+  padding: 3px 6px;
+  border-radius: 5px;
+  animation: blinkingBackground 1s infinite;
+}
+@keyframes blinkingBackground {
+  0% {
+    background-color: #ff0000;
+  }
+  25% {
+    background-color: #f30e0e;
+  }
+  75% {
+    background-color: #f2dede;
+  }
+  100% {
+    background-color: #ffffff;
+  }
+}
+@keyframes blinkingBackgroundOnline {
+  0% {
+    background-color: green;
+  }
+  25% {
+    background-color: green;
+  }
+  75% {
+    background-color: rgb(226, 238, 226);
+  }
+  100% {
+    background-color: #ffffff;
+  }
+}
+/* Add styles for the dropdown toggler button */
+.navbar-toggler {
+  background-color: transparent; /* Set background color */
+  border: none; /* Remove border */
+  outline: none; /* Remove outline */
+  cursor: pointer; /* Change cursor to pointer */
+  color: #000; /* Set text color */
+}
+
+/* Add styles for the dropdown menu */
+.toggle-dropdown {
+  position: absolute; /* Position the dropdown menu */
+  top: 100%; /* Align the dropdown menu below the toggler button */
+  right: 0; /* Align the dropdown menu to the right */
+  z-index: 999; /* Set z-index to ensure it appears above other content */
+  min-width: 160px; /* Set minimum width for the dropdown menu */
+  padding: 8px 0; /* Add padding to the dropdown menu */
+  background-color: #fff; /* Set background color */
+  border: 1px solid #ccc; /* Add border */
+  border-radius: 4px; /* Add border radius */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add box shadow */
+}
+
+/* Add styles for the dropdown list */
+.dropdown-list {
+  list-style-type: none; /* Remove default list styles */
+  padding: 0; /* Remove default padding */
+  margin: 0; /* Remove default margin */
+}
+
+/* Add styles for the dropdown list items */
+.dropdown-list li {
+  padding: 8px 16px; /* Add padding to the list items */
+}
+
+/* Add styles for the dropdown list links */
+.dropdown-list li a {
+  text-decoration: none; /* Remove underline */
+  color: #333; /* Set text color */
+  display: block; /* Make links block-level elements */
+}
+
+/* Add hover styles for dropdown list items */
+.dropdown-list li:hover {
+  background-color: #f5f5f5; /* Change background color on hover */
+}
+
+/* Custom CSS for dropdown container */
+.dropdown-container-notification {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 999;
+  min-width: 350px;
+  max-width: 450px;
+  padding: 8px 0;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Styling for notification items */
+.notification-item {
+  display: block;
+  padding: 8px 16px;
+}
+
+/* Styling for notification message */
+.notification-message {
+  color: #333;
+}
+.notification-message-h3 {
+  font-size: 2rem !important;
+  font-weight: 400;
+  cursor: pointer;
+  overflow: auto;
+}
+/* Styling for empty notification */
+.empty-notification {
+  padding: 10px;
+  margin: 0;
+  color: #999;
+}
+
+/* Styling for online status */
+.online {
+  background-color: green;
+  color: #fff;
+  font-weight: bold;
+  padding: 3px 6px;
+  border-radius: 5px;
+  animation: blinkingBackgroundOnline 1s infinite;
+}
+
+/* Styling for offline status */
+.offline {
+  background-color: red;
+  color: #fff;
+  font-weight: bold;
+  padding: 3px 6px;
+  border-radius: 5px;
+  animation: blinkingBackground 1s infinite;
+}
+
+/* Keyframes for blinking background of offline status */
+@keyframes blinkingBackground {
+  0% {
+    background-color: #ff0000;
+  }
+  25% {
+    background-color: #f30e0e;
+  }
+  75% {
+    background-color: #f2dede;
+  }
+  100% {
+    background-color: #ffffff;
+  }
+}
+
+/* Keyframes for blinking background of online status */
+@keyframes blinkingBackgroundOnline {
+  0% {
+    background-color: green;
+  }
+  25% {
+    background-color: green;
+  }
+  75% {
+    background-color: rgb(226, 238, 226);
+  }
+  100% {
+    background-color: #ffffff;
+  }
+}
+.dropdown-container-notification {
+  max-height: 300px; /* Set the max height */
+  overflow-y: auto; /* Enable vertical scrolling */
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: #888 #fff; /* For Firefox */
+}
+
+.dropdown-container-notification::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-container-notification::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.dropdown-container-notification::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.dropdown-container-notification::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+.form-control {
+  width: 300px;
+}
+
+/* Add this CSS to your existing index.css file */
+
+@media (max-width: 768px) {
+  .search-bar {
+    width: 50% !important;
+  }
+  .sbtn {
+    width: 50% !important;
+    font: inherit;
+  }
+}
+
+.navbar-dropdown.toggle-dropdown {
+  max-height: 400px; /* Set a max-height for the dropdown */
+  overflow-y: auto; /* Enable vertical scrolling */
+  width: 100%; /* Make sure the dropdown takes the full width */
+  position: absolute; /* Ensure it overlaps correctly */
+  background-color: white; /* Set background color to white for visibility */
+  z-index: 1000; /* Ensure it appears above other elements */
+}
+
+.dropdown-list {
+  list-style: none; /* Remove default list styling */
+  padding: 0; /* Remove default padding */
+  margin: 0; /* Remove default margin */
+}
+/* Add this CSS to your existing index.css file */
+
+@media (max-width: 768px) {
+  .dropdown-menu-right.navbar-dropdown.toggle-dropdown {
+    max-height: 70vh; /* Adjust the height as needed */
+    overflow-y: auto; /* Enable vertical scrolling */
+  }
+}
+.btn-search {
+  font-size: 18px;
+  padding: 8px;
+}

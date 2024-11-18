@@ -1,0 +1,79 @@
+.last-trips-card {
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%; /* Adjust the width to decrease the size */
+    margin: 0 auto;
+    padding: 0px; /* Optional: Adjust padding if needed */
+}
+
+.last-trips-card .card-header {
+    background-color: transparent;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.last-trips-card .card-header h5 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.last-trips-card .card-header p {
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+.last-trips-card .table thead th {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.last-trips-card .table tbody tr {
+    border-bottom: 1px dotted #1c1c1d; /* Change solid border to dotted */
+}
+
+.last-trips-card .table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.last-trips-card .table tbody td {
+    padding: 0.75rem 0.5rem;
+    vertical-align: middle;
+}
+
+.last-trips-card .badge {
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+/* Force table layout to respect width settings */
+.last-trips-card .table {
+   table-layout:inherit;
+    width: 100%;
+}
+
+.custom-width {
+    min-width: 150px; /* Adjust the minimum width as needed */
+    white-space: nowrap; /* Prevents text from wrapping */
+}
+.customwidth{
+    min-width: 100px; /* Adjust the minimum width as needed */
+    white-space: nowrap; 
+}
+.search-container {
+    width: 90%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Aligns content to the left */
+    flex-wrap: nowrap; /* Prevents wrapping */
+}
+
+.search-input {
+    flex-grow: 1; /* Makes the input field grow to fill available space */
+}
+
+.search-button {
+    flex-shrink: 0; /* Prevents the button from shrinking */
+}

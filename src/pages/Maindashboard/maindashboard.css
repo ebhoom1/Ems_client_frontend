@@ -1,0 +1,152 @@
+/* General Styles */
+.navbg {
+  background: linear-gradient(90deg, #3c798b, #bde3ee);
+}
+.homeSearch2{
+  display: none;
+}
+.homeSearch1{
+  display: block;
+  width: 200px;
+}
+@media only screen and (max-width: 1000px) {
+  .homeSearch2{
+    display: none;
+  }
+}
+
+.button-section{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: column;
+}
+@media (max-width: 1000px){
+  .button-section{
+   
+    flex-direction: column;
+    justify-content: space-around;
+  }
+}
+.buttonbg {
+  background: linear-gradient(90deg, #3c798b, #bde3ee);
+  border: none;
+  width: 260px;
+
+}
+
+
+
+
+
+@media (max-width: 1500px){
+  .buttonbg{
+    width: 240px;
+  }
+}
+@media (max-width: 1200px){
+  .buttonbg{
+    width: 220px;
+  }
+}
+@media (max-width: 1000px){
+  .buttonbg{
+    width: 200px;
+  }
+}
+@media (max-width: 450px){
+  .buttonbg{
+    width: 180px;
+  }
+}
+@media (max-width: 400px){
+  .buttonbg{
+    width: 160px;
+  }
+}
+
+/* Main Dashboard Layout */
+.maindashboard {
+  /* display: flex; */
+   overflow-x: hidden;
+}
+
+.sidebar {
+  width: 275px;
+}
+
+.content {
+  flex-grow: 1;
+}
+
+/* Button Group for Laptop View */
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px; /* Adjust gap between buttons */
+  margin-top: 20px;
+}
+
+/* Responsive Styles */
+@media (max-width: 767px) {
+  .sidebar {
+    display: none;
+  }
+
+  .content {
+    margin-left: 0;
+  }
+
+  .navbg {
+    border-radius: 0;
+  }
+
+  /* Button Container for 2x2 Grid Layout */
+  .button-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .button-container .buttonbg {
+    width: calc(50% - 10px); /* 50% width minus margin */
+    margin-bottom: 10px; /* Margin between rows */
+  }
+}
+/* Prevent the dropdown from scrolling */
+/* Ensure the dropdown menu doesn't scroll and fits within the viewport */
+/* Remove all height and overflow constraints */
+.no-scroll-dropdown {
+  max-height: none !important; /* Remove max-height restrictions */
+  overflow-y: visible !important; /* Ensure all items are visible */
+}
+
+
+
+.dropdown-menu {
+  /* display: block;  *//* Ensure dropdown is displayed */
+  position: absolute;
+ 
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  overflow-y: hidden;
+}
+
+.dropdown-menu.show {
+  display: block; /* Ensure it shows when toggled */
+}
+.dropdown-menu .form-check {
+  padding: 5px 10px; /* Adjust padding as needed */
+}
+
+.dropdown-menu .form-check-input {
+  margin-right: 10px;
+}
+
+.dropdown-menu .form-check-label {
+  font-weight: normal;
+}
+.navbar-collapse{
+  flex-basis: 0%;
+}
