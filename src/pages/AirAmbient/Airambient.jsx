@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState , useRef} from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchIotDataByUserName  ,fetchLatestIotData } from "../../redux/features/iotData/iotDataSlice";
 import CalibrationPopup from "../Calibration/CalibrationPopup";
@@ -12,8 +12,10 @@ import DailyHistoryModal from "../Water/DailyHIstoryModal";
 import { io } from 'socket.io-client';
 import { fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
 import WaterGraphPopup from "../Water/WaterGraphPopup";
-import air from '../../assests/images/air.svg'
-import '../Water/water.css'
+import air from '../../assests/images/air.svg';
+import '../Water/water.css';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 const socket = io(API_URL, { 
   transports: ['websocket'], 
   reconnectionAttempts: 5,
@@ -45,7 +47,7 @@ const Airambient = () => {
   const [realTimeData, setRealTimeData] = useState({});
   const [exceedanceColor, setExceedanceColor] = useState('green'); // Default color
   const [timeIntervalColor, setTimeIntervalColor] = useState('green'); // Default color
-  
+  const graphRef = useRef();
   
   // Fetch stack names and filter by emission-related station types
   const fetchEmissionStacks = async (userName) => {
@@ -170,7 +172,9 @@ const Airambient = () => {
     const userName = storedUserId || currentUserName;
     setSelectedCard({ ...card, stackName, userName });
     setShowPopup(true);
-  };
+  };
+  
+
   const handleClosePopup = () => {
     setShowPopup(false);
     setSelectedCard(null);
@@ -183,7 +187,22 @@ const Airambient = () => {
   const handleCloseCalibrationPopup = () => {
     setShowCalibrationPopup(false);
   };
-
+/* graph as pdf  */
+const handleDownloadPdf = () => {
+  const input = graphRef.current;
+  
+  // Use html2canvas to capture the content of the graph container
+  html2canvas(input).then((canvas) => {
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('landscape', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
+    // Add image to PDF
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save('graph.pdf');
+  });
+};
   const handleNextUser = () => {
     const userIdNumber = parseInt(currentUserName.replace(/[^\d]/g, ''), 10);
     if (!isNaN(userIdNumber)) {
@@ -394,20 +413,37 @@ const airParameters = [
           </div>
     <div className="row">
       <div className="col-md-6">
-      <div className="border bg-light shadow "  style={{ height: "70vh" , borderRadius:'15px'}} >
-      {selectedCard ? (
-          <WaterGraphPopup
-            parameter={selectedCard.title}
-            userName={currentUserName}
-            stackName={selectedCard.stackName}
-          />
-        ) : (
-          <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-        )}
-      </div>
+      <div className="border bg-light shadow mb-2"  style={{ height: "60vh" , borderRadius:'15px', position: 'relative' }} ref={graphRef} >
+          {selectedCard ? (
+              <WaterGraphPopup
+                parameter={selectedCard.title}
+                userName={currentUserName}
+                stackName={selectedCard.stackName}
+              />
+            ) : (
+              <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+            )}
+               {selectedCard && (
+            
+            <button
+              onClick={handleDownloadPdf}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+               
+                backgroundColor:'#236a80',
+                color:'white'
+              }}
+              className="btn "
+            >
+             <i class="fa-solid fa-download"></i>
+            </button>
+          )}
+          </div>
       </div>
       <div className="col-md-6 border overflow-auto bg-light shadow" 
-        style={{ height: "70vh", overflowY: "scroll",  borderRadius:'15px' }}>
+        style={{ height: "60vh", overflowY: "scroll",  borderRadius:'15px' }}>
       {!loading && filteredData.length > 0 ? (
                         filteredData.map((stack, stackIndex) => (
                           emissionStacks.includes(stack.stackName) && (

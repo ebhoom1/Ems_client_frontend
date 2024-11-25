@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState  , useRef } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchIotDataByUserName } from "../../redux/features/iotData/iotDataSlice";
 import { fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
@@ -13,7 +13,8 @@ import { io } from 'socket.io-client';
 import axios from "axios";
 import energy from '../../assests/images/energypic.png';
 import carbon from '../../assests/images/carbon.png';
-
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 // At the top of the file, import the new component
 import EnergyConsumptionCards from './EnergyConsumptionCards';
 import PieChartEnergy from "./PieChartEnergy";
@@ -53,7 +54,8 @@ const EnergyFlow = () => {
   const [realTimeData, setRealTimeData] = useState({})
   const [exceedanceColor, setExceedanceColor] = useState('green'); // Default color
   const [timeIntervalColor, setTimeIntervalColor] = useState('green'); // Default color
-  
+    const graphRef = useRef();
+
   // Fetch stack names and filter energy stationType stacks
   const fetchEnergyStacks = async (userName) => {
     try {
@@ -137,7 +139,22 @@ const EnergyFlow = () => {
     setShowPopup(false);
     setSelectedCard(null);
   };
-
+/* graph as pdf  */
+const handleDownloadPdf = () => {
+  const input = graphRef.current;
+  
+  // Use html2canvas to capture the content of the graph container
+  html2canvas(input).then((canvas) => {
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('landscape', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
+    // Add image to PDF
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save('graph.pdf');
+  });
+};
   const handleOpenCalibrationPopup = () => {
     setShowCalibrationPopup(true);
   };
@@ -375,7 +392,7 @@ const EnergyFlow = () => {
                 </div>
             )}
 <div className="row mb-5">
-<div className="col-md-6">
+<div className="col-md-6 col-lg-12 mb-2">
       <div className="border bg-light shadow "  style={{ height: "50vh" , borderRadius:'15px'}} >
           {selectedCard ? (
               <EnergyGraph
@@ -386,10 +403,28 @@ const EnergyFlow = () => {
             ) : (
               <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
             )}
+             {/* Download Button */}
+          {selectedCard && (
+            
+            <button
+              onClick={handleDownloadPdf}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+              
+                backgroundColor:'#236a80',
+                color:'white'
+              }}
+              className="btn "
+            >
+             <i class="fa-solid fa-download"></i>
+            </button>
+          )}
           </div>
       </div>
 
-  <div className="col-md-6 border overflow-auto bg-light shadow" 
+  <div className="col-md-6 border overflow-auto bg-light shadow " 
         style={{ height: "50vh", overflowY: "scroll",  borderRadius:'15px' }}> 
   {!loading && filteredData.length > 0 ? (
                     filteredData.map((stack, stackIndex) => (
@@ -480,11 +515,11 @@ const EnergyFlow = () => {
           />
         )}
       <div className="row">
-        <div className="col-6">
+        <div className="col-lg-6 col-sm-12    ">
         <PieChartEnergy primaryStation={primaryStation} userName={currentUserName} />
 
         </div>
-        <div className="col-6">
+        <div className="col-lg-6 col-sm-12">
         <BillCalculator searchTerm={storedUserId} userData={userData} userType={userType} />
 
           </div>

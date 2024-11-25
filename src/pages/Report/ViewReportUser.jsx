@@ -66,7 +66,7 @@ const ViewReportUser = () => {
             <div className="col-12 col-md-12 grid-margin">
               <div className="card m-1 mt-5">
                 <div className="card-body">
-                  <h1 className='text-center mt-3'>Report Details for {userName}</h1>
+                  <h1 className='text-center mt-3 text-light'>Report Details for {userName}</h1>
                   <div className="m-3 p-3">
                     <div className="row">
                       {/* From Date */}
@@ -81,7 +81,18 @@ const ViewReportUser = () => {
                           <label className='mb-2'><strong>Verified/Declined : </strong>{report.reportApproved ? 'Verified' : 'Declined'}</label>
 
                         </div>
+
+                       
                       </div>
+                      <div className="report-paragraph">
+        <p className='text-light'>
+          Between the period <strong>{report.fromDate}</strong> and <strong>{report.toDate}</strong>, the calibration data 
+          for the user <strong>{report.userName}</strong> from the company <strong>{report.companyName}</strong>, 
+          operating in the <strong>{report.industryType}</strong> industry, was reviewed. The evaluation was conducted 
+          by <strong>{report.engineerName}</strong>, and the final status of the report is 
+          <strong> {report.reportApproved ? 'Verified' : 'Declined'}</strong>.
+        </p>
+      </div>
 
                       {/* To Date */}
                      
@@ -108,6 +119,7 @@ const ViewReportUser = () => {
                         <thead>
                           <tr>
                             <th>SI.No</th>
+                           
                             <th>Exceeded Parameter</th>
                             <th>Exceeded Value</th>
                             <th>Date</th>
@@ -121,6 +133,7 @@ const ViewReportUser = () => {
                             report.calibrationExceeds.map((item, index) => (
                               <tr key={index}>
                                 <td>{index + 1}</td>
+                               
                                 <td>{item.parameter}</td>
                                 <td>{item.value}</td>
                                 <td>{item.formattedDate}</td>

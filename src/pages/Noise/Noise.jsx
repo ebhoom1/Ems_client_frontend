@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState , useRef} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchIotDataByUserName } from "../../redux/features/iotData/iotDataSlice";
 import { fetchUserLatestByUserName } from '../../redux/features/userLog/userLogSlice';
@@ -15,7 +15,8 @@ import DailyHistoryModal from '../Water/DailyHIstoryModal';
 import { io } from 'socket.io-client';
 import { API_URL } from '../../utils/apiConfig';
 import WaterGraphPopup from './NoiseGraphPopup';
-
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 const socket = io(API_URL, { 
   transports: ['websocket'], 
   reconnectionAttempts: 5,
@@ -49,7 +50,8 @@ const Noise = () => {
   const [noiseStacks, setNoiseStacks] = useState([]); // New state to store noise stacks
   const [exceedanceColor, setExceedanceColor] = useState('green'); // Default color
   const [timeIntervalColor, setTimeIntervalColor] = useState('green'); // Default color
-  
+  const graphRef = useRef();
+
 //fetch stack names
 const fetchNoiseStacks = async (userName) => {
   try {
@@ -167,7 +169,22 @@ useEffect(() => {
 
 
 
-
+/* graph download */
+const handleDownloadPdf = () => {
+  const input = graphRef.current;
+  
+  // Use html2canvas to capture the content of the graph container
+  html2canvas(input).then((canvas) => {
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('landscape', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
+    // Add image to PDF
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save('graph.pdf');
+  });
+};
 
 // Handle card click for displaying graphs
 const handleCardClick = (card, stackName) => {
@@ -384,7 +401,7 @@ const noiseParameters = [
           </div>
 <div className="row">
   <div className="col-md-6">
-  <div className="border bg-light shadow "  style={{ height: "70vh" , borderRadius:'15px'}} >
+  <div className="border bg-light shadow "  style={{ height: "60vh" , borderRadius:'15px', position: 'relative' }} >
       {selectedCard ? (
           <WaterGraphPopup
             parameter={selectedCard.title}
@@ -394,10 +411,28 @@ const noiseParameters = [
         ) : (
           <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
         )}
+        {/* Download Button */}
+        {selectedCard && (
+            
+            <button
+              onClick={handleDownloadPdf}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                
+                backgroundColor:'#236a80',
+                color:'white'
+              }}
+              className="btn "
+            >
+             <i class="fa-solid fa-download"></i>
+            </button>
+          )}
       </div>
   </div>
   <div className="col-md-6 border overflow-auto bg-light shadow" 
-    style={{ height: "70vh", overflowY: "scroll",  borderRadius:'15px' }}>
+    style={{ height: "60vh", overflowY: "scroll",  borderRadius:'15px' }}>
   {!loading && filteredData.length > 0 ? (
                     filteredData.map((stack, stackIndex) => (
                         noiseStacks.includes(stack.stackName) && (

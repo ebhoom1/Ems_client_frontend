@@ -194,7 +194,7 @@ const DailyHistoryModal = ({ isOpen, onRequestClose }) => {
         </div>
       </div>
       <div className="modal-footer">
-        <div className="btn-group">
+        {/* <div className="btn-group">
           <button className="btn btn-success dropdown-toggle" onClick={() => setShowDownloadOptions(!showDownloadOptions)}>
             Download
           </button>
@@ -208,7 +208,7 @@ const DailyHistoryModal = ({ isOpen, onRequestClose }) => {
               </button>
             </div>
           )}
-        </div>
+        </div> */}
         <button className="btn btn-primary" onClick={handleViewClick}>
           {loading ? <Oval height={20} width={20} color="#fff" secondaryColor="#ddd" /> : 'View'}
         </button>

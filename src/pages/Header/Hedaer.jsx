@@ -106,12 +106,15 @@ function Header() {
 
   const handleSignOut = async () => {
     try {
-      await dispatch(logoutUser()).unwrap();
-      navigate('/');
+      // Clear the sessionStorage or localStorage before logging out
+      sessionStorage.removeItem('selectedUserId'); // Remove the stored user ID
+      await dispatch(logoutUser()).unwrap(); // Logout user
+      navigate('/'); // Redirect to login page
     } catch (error) {
       console.error('Error logging out:', error);
     }
   };
+  
 
   const filteredUsers = users.filter(user =>
     user.userName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -157,12 +160,12 @@ function Header() {
                 </div>
               )}
 
-              <Dropdown ref={dropdownRef} className="me-3" onToggle={handleDropdownClick}>
+              <Dropdown ref={dropdownRef} className="me-3" onToggle={handleDropdownClick} >
                 <Dropdown.Toggle as={Nav.Link} bsPrefix="p-0" id="user-dropdown">
                   <i className="fa-solid fa-user"></i>
                 </Dropdown.Toggle>
-                <Dropdown.Menu align={dropdownAlignment}>
-                  <Dropdown.Item>
+                <Dropdown.Menu align="end" style={{ right: 0, minWidth: '150px', overflow: 'visible' }}>
+                  <Dropdown.Item >
                     <img src="https://cdn.pixabay.com/photo/2020/07/01/12/58/icon-5359553_640.png" width="100" alt="User Icon" />
                   </Dropdown.Item>
                   <Dropdown.Item>{userData?.validUserOne?.userName || 'Admin-Developer'}</Dropdown.Item>
@@ -176,36 +179,58 @@ function Header() {
         </Navbar>
 
         {userData?.validUserOne?.userType !== 'user' && (
-          <div className="ms-0 mb-3 " style={{marginTop:'70px'}}>
-            <Dropdown show={isDropdownOpen} onToggle={toggleDropdown}>
-              <Dropdown.Toggle id="dropdown-basic" style={{ backgroundColor: '#236a80' }}>
-                {userName ? `Selected: ${userName}` : 'Select User'}
-              </Dropdown.Toggle>
-              <Dropdown.Menu style={{ maxHeight: '200px' }}>
-                <input
-                  type="text"
-                  placeholder="Search user..."
-                  className="form-control"
-                  style={{ margin: '10px', width: '90%' }}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.slice(0, 4).map((user, index) => (
-                    <Dropdown.Item key={index} onClick={() => handleUserSelect(user.userName)}>
-                      {user.userName}
-                    </Dropdown.Item>
-                  ))
-                ) : (
-                  <Dropdown.Item disabled>No users found</Dropdown.Item>
-                )}
-                {filteredUsers.length > 4 && (
-                  <Dropdown.Item disabled>{`${filteredUsers.length - 4} more users available...`}</Dropdown.Item>
-                )}
-              </Dropdown.Menu>
-            </Dropdown>
-          </div>
+  <div className="ms-0 mb-3" style={{ marginTop: '70px' }}>
+    <Dropdown show={isDropdownOpen} onToggle={toggleDropdown}>
+      <Dropdown.Toggle id="dropdown-basic" style={{ backgroundColor: '#236a80' }}>
+        {userName ? `Selected: ${userName}` : 'Select User'}
+      </Dropdown.Toggle>
+      <Dropdown.Menu
+        style={{
+          maxHeight: '200px', // Limit visible height for scrolling
+          overflowY: 'scroll', // Enable scrolling
+          width: '300px', // Adjust dropdown width for longer names
+        }}
+      >
+        {/* Search Input */}
+        <input
+          type="text"
+          placeholder="Search by user or company..."
+          className="form-control"
+          style={{
+            margin: '10px auto',
+            width: '90%',
+            padding: '8px',
+            borderRadius: '5px',
+          }}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
+        />
+        
+        {/* Filtered Dropdown Items */}
+        {filteredUsers.length > 0 ? (
+          filteredUsers.map((user, index) => (
+            <Dropdown.Item
+              key={index}
+              onClick={() => handleUserSelect(user.userName)}
+              style={{
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+              }}
+              title={`${user.userName}: ${user.companyName}`} // Tooltip for long names
+            >
+              {user.userName}: {user.companyName}
+            </Dropdown.Item>
+          ))
+        ) : (
+          <Dropdown.Item disabled>No users or companies found</Dropdown.Item>
         )}
+      </Dropdown.Menu>
+    </Dropdown>
+  </div>
+)}
+
+
 
         <Outlet context={{ searchTerm: userName, isSearchTriggered: true }} />
         <Outlet />

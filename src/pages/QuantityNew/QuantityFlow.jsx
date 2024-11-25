@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
 import CalibrationPopup from '../Calibration/CalibrationPopup';
@@ -13,6 +13,8 @@ import PrimaryStationSelectorFlow from "./PrimaryStationSelectorFlow";
 import FlowConsuptionCards from "./FlowConsuptionCards";
 import FlowGraph from "./FlowGraph";
 import PieChartQuantity from "./PieChartQuantity";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 // Initialize Socket.IO
 const socket = io(API_URL, { 
   transports: ['websocket'], 
@@ -46,7 +48,8 @@ const QuantityFlow = () => {
   const [realTimeData, setRealTimeData] = useState({});
   const [exceedanceColor, setExceedanceColor] = useState('green'); // Default color
   const [timeIntervalColor, setTimeIntervalColor] = useState('green'); // Default color
-  
+  const graphRef = useRef();
+
   // Fetch stack names and filter energy stationType stacks
   // Fetch stack names and filter effluentFlow stationType stacks
   const fetchEffluentFlowStacks = async (userName) => {
@@ -155,7 +158,22 @@ const QuantityFlow = () => {
       setCurrentUserName(newUserId);
     }
   };
-
+/* graph as pdf  */
+const handleDownloadPdf = () => {
+  const input = graphRef.current;
+  
+  // Use html2canvas to capture the content of the graph container
+  html2canvas(input).then((canvas) => {
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('landscape', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
+    // Add image to PDF
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save('graph.pdf');
+  });
+};
   const handleStackChange = (event) => {
     setSelectedStack(event.target.value);
   };
@@ -233,14 +251,18 @@ const QuantityFlow = () => {
                 {latestData && (
                   <li >
                     <h5>Analyser Health: <span className="text-success"> Good</span></h5>
-                    {/* {searchResult?.validationStatus ? (
+                     {searchResult?.validationStatus ? (
                       <h5 style={{ color: "green" }}>Good</h5>
                     ) : (
                       <h5 style={{ color: "red" }}>Problem</h5>
-                    )} */}
+                    )} 
                   </li>
                 )}
-                <li className=" text-center" style={{marginLeft:'150px'}}><b><h2>WATER DASHBOARD</h2></b></li>
+<li className="dashboard-header text-center">
+  <b>
+    <h2>WATER DASHBOARD</h2>
+  </b>
+</li>
                
               </ul>
               <ul className="d-flex align-items-center justify-content-between" style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
@@ -287,13 +309,13 @@ const QuantityFlow = () => {
  {/*   */}
 </div>
           <div className="col-md-4">
-        <div className="col-md-4" style={{marginTop:'100px'}}>
-          {/* Pass userName and primaryStation as props */}
-          <FlowConsuptionCards
+     <div className="col-md-4" style={{marginTop:'100px'}}>
+        <FlowConsuptionCards
           userName={currentUserName}
           primaryStation={primaryStation}
         />
-        </div>
+          
+        </div> 
         <div className="col-12  justify-content-center align-items-center">
             <h3 className="text-center">{companyName}</h3>
             <div className="color-indicators">
@@ -348,6 +370,24 @@ const QuantityFlow = () => {
             ) : (
               <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
             )}
+            {/* Download Button */}
+          {selectedCard && (
+            
+            <button
+              onClick={handleDownloadPdf}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+              
+                backgroundColor:'#236a80',
+                color:'white'
+              }}
+              className="btn "
+            >
+             <i class="fa-solid fa-download"></i>
+            </button>
+          )}
           </div>
       </div>
 
@@ -382,7 +422,7 @@ const QuantityFlow = () => {
                     ))
                 ) : (
                     <div className="col-12">
-                        <h5>Waiting real-time data available</h5>
+                        <h5 className="mt-5 text-center">Waiting real-time data available</h5>
                     </div>
                 )}
   </div>

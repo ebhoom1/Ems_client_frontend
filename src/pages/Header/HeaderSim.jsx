@@ -4,7 +4,7 @@ import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import DashboardSam from '../Dashboard/DashboardSam';
-import './header.css';
+import './headersam.css';
 import Dropdown from 'react-bootstrap/Dropdown';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';

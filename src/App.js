@@ -54,7 +54,6 @@ import ViewComponent from './pages/Water/ViewComponent';
 import Waste from './pages/Waste/Waste'
 import EnergyDashboard from './pages/Energy/EnergyLayout';
 import FlowLayout from './pages/QuantityNew/FlowLayout'
-import FilterData from './pages/Filtertesting/FilterData';
 
 
 function App() {
@@ -146,7 +145,6 @@ function App() {
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/view-data" element={<ViewComponent />} />
                   <Route path="/waste" element={<Waste />} />
-                  <Route path="/filter-data" element={<FilterData />} />
 
 
 
@@ -168,9 +166,10 @@ function App() {
                   <Route path="/edit-report/:userName" element={<EditReport />} />
                   <Route path="/download-IoT-Data" element={<DownloadData />} />
                   <Route path="/quantity" element={<FlowLayout />} />
-                  <Route path="/energy" element={<Energy />} />
+                  <Route path="/energy" element={<EnergyDashboard />} />
                   <Route path="/support-analyser" element={<SupportAnalyser />} />
                   <Route path="/view-report/:userName" element={<ViewReportUser />} />
+                  <Route path="/waste" element={<Waste />} />
 
                   <Route path="/live-station" element={<LIveLayout />} />
                   <Route path="/view-data" element={<ViewComponent />} />

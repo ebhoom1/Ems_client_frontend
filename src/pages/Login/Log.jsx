@@ -48,7 +48,8 @@ function Log() {
   const loginuser = async (e) => {
     e.preventDefault();
     const { email, password, userType } = inpval;
-
+  
+    // Basic validation
     if (email === "") {
       toast.error("Email is required!");
       return;
@@ -64,34 +65,29 @@ function Log() {
     } else if (password.length < 6) {
       toast.error("Password must be at least 6 characters!");
       return;
-    } else {
-      dispatch(loginUser({ email, password, userType }))
-        .unwrap()
-        .then((result) => {
-          const now = new Date();
-          const endSubscriptionDate = new Date(result.endSubscriptionDate);
-
-          if (userType !== result.userType) {
-            toast.error("User type does not match!");
-          } else if (now.toDateString() === endSubscriptionDate.toDateString()) {
-            setSelectedUser(result);
-            setModalIsOpen(true);
-          } else {
-            if (userType === 'admin') {
-              navigate('/water');
-            } else if (userType === 'user') {
-              navigate('/account');
-            }
-            setInpval({ email: '', password: '', userType: 'select' });
-          }
-        })
-        .catch((error) => {
-          toast.error('Invalid credentials');
-          console.log("Error from catch signIn:", error);
-          localStorage.removeItem('userdatatoken');
-        });
     }
-  }; 
+  
+    try {
+      // Dispatch the login action
+      const result = await dispatch(loginUser({ email, password, userType })).unwrap();
+  
+      // Navigate based on user type
+      if (userType === "admin") {
+        navigate("/water");
+      } else {
+        navigate("/account");
+      }
+  
+      // Reset the form
+      setInpval({ email: "", password: "", userType: "select" });
+    } catch (error) {
+      // Handle errors
+      toast.error("Invalid credentials");
+      console.error("Error during login:", error);
+      localStorage.removeItem("userdatatoken");
+    }
+  };
+  
 
   const handleDownloadClick = () => {
     navigate('/download-data');  // Redirect to the download-data page
@@ -113,7 +109,8 @@ function Log() {
         <div className="row w-100" style={{ paddingTop: "40px" }}>
           <div className="col d-flex justify-content-center align-items-center" style={{ height: "auto" }}>
             <form className='w-100' style={{ maxWidth: '400px' }}>
-              <div className='mb-4' style={{ borderRadius: '10px' }}>
+              <div className='mb-4' style={{ borderRadius: '20%' }}>
+                
                 <input
                   type="email"
                   value={inpval.email}
@@ -125,7 +122,7 @@ function Log() {
                   className='w-100 border border-solid shadow-lg p-3 input-box'
                 />
               </div>
-              <div className='mb-4' style={{ borderRadius: '10px' }}>
+              <div className='mb-4' style={{ borderRadius: '20px' }}>
                 <input
                   type={passShow ? "text" : "password"} 
                   onChange={setVal}

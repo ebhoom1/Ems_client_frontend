@@ -1,5 +1,14 @@
 
-  
+.dashboard-header {
+  margin-left: 0; /* Default for mobile/tablet */
+}
+
+@media (min-width: 1024px) {
+  .dashboard-header {
+    margin-left: 150px; /* For laptops and larger screens */
+  }
+}
+
   .page-header {
     display: flex;
     justify-content: space-between;
@@ -178,4 +187,22 @@
   color: white;
   }
   
+  /* consuption cards */
+  .energy-flow-container {
+   /*  border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); */
+    padding: 20px;
+   
+    display: flex;
+   
+    align-items: center;
+    justify-content: center;
+    margin: 20px;
+  }
+  
+  .energy-flow-item {
+    width: 250px;
+    margin: 30px;
+  }
   

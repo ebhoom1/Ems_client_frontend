@@ -10,14 +10,21 @@ import Hedaer from '../Header/Hedaer';
 import FooterM from '../FooterMain/FooterM';
 import Layout from "../Layout/Layout";
 import Maindashboard from "../Maindashboard/Maindashboard";
-
+import { useDispatch } from 'react-redux';
+import { fetchStackNameByUserName } from '../../redux/features/userLog/userLogSlice';
 const Report = () => {
+
+  const dispatch = useDispatch();
+
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [industry, setIndustry] = useState("");
   const [company, setCompany] = useState("");
   const [userName, setUserName] = useState(""); 
   const [users, setUsers] = useState([]);
+  const [stackName, setStackName] = useState("");
+
+  const [stackOptions, setStackOptions] = useState([]);
   const { addReport } = useContext(CalibrationContext);  // Use context to store report
   const navigate = useNavigate();
 
@@ -25,16 +32,19 @@ const Report = () => {
     const fetchUsers = async () => {
       try {
         const response = await axios.get(`${API_URL}/api/getallusers`);
-        const filteredUsers = response.data.users.filter(user => user.userType === "user");
+        const filteredUsers = response.data.users.filter(
+          (user) => user.userType === "user"
+        );
         setUsers(filteredUsers);
       } catch (error) {
         console.error("Error fetching users:", error);
+        toast.error("Failed to fetch users.");
       }
     };
-
     fetchUsers();
   }, []);
 
+   
   const industryType = [
     { category: "Sugar" },
     { category: "Cement" },
@@ -77,26 +87,66 @@ const Report = () => {
       toast.error('Please fill in all fields');
     }
   };
+  useEffect(() => {
+    const fetchStackOptions = async () => {
+      if (!userName) return; // Ensure userName is selected
+      try {
+        const resultAction = await dispatch(fetchStackNameByUserName(userName));
+        console.log('Result Action:', resultAction);
 
-  // Handle form submission to add report
+        if (fetchStackNameByUserName.fulfilled.match(resultAction)) {
+          const stackNames = resultAction.payload;
+          console.log('Fetched Stack Names:', stackNames);
+          setStackOptions(stackNames || []);
+        } else {
+          console.error('Failed to fetch stack names:', resultAction.error);
+          toast.error('No Stack Name found for this User.');
+        }
+      } catch (error) {
+        console.error('Error fetching stack names:', error);
+        toast.error('Failed to fetch stack names.');
+      }
+    };
+    fetchStackOptions();
+  }, [userName, dispatch]);
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (dateFrom && dateTo && industry && company && userName) {
-      const reportData = {
+
+    // Validate required fields
+    if (!industry || !company || !userName || !stackName || !dateFrom || !dateTo) {
+      toast.error('Please fill all the fields.');
+      return;
+    }
+
+    // Validate if fromDate and toDate are the same
+    if (dateFrom === dateTo) {
+      toast.error('From Date and To Date cannot be the same.');
+      return;
+    }
+
+    // Format the dates before navigating
+    const formattedDateFrom = formatDate(dateFrom);
+    const formattedDateTo = formatDate(dateTo);
+    navigate("/check-validate", {
+      state: {
+        dateFrom: formattedDateFrom,
+        dateTo: formattedDateTo,
         industry,
         company,
-        fromDate: dateFrom,
-        toDate: dateTo,
-        username: userName,
-      };
-      addReport(reportData);
-      toast.success('Report added successfully!');
-      navigate('/view-report');
-    } else {
-      toast.error('Please fill in all fields');
-    }
+        userName,
+        stackName,
+      },
+    });
   };
+    // Helper function to format date to 'dd-mm-yyyy'
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
   return (
     <div className="container-fluid">
     <div className="row">
@@ -119,15 +169,16 @@ const Report = () => {
      
         <div className="col-lg-12 col-12">
          
-          <div className="row">
-            <div className="col-12 col-md-12 grid-margin">
-              <div className="card m-1 mt-3">
-                <div className="card-body">
-                  <h1 className='text-center mt-3'>Validate Data</h1>
-                  <form className='m-1 p-1' onSubmit={handleCheckValidate}>
-                    <div className="row">
-                  
-                      <div className="col-lg-6 mb-4">
+        <div className="row mb-3">
+      <div className="col-12 col-md-12 grid-margin">
+        <div className="col-12">
+          <h1 className="mt-3 text-center">Validate Data and Approve Data</h1>
+        </div>
+        <div className="card">
+          <div className="card-body">
+            <form onSubmit={handleSubmit}>
+              <div className="row">
+              <div className="col-lg-6 mb-4">
                         <div className="form-group">
                           <label htmlFor="industry">Select Industry</label>
                           <select
@@ -147,8 +198,6 @@ const Report = () => {
                           </select>
                         </div>
                       </div>
-
-                      
                       <div className="col-lg-6 mb-4">
                         <div className="form-group">
                           <label htmlFor="company">Select Company</label>
@@ -170,7 +219,6 @@ const Report = () => {
                         </div>
                       </div>
 
-                    
                       <div className="col-lg-6 mb-4">
                         <div className="form-group">
                           <label htmlFor="fromDate">From Date</label>
@@ -179,14 +227,14 @@ const Report = () => {
                             id="fromDate"
                             name="fromDate"
                             className="form-control"
-                            value={dateFrom}
+                           
                             onChange={(e) => setDateFrom(e.target.value)}
                             style={{ borderRadius: '10px' }}
                           />
                         </div>
                       </div>
 
-                     
+               
                       <div className="col-lg-6 mb-4">
                         <div className="form-group">
                           <label htmlFor="toDate">To Date</label>
@@ -195,47 +243,65 @@ const Report = () => {
                             id="toDate"
                             name="toDate"
                             className="form-control"
-                            value={dateTo}
+                        
                             onChange={(e) => setDateTo(e.target.value)}
                             style={{ borderRadius: '10px' }}
                           />
                         </div>
                       </div>
-
-                    
                       <div className="col-lg-6 mb-4">
-                        <div className="form-group">
-                          <label htmlFor="username">Select User</label>
-                          <select
-                            id="username"
-                            name="username"
-                            className="form-control"
-                            value={userName}
-                            onChange={(e) => setUserName(e.target.value)}
-                            style={{ borderRadius: '10px' }}
-                          >
-                            <option value="">Select</option>
-                            {users.map((user) => (
-                              <option key={user.userName} value={user.userName}>
-                                {user.userName}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
+  <div className="form-group">
+    <label htmlFor="user">User</label>
+    <select
+      id="user"
+      name="user"
+      className="form-control"
+      value={userName}
+      onChange={(e) => setUserName(e.target.value)}
+      style={{ borderRadius: '10px' }}
+    >
+      <option value="">Select</option>
+      {users.map((item) => (
+        <option key={item.userName} value={item.userName}>
+          {item.userName}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
 
-                    </div>
-                    <button type="submit" className="btn  mb-2 mt-2" style={{backgroundColor:'green' , border:'none' , color:'white'}}>Check and Validate</button>
-                  </form>
+<div className="col-lg-6 mb-4">
+  <div className="form-group">
+    <label htmlFor="station">Station Name</label>
+    <select
+      id="station"
+      name="station"
+      className="form-control"
+      value={stackName}
+      onChange={(e) => setStackName(e.target.value)}
+      style={{ borderRadius: '10px' }}
+    >
+      <option value="">Select</option>
+      {stackOptions.map((option, index) => (
+        <option key={index} value={option.name}>
+          {option.name}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
 
-                 
-                 
 
-                  <ToastContainer />
-                </div>
               </div>
-            </div>
-          </div> 
+              <button type="submit" className="btn  mb-2 mt-2" style={{backgroundColor:'white' , color:'green'}}>
+                Check and Validate
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <ToastContainer />
+    </div>
           <FooterM />
         </div>
       </div>

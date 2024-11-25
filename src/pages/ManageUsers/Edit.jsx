@@ -9,6 +9,7 @@ import { API_URL } from '../../utils/apiConfig';
 import DashboardSam from '../Dashboard/DashboardSam';
 import Maindashboard from '../Maindashboard/Maindashboard';
 import HeaderSim from '../Header/HeaderSim';
+import Header from '../Header/Hedaer';
 
 function Edit() {
   const { userId } = useParams();  // Get the userId from the route parameters
@@ -122,18 +123,18 @@ function Edit() {
   return (
     <div className="container-fluid">
       <div className="row">
+        
         <div className="col-lg-3 d-none d-lg-block">
           <DashboardSam />
         </div>
-
+       
         <div className="col-lg-9 col-12">
           <div className="row">
             <div className="col-12">
-              <HeaderSim />
+              <Header />
             </div>
           </div>
-
-          <div>
+           <div>
             <div className="row" style={{ overflowX: 'hidden' }}>
               <div className="col-12 col-md-12 grid-margin">
                 <div className="col-12 d-flex justify-content-between align-items-center m-3">
@@ -144,7 +145,7 @@ function Edit() {
                   <div className="card-body">
                     <form className="m-2 p-5" onSubmit={handleSaveUser}>
                       <div className="row">
-                        {/* Render form fields with pre-populated values */}
+                     
                         <div className="col-lg-6 col-md-6 mb-4">
                           <div className="form-group">
                             <label htmlFor="userId" className="form-label">User ID</label>
@@ -223,7 +224,7 @@ function Edit() {
 
                                     </div>
                                 </div>
-                                {/* Poduct ID */}
+                                
                                 <div className="col-lg-6 col-md-6 mb-4">
   <div className="form-group">
     <label htmlFor="productID" className="form-label">Product ID</label>
@@ -318,42 +319,82 @@ function Edit() {
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
                                         <label htmlFor="district" className="form-label"> District  </label>
-                                        <input id="district" type='text' value={userData.district || ''} onChange={handleChange}  placeholder='Enter District ' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+                                        <input
+  id="district"
+  type="text"
+  value={userData.district || ''} // Ensure a fallback empty string
+  onChange={handleChange}
+  name="district"
+  className="form-control"
+  style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+/>
 
                                     </div>
                                 </div>
                                 {/* State */}
                                 <div className="col-lg-6 col-md-6 mb-4">
-                                    <div className="form-group">
-                                        <label htmlFor="state" className="form-label"> State  </label>
-                                        <input id="state" type='text' placeholder='Enter State' value={userData.state || ''} onChange={handleChange}  className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+  <div className="form-group">
+    <label htmlFor="state" className="form-label">State</label>
+    <input
+      id="state"
+      name="state" // Add the name attribute
+      type="text"
+      placeholder="Enter State"
+      value={userData.state || ''}
+      onChange={handleChange}
+      className="form-control"
+      style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+    />
+  </div>
+</div>
 
-                                    </div>
-                                </div>
-                                {/* address */}
-                                <div className="col-lg-6 col-md-6 mb-4">
-                                    <div className="form-group">
-                                        <label htmlFor="address" className="form-label"> Address  </label>
-                                        <input id="address" type='text' placeholder='Enter Address ' value={userData.address} onChange={handleChange}  className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+<div className="col-lg-6 col-md-6 mb-4">
+  <div className="form-group">
+    <label htmlFor="address" className="form-label">Address</label>
+    <input
+      id="address"
+      name="address" // Add the name attribute
+      type="text"
+      placeholder="Enter Address"
+      value={userData.address || ''}
+      onChange={handleChange}
+      className="form-control"
+      style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+    />
+  </div>
+</div>
 
-                                    </div>
-                                </div>
-                                {/* Latitude */}
-                                <div className="col-lg-6 col-md-6 mb-4">
-                                    <div className="form-group">
-                                        <label htmlFor="latitude" className="form-label"> latitute  </label>
-                                        <input id="latitude" type='text' placeholder='Enter Latitude ' value={userData.latitude || ''} onChange={handleChange}  className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+<div className="col-lg-6 col-md-6 mb-4">
+  <div className="form-group">
+    <label htmlFor="latitude" className="form-label">Latitude</label>
+    <input
+      id="latitude"
+      name="latitude" // Add the name attribute
+      type="text"
+      placeholder="Enter Latitude"
+      value={userData.latitude || ''}
+      onChange={handleChange}
+      className="form-control"
+      style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+    />
+  </div>
+</div>
 
-                                    </div>
-                                </div>
-                                {/* Longitude */}
-                                <div className="col-lg-6 col-md-6 mb-4">
-                                    <div className="form-group">
-                                        <label htmlFor="longitude" className="form-label">Longitude   </label>
-                                        <input id="longitude" type='text' placeholder='Enter Longitude ' value={userData.longitude || ''} onChange={handleChange}  className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
-
-                                    </div>
-                                </div>
+<div className="col-lg-6 col-md-6 mb-4">
+  <div className="form-group">
+    <label htmlFor="longitude" className="form-label">Longitude</label>
+    <input
+      id="longitude"
+      name="longitude" // Add the name attribute
+      type="text"
+      placeholder="Enter Longitude"
+      value={userData.longitude || ''}
+      onChange={handleChange}
+      className="form-control"
+      style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+    />
+  </div>
+</div>
 
 
 
@@ -369,10 +410,18 @@ function Edit() {
               </div>
             </div>
           </div>
+      
+          <ToastContainer />
         </div>
+
+        
       </div>
     </div>
   );
 }
 
 export default Edit;
+
+/* 
+ 
+*/

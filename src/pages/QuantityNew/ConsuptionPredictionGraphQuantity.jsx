@@ -148,7 +148,7 @@ const ConsuptionPredictionGraphQuantity = () => {
   };
 
   return (
-    <div className="energy-flow-container">
+    <div className="flow-container">
       <h3 className="text-center mb-4 text-light mt-2">Monthly Flow Consumption</h3>
       <div className="row mb-4">
         <div className="col-md-4">

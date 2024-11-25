@@ -15,6 +15,8 @@ const UsersLog = () => {
   const [sortCategory, setSortCategory] = useState("");
   const [sortOptions, setSortOptions] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState('');
+  const [stackLoading, setStackLoading] = useState(false);
+
   const [stacks, setStacks] = useState([{ stackName: '', stationType: '' }]);
   const [formData, setformData] = useState({
     userName: "",
@@ -264,6 +266,7 @@ const handleCompanyChange = async (event) => {
   setSelectedCompany(companyName);
 
   if (companyName) {
+    setStackLoading(true); // Start the loader
     try {
       const result = await dispatch(fetchUserByCompanyName(companyName)).unwrap();
       console.log('Fetched User:', result);
@@ -281,9 +284,12 @@ const handleCompanyChange = async (event) => {
       console.error('Error fetching user data:', error);
       toast.error('Failed to fetch user data.');
       setStacks([{ stackName: '', stationType: '' }]);
+    } finally {
+      setStackLoading(false); // Stop the loader
     }
   }
 };
+
 
 const handleSave = async () => {
   if (!selectedCompany) {
@@ -692,46 +698,48 @@ const handleSortOptionSelect = (option) => {
         </div>
 
         {/* add stack */}
-        <div className="row" style={{ overflowX: 'hidden' }}>
-  <div className="col-12 col-md-12 grid-margin">
-   
-    {/* main */}
-    <div className="row" style={{ overflowX: 'hidden' }}>
-  <div className="col-12 col-md-12 grid-margin">
-    <div className="col-12 d-flex justify-content-between align-items-center m-3">
-      <h1 className="text-center mt-5">Add Stack Names and Station Types</h1>
-    </div>
-    <div className="card">
-      <div className="card-body">
-        <form className="m-2 p-5">
-          {/* Select Company */}
-          <div className="row">
-            <div className="col-lg-12 col-md-6 mb-4">
-              <div className="form-group">
-                <label htmlFor="company" className="form-label">Select Company</label>
-                <select
-                  id="company"
-                  className="form-control"
-                  value={selectedCompany}
-                  onChange={handleCompanyChange}
-                  style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
-                >
-                  <option value="">Select Company</option>
-                  {users.map((user) => (
-                    <option key={user._id} value={user.companyName}>
-                      {user.companyName}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <div className="col-12 d-flex justify-content-between align-items-center m-3" >
+                    <h1 className='text-center mt-5'>Add Stack Names</h1>
+                </div>
+        <div className="card">
+  <div className="card-body">
+    {stackLoading ? (
+      <div className="text-center my-4">
+        <div className="spinner-border text-primary" role="status">
+          <span className="sr-only">Loading...</span>
+        </div>
+        <p>Loading Stack Names, please wait...</p>
+      </div>
+    ) : (
+      <form className="m-2 p-5">
+        {/* Select Company */}
+        <div className="row">
+          <div className="col-lg-12 col-md-6 mb-4">
+            <div className="form-group">
+              <label htmlFor="company" className="form-label">Select Company</label>
+              <select
+                id="company"
+                className="form-control"
+                value={selectedCompany}
+                onChange={handleCompanyChange}
+                style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+              >
+                <option value="">Select Company</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user.companyName}>
+                    {user.companyName}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
+        </div>
 
-          {/* Stack Name Inputs */}
-          {stacks.map((stack, index) => (
-            <div key={index} className="row mb-3 align-items-center">
-              <div className="col-lg-5 col-md-5">
-                <div className="form-group">
+        {/* Stack Name Inputs */}
+        {stacks.map((stack, index) => (
+          <div key={index} className="row mb-3 align-items-center">
+            <div className="col-lg-5 col-md-5">
+              <div className="form-group">
                 <input
                   type="text"
                   value={stack.stackName}
@@ -740,63 +748,60 @@ const handleSortOptionSelect = (option) => {
                   placeholder="Enter Stack Name"
                   style={{ padding: '15px', borderRadius: '10px' }}
                 />
-                </div>
               </div>
-
-              <div className="col-lg-5 col-md-5">
-                <div className="form-group">
-                  <input
-                    type="text"
-                    value={stack.stationType}
-                    onChange={(e) => handleInputNameChange(index, 'stationType', e.target.value)}
-                    className="form-control"
-                    placeholder="Enter Station Type"
-                    style={{ padding: '15px', borderRadius: '10px' }}
-                  />
-                </div>
-              </div>
-
-              {index > 0 && (
-                <div className="col-lg-2 col-md-2 text-center">
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveInput(index)}
-                    className="btn btn-danger"
-                    style={{ padding: '10px 20px' }}
-                  >
-                    -
-                  </button>
-                </div>
-              )}
             </div>
-          ))}
 
-          <button
-            type="button"
-            onClick={handleAddInput}
-            className="btn btn-secondary mb-3"
-            style={{ color: 'white' }}
-          >
-            + Add Another Stack Name and Station Type
-          </button>
+            <div className="col-lg-5 col-md-5">
+              <div className="form-group">
+                <input
+                  type="text"
+                  value={stack.stationType}
+                  onChange={(e) => handleInputNameChange(index, 'stationType', e.target.value)}
+                  className="form-control"
+                  placeholder="Enter Station Type"
+                  style={{ padding: '15px', borderRadius: '10px' }}
+                />
+              </div>
+            </div>
 
-          {/* Save and Cancel Buttons */}
-          <div className="mt-4">
-            <button onClick={handleSave} className="btn btn-success mb-2" style={{ color: 'white' }}>
-              Save Stack Names
-            </button>
-            <button onClick={handleCancel} className="btn btn-danger mb-2 ms-2" style={{ color: 'white' }}>
-              Cancel
-            </button>
+            {index > 0 && (
+              <div className="col-lg-2 col-md-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => handleRemoveInput(index)}
+                  className="btn btn-danger"
+                  style={{ padding: '10px 20px' }}
+                >
+                  -
+                </button>
+              </div>
+            )}
           </div>
-        </form>
-      </div>
-    </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={handleAddInput}
+          className="btn btn-secondary mb-3"
+          style={{ color: 'white' }}
+        >
+          + Add Another Stack Name and Station Type
+        </button>
+
+        {/* Save and Cancel Buttons */}
+        <div className="mt-4">
+          <button onClick={handleSave} className="btn btn-success mb-2" style={{ color: 'white' }}>
+            Save Stack Names
+          </button>
+          <button onClick={handleCancel} className="btn btn-danger mb-2 ms-2" style={{ color: 'white' }}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    )}
   </div>
 </div>
 
-  </div>
-</div>
 
 
         {/* delete user */}

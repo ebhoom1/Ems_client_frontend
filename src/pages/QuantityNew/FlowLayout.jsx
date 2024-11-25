@@ -6,13 +6,15 @@ import { useSelector } from "react-redux";
 import EffluentFlowOverview from "./EffluentFlowOverview";
 import Quantity from "./Quantity";
 import QuantityFlow from "./QuantityFlow";
+import FlowConsuptionCards from "./FlowConsuptionCards";
 
 const FlowLayout = () => {
   const { userData,userType } = useSelector((state) => state.user);
 
   const storedUserId = sessionStorage.getItem('selectedUserId'); // Retrieve userId from session storage
   const [primaryStation, setPrimaryStation] = useState("");  // State for primary station
-
+/*   const [currentUserName, setCurrentUserName] = useState(userType === 'admin' ? "KSPCB001" : userData?.validUserOne?.userName);
+ */
   return (
     <div className="container-fluid">
       <div className="row" style={{ backgroundColor: 'white' }}>
@@ -26,9 +28,10 @@ const FlowLayout = () => {
             <div className="col-12">
               <Header />
             </div>
-            <div className="col-12">
-              <Maindashboard />
-            </div>
+            <div className={`col-12 ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : ''}`}>
+  <Maindashboard />
+</div>
+
            
           </div>
        {/*    <div className="row">
@@ -66,6 +69,11 @@ const FlowLayout = () => {
         <div className="row p-5">
           <BillCalculator searchTerm={storedUserId} userData={userData} userType={userType} />
         </div> */}
+        {/* <div className="row">
+        <FlowConsuptionCards
+          userName={currentUserName}
+          primaryStation={primaryStation}
+        />        </div> */}
          <div className="row">
           <QuantityFlow primaryStation={primaryStation} setPrimaryStation={setPrimaryStation} searchTerm={storedUserId} />
         </div>

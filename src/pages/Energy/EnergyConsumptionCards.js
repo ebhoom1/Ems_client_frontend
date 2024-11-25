@@ -52,56 +52,55 @@ const EnergyConsumptionCards = ({ userName, primaryStation }) => {
   }, [primaryStation]);
 
     return (
-        <div className='energy-flow-container '>
-            <div className='' style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
-            <div style={{ width: '100px'}}>
-                <ReactD3Speedometer
-                    value={energyData.energyDailyConsumption}
-                    maxValue={10000}
-                    needleColor="red"
-                    startColor="green"
-                    segments={10}
-                    endColor="blue"
-                    width={250} // Adjust the width
-            height={200} // Adjust the height
-                    labelFontSize={"10px"}
-                    valueTextFontSize={"16px"}
-                    currentValueText={`Daily Consumption: ${energyData.energyDailyConsumption} kWh`}
-                />
-            </div>
-            <div style={{ width: '100px', margin: '240px' }}>
-                <ReactD3Speedometer
-                    value={energyData.energyMonthlyConsumption}
-                    maxValue={30000}
-                    needleColor="red"
-                    startColor="green"
-                    segments={10}
-                    endColor="blue"
-                    width={250} // Adjust the width
-                    height={200} // Adjust the height
-                            labelFontSize={"10px"}
-                    valueTextFontSize={"16px"}
-                    currentValueText={`Monthly Consumption: ${energyData.energyMonthlyConsumption} kWh`}
-                />
-            </div>
-            <div style={{ width: '100px', margin: '10px' }}>
-                <ReactD3Speedometer
-                    value={energyData.energyYearlyConsumption}
-                    maxValue={30000}
-                    needleColor="red"
-                    startColor="green"
-                    segments={10}
-                    endColor="blue"
-                    width={250} // Adjust the width
-            height={200} // Adjust the height
-                    labelFontSize={"10px"}
-                    valueTextFontSize={"16px"}
-                    currentValueText={`Yearly Consumption: ${energyData.energyYearlyConsumption} kWh`}
-                />
-            </div>
+      <div className="energy-flow-container">
+      <div className='d-flex  shadow' style={{ marginLeft: '200px', borderRadius: '15px', border: '1px solid #ccc' ,backgroundColor:'white' }}>
+        <div className="energy-flow-item">
+          <ReactD3Speedometer
+            value={energyData.energyDailyConsumption}
+            maxValue={10000}
+            needleColor="red"
+            startColor="green"
+            segments={10}
+            endColor="blue"
+            width={250}
+            height={200}
+            labelFontSize="10px"
+            valueTextFontSize="16px"
+            currentValueText={`Daily Consumption: ${energyData.energyDailyConsumption} kWh`}
+          />
         </div>
-        
+        <div className="energy-flow-item">
+          <ReactD3Speedometer
+            value={energyData.energyMonthlyConsumption}
+            maxValue={30000}
+            needleColor="red"
+            startColor="green"
+            segments={10}
+            endColor="blue"
+            width={250}
+            height={200}
+            labelFontSize="10px"
+            valueTextFontSize="16px"
+            currentValueText={`Monthly Consumption: ${energyData.energyMonthlyConsumption} kWh`}
+          />
         </div>
+        <div className="energy-flow-item">
+          <ReactD3Speedometer
+            value={energyData.energyYearlyConsumption}
+            maxValue={30000}
+            needleColor="red"
+            startColor="green"
+            segments={10}
+            endColor="blue"
+            width={250}
+            height={200}
+            labelFontSize="10px"
+            valueTextFontSize="16px"
+            currentValueText={`Yearly Consumption: ${energyData.energyYearlyConsumption} kWh`}
+          />
+        </div>
+      </div>
+    </div>
         
     );
 };
