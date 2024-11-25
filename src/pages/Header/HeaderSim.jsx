@@ -45,7 +45,7 @@ function  HeaderSim() {
   return (
     <div className='ms-0'>
       <div className='mt-4 col-lg-12'>
-        <Navbar expand="lg" className="mb-4 header-navbar">
+        <Navbar expand="lg" className="mb-4 header-navbarhead">
           <div  className='w-100 px-2 d-flex align-items-center justify-content-between'>
             {/* Left aligned brand */}
             <Navbar.Brand href="#home" className="brand-text">

@@ -72,19 +72,19 @@ const ViewReportUser = () => {
                       {/* From Date */}
                       <div className="col-lg-6 mb-4">
                         <div className="form-group">
-                          <label className='mb-2'><strong>From Date : </strong>{ report.fromDate}</label> <br />
-                          <label className='mb-2'><strong>To Date : </strong>{ report.toDate}</label> <br />
-                          <label className='mb-2'><strong>Username : </strong>{report.userName}</label> <br />
-                          <label className='mb-2'><strong>Company Name : </strong>{report.companyName}</label> <br />
-                          <label className='mb-2'><strong>Industry Type : </strong>{report.industryType}</label> <br />
-                          <label className='mb-2'><strong>Engineer Name : </strong>{report.engineerName}</label> <br />
-                          <label className='mb-2'><strong>Verified/Declined : </strong>{report.reportApproved ? 'Verified' : 'Declined'}</label>
+                          <label className='mb-2 text-light'><strong>From Date : </strong>{ report.fromDate}</label> <br />
+                          <label className='mb-2 text-light'><strong>To Date : </strong>{ report.toDate}</label> <br />
+                          <label className='mb-2 text-light'><strong>Username : </strong>{report.userName}</label> <br />
+                          <label className='mb-2 text-light'><strong>Company Name : </strong>{report.companyName}</label> <br />
+                          <label className='mb-2 text-light'><strong>Industry Type : </strong>{report.industryType}</label> <br />
+                          <label className='mb-2 text-light'><strong>Engineer Name : </strong>{report.engineerName}</label> <br />
+                          <label className='mb-2 text-light'><strong>Verified/Declined : </strong>{report.reportApproved ? 'Verified' : 'Declined'}</label>
 
                         </div>
 
                        
                       </div>
-                      <div className="report-paragraph">
+                     {/*  <div className="report-paragraph">
         <p className='text-light'>
           Between the period <strong>{report.fromDate}</strong> and <strong>{report.toDate}</strong>, the calibration data 
           for the user <strong>{report.userName}</strong> from the company <strong>{report.companyName}</strong>, 
@@ -92,7 +92,7 @@ const ViewReportUser = () => {
           by <strong>{report.engineerName}</strong>, and the final status of the report is 
           <strong> {report.reportApproved ? 'Verified' : 'Declined'}</strong>.
         </p>
-      </div>
+      </div> */}
 
                       {/* To Date */}
                      

@@ -455,7 +455,7 @@ const airParameters = [
                                                 const value = stack[item.name];
                                                 return value && value !== 'N/A' ? (
                                                     <div className="col-12 col-md-4 grid-margin" key={index}>
-                                                        <div className="card mb-4 stack-card" style={{border:'none' , color:'white'}}   onClick={() =>
+                                                        <div className="card mb-4 stack-card" style={{border:'none' , color:'white' }}   onClick={() =>
                                 handleCardClick({ title: item.name }, stack.stackName, currentUserName)
                               }>
                                                             <div className="card-body">
