@@ -408,7 +408,7 @@ const handleDownloadPdf = () => {
   </div>
           </div>
 <div className="row">
-  <div className="col-md-6">
+  <div className="col-md-12 col-lg-6 col-sm-12">
   <div className="border bg-light shadow "  style={{ height: "70vh" , borderRadius:'15px'}} >
       {selectedCard ? (
           <WaterGraphPopup
@@ -439,7 +439,7 @@ const handleDownloadPdf = () => {
           )}
       </div>
   </div>
-  <div className="col-md-6 border overflow-auto bg-light shadow" 
+  <div className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow" 
     style={{ height: "70vh", overflowY: "scroll",  borderRadius:'15px' }}>
   {!loading && filteredData.length > 0 ? (
                     filteredData.map((stack, stackIndex) => (

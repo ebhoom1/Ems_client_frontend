@@ -429,7 +429,7 @@ const handleDownloadPdf = () => {
           </div>
                   </div>
                   <div className="row">
-              <div className="col-md-6">
+              <div className="col-md-12 col-lg-6 col-sm-12">
                 {/* Graph Container with reference */}
                 <div
                   className="border bg-light shadow"
@@ -467,7 +467,7 @@ const handleDownloadPdf = () => {
                 </div>
               </div>
               <div
-                className="col-md-6 border overflow-auto bg-light shadow"
+                className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow"
                 style={{ height: '60vh', overflowY: 'scroll', borderRadius: '15px' }}
               >
                 {!loading && filteredData.length > 0 ? (

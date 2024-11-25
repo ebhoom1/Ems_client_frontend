@@ -54,10 +54,10 @@ const Airambient = () => {
     try {
       const response = await fetch(`${API_URL}/api/get-stacknames-by-userName/${userName}`);
       const data = await response.json(); // Make sure to parse the JSON
-      const effluentStacks = data.stackNames
+      const emissionStacks = data.stackNames
         .filter(stack => stack.stationType === 'emission')
         .map(stack => stack.name); // Use 'name' instead of 'stackName'
-      setEmissionStacks(effluentStacks);
+      setEmissionStacks(emissionStacks);
     } catch (error) {
       console.error("Error fetching effluent stacks:", error);
     }
@@ -412,7 +412,7 @@ const airParameters = [
   </div>
           </div>
     <div className="row">
-      <div className="col-md-6">
+      <div className="col-md-12 col-lg-6 col-sm-12 ">
       <div className="border bg-light shadow mb-2"  style={{ height: "60vh" , borderRadius:'15px', position: 'relative' }} ref={graphRef} >
           {selectedCard ? (
               <WaterGraphPopup
@@ -442,7 +442,7 @@ const airParameters = [
           )}
           </div>
       </div>
-      <div className="col-md-6 border overflow-auto bg-light shadow" 
+      <div className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow" 
         style={{ height: "60vh", overflowY: "scroll",  borderRadius:'15px' }}>
       {!loading && filteredData.length > 0 ? (
                         filteredData.map((stack, stackIndex) => (
