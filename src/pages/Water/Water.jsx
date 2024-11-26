@@ -17,6 +17,7 @@ import effluent from '../../assests/images/effluentimage.svg'
 import './water.css'
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import DownloadaverageDataModal from "./DownloadaverageDataModal";
 // Initialize Socket.IO
 const socket = io(API_URL, { 
   transports: ['websocket'], 
@@ -51,6 +52,18 @@ const Water = () => {
   const [realTimeData, setRealTimeData] = useState({});
   const [exceedanceColor, setExceedanceColor] = useState('green'); // Default color
   const [timeIntervalColor, setTimeIntervalColor] = useState('green'); // Default color
+
+  /* download average data */
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+  
+  // Function to close the modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+  
   const graphRef = useRef();
   // Water parameters
   const waterParameters = [
@@ -429,43 +442,66 @@ const handleDownloadPdf = () => {
           </div>
                   </div>
                   <div className="row">
-              <div className="col-md-12 col-lg-6 col-sm-12">
-                {/* Graph Container with reference */}
-                <div
-                  className="border bg-light shadow"
-                  style={{ height: '60vh', borderRadius: '15px', position: 'relative' }}
-                  ref={graphRef}
-                >
-                  {selectedCard ? (
-                    <WaterGraphPopup
-                      parameter={selectedCard.title}
-                      userName={currentUserName}
-                      stackName={selectedCard.stackName}
-                    />
-                  ) : (
-                    <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-                  )}
-        
-                  {/* Download Button */}
-                  {selectedCard && (
-                    
-                    <button
-                      onClick={handleDownloadPdf}
-                      style={{
-                        position: 'absolute',
-                        top: '10px',
-                        right: '10px',
-                      
-                        backgroundColor:'#236a80',
-                        color:'white'
-                      }}
-                      className="btn "
-                    >
-                     <i class="fa-solid fa-download"></i>
-                    </button>
-                  )}
-                </div>
-              </div>
+                  <div className="col-md-12 col-lg-6 col-sm-12">
+  {/* Graph Container with reference */}
+  <div
+    className="border bg-light shadow"
+    style={{ height: '60vh', borderRadius: '15px', position: 'relative' }}
+    ref={graphRef}
+  >
+    {selectedCard ? (
+      <WaterGraphPopup
+        parameter={selectedCard.title}
+        userName={currentUserName}
+        stackName={selectedCard.stackName}
+      />
+    ) : (
+      <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+    )}
+
+    {/* Download Buttons */}
+    {selectedCard && (
+      <>
+        <button
+          onClick={handleDownloadPdf}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            
+            backgroundColor: '#236a80',
+            color: 'white',
+          }}
+          className="btn"
+        >
+          <i className="fa-solid fa-download"></i> Download
+        </button>
+
+        <button
+          onClick={openModal} // Open the modal
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            backgroundColor: '#236a80',
+            color: 'white',
+          }}
+          className="btn"
+        >
+          <i className="fa-solid fa-download"></i> Download Average
+        </button> 
+      </>
+    )}
+  </div>
+
+  {/* Modal for Downloading Average Data */}
+  <DownloadaverageDataModal
+    isOpen={isModalOpen}
+    onClose={closeModal}
+    userName={currentUserName}
+    stackName={selectedCard?.stackName || ''}
+  />
+</div>
+
               <div
                 className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow"
                 style={{ height: '60vh', overflowY: 'scroll', borderRadius: '15px' }}
