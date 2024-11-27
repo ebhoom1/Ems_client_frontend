@@ -470,6 +470,8 @@ const handleDownloadPdf = () => {
             left:'10px',
             backgroundColor: '#236a80',
             color: 'white',
+            marginTop:'10px',
+            marginBottom:'10px',
           }}
           className="btn"
         >
@@ -484,6 +486,8 @@ const handleDownloadPdf = () => {
             right: '10px',
             backgroundColor: '#236a80',
             color: 'white',
+            marginTop:'10px',
+            marginBottom:'10px',
           }}
           className="btn"
         >

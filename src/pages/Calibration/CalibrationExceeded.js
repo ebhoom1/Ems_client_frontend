@@ -38,7 +38,7 @@ const CalibrationExceeded = () => {
       const userData = userResponse.data;
       if (userData.status === 401 || !userData.validUserOne) {
         console.log('User not valid');
-        navigate('/');
+       
         return;
       }
 
@@ -63,7 +63,7 @@ const CalibrationExceeded = () => {
       }
     } catch (error) {
       console.error('Error validating user or fetching comments:', error);
-      navigate('/water');
+     
     }
   };
 

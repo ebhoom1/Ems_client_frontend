@@ -45,11 +45,12 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             const response = await fetch(
                 `${API_URL}/api/average/user/${userName}/stack/${stackName}/interval/${timeInterval}`
             );
-            const data = await response.json();
-            if (Array.isArray(data) && data.length > 0) {
-                setGraphData(data);
+            const responseData = await response.json();
+            if (responseData.success && Array.isArray(responseData.data)) {
+                setGraphData(responseData.data);
             } else {
                 setGraphData([]);
+                toast.error("No data available.");
             }
         } catch (error) {
             toast.error('Failed to fetch data');
@@ -58,33 +59,32 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             setLoading(false);
         }
     };
-
+    
     const processData = () => {
         if (!Array.isArray(graphData) || graphData.length === 0) {
             return { labels: [], values: [] };
         }
-
+    
         const labels = graphData.map((entry) =>
-            moment(entry.interval).format('DD/MM/YYYY HH:mm')
+            moment(entry.timestamp).format('DD/MM/YYYY HH:mm') // Using timestamp for consistency
         );
-
+    
         const values = graphData.map((entry) => {
             const stack = entry.stackData.find(
                 (stack) => stack.stackName === stackName
             );
-            return stack ? stack.parameters[parameter] : 0;
+            return stack?.parameters?.[parameter] || 0; // Safely access parameters
         });
-
+    
         return { labels, values };
     };
-
+    
     const { labels, values } = processData();
-
     const chartData = {
         labels,
         datasets: [
             {
-                label: `${parameter} - ${stackName}`,
+                label:` ${parameter} - ${stackName}`,
                 data: values,
                 fill: false,
                 backgroundColor: '#236a80',
@@ -96,7 +96,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             },
         ],
     };
-
+    
     const chartOptions = {
         responsive: true,
         plugins: {
@@ -107,20 +107,6 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             title: {
                 display: true,
                 text: `${parameter} Values Over Time`,
-            },
-            tooltip: {
-                callbacks: {
-                    label: (tooltipItem) => {
-                        let value = tooltipItem.raw;
-                        return `Value: ${value}`; // Tooltip message
-                    },
-                    title: (tooltipItems) => {
-                        let timestamp = tooltipItems[0].label;
-                        return `Time: ${timestamp}`; // Tooltip title with timestamp
-                    },
-                },
-                titleFont: { size: 18 }, // Larger font for tooltip title
-                bodyFont: { size: 16 }, // Larger font for tooltip value
             },
         },
         scales: {
@@ -140,10 +126,17 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                     text: `${parameter} Value`,
                 },
                 beginAtZero: true,
-                suggestedMax: Math.max(...values, 5),
+                suggestedMax: values.length ? Math.max(...values) : 5,
             },
         },
     };
+    
+    useEffect(() => {
+        console.log('Graph Data:', graphData);
+        console.log('Processed Labels:', labels);
+        console.log('Processed Values:', values);
+    }, [graphData, labels, values]);
+    
 
     const customStyles = {
         content: {
@@ -166,7 +159,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
 
     return (
        <div>
-            <h3 className="popup-title mt-5 text-center">{parameter} - {stackName}</h3>
+            <h3 style={{marginTop:'80px'}} className="popup-title text-center">{parameter} - {stackName}</h3>
 
             <div className="interval-buttons align-items-center justify-content-center mt-3 " >
                 {['hour', 'day', 'week', 'month', 'sixmonths', 'year'].map((interval) => (
