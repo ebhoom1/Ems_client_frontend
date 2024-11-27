@@ -6,24 +6,17 @@ export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async ({ email, password, userType }, { rejectWithValue }) => {
     try {
-      // Send login request to the backend
       const response = await axios.post(`${API_URL}/api/login`, { email, password, userType });
-
-      // Extract token and user from response
       const { user, token } = response.data;
-
-      // Store token in localStorage
       localStorage.setItem('userdatatoken', token);
-
-      // Return user details for Redux state
       return { user, token };
     } catch (error) {
-      // Handle errors properly
-      const errorMessage = error.response?.data?.error || "Something went wrong!";
-      return rejectWithValue(errorMessage);
+      console.error("Login API Error:", error.response?.data || error.message || error);
+      return rejectWithValue(error.response?.data?.error || "Something went wrong!");
     }
   }
 );
+
 
 const authSlice = createSlice({
   name: 'auth',

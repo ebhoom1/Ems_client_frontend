@@ -63,7 +63,7 @@ const CalibrationExceeded = () => {
       }
     } catch (error) {
       console.error('Error validating user or fetching comments:', error);
-      navigate('/');
+      navigate('/water');
     }
   };
 

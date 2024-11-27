@@ -3,6 +3,8 @@ import axios from 'axios';
 import Modal from 'react-modal';
 import { API_URL } from "../../utils/apiConfig";
 
+
+
 const DownloadaverageDataModal = ({ isOpen, onClose }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -12,7 +14,6 @@ const DownloadaverageDataModal = ({ isOpen, onClose }) => {
   const [stackOptions, setStackOptions] = useState([]);
   const [stackName, setStackName] = useState('');
 
-  // Fetch users when the modal opens
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -30,7 +31,6 @@ const DownloadaverageDataModal = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
-  // Fetch stack names when a user is selected
   useEffect(() => {
     const fetchStackOptions = async () => {
       if (!userName) return;
@@ -47,23 +47,32 @@ const DownloadaverageDataModal = ({ isOpen, onClose }) => {
     fetchStackOptions();
   }, [userName]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Check if all fields are filled
     if (!userName || !stackName || !startDate || !endDate || !timeInterval) {
       alert("All fields are required!");
       return;
     }
 
-    // Log the selected fields
-    console.log({
-      userName,
-      stackName,
-      startDate,
-      endDate,
-      timeInterval,
-    });
+    const formattedStartDate = startDate.split('-').reverse().join('-');
+    const formattedEndDate = endDate.split('-').reverse().join('-');
+
+    const downloadUrl = `${API_URL}/api/average/download/user/${userName}/stack/${stackName}/interval/${timeInterval}/time-range?startTime=${formattedStartDate}&endTime=${formattedEndDate}&format=csv`;
+
+    try {
+      const response = await axios.get(downloadUrl, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `${userName}_${stackName}_${timeInterval}_${formattedStartDate}_to_${formattedEndDate}.csv`;
+      link.click();
+
+      alert("Download successful!");
+    } catch (error) {
+      console.error("Error downloading data:", error);
+      alert("Failed to download data.");
+    }
   };
 
   return (
@@ -73,8 +82,8 @@ const DownloadaverageDataModal = ({ isOpen, onClose }) => {
       contentLabel="Download Data Modal"
       style={{
         overlay: {
-          backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dimmed background
-          zIndex: 1050, // Custom z-index
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1050,
         },
         content: {
           top: '50%',
@@ -82,11 +91,11 @@ const DownloadaverageDataModal = ({ isOpen, onClose }) => {
           right: 'auto',
           bottom: 'auto',
           marginRight: '-50%',
-          transform: 'translate(-50%, -50%)', // Center alignment
-          width: '100%', // Full width
-          maxWidth: '500px', // Limit max width for smaller screens
+          transform: 'translate(-50%, -50%)',
+          width: '100%',
+          maxWidth: '500px',
           padding: '20px',
-          borderRadius: '10px', // Rounded corners
+          borderRadius: '10px',
           boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
         },
       }}

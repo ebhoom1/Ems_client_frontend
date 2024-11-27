@@ -26,7 +26,8 @@ function Log() {
   const [modalIsOpen, setModalIsOpen] = useState(false);
 
   const { loading, error } = useSelector((state) => state.auth);
-
+  if (error) toast.error(error);
+  
   Modal.setAppElement('#root');
 
   const setVal = (e) => {
