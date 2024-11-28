@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Line } from 'react-chartjs-2';
@@ -96,6 +95,7 @@ const ConsuptionPredictionGraphQuantity = () => {
 
   const handleUserChange = (selectedUser) => {
     setUserName(selectedUser.value);
+    setStackOptions([]); // Clear previous stack options
     fetchStackOptions(selectedUser.value);
   };
 
@@ -106,17 +106,21 @@ const ConsuptionPredictionGraphQuantity = () => {
       const response = await axios.get(
         `${API_URL}/api/get-stacknames-by-userName/${userName}`
       );
-      setStackOptions(
-        response.data.stackNames.map((stack) => ({
+
+      const filteredStacks = response.data.stackNames
+        .filter((stack) => stack.stationType === 'effluent_flow') // Filter by stationType
+        .map((stack) => ({
           value: stack.name,
           label: stack.name,
-        }))
-      );
+        }));
+
+      setStackOptions(filteredStacks);
     } catch (error) {
       console.error('Error fetching stack names:', error);
       alert('Failed to fetch stack names.');
     }
   };
+  
 
   const fetchGraphData = async () => {
     setLoading(true);
@@ -186,7 +190,7 @@ const ConsuptionPredictionGraphQuantity = () => {
 
   return (
     <div className="energy-flow-containe">
-      <h3 className="text-center mb-4 text-light">Monthly Flow </h3>
+      <h3 className="text-center mb-4 text-light">Monthly Flow</h3>
       <div className="row mb-4 d-flex align-items-center">
         <div className="col-md-6 mb-3">
           <Select
@@ -206,7 +210,13 @@ const ConsuptionPredictionGraphQuantity = () => {
             isDisabled={!stackOptions.length}
             isMulti={true}
           />
+          {stackOptions.length === 0 && (
+            <p className="text-muted mt-2">
+              No stacks available with station type "energy".
+            </p>
+          )}
         </div>
+
         <div className="col-md-6">
           <Select
             options={months}

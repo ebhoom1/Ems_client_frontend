@@ -26,29 +26,12 @@ const KeralaMap = ({ users }) => {
     shadowSize: [41, 41],
   });
 
-  // Sample data to simulate IoT data
-  const sampleIotData = {
-    "pH": 7.1,
-    "TDS": 300,
-    "BOD": 5,
-    "COD": 50,
-    "Chloride": 20,
-    "Analyzer Health": "Good"
-  };
-
-  // Fields to be excluded from the display
-  const excludedFields = [
-    "_id",
-    "userName",
-    "companyName",
-    "modelName",
-    "latitude",
-    "longitude"
-  ];
-
   const handleMarkerClick = (user) => {
     setSelectedUser(user.userName);
   };
+
+  // Debugging: Log the users received by the map
+  console.log("Users received in KeralaMap:", users);
 
   return (
     <MapContainer center={defaultPosition} zoom={7} style={{ height: "500px", width: "100%" }}>
@@ -57,10 +40,9 @@ const KeralaMap = ({ users }) => {
         attribution='&copy; <a href="https://www.ebhoom.com/">Ebhoom Solutions</a> contributors'
       />
       {users
-        .filter(user => user.userType === "user")  // Only show users with userType "user"
+        .filter((user) => user.latitude && user.longitude) // Ensure valid coordinates
         .map((user) => {
-          const userIoT = selectedUser === user.userName ? sampleIotData : null;
-          const isHealthy = userIoT && userIoT["Analyzer Health"] === "Good";
+          const isHealthy = user["Analyzer Health"] === "Good"; // Example health status logic
 
           return (
             <Marker
@@ -76,19 +58,7 @@ const KeralaMap = ({ users }) => {
                   <h5>User ID: {user.userName}</h5>
                   <p>Company Name: <strong>{user.companyName}</strong></p>
                   <p>Model Name: <strong>{user.modelName}</strong></p>
-                  {userIoT && (
-                    <div style={styles.scrollContainer}>
-                      <div style={styles.cardContainer}>
-                        {Object.entries(userIoT)
-                          .filter(([key]) => !excludedFields.includes(key))
-                          .map(([key, value]) => (
-                            <div key={key} style={styles.card}>
-                              <strong>{key}:</strong> <p>{value !== null ? value : "N/A"}</p>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
+                  <p>Admin Type: <strong>{user.adminType}</strong></p>
                 </div>
               </Popup>
             </Marker>
@@ -96,28 +66,6 @@ const KeralaMap = ({ users }) => {
         })}
     </MapContainer>
   );
-};
-
-const styles = {
-  scrollContainer: {
-    maxHeight: "200px", // Limit the height of the scrollable area
-    overflowY: "auto",  // Enable vertical scrolling
-  },
-  cardContainer: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "10px",
-    justifyContent: "center",
-  },
-  card: {
-    backgroundColor: "#f8f9fa",
-    border: "1px solid #dee2e6",
-    borderRadius: "5px",
-    padding: "10px",
-    width: "120px",
-    textAlign: "center",
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-  },
 };
 
 export default KeralaMap;

@@ -305,7 +305,15 @@ useEffect(() => {
       });
     }
   };
-        
+  const adminFilteredUsers = filteredUsers.filter(
+    (user) =>
+      user.adminType?.toLowerCase() === userData?.validUserOne?.adminType?.toLowerCase() &&
+      user.latitude && user.longitude // Ensure valid coordinates
+  );
+  
+  console.log('Admin Filtered Users:', adminFilteredUsers);
+  
+       
 
   return (
     <div className="container-fluid">
@@ -331,8 +339,11 @@ useEffect(() => {
               <div className="card shadow-sm">
                 <div className="card-body">
                   <h4 className="card-title text-center"></h4>
-                  <KeralaMap users={users} />
-                </div>
+                  <KeralaMap
+        users={filteredUsers.filter(
+          (user) => user.latitude && user.longitude
+        )}
+      />                </div>
               </div>
             </div>
           </div>

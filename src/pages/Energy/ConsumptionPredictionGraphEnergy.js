@@ -105,12 +105,15 @@ const ConsumptionGraphEnergy = () => {
       const response = await axios.get(
         `${API_URL}/api/get-stacknames-by-userName/${userName}`
       );
-      setStackOptions(
-        response.data.stackNames.map((stack) => ({
+
+      const filteredStacks = response.data.stackNames
+        .filter((stack) => stack.stationType === 'energy') // Filter by stationType
+        .map((stack) => ({
           value: stack.name,
           label: stack.name,
-        }))
-      );
+        }));
+
+      setStackOptions(filteredStacks);
     } catch (error) {
       console.error('Error fetching stack names:', error);
       alert('Failed to fetch stack names.');
