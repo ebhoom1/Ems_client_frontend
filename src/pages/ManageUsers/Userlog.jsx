@@ -10,14 +10,17 @@ import { useDispatch, useSelector } from "react-redux";
 import './userlog.css'
 const UsersLog = () => {
   const dispatch = useDispatch();
-  const { users, filteredUsers, loading, error } = useSelector((state) => state.userLog);
+  const { users, filteredUsers, loading, error } = useSelector(
+    (state) => state.userLog
+  );
+  const { userData } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const [sortCategory, setSortCategory] = useState("");
   const [sortOptions, setSortOptions] = useState([]);
-  const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState("");
   const [stackLoading, setStackLoading] = useState(false);
 
-  const [stacks, setStacks] = useState([{ stackName: '', stationType: '' }]);
+  const [stacks, setStacks] = useState([{ stackName: "", stationType: "" }]);
   const [formData, setformData] = useState({
     userName: "",
     companyName: "",
@@ -30,15 +33,16 @@ const UsersLog = () => {
     subscriptionDate: "",
     userType: "",
     industryType: "",
-    dataInteval: "", 
+    dataInteval: "",
     district: "",
     state: "",
     address: "",
     latitude: "",
     longitude: "",
-    productID: ""
+    productID: "",
+    adminType: "",
   });
-  const [userName,setUserName]=useState('');
+  const [userName, setUserName] = useState("");
 
   const industryType = [
     { category: "Sugar" },
@@ -62,55 +66,92 @@ const UsersLog = () => {
     { category: "STP/ETP" },
     { category: "NWMS/SWMS" },
     { category: "Noise" },
-    { category: "Other" }
+    { category: "Other" },
   ];
 
-  // Fetch users when component mounts
-  useEffect(() => {
-    dispatch(fetchUsers());
-  }, [dispatch]);
+  // Fetch users filtered by adminType or show all if no adminType
+  // Fetch users filtered by adminType or show all if adminType is Ebhoom
+useEffect(() => {
+  const fetchUsersData = async () => {
+    try {
+      const response = await dispatch(fetchUsers()).unwrap(); // Fetch all users
 
- 
-  const handleInputChange = event => {
+      if (userData?.validUserOne?.adminType === "EBHOOM") {
+        // Show all users if adminType is Ebhoom
+        dispatch(setFilteredUsers(response));
+      } else if (userData?.validUserOne?.adminType) {
+        // Filter users based on adminType and exclude admins
+        const filtered = response.filter(
+          (user) =>
+            user.adminType === userData.validUserOne.adminType &&
+            user.userType === "user"
+        );
+        dispatch(setFilteredUsers(filtered));
+      } else {
+        // Fallback in case no adminType is available
+        dispatch(setFilteredUsers([]));
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast.error("Failed to fetch users.", { position: "top-center" });
+    }
+  };
+
+  fetchUsersData();
+}, [dispatch, userData]);
+
+  
+
+  const handleInputChange = (event) => {
     const { name, value } = event.target;
-    setformData(prevFormData => ({
+    setformData((prevFormData) => ({
       ...prevFormData,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const validateFields = () => {
-    const { userName, companyName, fname, email, mobileNumber, password, cpassword } = formData;
-    
-    // Check if all required fields are filled
-    if (!userName || !companyName || !fname || !email || !mobileNumber || !password || !cpassword) {
-      return false; // Not all fields are filled
+    const {
+      userName,
+      companyName,
+      fname,
+      email,
+      mobileNumber,
+      password,
+      cpassword,
+    } = formData;
+
+    if (
+      !userName ||
+      !companyName ||
+      !fname ||
+      !email ||
+      !mobileNumber ||
+      !password ||
+      !cpassword
+    ) {
+      return false;
     }
-    
-    return true; // All fields are filled
+    return true;
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    // Validate form fields before proceeding
+
     if (!validateFields()) {
-      toast.error("Please fill all the fields", { position: 'top-center' });
-      return; // Stop the function if validation fails
-    }
-  
-    // Check if passwords match
-    if (formData.password !== formData.cpassword) {
-      toast.error("Passwords do not match", { position: 'top-center' });
+      toast.error("Please fill all the fields", { position: "top-center" });
       return;
     }
-  
+
+    if (formData.password !== formData.cpassword) {
+      toast.error("Passwords do not match", { position: "top-center" });
+      return;
+    }
+
     try {
-      // If validation passes, dispatch the addUser action
       await dispatch(addUser(formData)).unwrap();
-      toast.success('User added successfully', { position: 'top-center' });
-      
-      // Clear form after successful submission
+      toast.success("User added successfully", { position: "top-center" });
+
       setformData({
         userName: "",
         companyName: "",
@@ -123,254 +164,148 @@ const UsersLog = () => {
         subscriptionDate: "",
         userType: "",
         industryType: "",
-        dataInterval: "",
+        dataInteval: "",
         district: "",
         state: "",
         address: "",
         latitude: "",
         longitude: "",
-        productID: ""
+        productID: "",
+        adminType: "",
       });
-  
-      dispatch(fetchUsers()); // Refresh the user list after adding
+
+      dispatch(fetchUsers());
     } catch (error) {
       console.log("Error in AddUser:", error);
-      toast.error('An error occurred. Please try again.', { position: 'top-center' });
+      toast.error("An error occurred. Please try again.", {
+        position: "top-center",
+      });
     }
   };
-  
-  if (loading) {
-    return (
-      <div className="loader-container">
-        <div className="loader"></div>
-        <p>Loading, please wait...</p>
-      </div>
-    );
-  }
-  
-
-if (error) {
-return <div>Error: {error.message}</div>;
-}
-
-  
-
-  const handleAddUser = async (e) => {
-    e.preventDefault();
-  
-    if (!validateFields()) {
-      toast.error("Please fill all the fields");
-      return;
-    }
-  
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-  
-    try {
-      await dispatch(addUser(formData)).unwrap(); // Catch any rejected promises
-      toast.success("User added successfully!");
-      dispatch(fetchUsers()); // Refresh the user list
-      clearForm();
-    } catch (error) {
-      toast.error("Failed to add user: " + (error.message || error.toString()));
-    }
-  };
-
-
-  
 
   const handleDeleteUser = async (userId) => {
     try {
       await dispatch(deleteUser(userId)).unwrap();
       toast.success("User deleted successfully!");
-      dispatch(fetchUsers()); // Refresh the user list
+      dispatch(fetchUsers());
     } catch (error) {
       toast.error("Failed to delete user: " + (error.message || error.toString()));
     }
   };
 
-  const clearForm = () => {
-    setformData({
-      userId: '',
-      companyName: '',
-      firstName: '',
-      email: '',
-      mobile: '',
-      modelName: '',
-      productId: '',
-      password: '',
-      confirmPassword: '',
-      subscriptionDate: '',
-      userType: '',
-      industry: '',
-      dataInterval: '',
-      district: '',
-      state: '',
-      address: '',
-      latitude: '',
-      longitude: ''
-    });
-  };
+  const handleCompanyChange = async (event) => {
+    const companyName = event.target.value;
+    setSelectedCompany(companyName);
 
-  const handleUserClick = (userName) => {
-    navigate('/ambient', { state: { userName } });
-  };
-
-
-  /* delete */
-  
-
-const handleSubmitDelete =async(e)=>{
-  e.preventDefault();
-
-  if(!userName){
-    return toast.warning('Please Enter the user ID',{
-      position:'top-center'
-    })
-  }
-  try {
-   await dispatch(deleteUser(userName)).unwrap();
-       toast.success('user deleted Successfully',{
-      position:'top-center'
-    })
-    setUserName('')   
-  } catch (error) { 
-    console.error(`Error deleting user:`,error);
-    toast.error('Error in Deleting User /  User ID not found',{
-      position:'top-center'
-    })
-  }
-}
-
-
-/* stack */
-const handleInputNameChange = (index, field, value) => {
-  const newStacks = [...stacks];
-  newStacks[index][field] = value;
-  setStacks(newStacks);
-};
-
-const handleAddInput = () => {
-  setStacks([...stacks, { stackName: '', stationType: '' }]);
-};
-
-const handleRemoveInput = (index) => {
-  const newStacks = stacks.filter((_, idx) => idx !== index);
-  setStacks(newStacks);
-};
-
-const handleCompanyChange = async (event) => {
-  const companyName = event.target.value;
-  setSelectedCompany(companyName);
-
-  if (companyName) {
-    setStackLoading(true); // Start the loader
-    try {
-      const result = await dispatch(fetchUserByCompanyName(companyName)).unwrap();
-      console.log('Fetched User:', result);
-
-      if (result.stackName && Array.isArray(result.stackName)) {
+    if (companyName) {
+      setStackLoading(true);
+      try {
+        const result = await dispatch(fetchUserByCompanyName(companyName)).unwrap();
         const formattedStacks = result.stackName.map((stack) => ({
-          stackName: stack.name || '',
-          stationType: stack.stationType || '',
+          stackName: stack.name || "",
+          stationType: stack.stationType || "",
         }));
         setStacks(formattedStacks);
-      } else {
-        setStacks([{ stackName: '', stationType: '' }]);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        toast.error("Failed to fetch user data.");
+        setStacks([{ stackName: "", stationType: "" }]);
+      } finally {
+        setStackLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      toast.error('Failed to fetch user data.');
-      setStacks([{ stackName: '', stationType: '' }]);
-    } finally {
-      setStackLoading(false); // Stop the loader
     }
-  }
-};
+  };
 
+  const handleSave = async () => {
+    if (!selectedCompany) {
+      toast.error("Please select a company", { position: "top-center" });
+      return;
+    }
 
-const handleSave = async () => {
-  if (!selectedCompany) {
-    toast.error('Please select a company', { position: 'top-center' });
-    return;
-  }
+    const stackData = stacks.map((stack) => ({
+      name: stack.stackName,
+      stationType: stack.stationType,
+    }));
 
-  if (!Array.isArray(stacks)) {
-    console.error('Stacks is not an array:', stacks);
-    toast.error('Invalid stacks data', { position: 'top-center' });
-    return;
-  }
+    try {
+      await dispatch(
+        addStackName({
+          companyName: selectedCompany,
+          stackData,
+        })
+      ).unwrap();
+      toast.success("Stack Names and Station Types added successfully", {
+        position: "top-center",
+        autoClose: 2000,
+      });
+    } catch (error) {
+      console.error("Error adding stack names:", error);
+      toast.error("An error occurred. Please try again.", {
+        position: "top-center",
+      });
+    }
+  };
 
-  const stackData = stacks.map((stack) => ({
-    name: stack.stackName,
-    stationType: stack.stationType,
-  }));
+  const handleSortCategoryChange = (category) => {
+    setSortCategory(category);
+    if (category === "Industry Type") {
+      const uniqueIndustryTypes = [
+        ...new Set(users.map((user) => user.industryType)),
+      ];
+      setSortOptions(uniqueIndustryTypes);
+    } else if (category === "Location") {
+      const uniqueLocations = [...new Set(users.map((user) => user.district))];
+      setSortOptions(uniqueLocations);
+    }
+  };
 
-  console.log('Stack Data:', stackData);
-
-  if (!Array.isArray(stackData) || !stackData.every(item => typeof item === 'object' && item.name && item.stationType)) {
-    console.error('Invalid stackData:', stackData);
-    toast.error('Stack data must be an array of objects with name and stationType', { position: 'top-center' });
-    return;
-  }
-
-  try {
-    console.log('Payload:', { companyName: selectedCompany, stackData });
-
-    await dispatch(
-      addStackName({
-        companyName: selectedCompany,
-        stackData,
-      })
-    ).unwrap();
-
-    toast.success('Stack Names and Station Types added successfully', {
-      position: 'top-center',
-      autoClose: 2000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
-  } catch (error) {
-    console.error('Error adding stack names:', error);
-    toast.error('An error occurred. Please try again.', { position: 'top-center' });
-  }
-};
-
-
-const handleCancel = () => {
-  navigate('/manage-user');
-};
-
-if (loading) {
-  return <div>Wait a min...</div>;
-}
-
-if (error) {
-  return <div>Error: {error}</div>;
-}
-/* sort */
-const handleSortCategoryChange = (category) => {
-  setSortCategory(category);
-  if (category === "Industry Type") {
-    const uniqueIndustryTypes = [...new Set(users.map(user => user.industryType))];
-    setSortOptions(uniqueIndustryTypes);
-  } else if (category === "Location") {
-    const uniqueLocations = [...new Set(users.map(user => user.district))];
-    setSortOptions(uniqueLocations);
-  }
-};
-
-const handleSortOptionSelect = (option) => {
-  const sortedUsers = [...users].filter(user =>
-    (sortCategory === "Industry Type" ? user.industryType : user.district) === option
-  );
-  dispatch(setFilteredUsers(sortedUsers));
-};
-
+  const handleSortOptionSelect = (option) => {
+    const sortedUsers = [...users].filter(
+      (user) =>
+        (sortCategory === "Industry Type" ? user.industryType : user.district) ===
+        option
+    );
+    dispatch(setFilteredUsers(sortedUsers));
+  };
+  const handleInputNameChange = (index, field, value) => {
+    const newStacks = [...stacks];
+    newStacks[index][field] = value;
+    setStacks(newStacks);
+  };
+  const handleUserClick = (userName) => {
+   
+  };
+  const handleRemoveInput = (index) => {
+    const newStacks = stacks.filter((_, idx) => idx !== index);
+    setStacks(newStacks);
+  };
+  const handleAddInput = () => {
+    setStacks([...stacks, { stackName: "", stationType: "" }]);
+  };
+  const handleCancel = () => {
+    navigate("/manage-user");
+  };
+  const handleSubmitDelete = async (e) => {
+    e.preventDefault();
+  
+    if (!userName) {
+      return toast.warning("Please Enter the user ID", {
+        position: "top-center",
+      });
+    }
+  
+    try {
+      await dispatch(deleteUser(userName)).unwrap();
+      toast.success("User deleted successfully!", { position: "top-center" });
+      setUserName("");
+    } catch (error) {
+      console.error(`Error deleting user:`, error);
+      toast.error("Error in Deleting User / User ID not found", {
+        position: "top-center",
+      });
+    }
+  };
+        
 
   return (
     <div className="container-fluid">
@@ -438,29 +373,30 @@ const handleSortOptionSelect = (option) => {
 </div>}
             {error && <p>Error fetching users: {error}</p>}
             {!loading && !error && (
-              <div className="user-list-container">
-                <table className="userlog-table">
-                  <thead>
-                    <tr>
-                      <th className=" userlog-head">Company Name</th>
-                      <th className=" userlog-head">User Name</th>
-                      <th className=" userlog-head">Industry Type</th>
-                      <th className=" userlog-head">Location</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUsers.map((user) => (
-                      <tr key={user._id} onClick={() => handleUserClick(user.userName)}>
-                        <td className="userlog-head">{user.companyName}</td>
-                        <td className=" userlog-head">{user.userName}</td>
-                        <td className=" userlog-head">{user.industryType}</td>
-                        <td className=" userlog-head">{user.district}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+  <div className="user-list-container">
+    <table className="userlog-table">
+      <thead>
+        <tr>
+          <th className="userlog-head">Company Name</th>
+          <th className="userlog-head">User Name</th>
+          <th className="userlog-head">Industry Type</th>
+          <th className="userlog-head">Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        {filteredUsers.map((user) => (
+          <tr key={user._id} onClick={() => handleUserClick(user.userName)}>
+            <td className="userlog-head">{user.companyName}</td>
+            <td className="userlog-head">{user.userName}</td>
+            <td className="userlog-head">{user.industryType}</td>
+            <td className="userlog-head">{user.district}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
           </div>
         </div>
 
@@ -569,6 +505,19 @@ const handleSortOptionSelect = (option) => {
                                         <option value="select">Select</option>
                                         <option value="admin">Admin</option>
                                         <option value="user">User</option>
+                                            {/* Add options for companies */}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* User Type */}
+                                <div className="col-lg-6 col-md-6 mb-4">
+                                    <div className="form-group">
+                                        <label htmlFor="adminType" className="form-label">Admin Type</label>
+                                        <select id="adminType" className="form-control" value={formData.adminType}   onChange={handleInputChange} name="adminType" style={{ width: '100%', padding: '15px', borderRadius: '10px' }}>
+                                        <option value="select">Select</option>
+                                        <option value="KSPCB">KSPCB</option>
+                                        <option value="GeneX">GeneX</option>
                                             {/* Add options for companies */}
                                         </select>
                                     </div>
@@ -718,19 +667,20 @@ const handleSortOptionSelect = (option) => {
             <div className="form-group">
               <label htmlFor="company" className="form-label">Select Company</label>
               <select
-                id="company"
-                className="form-control"
-                value={selectedCompany}
-                onChange={handleCompanyChange}
-                style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
-              >
-                <option value="">Select Company</option>
-                {users.map((user) => (
-                  <option key={user._id} value={user.companyName}>
-                    {user.companyName}
-                  </option>
-                ))}
-              </select>
+  id="company"
+  className="form-control"
+  value={selectedCompany}
+  onChange={handleCompanyChange}
+  style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+>
+  <option value="">Select Company</option>
+  {filteredUsers.map((user) => (
+    <option key={user._id} value={user.companyName}>
+      {user.companyName}
+    </option>
+  ))}
+</select>
+
             </div>
           </div>
         </div>
@@ -844,19 +794,23 @@ const handleSortOptionSelect = (option) => {
                 <div className="card ">
                     <div className="card-body">
                     <ul className="list-group">
-          {users.map((user) => (
-            <li key={user.userId} className="list-group-item d-flex justify-content-between align-items-center">
-              <span>{user.companyName}</span> {/* Display company name */}
-              <button 
-  className="btn"  
-  style={{backgroundColor:'#236a80' , color:'white'}} 
-  onClick={() => navigate(`/edit/${user._id}`, { state: { userId: user.userId } })}>
-  Edit
-</button>
+  {filteredUsers.map((user) => (
+    <li
+      key={user.userId}
+      className="list-group-item d-flex justify-content-between align-items-center"
+    >
+      <span>{user.companyName}</span>
+      <button
+        className="btn"
+        style={{ backgroundColor: '#236a80', color: 'white' }}
+        onClick={() => navigate(`/edit/${user._id}`, { state: { userId: user.userId } })}
+      >
+        Edit
+      </button>
+    </li>
+  ))}
+</ul>
 
-            </li>
-          ))}
-        </ul>
                     </div>
                 </div>
             </div>

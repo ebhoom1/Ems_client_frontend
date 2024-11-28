@@ -159,7 +159,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
 
     return (
        <div>
-            <h3 style={{marginTop:'80px'}} className="popup-title text-center">{parameter} - {stackName}</h3>
+            <h5 style={{marginTop:'80px'}} className="popup-title text-center">{parameter} - {stackName}</h5>
 
             <div className="interval-buttons align-items-center justify-content-center mt-3 " >
                 {['hour', 'day', 'week', 'month', 'sixmonths', 'year'].map((interval) => (

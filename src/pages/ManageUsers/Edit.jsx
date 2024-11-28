@@ -34,7 +34,8 @@ function Edit() {
     state: '',
     address: '',
     latitude: '',
-    longitude: ''
+    longitude: '',
+    adminType:'',
   });
 
   const industryType = [
@@ -271,6 +272,19 @@ function Edit() {
                                         <option value="select">Select</option>
                                         <option value="admin">Admin</option>
                                         <option value="user">User</option>
+                                            {/* Add options for companies */}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                  {/* Admin Type */}
+                                  <div className="col-lg-6 col-md-6 mb-4">
+                                    <div className="form-group">
+                                        <label htmlFor="admin" className="form-label">Admin Type</label>
+                                        <select id="admin" value={userData.adminType || ''} onChange={handleChange} name='adminType' className="form-control" style={{ width: '100%', padding: '15px', borderRadius: '10px' }}>
+                                        <option value="select">Select</option>
+                                        <option value="KSPCB">KSPCB</option>
+                                        <option value="Genex">Genex</option>
                                             {/* Add options for companies */}
                                         </select>
                                     </div>

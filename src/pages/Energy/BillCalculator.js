@@ -3,10 +3,8 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import Select from 'react-select';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import html2canvas from 'html2canvas';
 import html2pdf from 'html2pdf.js';
 import { API_URL } from '../../utils/apiConfig';
-
 
 const BillCalculator = () => {
   const { userData, userType } = useSelector(state => state.user);
@@ -20,12 +18,38 @@ const BillCalculator = () => {
   const resultRef = useRef(null);
 
   useEffect(() => {
-    if (userType === 'admin') {
+    if (userType === 'admin' && userData?.validUserOne?.adminType) {
+      fetchUsersByAdminType(userData.validUserOne.adminType);
+    } else if (userType === 'admin') {
       fetchAllUsers();
     } else {
-      setSelectedUser({ value: userData?.validUserOne?.userName, label: userData?.validUserOne?.userName });
+      setSelectedUser({ 
+        value: userData?.validUserOne?.userName, 
+        label: userData?.validUserOne?.userName 
+      });
     }
   }, [userType, userData]);
+
+  const fetchUsersByAdminType = async (adminType) => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}/api/get-users-by-adminType/${adminType}`);
+      if (response.data && Array.isArray(response.data.users)) {
+        const usersOptions = response.data.users.map(user => ({
+          value: user.userName,
+          label: user.userName,
+        }));
+        setAllUsers(usersOptions);
+        setError('');
+      } else {
+        throw new Error('Unexpected data format received');
+      }
+    } catch (err) {
+      setError('Error fetching users: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchAllUsers = async () => {
     setLoading(true);
@@ -49,8 +73,8 @@ const BillCalculator = () => {
   };
 
   const calculateBill = async () => {
-    if (!fixedCost) {
-      setError('Please enter a valid fixed cost.');
+    if (!fixedCost || !selectedUser) {
+      setError('Please provide a valid fixed cost and select a user.');
       return;
     }
     setLoading(true);
@@ -86,7 +110,7 @@ const BillCalculator = () => {
   };
 
   return (
-    <div className="energy-flow-container mt-2 border border-solid shadow p-5" style={{borderRadius:'15px'}}>
+    <div className="energy-flow-containe mt-2 border shadow p-5" style={{ borderRadius: '15px' }}>
       {userType === 'admin' && (
         <Select
           options={allUsers}
@@ -119,12 +143,12 @@ const BillCalculator = () => {
           disabled={!selectedUser || loading || !fixedCost}
           className="btn btn-primary"
         >
-          Calculate Bill
+          {loading ? 'Calculating...' : 'Calculate Bill'}
         </button>
       </div>
 
-      {loading && <p>Loading...</p>}
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
+
       <div ref={resultRef}>
         {totalBill !== null && (
           <div className="alert alert-success" role="alert" style={{ fontWeight: 'bold' }}>
@@ -134,6 +158,7 @@ const BillCalculator = () => {
           </div>
         )}
       </div>
+
       {totalBill !== null && (
         <button onClick={handleDownloadPDF} className="btn btn-info">Download Bill as PDF</button>
       )}

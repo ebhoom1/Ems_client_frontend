@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Modal from 'react-modal';
 import { API_URL } from "../../utils/apiConfig";
+import { useSelector } from 'react-redux';
 
 
 
@@ -13,11 +14,19 @@ const DownloadaverageDataModal = ({ isOpen, onClose }) => {
   const [userName, setUserName] = useState('');
   const [stackOptions, setStackOptions] = useState([]);
   const [stackName, setStackName] = useState('');
+  const { userType, userData } = useSelector((state) => state.user);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/getallusers`);
+        let response;
+        if (userData?.validUserOne?.adminType) {
+          // Fetch users filtered by adminType
+          response = await axios.get(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`);
+        } else {
+          // Fetch all users if adminType is not available
+          response = await axios.get(`${API_URL}/api/getallusers`);
+        }
         const filteredUsers = response.data.users.filter(user => user.userType === "user");
         setUsers(filteredUsers);
       } catch (error) {
@@ -25,11 +34,12 @@ const DownloadaverageDataModal = ({ isOpen, onClose }) => {
         alert("Failed to fetch users.");
       }
     };
-
+  
     if (isOpen) {
       fetchUsers();
     }
-  }, [isOpen]);
+  }, [isOpen, userData]);
+  
 
   useEffect(() => {
     const fetchStackOptions = async () => {

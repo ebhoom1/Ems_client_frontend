@@ -83,13 +83,13 @@ const EnergyDashboard = () => {
         <div className="row">
           <Energy searchTerm={storedUserId} userData={userData} userType={userType} />
         </div>
-        <ViewDifference
+     {/*    <ViewDifference
   userName={userData?.validUserOne?.userName || 'Unknown User'}
-  interval="daily" // Change if needed
-  fromDate={new Date().toISOString().slice(0, 10)} // Format as YYYY-MM-DD
-  toDate={new Date().toISOString().slice(0, 10)}   // Format as YYYY-MM-DD
+  interval="daily" 
+  fromDate={new Date().toISOString().slice(0, 10)} 
+  toDate={new Date().toISOString().slice(0, 10)}   
 />
-
+ */}
 
         
         </div>

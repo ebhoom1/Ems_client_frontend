@@ -1,16 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
+import React, { useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Spinner } from "react-bootstrap"; // Import a spinner component
 
 const KeralaMap = ({ users }) => {
-  const dispatch = useDispatch();
-  const latestUser = useSelector((state) => state.userLog.latestUser);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [loading, setLoading] = useState(false); // Add loading state
 
   const defaultPosition = [10.8505, 76.2711]; // Center position of Kerala
 
@@ -32,90 +26,81 @@ const KeralaMap = ({ users }) => {
     shadowSize: [41, 41],
   });
 
+  // Sample data to simulate IoT data
+  const sampleIotData = {
+    "pH": 7.1,
+    "TDS": 300,
+    "BOD": 5,
+    "COD": 50,
+    "Chloride": 20,
+    "Analyzer Health": "Good"
+  };
+
+  // Fields to be excluded from the display
+  const excludedFields = [
+    "_id",
+    "userName",
+    "companyName",
+    "modelName",
+    "latitude",
+    "longitude"
+  ];
+
   const handleMarkerClick = (user) => {
     setSelectedUser(user.userName);
-    setLoading(true); // Start loading state
-    dispatch(fetchUserLatestByUserName(user.userName)).then(() => {
-      setLoading(false); // Stop loading state once data is fetched
-    });
   };
 
   return (
-    <MapContainer center={defaultPosition} zoom={7} style={{ height: "600px", width: "100%" }}>
+    <MapContainer center={defaultPosition} zoom={7} style={{ height: "500px", width: "100%" }}>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.ebhoom.com/">Ebhoom Solutions</a> contributors'
       />
-      {users && users.length > 0 &&
-        users
-          .filter((user) => user.userType === "user")
-          .map((user) => {
-            const userIoT = selectedUser === user.userName && !loading ? latestUser : null; // Only show data if not loading
-            const isHealthy = userIoT && userIoT.validationStatus === "Valid";
-            const analyzerHealth = userIoT?.validationMessage || (isHealthy ? "Good" : "Problem");
+      {users
+        .filter(user => user.userType === "user")  // Only show users with userType "user"
+        .map((user) => {
+          const userIoT = selectedUser === user.userName ? sampleIotData : null;
+          const isHealthy = userIoT && userIoT["Analyzer Health"] === "Good";
 
-            return (
-              <Marker
-                key={user._id}
-                position={[user.latitude, user.longitude]}
-                icon={isHealthy ? greenIcon : redIcon}
-                eventHandlers={{
-                  click: () => handleMarkerClick(user),
-                }}
-              >
-                <Popup maxWidth={500} minWidth={300}>
-                  <div style={styles.popupContainer}>
-                    {loading ? (
-                      <div style={styles.spinnerContainer}>
-                        <Spinner animation="border" variant="primary" />
-                      </div>
-                    ) : (
-                      <>
-                        <h5>User ID: {user.userName}</h5>
-                        <p>Company Name: <strong>{user.companyName}</strong></p>
-                        <p>Analyzer Health: <strong>{analyzerHealth}</strong></p>
-                        {userIoT && (
-                          <div style={styles.scrollContainer}>
-                            <div style={styles.cardContainer}>
-                              {userIoT.stackData.map((stack) => (
-                                <div key={stack._id} style={styles.stackContainer}>
-                                  <h6 className="text-center">{stack.stackName}</h6>
-                                  {Object.entries(stack).map(([key, value]) => (
-                                    key !== "_id" && key !== "stackName" && ( // Exclude "_id" and "stackName"
-                                      <div key={key} style={styles.valueCard}>
-                                        <strong>{key}:</strong> {value !== null ? value : "N/A"}
-                                      </div>
-                                    )
-                                  ))}
-                                </div>
-                              ))}
+          return (
+            <Marker
+              key={user._id}
+              position={[user.latitude, user.longitude]}
+              icon={isHealthy ? greenIcon : redIcon}
+              eventHandlers={{
+                click: () => handleMarkerClick(user),
+              }}
+            >
+              <Popup>
+                <div>
+                  <h5>User ID: {user.userName}</h5>
+                  <p>Company Name: <strong>{user.companyName}</strong></p>
+                  <p>Model Name: <strong>{user.modelName}</strong></p>
+                  {userIoT && (
+                    <div style={styles.scrollContainer}>
+                      <div style={styles.cardContainer}>
+                        {Object.entries(userIoT)
+                          .filter(([key]) => !excludedFields.includes(key))
+                          .map(([key, value]) => (
+                            <div key={key} style={styles.card}>
+                              <strong>{key}:</strong> <p>{value !== null ? value : "N/A"}</p>
                             </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
     </MapContainer>
   );
 };
 
 const styles = {
-  popupContainer: {
-    maxWidth: "100%", // Adjust popup width
-    overflow: "auto",
-  },
-  spinnerContainer: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100px",
-  },
   scrollContainer: {
-    maxHeight: "400px", // Increase the height of the scrollable area
+    maxHeight: "200px", // Limit the height of the scrollable area
     overflowY: "auto",  // Enable vertical scrolling
   },
   cardContainer: {
@@ -124,19 +109,12 @@ const styles = {
     gap: "10px",
     justifyContent: "center",
   },
-  stackContainer: {
-    width: "100%",
-    padding: "10px",
-    borderBottom: "1px solid #dee2e6",
-    textAlign: "center",
-  },
-  valueCard: {
+  card: {
     backgroundColor: "#f8f9fa",
     border: "1px solid #dee2e6",
     borderRadius: "5px",
     padding: "10px",
-    margin: "5px 0",
-    width: "100%", // Full width for each value card
+    width: "120px",
     textAlign: "center",
     boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
   },

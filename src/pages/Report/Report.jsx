@@ -10,7 +10,7 @@ import Hedaer from '../Header/Hedaer';
 import FooterM from '../FooterMain/FooterM';
 import Layout from "../Layout/Layout";
 import Maindashboard from "../Maindashboard/Maindashboard";
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { fetchStackNameByUserName } from '../../redux/features/userLog/userLogSlice';
 const Report = () => {
 
@@ -23,7 +23,7 @@ const Report = () => {
   const [userName, setUserName] = useState(""); 
   const [users, setUsers] = useState([]);
   const [stackName, setStackName] = useState("");
-
+  const { userData } = useSelector((state) => state.user); // Get user data from Redux
   const [stackOptions, setStackOptions] = useState([]);
   const { addReport } = useContext(CalibrationContext);  // Use context to store report
   const navigate = useNavigate();
@@ -31,7 +31,14 @@ const Report = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/getallusers`);
+        let response;
+        if (userData?.validUserOne?.adminType) {
+          // Fetch users filtered by adminType
+          response = await axios.get(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`);
+        } else {
+          // Fetch all users if no adminType
+          response = await axios.get(`${API_URL}/api/getallusers`);
+        }
         const filteredUsers = response.data.users.filter(
           (user) => user.userType === "user"
         );
@@ -42,7 +49,8 @@ const Report = () => {
       }
     };
     fetchUsers();
-  }, []);
+  }, [userData]);
+  
 
    
   const industryType = [

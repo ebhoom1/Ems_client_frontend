@@ -38,7 +38,7 @@ const EnergyDataModal = ({ isOpen, onRequestClose }) => {
   const navigate = useNavigate();
   const { userType, userData } = useSelector((state) => state.user);
 
-  useEffect(() => {
+  /* useEffect(() => {
     if (userType === 'admin') {
       const fetchUsers = async () => {
         try {
@@ -52,8 +52,31 @@ const EnergyDataModal = ({ isOpen, onRequestClose }) => {
     } else if (userType === 'user' && userData?.validUserOne?.userName) {
       setUserName(userData.validUserOne.userName);
     }
-  }, [userType, userData]);
+  }, [userType, userData]); */
 
+  useEffect(() => {
+    if (userType === 'admin') {
+      const fetchUsers = async () => {
+        try {
+          let response;
+          if (userData?.validUserOne?.adminType) {
+            // Fetch users filtered by adminType
+            response = await axios.get(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`);
+          } else {
+            // Fetch all users if adminType is not present
+            response = await axios.get(`${API_URL}/api/getallusers`);
+          }
+          setUsers(response.data.users || []);
+        } catch (error) {
+          console.error('Error fetching users:', error);
+        }
+      };
+      fetchUsers();
+    } else if (userType === 'user' && userData?.validUserOne?.userName) {
+      setUserName(userData.validUserOne.userName);
+    }
+  }, [userType, userData]);
+  
   const handleViewClick = () => {
     navigate('/view-difference', {
       state: {

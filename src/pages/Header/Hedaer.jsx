@@ -42,15 +42,32 @@ function Header() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/getallusers`);
-        const filteredUsers = response.data.users.filter(user => user.userType === 'user');
-        setUsers(filteredUsers);
+        if (userData?.validUserOne) {
+          if (userData.validUserOne.adminType) {
+            // Fetch users by adminType
+            const response = await axios.get(
+              `${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`
+            );
+            setUsers(response.data.users || []); // Set users filtered by adminType
+          } else {
+            // Fetch all users if adminType is not available
+            console.log('No adminType found, fetching all users');
+            const response = await axios.get(`${API_URL}/api/getallusers`);
+            setUsers(response.data.users || []); // Set all users
+          }
+        }
       } catch (error) {
         console.error('Error fetching users:', error);
+        setUsers([]); // Ensure users is reset in case of an error
       }
     };
-    fetchUsers();
-  }, []);
+  
+    // Ensure userData is available before making the request
+    if (userData?.validUserOne) {
+      fetchUsers();
+    }
+  }, [userData]);
+  
 
   useEffect(() => {
     const validateUser = async () => {

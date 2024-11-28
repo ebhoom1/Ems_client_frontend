@@ -260,7 +260,7 @@ const handleDownloadPdf = () => {
                 )}
 <li className="dashboard-header text-center">
   <b>
-    <h2>WATER DASHBOARD</h2>
+  <li className=" text-center" style={{marginLeft:'150px'}}><b><h2>WATER DASHBOARD</h2></b></li>
   </b>
 </li>
                

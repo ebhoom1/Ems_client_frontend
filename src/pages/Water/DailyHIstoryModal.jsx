@@ -45,18 +45,25 @@ const DailyHistoryModal = ({ isOpen, onRequestClose }) => {
   const navigate = useNavigate();
   const { userType, userData } = useSelector((state) => state.user);
   const dispatch = useDispatch();
-
   useEffect(() => {
-    if (userType === 'admin') {
-      const fetchUsers = async () => {
-        try {
-          const response = await axios.get(`${API_URL}/api/getallusers`);
-          const filteredUsers = response.data.users.filter((user) => user.userType === 'user');
-          setUsers(filteredUsers);
-        } catch (error) {
-          console.error('Error fetching users:', error);
+    const fetchUsers = async () => {
+      try {
+        let response;
+        if (userType === 'admin' && userData?.validUserOne?.adminType) {
+          // Fetch users filtered by adminType
+          response = await axios.get(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`);
+        } else if (userType === 'admin') {
+          // Fetch all users if adminType is not available
+          response = await axios.get(`${API_URL}/api/getallusers`);
         }
-      };
+        const filteredUsers = response?.data?.users?.filter((user) => user.userType === 'user') || [];
+        setUsers(filteredUsers);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+  
+    if (userType === 'admin') {
       fetchUsers();
     } else if (userType === 'user' && userData?.validUserOne?.userName) {
       const loggedUserName = userData.validUserOne.userName;
@@ -65,6 +72,7 @@ const DailyHistoryModal = ({ isOpen, onRequestClose }) => {
       handleUserChange({ userName: loggedUserName });
     }
   }, [userType, userData]);
+  
 
   const handleUserChange = async (selectedUser) => {
     setUserName(selectedUser.userName);
