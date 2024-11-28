@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchIotDataByUserName } from './../../redux/features/iotData/iotDataSlice';
 import { fetchUser, logoutUser } from './../../redux/features/user/userSlice';
 import { setSelectedUser } from '../../redux/features/selectedUsers/selectedUserSlice'; 
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; // Ensure styles are imported
 
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
@@ -123,14 +125,31 @@ function Header() {
 
   const handleSignOut = async () => {
     try {
-      // Clear the sessionStorage or localStorage before logging out
-      sessionStorage.removeItem('selectedUserId'); // Remove the stored user ID
-      await dispatch(logoutUser()).unwrap(); // Logout user
-      navigate('/'); // Redirect to login page
+      // Clear session storage
+      sessionStorage.removeItem('selectedUserId'); // Remove stored selected user ID
+      sessionStorage.clear(); // Optionally clear all session storage
+  
+      // Dispatch logout action
+      await dispatch(logoutUser()).unwrap();
+  
+      // Clear Redux state for selected user
+      dispatch(setSelectedUser(null));
+  
+      // Clear local state
+      setUserName('');
+      setUsers([]);
+  
+      toast.success('You have been logged out successfully.', { position: 'top-center' });
+  
+      // Navigate to login page
+      navigate('/');
     } catch (error) {
       console.error('Error logging out:', error);
+      toast.error('Failed to log out. Please try again.', { position: 'top-center' });
     }
   };
+  
+  
   
 
   const filteredUsers = users.filter(user =>
