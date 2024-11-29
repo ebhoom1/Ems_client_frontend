@@ -76,7 +76,7 @@ function Log() {
       if (userType === "admin") {
         navigate("/water");
       } else {
-        navigate("/account");
+        navigate("/water");
       }
   
       // Reset the form
