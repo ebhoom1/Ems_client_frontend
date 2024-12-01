@@ -612,7 +612,7 @@ const handleLogoDelete = async () => {
                                         <select id="adminType" className="form-control" value={formData.adminType}   onChange={handleInputChange} name="adminType" style={{ width: '100%', padding: '15px', borderRadius: '10px' }}>
                                         <option value="select">Select</option>
                                         <option value="KSPCB">KSPCB</option>
-                                        <option value="GeneX">Genex</option>
+                                        <option value="Genex">Genex</option>
                                             {/* Add options for companies */}
                                         </select>
                                     </div>

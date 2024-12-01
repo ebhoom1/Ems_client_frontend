@@ -118,17 +118,17 @@ function DashboardSam() {
     <img
       src={logoUrl}
       alt={`${adminType} Logo`}
-      style={{ maxWidth: '100px', maxHeight: '100px', marginBottom: '10px' }}
+      style={{ maxWidth: '120px', maxHeight: '120px', marginBottom: '10px' }}
     />
   ) : (
     <span>Loading logo...</span> // Optional loading indicator
   )}
-            <h1
+           {/*  <h1
               className='fontstyle text-center'
               style={{ fontSize: '46px', lineHeight: '62px', color: '#ffffff' }}
             >
               {heading}
-            </h1>
+            </h1> */}
           </div>
 
           {/* Navigation links */}
