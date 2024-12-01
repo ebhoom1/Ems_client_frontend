@@ -5,7 +5,7 @@ import 'react-toastify/dist/ReactToastify.css'; // Import toast styles
 import KeralaMap from './KeralaMap';
 import DashboardSam from "../Dashboard/DashboardSam";
 import Hedaer from "../Header/Hedaer";
-import { fetchUsers, addUser ,deleteUser ,addStackName, fetchUserByCompanyName,clearState, setFilteredUsers  } from "../../redux/features/userLog/userLogSlice"; // Add action for fetching and adding users
+import { fetchUsers, addUser ,deleteUser ,addStackName, fetchUserByCompanyName,clearState, setFilteredUsers , uploadLogo, editLogo, deleteLogo  } from "../../redux/features/userLog/userLogSlice"; // Add action for fetching and adding users
 import { useDispatch, useSelector } from "react-redux";
 import './userlog.css'
 const UsersLog = () => {
@@ -19,7 +19,8 @@ const UsersLog = () => {
   const [sortOptions, setSortOptions] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState("");
   const [stackLoading, setStackLoading] = useState(false);
-
+  const [logoFile, setLogoFile] = useState(null);
+  const [selectedLogo, setSelectedLogo] = useState(null);
   const [stacks, setStacks] = useState([{ stackName: "", stationType: "" }]);
   const [formData, setformData] = useState({
     userName: "",
@@ -314,6 +315,89 @@ useEffect(() => {
   console.log('Admin Filtered Users:', adminFilteredUsers);
   
        
+/* logo handle */
+/* Logo handle */
+const handleLogoUpload = async () => {
+  if (!logoFile) {
+    toast.error("Please select a logo file to upload", { position: "top-center" });
+    return;
+  }
+
+  if (!userName || !formData.adminType) {
+    toast.error("Please provide both username and admin type", { position: "top-center" });
+    return;
+  }
+
+  try {
+    console.log("Uploading logo with the following data:");
+    console.log("User Name:", userName); // Log username
+    console.log("Admin Type:", formData.adminType); // Log adminType
+
+    const data = new FormData(); // Create a new FormData instance
+    data.append("logo", logoFile); // Append the logo file
+    data.append("userName", userName); // Include username
+    data.append("adminType", formData.adminType); // Include adminType from your state
+
+    for (let [key, value] of data.entries()) {
+      console.log(`${key}: ${value}`); // Log FormData entries for debugging
+    }
+
+    // Dispatch the action to upload the logo
+    await dispatch(uploadLogo(data)).unwrap();
+    toast.success("Logo uploaded successfully", { position: "top-center" });
+    setLogoFile(null); // Reset the file input
+  } catch (error) {
+    console.error("Error uploading logo:", error);
+    toast.error(
+      error.response?.data?.error || "Failed to upload logo. Please try again.",
+      { position: "top-center" }
+    );
+  }
+};
+
+
+
+const handleLogoEdit = async () => {
+  if (!logoFile) {
+    toast.error("Please select a new logo file to update", { position: "top-center" });
+    return;
+  }
+  if (!userName || !formData.adminType) {
+    toast.error("Please provide both username and admin type", { position: "top-center" });
+    return;
+  }
+  try {
+    const formData = new FormData();
+    formData.append("logo", logoFile);
+    formData.append("userName", userName); // Include username
+    formData.append("adminType", formData.adminType); // Include adminType
+
+    await dispatch(editLogo(formData)).unwrap();
+    toast.success("Logo updated successfully", { position: "top-center" });
+    setLogoFile(null); // Reset the file input
+  } catch (error) {
+    console.error("Error updating logo:", error);
+    toast.error("Failed to update logo. Please try again.", { position: "top-center" });
+  }
+};
+
+const handleLogoDelete = async () => {
+  if (!userName || !formData.adminType) {
+    toast.error("Please provide both username and admin type", { position: "top-center" });
+    return;
+  }
+  try {
+    const formData = new FormData();
+    formData.append("userName", userName); // Include username
+    formData.append("adminType", formData.adminType); // Include adminType
+
+    await dispatch(deleteLogo(formData)).unwrap();
+    toast.success("Logo deleted successfully", { position: "top-center" });
+  } catch (error) {
+    console.error("Error deleting logo:", error);
+    toast.error("Failed to delete logo. Please try again.", { position: "top-center" });
+  }
+};
 
   return (
     <div className="container-fluid">
@@ -528,7 +612,7 @@ useEffect(() => {
                                         <select id="adminType" className="form-control" value={formData.adminType}   onChange={handleInputChange} name="adminType" style={{ width: '100%', padding: '15px', borderRadius: '10px' }}>
                                         <option value="select">Select</option>
                                         <option value="KSPCB">KSPCB</option>
-                                        <option value="GeneX">GeneX</option>
+                                        <option value="GeneX">Genex</option>
                                             {/* Add options for companies */}
                                         </select>
                                     </div>
@@ -656,6 +740,78 @@ useEffect(() => {
             </div>
            
         </div>
+
+       
+      {/* logo components */}
+      <div className="row">
+        <div className="col-lg-12 col-md-6">
+          {userData?.validUserOne?.adminType === "EBHOOM" && (
+           <div className="card mt-4">
+           <div className="card-body">
+             <h4 className="text-center">Manage Logo</h4>
+             <div className="d-flex flex-column align-items-center">
+               <input
+                 type="text"
+                 placeholder="Enter Username"
+                 value={userName}
+                 onChange={(e) => setUserName(e.target.value)}
+                 className="form-control mb-3"
+                 style={{ width: "300px" }}
+               />
+               <input
+                 type="text"
+                 placeholder="Enter Admin Type"
+                 value={formData.adminType}
+                 onChange={(e) =>
+                   setformData((prev) => ({ ...prev, adminType: e.target.value }))
+                 }
+                 className="form-control mb-3"
+                 style={{ width: "300px" }}
+               />
+               <input
+                 type="file"
+                 onChange={(e) => setLogoFile(e.target.files[0])}
+                 className="form-control mb-3"
+                 style={{ width: "300px" }}
+               />
+               <div className="d-flex justify-content-center">
+                 <button
+                   className="btn btn-success mx-2"
+                   onClick={handleLogoUpload}
+                 >
+                   Upload Logo
+                 </button>
+                 <button
+                   className="btn btn-warning mx-2"
+                   onClick={handleLogoEdit}
+                 >
+                   Edit Logo
+                 </button>
+                 <button
+                   className="btn btn-danger mx-2"
+                   onClick={handleLogoDelete}
+                 >
+                   Delete Logo
+                 </button>
+               </div>
+               {selectedLogo && (
+                 <div className="mt-3">
+                   <img
+                     src={selectedLogo}
+                     alt="Uploaded Logo"
+                     style={{ maxWidth: "150px", maxHeight: "150px" }}
+                   />
+                 </div>
+               )}
+             </div>
+           </div>
+         </div>
+         
+          )}
+         
+        </div>
+      </div>
+  
 
         {/* add stack */}
         <div className="col-12 d-flex justify-content-between align-items-center m-3" >

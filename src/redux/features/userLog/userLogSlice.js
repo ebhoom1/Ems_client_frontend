@@ -156,7 +156,49 @@ export const deleteUser = createAsyncThunk(
     }
   }
 );
+export const uploadLogo = createAsyncThunk(
+  'userLog/uploadLogo',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${API_URL}/api/logo`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data || error.message);
+    }
+  }
+);
 
+export const editLogo = createAsyncThunk(
+  'userLog/editLogo',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(`${API_URL}/api/logo/edit`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data || error.message);
+    }
+  }
+);
+
+export const deleteLogo = createAsyncThunk(
+  'userLog/deleteLogo',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.delete(`${API_URL}/api/logo`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response.data || error.message);
+    }
+  }
+);
 // Slice
 const userLogSlice = createSlice({
   name: 'userLog',
@@ -168,6 +210,7 @@ const userLogSlice = createSlice({
     latestUser: null,
     loading: false,
     error: null,
+    logo: null, // State for logo management
   },
   reducers: {
     setFilteredUsers: (state, action) => {
@@ -302,6 +345,48 @@ const userLogSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
+      // Upload logo
+      .addCase(uploadLogo.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(uploadLogo.fulfilled, (state, action) => {
+        state.loading = false;
+        state.logo = action.payload; // Store uploaded logo data
+      })
+      .addCase(uploadLogo.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Edit logo
+      .addCase(editLogo.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(editLogo.fulfilled, (state, action) => {
+        state.loading = false;
+        state.logo = action.payload; // Update logo data
+      })
+      .addCase(editLogo.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+// Delete logo
+.addCase(deleteLogo.pending, (state) => {
+  state.loading = true;
+  state.error = null;
+})
+.addCase(deleteLogo.fulfilled, (state) => {
+  state.loading = false;
+  state.logo = null; // Clear logo data
+})
+.addCase(deleteLogo.rejected, (state, action) => {
+  state.loading = false;
+  state.error
+  = action.payload;
+})
+
       // addStackName cases
        // Updated addStackName cases
        .addCase(addStackName.pending, (state) => {
