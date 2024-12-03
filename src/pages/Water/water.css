@@ -115,7 +115,7 @@
   flex-direction: column;
   justify-content: space-between; /* Ensures the footer of the card aligns at the bottom */
   height: 100%; /* Ensure all cards have the same height */
-  min-height: 100px; /* Minimum height to handle varying content size */
+  min-height: 140px; /* Minimum height to handle varying content size */
 }
 
 .cardwater:hover{
@@ -213,13 +213,13 @@
 }
 
 
-.maindashboard {
+/* .maindashboard {
   position: sticky;
-  top: 60px; /* replace 60px with the actual height of your header */
+  top: 60px; 
   width: 100%;
   z-index: 5; 
-  background-color: white;/* below the header but above the regular content */
-}
+  background-color: white;
+} */
 
 .stack-box {
   display: flex;

@@ -250,19 +250,34 @@ const Water = () => {
 /* graph as pdf  */
 const handleDownloadPdf = () => {
   const input = graphRef.current;
-  
+
   // Use html2canvas to capture the content of the graph container
-  html2canvas(input).then((canvas) => {
+  html2canvas(input, {
+    backgroundColor: null, // Makes the background transparent
+    scale: 2, // Improves resolution (optional)
+  }).then((canvas) => {
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('landscape', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    
-    // Add image to PDF
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+    // Calculate dimensions based on the graph content
+    const imgWidth = 150; // Adjust scaling for better fit
+    const imgHeight = (canvas.height / canvas.width) * imgWidth; // Maintain aspect ratio
+
+    // Calculate positions to center the image
+    const xOffset = (pdf.internal.pageSize.getWidth() - imgWidth) / 2; // Center horizontally
+    const yOffset = (pdf.internal.pageSize.getHeight() - imgHeight) / 2; // Center vertically
+
+    // Add the image to the PDF centered on the page
+    pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
     pdf.save('graph.pdf');
   });
 };
+
+
+
+
+
+
   /* stack */
   const handleStackChange = (event) => {
     setSelectedStack(event.target.value);
@@ -442,73 +457,11 @@ const handleDownloadPdf = () => {
           </div>
                   </div>
                   <div className="row">
-                  <div className="col-md-12 col-lg-6 col-sm-12">
-  {/* Graph Container with reference */}
-  <div
-    className="border bg-light shadow"
-    style={{ height: '60vh', borderRadius: '15px', position: 'relative' }}
-    ref={graphRef}
-  >
-    {selectedCard ? (
-      <WaterGraphPopup
-        parameter={selectedCard.title}
-        userName={currentUserName}
-        stackName={selectedCard.stackName}
-      />
-    ) : (
-      <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-    )}
-
-    {/* Download Buttons */}
-    {selectedCard && (
-      <>
-        <button
-          onClick={handleDownloadPdf}
-          style={{
-            position: 'absolute',
-            top: '10px',
-            left:'10px',
-            backgroundColor: '#236a80',
-            color: 'white',
-            marginTop:'10px',
-            marginBottom:'10px',
-          }}
-          className="btn"
-        >
-          <i className="fa-solid fa-download"></i> Download graph
-        </button>
-
-        <button
-          onClick={openModal} // Open the modal
-          style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            backgroundColor: '#236a80',
-            color: 'white',
-            marginTop:'10px',
-            marginBottom:'10px',
-          }}
-          className="btn"
-        >
-          <i className="fa-solid fa-download"></i> Download Average
-        </button> 
-      </>
-    )}
-  </div>
-
-  {/* Modal for Downloading Average Data */}
-  <DownloadaverageDataModal
-    isOpen={isModalOpen}
-    onClose={closeModal}
-    userName={currentUserName}
-    stackName={selectedCard?.stackName || ''}
-  />
-</div>
+                  
 
               <div
-                className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow"
-                style={{ height: '60vh', overflowY: 'scroll', borderRadius: '15px' }}
+                className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow mb-2 "
+                style={{ height: '70vh', overflowY: 'scroll', borderRadius: '15px' }}
               >
                 {!loading && filteredData.length > 0 ? (
                   filteredData.map((stack, stackIndex) =>
@@ -573,6 +526,71 @@ const handleDownloadPdf = () => {
                   </div>
                 )}
               </div>
+              {/* graph  */}
+              <div className="col-md-12 col-lg-6 col-sm-12 mb-2 ">
+  {/* Graph Container with reference */}
+  <div
+    className="border bg-light shadow"
+    style={{ height: '70vh', borderRadius: '15px' , position:'relative'}}
+    ref={graphRef}
+  >
+    {selectedCard ? (
+      <WaterGraphPopup
+        parameter={selectedCard.title}
+        userName={currentUserName}
+        stackName={selectedCard.stackName}
+      />
+    ) : (
+      <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+    )}
+
+    {/* Download Buttons */}
+    {selectedCard && (
+      <>
+        <button
+          onClick={handleDownloadPdf}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            left:'20px',
+            backgroundColor: '#236a80',
+            color: 'white',
+            marginTop:'10px',
+            marginBottom:'10px',
+          }}
+          className="btn"
+        >
+          <i className="fa-solid fa-download"></i> Download graph
+        </button>
+
+        <button
+          onClick={openModal} // Open the modal
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '20px',
+            backgroundColor: '#236a80',
+            color: 'white',
+            marginTop:'10px',
+            marginBottom:'10px',
+          }}
+          className="btn"
+        >
+          <i className="fa-solid fa-download"></i> Download Average
+        </button> 
+      </>
+    )}
+  </div>
+
+  {/* Modal for Downloading Average Data */}
+  <DownloadaverageDataModal
+    isOpen={isModalOpen}
+    onClose={closeModal}
+    userName={currentUserName}
+    stackName={selectedCard?.stackName || ''}
+  />
+</div>
+
             </div>
         
         

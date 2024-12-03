@@ -56,6 +56,7 @@ function Edit() {
     { category: "Copper Smelter" },
     { category: "Iron and Steel" },
     { category: "Zinc Smelter" },
+    { category: "Hotel" },
     { category: "Aluminium" },
     { category: "STP/ETP" },
     { category: "NWMS/SWMS" },

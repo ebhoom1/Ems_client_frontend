@@ -159,7 +159,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
 
     return (
        <div>
-            <h5 style={{marginTop:'80px'}} className="popup-title text-center">{parameter} - {stackName}</h5>
+            <h5 style={{marginTop:'60px'}} className="popup-title text-center">{parameter} - {stackName}</h5>
 
             <div className="interval-buttons align-items-center justify-content-center mt-3 " >
                 {['hour', 'day', 'week', 'month', 'sixmonths', 'year'].map((interval) => (
@@ -167,7 +167,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                         key={interval}
                         className={`interval-btn ${timeInterval === interval ? 'active' : ''}`}
                         onClick={() => setTimeInterval(interval)}
-                        style={{backgroundColor:'#236a80' , margin:'5px' , color:'#ffff' , border:'none' , alignItems:'center' , justifyContent:'center' , padding:'7px' , borderRadius:'5px' , marginLeft:'10px'}}
+                        style={{backgroundColor:'#236a80' , margin:'1px' , color:'#ffff' , border:'none' , alignItems:'center' , justifyContent:'center' , padding:'7px' , borderRadius:'5px' , marginLeft:'10px'}}
                     >
                         {interval.charAt(0).toUpperCase() + interval.slice(1)}
                     </button>
@@ -175,7 +175,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             </div>
 
             {loading ? (
-                <div className="loading-container align-item-center justify-content-center">
+                <div className="loading-container d-flex align-item-center justify-content-center ">
                     <Oval
                         height={60}
                         width={60}
@@ -193,7 +193,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                     <p>Please try a different interval or check back later.</p>
                 </div>
             ) : (
-                <div className="chart-container mt-3">
+                <div className="chart-container mt-3 d-flex align-items-center justify-content-center  " style={{height:'300px' }}>
                     <Line data={chartData} options={chartOptions} />
                 </div>
             )}

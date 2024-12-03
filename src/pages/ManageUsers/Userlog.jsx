@@ -63,11 +63,13 @@ const UsersLog = () => {
     { category: "Copper Smelter" },
     { category: "Iron and Steel" },
     { category: "Zinc Smelter" },
+    { category: "Hotel" },
     { category: "Aluminium" },
     { category: "STP/ETP" },
     { category: "NWMS/SWMS" },
     { category: "Noise" },
     { category: "Other" },
+   
   ];
 
   // Fetch users filtered by adminType or show all if no adminType
@@ -457,14 +459,9 @@ const handleLogoDelete = async () => {
             </div>
             
             {loading && /* From Uiverse.io by boryanakrasteva */ 
-<div class="honeycomb">
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
+<div class="">
+  <div>Loading ...</div>
+  
 </div>}
             {error && <p>Error fetching users: {error}</p>}
             {!loading && !error && (
