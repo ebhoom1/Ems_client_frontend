@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import { useSelector } from "react-redux";
-import { useOutletContext } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import { API_URL } from "../../utils/apiConfig";
 import EnergyDataModal from "./EnergyDataModal";
 import './index.css';
-import carbon from '../../assests/images/carbon.png'
+import carbon from '../../assests/images/carbon.png';
+
 // Extract unique headers (dates or hours)
 const extractHeaders = (data, viewType) => {
   const headers = new Set();
@@ -35,8 +35,8 @@ const groupDataByStackName = (data) => {
 
 const Energy = () => {
   const { userData, userType } = useSelector((state) => state.user);
-  const { searchTerm } = useOutletContext();
-
+  const selectedUserIdFromRedux = useSelector((state) => state.selectedUser.userId);
+  const storedUserId = sessionStorage.getItem('selectedUserId'); // Retrieve use
   const [differenceData, setDifferenceData] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [viewType, setViewType] = useState("daily");
@@ -49,6 +49,10 @@ const Energy = () => {
   const currentUserName = userType === "admin"
     ? "KSPCB001"
     : userData?.validUserOne?.userName;
+
+  // Log storedUserId and currentUserName for debugging
+  console.log("storedUserId:", storedUserId); 
+  console.log("currentUserName:", currentUserName);
 
   // Fetch energy station stacks
   const fetchEnergyStacks = async (userName) => {
@@ -66,9 +70,11 @@ const Energy = () => {
   // Fetch difference data by userName and interval, filtered by energyStacks
   const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
     try {
-      const response = await axios.get(
-        `${API_URL}/api/difference/${userName}?interval=daily&page=${page}&limit=${limit}`
-      );
+      // Log the API URL for debugging
+      const apiUrl = `${API_URL}/api/difference/${userName}?interval=daily&page=${page}&limit=${limit}`;
+      console.log("API URL:", apiUrl);
+
+      const response = await axios.get(apiUrl);
       const { data } = response;
 
       if (data && data.success) {
@@ -92,10 +98,11 @@ const Energy = () => {
   };
 
   useEffect(() => {
-    const userName = searchTerm || currentUserName;
+    // Use storedUserId if available, otherwise fall back to currentUserName
+    const userName = storedUserId || currentUserName;
     fetchEnergyStacks(userName);
     fetchDifferenceData(userName, currentPage);
-  }, [searchTerm, currentUserName, currentPage]);
+  }, [storedUserId, currentUserName, currentPage]);
 
   useEffect(() => {
     if (differenceData.length) {
@@ -222,20 +229,18 @@ const Energy = () => {
                   Next
                 </button>
               </div>
-
             </div>
             <EnergyDataModal isOpen={isModalOpen} onRequestClose={() => setModalOpen(false)} />
           </div>
         </div>
 
         <div className="col-md-6">
-          <div className="card full-height-card shadow" style={{border:'none'}} >
+          <div className="card full-height-card shadow" style={{ border: 'none' }}>
             <div className="col-md-12">
               <h2 className="text-center mb-4 mt-2 text-light">Carbon Emission <img src={carbon} alt="carbon" width={'100px'}></img></h2>
               <div className="row">
                 <div className="col-md-12 mb-4">
-                  <div className="card m-3  h-100 "style={{ border: '2px solid lightgrey' }}
-                  >
+                  <div className="card m-3 h-100" style={{ border: '2px solid lightgrey' }}>
                     <small className="text-end p-2 text-secondary">{new Date().toLocaleDateString()}</small>
                     <div className="card-body d-flex flex-column justify-content-center">
                       <h5 className="card-title text-center text-light">Total Carbon Emission</h5>

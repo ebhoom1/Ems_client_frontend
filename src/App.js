@@ -54,6 +54,7 @@ import ViewComponent from './pages/Water/ViewComponent';
 import Waste from './pages/Waste/Waste'
 import EnergyDashboard from './pages/Energy/EnergyLayout';
 import FlowLayout from './pages/QuantityNew/FlowLayout'
+import ViewDifference from './pages/Energy/ViewDifference';
 
 
 function App() {
@@ -145,6 +146,7 @@ function App() {
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/view-data" element={<ViewComponent />} />
                   <Route path="/waste" element={<Waste />} />
+                  <Route path="/viewdifference" element={<ViewDifference />} />
 
 
 

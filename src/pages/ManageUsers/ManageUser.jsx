@@ -27,6 +27,7 @@ function ManageUser() {
       { category: "Copper Smelter" },
       { category: "Iron and Steel" },
       { category: "Zinc Smelter" },
+      { category: "Hotel" },
       { category: "Aluminium" },
       { category: "STP/ETP" },
       { category: "NWMS/SWMS" },
@@ -126,8 +127,8 @@ function ManageUser() {
                                 {/* Password */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="industry" className="form-label"> Password  </label>
-                                        <input id="to-date" type='Password' placeholder='Enter  Password ' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+                                        <label htmlFor="password" className="form-label"> Password  </label>
+                                        <input id="passwpasswordord" type='Password' placeholder='Enter  Password ' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
                                 </div>

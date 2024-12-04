@@ -96,6 +96,7 @@ function Edit() {
       headers: {
         'Content-Type': 'application/json',
       },
+     
     });
 
     if (response.status === 200) {
@@ -246,15 +247,15 @@ function Edit() {
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
                                         <label htmlFor="password" className="form-label"> Password  </label>
-                                        <input id="password" type='Password' placeholder='Enter Password ' value={userData.password || ''} onChange={handleChange}  className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+                                        <input id="password" type='Password' placeholder='Enter Password ' value={userData.password || ''} name='password' onChange={handleChange}  className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
                                 </div>
                                  {/*  Confirm Password */}
                                  <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="password" className="form-label"> Confirm Password  </label>
-                                        <input id="password" type='Password' placeholder='Enter Password ' value={userData.cpassword || ''} name='cpassword' onChange={handleChange} className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+                                        <label htmlFor="cpassword" className="form-label"> Confirm Password  </label>
+                                        <input id="cpassword" type='Password' placeholder='Enter Password ' value={userData.cpassword || ''} name='cpassword' onChange={handleChange} className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
                                 </div>

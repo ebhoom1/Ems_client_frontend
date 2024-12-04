@@ -78,7 +78,7 @@ const EnergyDataModal = ({ isOpen, onRequestClose }) => {
   }, [userType, userData]);
   
   const handleViewClick = () => {
-    navigate('/view-difference', {
+    navigate('/viewdifference', {
       state: {
         userName,
         interval,
