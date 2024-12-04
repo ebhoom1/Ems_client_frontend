@@ -364,13 +364,7 @@ function SupportAnalyser() {
         <div className="col-12">
         <div className="page-header d-flex justify-content-between align-items-center mt-3">
   <h4 className="page-title">Support Analyser</h4>
-  <div className="quick-link-wrapper">
-    <ul className="quick-links d-flex" style={{textDecoration:'none'}}>
-      <li><a href="#" style={{textDecoration:'none'}}>Settings</a></li>
-      <li><a href="#" style={{textDecoration:'none'}}>Option 1</a></li>
-      <li><a href="#" style={{textDecoration:'none'}}>Option 2</a></li>
-    </ul>
-  </div>
+ 
 </div>
 
         </div>
