@@ -250,7 +250,7 @@ const handleDownloadPdf = () => {
         <ul className="quick-links ml-auto d-flex">
                 {latestData && (
                   <li >
-                    <h5>Analyser Health: <span className="text-success"> Good</span></h5>
+                    <h5>Analyser Health: </h5>
                      {searchResult?.validationStatus ? (
                       <h5 style={{ color: "green" }}>Good</h5>
                     ) : (
@@ -359,40 +359,9 @@ const handleDownloadPdf = () => {
                 </div>
             )}
 <div className="row mb-5">
-<div className="col-md-12 col-lg-6 col-sm-12">
-      <div className="border bg-light shadow "  style={{ height: "50vh" , borderRadius:'15px'}} >
-          {selectedCard ? (
-              <FlowGraph
-              parameter={selectedCard?.title || ''}
-              userName={currentUserName}
-              stackName={selectedCard?.stackName || ''}
-            />
-            ) : (
-              <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-            )}
-            {/* Download Button */}
-          {selectedCard && (
-            
-            <button
-              onClick={handleDownloadPdf}
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-              
-                backgroundColor:'#236a80',
-                color:'white'
-              }}
-              className="btn "
-            >
-             <i class="fa-solid fa-download"></i>
-            </button>
-          )}
-          </div>
-      </div>
 
   <div className="col-md-12 col-lg-6 col-sm-12 mt-2 border overflow-auto bg-light shadow" 
-        style={{ height: "50vh", overflowY: "scroll",  borderRadius:'15px' }}> 
+        style={{ height: "60vh", overflowY: "scroll",  borderRadius:'15px' }}> 
   {!loading && filteredData.length > 0 ? (
                     filteredData.map((stack, stackIndex) => (
                         effluentFlowStacks.includes(stack.stackName) && (
@@ -426,6 +395,38 @@ const handleDownloadPdf = () => {
                     </div>
                 )}
   </div>
+  <div className="col-md-12 col-lg-6 col-sm-12">
+      <div className="border bg-light shadow "  style={{ height: "60vh" , borderRadius:'15px'}} >
+          {selectedCard ? (
+              <FlowGraph
+              parameter={selectedCard?.title || ''}
+              userName={currentUserName}
+              stackName={selectedCard?.stackName || ''}
+            />
+            ) : (
+              <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+            )}
+            {/* Download Button */}
+          {selectedCard && (
+            
+            <button
+              onClick={handleDownloadPdf}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+              
+                backgroundColor:'#236a80',
+                color:'white'
+              }}
+              className="btn "
+            >
+             <i class="fa-solid fa-download"></i>
+            </button>
+          )}
+          </div>
+      </div>
+
 
 
 </div>

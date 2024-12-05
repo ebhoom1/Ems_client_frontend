@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import "react-toastify/dist/ReactToastify.css";
 import { API_URL } from "../../utils/apiConfig";
@@ -35,24 +34,19 @@ const groupDataByStackName = (data) => {
 
 const Energy = () => {
   const { userData, userType } = useSelector((state) => state.user);
-  const selectedUserIdFromRedux = useSelector((state) => state.selectedUser.userId);
-  const storedUserId = sessionStorage.getItem('selectedUserId'); // Retrieve use
+  const storedUserId = sessionStorage.getItem('selectedUserId'); // Retrieve user ID
   const [differenceData, setDifferenceData] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [viewType, setViewType] = useState("daily");
-  const [error, setError] = useState(null);
   const [energyStacks, setEnergyStacks] = useState([]);
   const [isModalOpen, setModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true); // Track loading state
 
   const currentUserName = userType === "admin"
     ? "KSPCB001"
     : userData?.validUserOne?.userName;
-
-  // Log storedUserId and currentUserName for debugging
-  console.log("storedUserId:", storedUserId); 
-  console.log("currentUserName:", currentUserName);
 
   // Fetch energy station stacks
   const fetchEnergyStacks = async (userName) => {
@@ -70,13 +64,10 @@ const Energy = () => {
   // Fetch difference data by userName and interval, filtered by energyStacks
   const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
     try {
-      // Log the API URL for debugging
       const apiUrl = `${API_URL}/api/difference/${userName}?interval=daily&page=${page}&limit=${limit}`;
-      console.log("API URL:", apiUrl);
-
       const response = await axios.get(apiUrl);
-      const { data } = response;
 
+      const { data } = response;
       if (data && data.success) {
         const filteredData = data.data
           .map((item) => ({
@@ -93,16 +84,30 @@ const Energy = () => {
       }
     } catch (error) {
       console.error("Error fetching difference data:", error);
-      setError("Failed to fetch difference data.");
+    } finally {
+      setLoading(false); // Stop loading once the data fetching is done
     }
   };
 
+  // Fetch energy stacks and difference data together
   useEffect(() => {
-    // Use storedUserId if available, otherwise fall back to currentUserName
     const userName = storedUserId || currentUserName;
-    fetchEnergyStacks(userName);
-    fetchDifferenceData(userName, currentPage);
-  }, [storedUserId, currentUserName, currentPage]);
+
+    const fetchData = async () => {
+      setLoading(true); // Start loading when fetching data
+      await fetchEnergyStacks(userName); // Wait for energy stacks first
+    };
+
+    fetchData(); // Trigger fetch
+  }, [storedUserId, currentUserName]); // Trigger when user ID or currentUserName changes
+
+  // Fetch difference data after energyStacks is populated
+  useEffect(() => {
+    if (energyStacks.length > 0) {
+      const userName = storedUserId || currentUserName;
+      fetchDifferenceData(userName, currentPage); // Fetch page 1 data immediately
+    }
+  }, [energyStacks, storedUserId, currentUserName, currentPage]); // Trigger when energyStacks are set
 
   useEffect(() => {
     if (differenceData.length) {
@@ -131,12 +136,7 @@ const Energy = () => {
             <div className="card-body">
               <h2 className="text-center text-light mt-2">Energy Flow</h2>
               <div className="mb-3 d-flex justify-content-between">
-                <button
-                  className={`btn ${viewType === "daily" ? "btn-primary" : "btn-outline-primary"} mr-2`}
-                  onClick={() => setViewType("daily")}
-                >
-                  Daily View
-                </button>
+               
 
                 <button className="btn btn-success" onClick={() => setModalOpen(true)}>
                   View
@@ -147,65 +147,69 @@ const Energy = () => {
                 className="table-responsive mt-3"
                 style={{ maxHeight: "400px", overflowY: "auto" }}
               >
-                <table className="table table-bordered">
-                  <thead>
-                    <tr>
-                      <th>SL. NO</th>
-                      <th>Stack Name</th>
-                      <th>Acceptables</th>
-                      {headers.map((header, index) => (
-                        <th key={index}>{header}</th>
+                {loading ? (
+                  <div className="text-center">Loading...</div>
+                ) : (
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>SL. NO</th>
+                        <th>Stack Name</th>
+                        <th>Acceptables</th>
+                        {headers.map((header, index) => (
+                          <th key={index}>{header}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(groupedData).map(([stackName, records], stackIndex) => (
+                        <React.Fragment key={stackIndex}>
+                          <tr>
+                            <td rowSpan={3}>{stackIndex + 1}</td>
+                            <td rowSpan={3}>{stackName}</td>
+                            <td>Initial Energy</td>
+                            {headers.map((header, index) => {
+                              const matchingRecord = records.find(
+                                (item) => item.date === header || item.time === header
+                              );
+                              return (
+                                <td key={index}>
+                                  {matchingRecord?.initialEnergy || "N/A"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          <tr>
+                            <td>Last Energy</td>
+                            {headers.map((header, index) => {
+                              const matchingRecord = records.find(
+                                (item) => item.date === header || item.time === header
+                              );
+                              return (
+                                <td key={index}>
+                                  {matchingRecord?.lastEnergy || "N/A"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          <tr>
+                            <td>Energy Difference</td>
+                            {headers.map((header, index) => {
+                              const matchingRecord = records.find(
+                                (item) => item.date === header || item.time === header
+                              );
+                              return (
+                                <td key={index}>
+                                  {matchingRecord?.energyDifference || "N/A"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        </React.Fragment>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(groupedData).map(([stackName, records], stackIndex) => (
-                      <React.Fragment key={stackIndex}>
-                        <tr>
-                          <td rowSpan={3}>{stackIndex + 1}</td>
-                          <td rowSpan={3}>{stackName}</td>
-                          <td>Initial Energy</td>
-                          {headers.map((header, index) => {
-                            const matchingRecord = records.find(
-                              (item) => item.date === header || item.time === header
-                            );
-                            return (
-                              <td key={index}>
-                                {matchingRecord?.initialEnergy || "N/A"}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                        <tr>
-                          <td>Last Energy</td>
-                          {headers.map((header, index) => {
-                            const matchingRecord = records.find(
-                              (item) => item.date === header || item.time === header
-                            );
-                            return (
-                              <td key={index}>
-                                {matchingRecord?.lastEnergy || "N/A"}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                        <tr>
-                          <td>Energy Difference</td>
-                          {headers.map((header, index) => {
-                            const matchingRecord = records.find(
-                              (item) => item.date === header || item.time === header
-                            );
-                            return (
-                              <td key={index}>
-                                {matchingRecord?.energyDifference || "N/A"}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
+                    </tbody>
+                  </table>
+                )}
               </div>
 
               <div className="pagination-controls d-flex justify-content-between mt-3">

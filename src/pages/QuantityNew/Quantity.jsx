@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
 import { useSelector } from "react-redux";
-import { useOutletContext } from "react-router-dom";
-import "react-toastify/dist/ReactToastify.css";
 import { API_URL } from "../../utils/apiConfig";
-import './index.css';
-import carbon from '../../assests/images/carbon.png'
 import FlowDataModal from "./FlowDataModal";
+import './index.css';
+import carbon from '../../assests/images/carbon.png';
+
 // Extract unique headers (dates or hours)
 const extractHeaders = (data, viewType) => {
   const headers = new Set();
@@ -35,38 +33,35 @@ const groupDataByStackName = (data) => {
 
 const Quantity = () => {
   const { userData, userType } = useSelector((state) => state.user);
-  const { searchTerm } = useOutletContext();
-
   const [differenceData, setDifferenceData] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [viewType, setViewType] = useState("daily");
-  const [error, setError] = useState(null);
-  const [effluentFlowStacks, setEffluentFlowStacks] = useState([]); // New state to store effluentFlow stacks  const [realTimeData, setRealTimeData] = useState({})
+  const [effluentFlowStacks, setEffluentFlowStacks] = useState([]); 
   const [isModalOpen, setModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const storedUserId = sessionStorage.getItem('selectedUserId'); // Retrieve use
+  const [loading, setLoading] = useState(true); // Track loading state
 
+  const storedUserId = sessionStorage.getItem('selectedUserId'); // Retrieve user ID
   const currentUserName = userType === "admin"
     ? "KSPCB001"
     : userData?.validUserOne?.userName;
 
+  // Fetch effluent flow stacks
+  const fetchEffluentFlowStacks = async (userName) => {
+    try {
+      const response = await fetch(`${API_URL}/api/get-stacknames-by-userName/${userName}`);
+      const data = await response.json(); // Make sure to parse the JSON
+      const effluentFlowStacks = data.stackNames
+        .filter((stack) => stack.stationType === 'effluent_flow')
+        .map(stack => stack.name); // Use 'name' instead of 'stackName'
+      setEffluentFlowStacks(effluentFlowStacks);
+    } catch (error) {
+      console.error("Error fetching effluentFlow stacks:", error);
+    }
+  };
 
-    const fetchEffluentFlowStacks = async (userName) => {
-        try {
-          const response = await fetch(`${API_URL}/api/get-stacknames-by-userName/${userName}`);
-          const data = await response.json(); // Make sure to parse the JSON
-          const effluentFlowStacks = data.stackNames
-            .filter(stack => stack.stationType === 'effluent_flow')
-            .map(stack => stack.name); // Use 'name' instead of 'stackName'
-          setEffluentFlowStacks(effluentFlowStacks);
-        } catch (error) {
-          console.error("Error fetching effluentFlow stacks:", error);
-        }
-      };
-      
-
-  // Fetch difference data by userName and interval, filtered by energyStacks
+  // Fetch difference data by userName and interval, filtered by effluentFlowStacks
   const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
     try {
       const response = await axios.get(
@@ -90,15 +85,30 @@ const Quantity = () => {
       }
     } catch (error) {
       console.error("Error fetching difference data:", error);
-      setError("Failed to fetch difference data.");
+    } finally {
+      setLoading(false); // Stop loading once the data fetching is done
     }
   };
 
+  // Fetch effluent flow stacks and difference data together
   useEffect(() => {
     const userName = storedUserId || currentUserName;
-    fetchEffluentFlowStacks(userName);
-    fetchDifferenceData(userName, currentPage);
-  }, [storedUserId, currentUserName, currentPage]);
+
+    const fetchData = async () => {
+      setLoading(true); // Start loading when fetching data
+      await fetchEffluentFlowStacks(userName); // Wait for energy stacks first
+    };
+
+    fetchData(); // Trigger fetch
+  }, [storedUserId, currentUserName]); // Trigger when user ID or currentUserName changes
+
+  // Fetch difference data after effluentFlowStacks is populated
+  useEffect(() => {
+    if (effluentFlowStacks.length > 0) {
+      const userName = storedUserId || currentUserName;
+      fetchDifferenceData(userName, currentPage); // Fetch page 1 data immediately
+    }
+  }, [effluentFlowStacks, storedUserId, currentUserName, currentPage]); // Trigger when effluentFlowStacks are set
 
   useEffect(() => {
     if (differenceData.length) {
@@ -143,65 +153,69 @@ const Quantity = () => {
                 className="table-responsive mt-3"
                 style={{ maxHeight: "400px", overflowY: "auto" }}
               >
-                <table className="table table-bordered">
-                  <thead>
-                    <tr>
-                      <th>SL. NO</th>
-                      <th>Stack Name</th>
-                      <th>Acceptables</th>
-                      {headers.map((header, index) => (
-                        <th key={index}>{header}</th>
+                {loading ? (
+                  <div className="text-center">Loading...</div>
+                ) : (
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>SL. NO</th>
+                        <th>Stack Name</th>
+                        <th>Acceptables</th>
+                        {headers.map((header, index) => (
+                          <th key={index}>{header}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(groupedData).map(([stackName, records], stackIndex) => (
+                        <React.Fragment key={stackIndex}>
+                          <tr>
+                            <td rowSpan={3}>{stackIndex + 1}</td>
+                            <td rowSpan={3}>{stackName}</td>
+                            <td>Initial Flow</td>
+                            {headers.map((header, index) => {
+                              const matchingRecord = records.find(
+                                (item) => item.date === header || item.time === header
+                              );
+                              return (
+                                <td key={index}>
+                                  {matchingRecord?.initialCumulatingFlow || "N/A"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          <tr>
+                            <td>Final Flow</td>
+                            {headers.map((header, index) => {
+                              const matchingRecord = records.find(
+                                (item) => item.date === header || item.time === header
+                              );
+                              return (
+                                <td key={index}>
+                                  {matchingRecord?.lastCumulatingFlow || "N/A"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          <tr>
+                            <td>Flow Difference</td>
+                            {headers.map((header, index) => {
+                              const matchingRecord = records.find(
+                                (item) => item.date === header || item.time === header
+                              );
+                              return (
+                                <td key={index}>
+                                  {matchingRecord?.cumulatingFlowDifference || "N/A"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        </React.Fragment>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(groupedData).map(([stackName, records], stackIndex) => (
-                      <React.Fragment key={stackIndex}>
-                        <tr>
-                          <td rowSpan={3}>{stackIndex + 1}</td>
-                          <td rowSpan={3}>{stackName}</td>
-                          <td>Initial Flow</td>
-                          {headers.map((header, index) => {
-                            const matchingRecord = records.find(
-                              (item) => item.date === header || item.time === header
-                            );
-                            return (
-                              <td key={index}>
-                                {matchingRecord?.initialFlow || "N/A"}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                        <tr>
-                          <td>Final Flow</td>
-                          {headers.map((header, index) => {
-                            const matchingRecord = records.find(
-                              (item) => item.date === header || item.time === header
-                            );
-                            return (
-                              <td key={index}>
-                                {matchingRecord?.finalFlow || "N/A"}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                        <tr>
-                          <td>Flow Difference</td>
-                          {headers.map((header, index) => {
-                            const matchingRecord = records.find(
-                              (item) => item.date === header || item.time === header
-                            );
-                            return (
-                              <td key={index}>
-                                {matchingRecord?.flowDifference || "N/A"}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
+                    </tbody>
+                  </table>
+                )}
               </div>
 
               <div className="pagination-controls d-flex justify-content-between mt-3">

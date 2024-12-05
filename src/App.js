@@ -162,7 +162,8 @@ function App() {
                   <Route path="/ambient" element={<Airambient />} />
                   <Route path="/noise" element={<Noise />} />
                   <Route path="/account" element={<Account />} />
-                 
+                  <Route path="/chat" element={<Chat />} />
+
                   <Route path="/transactions" element={<Transcation />} /> {/* Assuming transaction-related routes */}
                   <Route path="/view-report" element={<ViewReport />} />
                   <Route path="/edit-report/:userName" element={<EditReport />} />

@@ -60,7 +60,7 @@ function Maindashboard() {
     { name: "Stack Emission", path: "/ambient", key: "emission" },
     { name: "Noise", path: "/noise", key: "noise" },
     { name: "Waste", path: "/waste", key: "waste" },
-    { name: "Effluent Flow", path: "/flow", key: "effluent_flow" },
+    { name: "Effluent Flow", path: "/quantity", key: "effluent_flow" },
     { name: "Energy", path: "/energy", key: "energy" },
   ];
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import io from 'socket.io-client';
@@ -8,9 +7,9 @@ import { useSelector } from 'react-redux';
 import './chat.css'; // Ensure this path is correct
 import { API_URL } from '../../utils/apiConfig'; // Ensure API_URL is correct
 import DashboardSam from '../Dashboard/DashboardSam';
-import Hedaer from '../Header/Hedaer';
+import Header from '../Header/Hedaer';
 
-const socket = io(`${API_URL}`, { withCredentials: true });
+const socket = io(`${API_URL}`);
 
 const ChatApp = () => {
   const [chats, setChats] = useState([]);
@@ -25,13 +24,14 @@ const ChatApp = () => {
     async function fetchUsers() {
       try {
         const response = await axios.get(`${API_URL}/api/getallusers`);
+        console.log(response.data.users);
         if (response.data && response.data.users && currentUser) {
           setChats(response.data.users.map(user => ({
             id: user._id,
-            name: user.fname || 'No Name',
-            avatar: user.avatar || 'assets/images/admin.png',
-            lastMessage: user.lastMessage || 'No messages yet',
-            userId: currentUser._id
+            name: user.fname || 'No Name', // Provide a fallback value
+            avatar: user.avatar || 'assets/images/admin.png', // Provide a default avatar if not available
+            lastMessage: user.lastMessage || 'No messages yet', // Provide a default message
+            userId: currentUser._id // Use the actual current user ID from Redux state
           })));
         }
       } catch (error) {
@@ -47,20 +47,28 @@ const ChatApp = () => {
   // Listen for incoming chat messages via socket
   useEffect(() => {
     socket.on('newChatMessage', (message) => {
-      setChats(prevChats => {
-        return prevChats.map(chat =>
-          chat.id === message.to ? {
-            ...chat,
-            messages: [...chat.messages || [], message],
-            lastMessage: message.message
-          } : chat
-        );
-      });
+      console.log("Incoming message:", message);
+      console.log("Sender ID:", message.from);
+      console.log("Receiver ID:", message.to);
+      console.log("Current chat user:", currentChat ? currentChat.userId : "None");
+
+      // Ensure that the message is only added to the current chat messages
+      if (currentChat && (message.from === currentChat.userId || message.to === currentChat.userId)) {
+        setChats(prevChats => {
+          return prevChats.map(chat =>
+            chat.id === message.to || chat.id === message.from ? {
+              ...chat,
+              messages: [...chat.messages || [], message],
+              lastMessage: message.message
+            } : chat
+          );
+        });
+      }
     });
 
     return () => socket.off('newChatMessage');
-  }, []);
-
+  }, [currentChat]); // Ensure messages are handled based on the selected chat
+  
   const filteredChats = chats.filter(chat =>
     chat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -76,7 +84,7 @@ const ChatApp = () => {
         <div className="col-lg-9 col-12">
           <div className="row">
             <div className="col-12">
-              <Hedaer />
+              <Header />
             </div>
           </div>
           <div>
@@ -88,16 +96,15 @@ const ChatApp = () => {
                 <div className="card m-">
                   <div className="card-body">
                     <div className="row mt-2">
-                      <div className="col-md-4  " >
+                      <div className="col-md-4">
                         <ChatSidebar 
                           chats={filteredChats} 
                           selectChat={setCurrentChat} 
                           searchTerm={searchTerm} 
                           setSearchTerm={setSearchTerm} 
-                          
                         />
                       </div>
-                      <div className="col-md-8" style={{borderRadius:'10px'}}>
+                      <div className="col-md-8">
                         <ChatWindow currentChat={currentChat} socket={socket} />
                       </div>
                     </div>
@@ -114,7 +121,7 @@ const ChatApp = () => {
             
           </span>
           <span className="float-none float-sm-right d-block mt-1 mt-sm-0 text-center">
-          AquaBox Control and Monitor System <br />
+            AquaBox Control and Monitor System <br />
             © <a href="https://envirobotics.com" target="_blank">Ebhoom</a> 2022
           </span>
         </div>

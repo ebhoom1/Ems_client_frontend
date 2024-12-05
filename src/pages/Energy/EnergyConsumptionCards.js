@@ -25,6 +25,7 @@ const EnergyConsumptionCards = ({ userName, primaryStation }) => {
     const today = moment().format('DD/MM/YYYY');
     const hour = moment().subtract(1, 'hours').format('HH');
     try {
+      console.log("Fetching data for station:", station);  // Log station for debugging
       const response = await axios.get(`${API_URL}/api/consumption-data`, {
         params: {
           userName,
@@ -33,13 +34,19 @@ const EnergyConsumptionCards = ({ userName, primaryStation }) => {
           hour,
         },
       });
-      if (response.data && response.data.stacks.length > 0) {
-        const { energyDailyConsumption, energyMonthlyConsumption, energyYearlyConsumption } = response.data.stacks[0];
+      console.log("Fetched data:", response.data); // Log the fetched data
+
+      // Filter the data for the selected station (primaryStation)
+      const stackData = response.data.stacks.find(stack => stack.stackName === station);
+      if (stackData) {
+        const { energyDailyConsumption, energyMonthlyConsumption, energyYearlyConsumption } = stackData;
         setEnergyData({
           energyDailyConsumption,
           energyMonthlyConsumption,
           energyYearlyConsumption,
         });
+      } else {
+        console.log("No data available for selected station:", station);
       }
     } catch (error) {
       console.error('Error fetching energy consumption data:', error);
@@ -48,12 +55,15 @@ const EnergyConsumptionCards = ({ userName, primaryStation }) => {
 
   // Refetch data when primaryStation changes
   useEffect(() => {
-    fetchData(primaryStation);
+    console.log("Primary Station changed to:", primaryStation);  // Log primaryStation for debugging
+    if (primaryStation) {
+      fetchData(primaryStation);
+    }
   }, [primaryStation]);
 
-    return (
-      <div className="energy-flow-container">
-      <div className='d-flex  shadow' style={{ marginLeft: '200px', borderRadius: '15px', border: '1px solid #ccc' ,backgroundColor:'white' }}>
+  return (
+    <div className="energy-flow-container">
+      <div className='d-flex shadow' style={{ marginLeft: '200px', borderRadius: '15px', border: '1px solid #ccc', backgroundColor: 'white' }}>
         <div className="energy-flow-item">
           <ReactD3Speedometer
             value={energyData.energyDailyConsumption}
@@ -101,8 +111,7 @@ const EnergyConsumptionCards = ({ userName, primaryStation }) => {
         </div>
       </div>
     </div>
-        
-    );
+  );
 };
 
 export default EnergyConsumptionCards;

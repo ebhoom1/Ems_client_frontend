@@ -392,40 +392,10 @@ const handleDownloadPdf = () => {
                 </div>
             )}
 <div className="row mb-5">
-<div className="col-md-12 col-lg-6 col-sm-12 mb-2">
-      <div className="border bg-light shadow "  style={{ height: "50vh" , borderRadius:'15px'}} >
-          {selectedCard ? (
-              <EnergyGraph
-              parameter={selectedCard?.title || ''}
-              userName={currentUserName}
-              stackName={selectedCard?.stackName || ''}
-            />
-            ) : (
-              <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-            )}
-             {/* Download Button */}
-          {selectedCard && (
-            
-            <button
-              onClick={handleDownloadPdf}
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-              
-                backgroundColor:'#236a80',
-                color:'white'
-              }}
-              className="btn "
-            >
-             <i class="fa-solid fa-download"></i>
-            </button>
-          )}
-          </div>
-      </div>
+
 
   <div className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow " 
-        style={{ height: "50vh", overflowY: "scroll",  borderRadius:'15px' }}> 
+        style={{ height: "60vh", overflowY: "scroll",  borderRadius:'15px' }}> 
   {!loading && filteredData.length > 0 ? (
                     filteredData.map((stack, stackIndex) => (
                         energyStacks.includes(stack.stackName) && (
@@ -459,7 +429,37 @@ const handleDownloadPdf = () => {
                     </div>
                 )}
   </div>
-
+  <div className="col-md-12 col-lg-6 col-sm-12 mb-2">
+      <div className="border bg-light shadow "  style={{ height: "60vh" , borderRadius:'15px' , position:'relative'}} >
+          {selectedCard ? (
+              <EnergyGraph
+              parameter={selectedCard?.title || ''}
+              userName={currentUserName}
+              stackName={selectedCard?.stackName || ''}
+            />
+            ) : (
+              <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+            )}
+             {/* Download Button */}
+          {selectedCard && (
+            
+            <button
+              onClick={handleDownloadPdf}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+              
+                backgroundColor:'#236a80',
+                color:'white'
+              }}
+              className="btn "
+            >
+             <i class="fa-solid fa-download"></i>
+            </button>
+          )}
+          </div>
+      </div>
 
 </div>
            {/*  <div className="row">
