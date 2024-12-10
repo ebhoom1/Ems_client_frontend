@@ -192,10 +192,10 @@ const DownloadaverageDataModal = ({ isOpen, onClose }) => {
         </div>
 
         <div className="text-center">
-          <button type="submit" className="btn btn-primary mt-3">
+          <button type="submit" className="btn  mt-3 me-3 text-light" style={{backgroundColor:'#236a80'}}>
             Submit
           </button>
-          <button type="button" className="btn btn-secondary mt-3 ml-2" onClick={onClose}>
+          <button type="button" className="btn btn-danger mt-3 ml-2" onClick={onClose}>
             Cancel
           </button>
         </div>

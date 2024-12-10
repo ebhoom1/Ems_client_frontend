@@ -32,7 +32,7 @@ const EnergyOverview = () => {
 
   const fetchEnergyData = async (userName) => {
     try {
-      const response = await axios.get(`${API_URL}/api/summary/${userName}/daily`);
+      const response = await axios.get(`${API_URL}/api/summary/${userName}/hourly`);
       const data = response.data[0]; // Assume first entry is relevant
 
       setSummaryData({
@@ -49,11 +49,23 @@ const EnergyOverview = () => {
   const fetchPredictionData = async (userName) => {
     try {
       const response = await axios.get(`${API_URL}/api/prediction-summary/${userName}/hourly`);
-      const prediction = response.data[0]; // Assume first entry is relevant
-
-      setPredictionData({
-        predictedEnergy: prediction?.predictedEnergy || 0,
-      });
+      const data = response.data;
+  
+      if (data && data.length > 0) {
+        // Aggregate total energy prediction
+        const totalEnergyPrediction = data.reduce(
+          (total, entry) => total + (entry.totalEnergyPrediction || 0),
+          0
+        );
+  
+        setPredictionData({
+          predictedEnergy: totalEnergyPrediction,
+        });
+      } else {
+        setPredictionData({
+          predictedEnergy: 0,
+        });
+      }
     } catch (error) {
       console.error('Error fetching prediction data:', error);
       setPredictionData({ predictedEnergy: 0 });
@@ -61,6 +73,7 @@ const EnergyOverview = () => {
       setPredictionLoading(false);
     }
   };
+  
 
   if (loading || predictionLoading) {
     return (
@@ -85,7 +98,7 @@ const EnergyOverview = () => {
     <div className="container-fluid">
     <div className="row mt-4">
       {/* Left Section */}
-      <div className="col-md-6">
+      <div className="col-md-12 col-lg-6">
         <h3 className="text-center mb-4">Total Energy Usage</h3>
         <div className="row">
           <div className="col-md-12 mb-4">
@@ -118,7 +131,7 @@ const EnergyOverview = () => {
       </div>
   
       {/* Right Section */}
-      <div className="col-md-6">
+      <div className="col-md-12 col-lg-6">
         <div className="card" style={{ height: '100%' }}>
           <ConsumptionPredictionGraphEnergy />
         </div>

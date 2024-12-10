@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import ReactFlow, {
   addEdge,
   Background,
@@ -6,33 +6,30 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
 } from 'react-flow-renderer';
-import { toPng } from 'html-to-image'; // Import html-to-image
-import { API_URL } from '../../utils/apiConfig';
 import SVGNode from './SVGnode';
+import { useSelector } from 'react-redux'; // Import useSelector for Redux
+import axios from 'axios';
 
 const nodeTypes = {
   svgNode: SVGNode,
 };
 
 function Canvas() {
-  const initialNodes = [];
-  const initialEdges = [];
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [userName, setUserName] = useState('');
-  const [userType, setUserType] = useState('user'); // Default is user, can be 'admin'
-  const [mapData, setMapData] = useState(null);
-  const canvasRef = useRef(null); // Reference for the canvas container
+  const [searchUserName, setSearchUserName] = useState('');
+  const [currentUserName, setCurrentUserName] = useState('');
+  const [isEditing, setIsEditing] = useState(false); // Tracks whether it's an edit
+  const [noLiveStation, setNoLiveStation] = useState(false); // Tracks if no live station is found
 
-  const apiEndpoint = `${API_URL}/api/build-live-station`;
-  const getLiveStationEndpoint = `${API_URL}/api/find-live-station/`;
+  // Redux selectors
+  const { userData } = useSelector((state) => state.user);
+  const userType = userData?.validUserOne?.userType || '';
+  const loggedUserName = userData?.validUserOne?.userName || ''; // Dynamically fetched username
 
   const onDragStart = () => setIsDragging(true);
   const onDragStop = () => setIsDragging(false);
-  const onResizeStart = () => setIsDragging(true);
-  const onResizeStop = () => setIsDragging(false);
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
@@ -45,6 +42,7 @@ function Canvas() {
 
   const onDrop = async (event) => {
     event.preventDefault();
+
     const reactFlowBounds = event.target.getBoundingClientRect();
     const shapeData = event.dataTransfer.getData('application/reactflow');
 
@@ -89,157 +87,168 @@ function Canvas() {
     return '';
   };
 
-  const handleDeleteNode = (nodeId) => {
-    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-  };
-
   const handleSave = async () => {
-    if (!userName) {
-      alert('Please enter a username');
-      return;
-    }
-
-    if (!canvasRef.current) {
-      alert('Canvas is not available');
-      return;
-    }
-
     try {
-      // Convert the canvas to an image (base64 PNG string)
-      const dataUrl = await toPng(canvasRef.current);
-
-      // Convert base64 to Blob
-      const response = await fetch(dataUrl);
-      const imageBlob = await response.blob();
-
-      // Create a form data object
-      const formData = new FormData();
-      formData.append('userName', userName);
-      formData.append('liveStationImage', imageBlob, 'live-station.png'); // Name the file appropriately
-
-      // If userType is admin, send the live station to the corresponding user
-      const endpoint = userType === 'admin' ? `${API_URL}/api/edit-live-station/${userName}` : apiEndpoint;
-      const saveResponse = await fetch(endpoint, {
-        method: 'POST',
-        body: formData,
+      const apiUrl = isEditing
+        ? `https://api.ocems.ebhoom.com/api/edit-live-station/${currentUserName || loggedUserName}`
+        : 'https://api.ocems.ebhoom.com/api/build-live-station';
+      const method = isEditing ? 'patch' : 'post';
+      const response = await axios({
+        method,
+        url: apiUrl,
+        data: {
+          userName: currentUserName || loggedUserName,
+          nodes,
+          edges,
+        },
       });
-
-      const responseData = await saveResponse.json();
-      if (saveResponse.ok) {
-        alert('Live Station saved successfully');
-        setMapData(responseData.data);
-      } else {
-        alert(responseData.message || 'Failed to save Live Station');
-      }
+      console.log('Saved successfully:', response.data);
+      alert('Map saved successfully!');
+      setNoLiveStation(false); // After saving, there is now a live station
     } catch (error) {
-      console.error('Error saving live station:', error);
+      console.error('Error saving map:', error);
+      alert('Failed to save map. Please try again.');
     }
   };
 
-  const fetchMapData = async () => {
-    if (!userName) return;
-
+  const handleDelete = async () => {
     try {
-      const endpoint = `${getLiveStationEndpoint}${userName}`;
-      const response = await fetch(endpoint);
-      const data = await response.json();
+      await axios.delete(`https://api.ocems.ebhoom.com/api/delete-live-station/${currentUserName || loggedUserName}`);
+      alert('Live station deleted successfully!');
+      setNodes([]);
+      setEdges([]);
+      setIsEditing(false);
+      setNoLiveStation(true); // Set no live station available
+    } catch (error) {
+      console.error('Error deleting live station:', error);
+      alert('Failed to delete live station. Please try again.');
+    }
+  };
 
-      if (response.ok && data.data) {
-        setMapData(data.data);
+  const fetchLiveStation = async (name) => {
+    try {
+      const response = await axios.get(`https://api.ocems.ebhoom.com/api/find-live-station/${name}`);
+      const { data } = response.data;
+      if (data) {
+        setNodes(data.nodes || []);
+        setEdges(data.edges || []);
+        setCurrentUserName(name);
+        setIsEditing(true); // Set editing mode if live station exists
+        setNoLiveStation(false); // Live station is available
+        console.log(`Live station data fetched for ${name}`);
       } else {
-        setMapData(null);
+        setIsEditing(false);
+        setNoLiveStation(true); // No live station found
       }
     } catch (error) {
       console.error('Error fetching live station:', error);
+      setIsEditing(false);
+      setNoLiveStation(true); // No live station found
     }
   };
 
-  const handleEdit = () => {
-    if (userType === 'admin') {
-      setMapData(null); // Admin can edit live station
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchUserName.trim()) {
+      fetchLiveStation(searchUserName.trim());
     } else {
-      alert('Only admin can edit other users live stations');
+      alert('Please enter a valid username');
     }
   };
 
   useEffect(() => {
-    if (userName) {
-      fetchMapData();
+    if (userType === 'admin') {
+      // Admin has a search box to fetch live stations for any user
+      setCurrentUserName('');
+    } else if (userType === 'user') {
+      // User's live station is fetched directly
+      fetchLiveStation(loggedUserName);
     }
-  }, [userName, userType]);
+  }, [userType, loggedUserName]);
 
   return (
     <div className="react-flow-container">
-      {/* Admin: Search for user to manage their live station */}
-      {userType === 'admin' && (
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <input
-            type="text"
-            placeholder="Enter Username"
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
-            className="form-control mr-2"
-          />
-          <button onClick={fetchMapData} className="btn btn-primary">
-            Search
-          </button>
-        </div>
-      )}
-
-      {/* User: No search, just username and save */}
-      {userType === 'user' && (
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <input
-            type="text"
-            placeholder="Enter Username"
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
-            className="form-control mr-2"
-          />
-          <button onClick={handleSave} className="btn btn-success">
-            Save
-          </button>
-        </div>
-      )}
-
-      {/* Display and Edit Live Station */}
-      {mapData ? (
-        <div>
-          <h3>Live Station Map</h3>
-          <img
-            src={`${API_URL}/${mapData.liveStationImage}`}
-            alt="Live Station Map"
-            style={{ width: '100%', height: '400px', objectFit: 'contain' }}
-          />
-          <button onClick={handleEdit} className="btn btn-primary mt-2">
-            Edit
-          </button>
-        </div>
-      ) : (
-        <div className="react-flow-scrollable">
-          <div
-            className="reactflow-wrapper"
-            ref={canvasRef} // Attach the reference to the container
-            style={{ width: '100%', height: '600px' }}
-          >
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              onDragOver={onDragOver}
-              onDrop={onDrop}
-              nodeTypes={nodeTypes}
-            >
-              <Controls />
-              <Background />
-            </ReactFlow>
+      <div className="react-flow-scrollable">
+        {userType === 'admin' && (
+          <div className="admin-search">
+            <form className="d-flex" onSubmit={handleSearch} style={{ marginBottom: '10px' }}>
+              <input
+                type="text"
+                placeholder="Enter username"
+                value={searchUserName}
+                onChange={(e) => setSearchUserName(e.target.value)}
+                className="form-control"
+              />
+              <button type="submit" style={{ backgroundColor: '#236a80' }} className="btn text-light ms-3">
+                Search
+              </button>
+            </form>
           </div>
+        )}
+        {noLiveStation && (
+          <div className="text-center text-danger mt-3">
+            <h5>{userType === 'admin' ? 'No live station available for this user.' : 'No live station available. Please create a new one.'}</h5>
+          </div>
+        )}
+        <div className="reactflow-wrapper" style={{ width: '100%', height: '600px' }}>
+          <div className="d-flex justify-content-end">
+            <button className="btn btn-success me-3" onClick={handleSave}>
+              {isEditing ? 'Update' : 'Save'}
+            </button>
+            {isEditing && userType === 'admin' && (
+              <button className="btn btn-danger" onClick={handleDelete}>
+                Delete
+              </button>
+            )}
+          </div>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            nodeTypes={nodeTypes}
+            style={{
+              pointerEvents: isDragging ? 'none' : 'auto',
+            }}
+          >
+            <Controls />
+            <Background />
+          </ReactFlow>
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
 export default Canvas;
+
+
+
+
+/* 
+
+
+import { FaTrash } from 'react-icons/fa'; 
+  {nodes.map((node) => (
+        <div
+           key={node.id}
+          style={{
+            position: 'absolute',
+            left: node.position.x + 50, 
+            top: node.position.y,
+            backgroundColor: 'white',
+            border: '1px solid #ccc',
+            padding: '5px',
+            zIndex: 1000,
+            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.68)',
+          }} 
+        >
+         <FaTrash
+            onClick={() => handleDeleteNode(node.id)}
+            style={{ color: 'red', cursor: 'pointer' }}
+          /> 
+        </div>
+      ))} */

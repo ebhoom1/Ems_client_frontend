@@ -24,14 +24,52 @@ const ChatApp = () => {
     async function fetchUsers() {
       try {
         const response = await axios.get(`${API_URL}/api/getallusers`);
-        console.log(response.data.users);
         if (response.data && response.data.users && currentUser) {
-          setChats(response.data.users.map(user => ({
+          const ebhoomUser = response.data.users.find(user => user.userName === 'EBHOOM'); // Find the EBHOOM admin
+
+          // Filter chats based on userType, adminType, and exclude logged-in user
+          const filteredChats = response.data.users.filter((user) => {
+            if (user._id === currentUser._id) {
+              return false; // Exclude the logged-in user
+            }
+
+            // EBHOOM Admin: Can see everyone
+            if (currentUser.userType === 'admin' && currentUser.adminType === 'EBHOOM') {
+              return true; // EBHOOM sees all
+            }
+
+            // Other Admins: See users with same adminType and EBHOOM admin
+            if (currentUser.userType === 'admin') {
+              return (
+                user.adminType === currentUser.adminType || // Users with same adminType
+                user.adminType === 'EBHOOM' // Include EBHOOM admin
+              );
+            }
+
+            // Users: See admins with same adminType and EBHOOM admin
+            if (currentUser.userType === 'user') {
+              return (
+                user.userType === 'admin' && // Must be admin
+                (user.adminType === currentUser.adminType || user.adminType === 'EBHOOM')
+              );
+            }
+
+            return false;
+          });
+
+          // Ensure EBHOOM is added explicitly if it's not already in the list
+          if (ebhoomUser && !filteredChats.some(user => user._id === ebhoomUser._id)) {
+            filteredChats.push(ebhoomUser);
+          }
+
+          setChats(filteredChats.map(user => ({
             id: user._id,
             name: user.fname || 'No Name', // Provide a fallback value
             avatar: user.avatar || 'assets/images/admin.png', // Provide a default avatar if not available
             lastMessage: user.lastMessage || 'No messages yet', // Provide a default message
-            userId: currentUser._id // Use the actual current user ID from Redux state
+            userType: user.userType, // Include userType for reference
+            adminType: user.adminType, // Include adminType for reference
+            userId: currentUser._id, // Use the actual current user ID from Redux state
           })));
         }
       } catch (error) {
@@ -44,31 +82,6 @@ const ChatApp = () => {
     }
   }, [currentUser]);
 
-  // Listen for incoming chat messages via socket
-  useEffect(() => {
-    socket.on('newChatMessage', (message) => {
-      console.log("Incoming message:", message);
-      console.log("Sender ID:", message.from);
-      console.log("Receiver ID:", message.to);
-      console.log("Current chat user:", currentChat ? currentChat.userId : "None");
-
-      // Ensure that the message is only added to the current chat messages
-      if (currentChat && (message.from === currentChat.userId || message.to === currentChat.userId)) {
-        setChats(prevChats => {
-          return prevChats.map(chat =>
-            chat.id === message.to || chat.id === message.from ? {
-              ...chat,
-              messages: [...chat.messages || [], message],
-              lastMessage: message.message
-            } : chat
-          );
-        });
-      }
-    });
-
-    return () => socket.off('newChatMessage');
-  }, [currentChat]); // Ensure messages are handled based on the selected chat
-  
   const filteredChats = chats.filter(chat =>
     chat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -131,3 +144,9 @@ const ChatApp = () => {
 };
 
 export default ChatApp;
+
+
+
+
+
+

@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { FaPaperPlane, FaPaperclip, FaPlus, FaTrash, FaTimes } from 'react-icons/fa'; // Import icons for send and share
+import { FaPaperPlane, FaPaperclip, FaTrash } from 'react-icons/fa'; // Icons for send and share
 import { API_URL } from '../../utils/apiConfig'; // Ensure this path is correct
 
 const ChatWindow = ({ currentChat, socket }) => {
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [selectedFiles, setSelectedFiles] = useState([]); // For holding the file list
-  const [fileDescriptions, setFileDescriptions] = useState({}); // Holds descriptions for each file
-  const messagesEndRef = useRef(null); // Create a ref for scrolling
-  const fileInputRef = useRef(null); // Create a ref for the file input
+  const [selectedFiles, setSelectedFiles] = useState([]); // Holds selected files
+  const messagesEndRef = useRef(null); // Ref for auto-scrolling
+  const fileInputRef = useRef(null); // Ref for the file input
 
-  // Join the room when a chat is selected
   useEffect(() => {
     if (currentChat) {
       socket.emit('joinRoom', { userId: currentChat.userId }); // Join the room based on the selected chat
@@ -19,68 +17,66 @@ const ChatWindow = ({ currentChat, socket }) => {
       const fetchMessages = async () => {
         try {
           const response = await axios.get(`${API_URL}/api/messages`, {
-            params: { from: currentChat.userId, to: currentChat.id }
+            params: { from: currentChat.userId, to: currentChat.id },
           });
           setMessages(response.data);
         } catch (error) {
           console.error('Error fetching messages:', error);
         }
       };
+
       fetchMessages();
     }
-  }, [currentChat, socket]); // Depend on currentChat and socket to re-fetch messages when chat changes
+  }, [currentChat, socket]);
 
   useEffect(() => {
     const handleNewMessage = (message) => {
-      if (currentChat && (message.from === currentChat.userId || message.from === currentChat.id)) {
-        setMessages(prev => [...prev, message]); // Add the message only when received from the server
+      if (
+        currentChat &&
+        (message.from === currentChat.userId || message.from === currentChat.id)
+      ) {
+        setMessages((prev) => [...prev, message]); // Add the new message to the chat
       }
     };
 
-    socket.on('newChatMessage', handleNewMessage); // Listen for real-time messages
+    socket.on('newChatMessage', handleNewMessage);
 
     return () => {
-      socket.off('newChatMessage', handleNewMessage); // Clean up listener
+      socket.off('newChatMessage', handleNewMessage);
     };
   }, [currentChat, socket]);
 
-  const sendMessage = () => {
-    if (newMessage.trim()) {
-      socket.emit('chatMessage', {
-        from: currentChat.userId,
-        to: currentChat.id,
-        message: newMessage
+  const sendMessage = async () => {
+    if (newMessage.trim() || selectedFiles.length > 0) {
+      const formData = new FormData();
+      formData.append('from', currentChat.userId);
+      formData.append('to', currentChat.id);
+      formData.append('message', newMessage.trim());
+
+      selectedFiles.forEach((file) => {
+        formData.append('files', file); // Append each file to the formData
       });
-  
-      setNewMessage(""); // Clear the input after sending the message
-    }
-  
-    if (selectedFiles.length > 0) {
-      selectedFiles.forEach(file => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('description', fileDescriptions[file.name] || '');
-  
-        axios.post(`${API_URL}/api/uploadFile`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
-        .then(response => {
-          socket.emit('chatMessage', {
-            from: currentChat.userId,
-            to: currentChat.id,
-            message: `File: ${response.data.fileUrl}, Description: ${fileDescriptions[file.name] || 'No description'}`
-          });
-        })
-        .catch(error => {
-          console.error('File upload error:', error);
+
+      try {
+        // Send the message and files together
+        const response = await axios.post(`${API_URL}/api/send`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
-      });
-  
+
+        // Emit the message to the socket for real-time updates
+        socket.emit('chatMessage', response.data);
+
+        // Update the local message state
+        setMessages((prev) => [...prev, response.data]);
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
+
+      // Clear input and file states
+      setNewMessage("");
       setSelectedFiles([]);
-      setFileDescriptions({});
     }
   };
-  
 
   const handleFileShare = () => {
     fileInputRef.current.click();
@@ -88,35 +84,71 @@ const ChatWindow = ({ currentChat, socket }) => {
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    setSelectedFiles(prevFiles => [...prevFiles, ...files]);
-    e.target.value = null; // Reset file input
+    setSelectedFiles((prevFiles) => [...prevFiles, ...files]);
+    e.target.value = null; // Reset the file input
   };
 
   const handleDeleteFile = (fileName) => {
-    setSelectedFiles(prevFiles => prevFiles.filter(file => file.name !== fileName));
-    const newDescriptions = { ...fileDescriptions };
-    delete newDescriptions[fileName];
-    setFileDescriptions(newDescriptions);
+    setSelectedFiles((prevFiles) => prevFiles.filter((file) => file.name !== fileName));
   };
 
-  const cancelSendFiles = () => {
-    setSelectedFiles([]);
-    setFileDescriptions({});
+  const renderMessageContent = (msg) => {
+    if (msg.files && msg.files.length > 0) {
+      return (
+        <div className="file-previews">
+          {msg.files.map((fileUrl, idx) => {
+            const isImage = /\.(jpeg|jpg|png|gif)$/i.test(fileUrl); // Check if the file is an image
+            return isImage ? (
+              <img
+                key={idx}
+                src={fileUrl}
+                alt="chat-file"
+                className="chat-image"
+                style={{ maxWidth: "200px", maxHeight: "200px", margin: "5px", borderRadius: "8px" }}
+              />
+            ) : (
+              <a
+                key={idx}
+                href={fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="chat-file-link"
+              >
+                {fileUrl.split("/").pop()}
+              </a>
+            );
+          })}
+        </div>
+      );
+    }
+    return <span>{msg.message}</span>;
   };
 
   return (
     <div className="chat-main">
       <div className="chat-header">
-        {currentChat ? <h2>{currentChat.name}</h2> : <div className="select-chat-message">Select a user to chat</div>}
+        {currentChat ? (
+          <h2>{currentChat.name}</h2>
+        ) : (
+          <div className="select-chat-message">Select a user to chat</div>
+        )}
       </div>
       <div className="chat-messages">
-        {messages.length > 0 ? messages.map((msg, index) => (
-          <div key={index} className={`message ${msg.from === currentChat.userId ? 'you' : 'them'}`}>
-            <div className="content">
-              <strong>{msg.from === currentChat.userId ? 'You' : currentChat.name}:</strong> {msg.message}
+        {messages.length > 0 ? (
+          messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`message ${msg.from === currentChat.userId ? "you" : "them"}`}
+            >
+              <div className="content">
+                <strong>{msg.from === currentChat.userId ? "You" : currentChat.name}:</strong>
+                {renderMessageContent(msg)}
+              </div>
             </div>
-          </div>
-        )) : <div className="no-messages">No messages yet</div>}
+          ))
+        ) : (
+          <div className="no-messages">No messages yet</div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -127,17 +159,11 @@ const ChatWindow = ({ currentChat, socket }) => {
               <div key={index} className="file-preview-item">
                 <FaTrash onClick={() => handleDeleteFile(file.name)} />
                 {file.name}
-                <input
-                  type="text"
-                  placeholder="Add a description"
-                  value={fileDescriptions[file.name] || ''}
-                  onChange={(e) => setFileDescriptions(prev => ({ ...prev, [file.name]: e.target.value }))}
-                />
               </div>
             ))}
-            <button onClick={handleFileShare} className="add-file-button"><FaPlus /> Add more files</button>
-            <button onClick={sendMessage} className="send-files-button"><FaPaperPlane /> Send Files</button>
-            <button onClick={cancelSendFiles} className='cancel-files-button'><FaTimes /> Cancel</button>
+            <button onClick={sendMessage} className="send-files-button">
+              <FaPaperPlane /> Send Message
+            </button>
           </div>
         )}
       </div>
@@ -156,7 +182,7 @@ const ChatWindow = ({ currentChat, socket }) => {
           <input
             type="file"
             ref={fileInputRef}
-            style={{ display: 'none' }}
+            style={{ display: "none" }}
             multiple
             onChange={handleFileChange}
           />

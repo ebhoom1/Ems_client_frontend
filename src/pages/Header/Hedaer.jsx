@@ -139,7 +139,7 @@ function Header() {
       setUserName('');
       setUsers([]);
   
-      toast.success('You have been logged out successfully.', { position: 'top-center' });
+      toast.success('Logged out successfully.', { position: 'top-center' });
   
       // Navigate to login page
       navigate('/');

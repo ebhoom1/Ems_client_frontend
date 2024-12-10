@@ -162,7 +162,7 @@ const EnergyGraph = ({ isOpen, onRequestClose, parameter, userName, stackName })
 
     return (
         <div>
-            <h3 className="popup-title mt-4 mb-3">{parameter} - {stackName}</h3>
+            <h6 style={{marginTop:'60px'}} className="popup-title  mb-3">{parameter} - {stackName}</h6>
             <div className="interval-buttons">
                 {['day', 'month', 'year'].map((interval) => (
                     <button

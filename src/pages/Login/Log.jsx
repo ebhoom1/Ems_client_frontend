@@ -71,21 +71,21 @@ function Log() {
     try {
       // Dispatch the login action
       const result = await dispatch(loginUser({ email, password, userType })).unwrap();
-  
+   // Save the login flag and user details in localStorage
+   localStorage.setItem("isLoggedIn", "true");
+   localStorage.setItem("userEmail", email);
+   localStorage.setItem("userType", userType);
       // Navigate based on user type
-      if (userType === "admin") {
-        navigate("/water");
-      } else {
-        navigate("/water");
-      }
+      navigate("/water");
   
       // Reset the form
       setInpval({ email: "", password: "", userType: "select" });
     } catch (error) {
-      // Handle errors
-      toast.error("Invalid credentials");
-      console.error("Error during login:", error);
-      localStorage.removeItem("userdatatoken");
+            // Handle errors
+            toast.error("Invalid credentials");
+            console.error("Error during login:", error);
+            localStorage.removeItem("isLoggedIn");
+      
     }
   };
   

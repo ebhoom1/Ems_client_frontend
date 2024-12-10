@@ -45,13 +45,19 @@ const Water = () => {
   const [searchError, setSearchError] = useState("");
   const [currentUserName, setCurrentUserName] = useState(userType === 'admin' ? "KSPCB001" : userData?.validUserOne?.userName);
   const [companyName, setCompanyName] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // general loading
     const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedStack, setSelectedStack] = useState("all");
   const [effluentStacks, setEffluentStacks] = useState([]); // New state to store effluent stacks
   const [realTimeData, setRealTimeData] = useState({});
-  const [exceedanceColor, setExceedanceColor] = useState('green'); // Default color
-  const [timeIntervalColor, setTimeIntervalColor] = useState('green'); // Default color
+  const [exceedanceLoading, setExceedanceLoading] = useState(false); // For parameter exceedance
+  const [exceedanceColor, setExceedanceColor] = useState("loading"); // Default to "loading" for the spinner
+  const [timeIntervalColor, setTimeIntervalColor] = useState("loading"); // Default to "loading" for the spinner
+ // Function to reset colors and trigger loading state
+ const resetColors = () => {
+  setExceedanceColor("loading");
+  setTimeIntervalColor("loading");
+};
 
   /* download average data */
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,7 +83,7 @@ const Water = () => {
     { parameter: "ORP", value: 'mV', name: 'ORP' },
     { parameter: "Nitrate", value: 'mg/l', name: 'nitrate' },
     { parameter: "DO", value: 'mg/l', name: 'DO' },
-    {parameter:"Total Flow", value:'m3/Day', name:'Totalizer_Flow'},
+    { parameter:"Total Flow", value:'m3/Day', name:'Totalizer_Flow'},
     { parameter: "Chloride", value: 'mmol/l', name: 'chloride' },
     { parameter: "Colour", value: 'color', name: 'color' },
     { parameter: "Fluoride", value: "mg/Nm3", name: "Fluoride" },
@@ -93,7 +99,7 @@ const Water = () => {
     const effluentStacks = data.stackNames
       .filter(stack => stack.stationType === 'effluent')
       .map(stack => stack.name); // Use 'name' instead of 'stackName'
-    setEffluentStacks(effluentStacks);
+    setEffluentStacks(effluentStacks); 
   } catch (error) {
     console.error("Error fetching effluent stacks:", error);
   }
@@ -101,6 +107,7 @@ const Water = () => {
   // Fetching data by username
   const fetchData = async (userName) => {
     setLoading(true);
+    setExceedanceLoading(true); // Show loading for parameter exceedance
     try {
       const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
   
@@ -166,46 +173,64 @@ const Water = () => {
     fetchEffluentStacks(userName);
   }, [searchTerm, currentUserName]);
  */
-  useEffect(() => {
+ /*  useEffect(() => {
     if (searchTerm) {
       fetchData(searchTerm);
-      fetchEffluentStacks(searchTerm); // Fetch effluent stacks
+      fetchEffluentStacks(searchTerm); 
     } else {
       fetchData(currentUserName);
-      fetchEffluentStacks(currentUserName); // Fetch effluent stacks
+      fetchEffluentStacks(currentUserName); 
     }
-  }, [searchTerm, currentUserName, dispatch]);
+  }, [searchTerm, currentUserName, dispatch]); */
 
   useEffect(() => {
-    const userName = storedUserId || currentUserName;
-    console.log(`Joining room: ${userName}`);
-    socket.emit('joinRoom', { userId: userName });
+    const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+    
+    // Reset colors and loading states for the new user
+    resetColors();
+    setExceedanceLoading(true);
   
-    socket.on('stackDataUpdate', (data) => {
+    fetchData(userName); // Fetch general user data
+    fetchEffluentStacks(userName); // Fetch effluent stacks
+  
+    // Set up the real-time data listener for the selected user
+    console.log(`Joining room for user: ${userName}`);
+    socket.emit("joinRoom", { userId: userName });
+  
+    const handleStackDataUpdate = (data) => {
       console.log(`Real-time data for ${userName}:`, data);
-      setExceedanceColor(data.ExceedanceColor || 'green');
-      setTimeIntervalColor(data.timeIntervalColor || 'green');
-      if (data?.stackData?.length > 0) {
-        setRealTimeData((prevData) => ({
-          ...prevData,
-          ...data.stackData.reduce((acc, item) => {
+  
+      // Ensure the data corresponds to the current user
+      if (data.userName === userName) {
+        setExceedanceColor(data.ExceedanceColor || "green");
+        setTimeIntervalColor(data.timeIntervalColor || "green");
+        setExceedanceLoading(false); // Stop loading for parameter exceedance
+  
+        if (data?.stackData?.length > 0) {
+          setRealTimeData(data.stackData.reduce((acc, item) => {
             if (item.stackName) {
               acc[item.stackName] = item;
             }
             return acc;
-          }, {}),
-        }));
+          }, {}));
+        } else {
+          setRealTimeData({});
+        }
       } else {
-        console.warn(`No stack data received for ${userName}`);
+        console.warn(`Ignored real-time data for another user: ${data.userName}`);
       }
-    });
+    };
+  
+    socket.on("stackDataUpdate", handleStackDataUpdate);
   
     return () => {
-      console.log(`Leaving room: ${userName}`);
-      socket.emit('leaveRoom', { userId: userName });
-      socket.off('stackDataUpdate');
+      // Clean up listeners to prevent race conditions
+      console.log(`Leaving room for user: ${userName}`);
+      socket.emit("leaveRoom", { userId: userName });
+      socket.off("stackDataUpdate", handleStackDataUpdate);
     };
-  }, [storedUserId, currentUserName]);
+  }, [selectedUserIdFromRedux, currentUserName]);
+  
   
 
   
@@ -444,23 +469,45 @@ const handleDownloadPdf = () => {
         <div className="col-12  justify-content-center align-items-center">
                     <h3 className="text-center">{companyName}</h3>
                     <div className="color-indicators">
-                    <div className="color-indicators d-flex justify-content-center mt-2">
-            <div className="color-indicator">
-              <div className="color-circle" style={{ backgroundColor: exceedanceColor }}></div>
-              <span className="color-label">Parameter Exceed</span>
-            </div>
-            <div className="color-indicator ml-4">
-              <div className="color-circle" style={{ backgroundColor: timeIntervalColor }}></div>
-              <span className="color-label">Data Interval</span>
-            </div>
-          </div>
-          </div>
+  <div className="d-flex justify-content-center mt-2">
+    {/* Parameter Exceed Indicator */}
+    <div className="color-indicator">
+      {exceedanceLoading ? (
+        <div className="spinner-container">
+          <Oval height={20} width={20} color="#236A80" ariaLabel="Loading..." />
+        </div>
+      ) : (
+        <div
+          className="color-circle"
+          style={{ backgroundColor: exceedanceColor }}
+        ></div>
+      )}
+      <span className="color-label">Parameter Exceed</span>
+    </div>
+
+    {/* Data Interval Indicator */}
+    <div className="color-indicator ml-4">
+      {exceedanceLoading ? (
+        <div className="spinner-container">
+          <Oval height={20} width={20} color="#236A80" ariaLabel="Loading..." />
+        </div>
+      ) : (
+        <div
+          className="color-circle"
+          style={{ backgroundColor: timeIntervalColor }}
+        ></div>
+      )}
+      <span className="color-label">Data Interval</span>
+    </div>
+  </div>
+</div>
+
                   </div>
                   <div className="row">
                   
 
               <div
-                className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow mb-2 "
+                className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow mb-2 graphdiv "
                 style={{ height: '70vh', overflowY: 'scroll', borderRadius: '15px' }}
               >
                 {!loading && filteredData.length > 0 ? (
@@ -527,7 +574,7 @@ const handleDownloadPdf = () => {
                 )}
               </div>
               {/* graph  */}
-              <div className="col-md-12 col-lg-6 col-sm-12 mb-2 ">
+              <div className="col-md-12 col-lg-6 col-sm-12 mb-2 graphdiv ">
   {/* Graph Container with reference */}
   <div
     className="border bg-light shadow"

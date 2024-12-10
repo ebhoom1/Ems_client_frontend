@@ -17,6 +17,7 @@ import { API_URL } from '../../utils/apiConfig';
 import WaterGraphPopup from './NoiseGraphPopup';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import DownloadaverageDataModal from '../Water/DownloadaverageDataModal';
 const socket = io(API_URL, { 
   transports: ['websocket'], 
   reconnectionAttempts: 5,
@@ -48,8 +49,23 @@ const Noise = () => {
   const [effluentStacks, setEffluentStacks] = useState([]); // New state to store effluent stacks
   const [realTimeData, setRealTimeData] = useState({});
   const [noiseStacks, setNoiseStacks] = useState([]); // New state to store noise stacks
-  const [exceedanceColor, setExceedanceColor] = useState('green'); // Default color
-  const [timeIntervalColor, setTimeIntervalColor] = useState('green'); // Default color
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [exceedanceLoading, setExceedanceLoading] = useState(false); // For parameter exceedance
+  const [exceedanceColor, setExceedanceColor] = useState("loading"); // Default to "loading" for the spinner
+  const [timeIntervalColor, setTimeIntervalColor] = useState("loading"); // Default to "loading" for the spinner
+   // Function to reset colors and trigger loading state
+ const resetColors = () => {
+  setExceedanceColor("loading");
+  setTimeIntervalColor("loading");
+};
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+  
+  // Function to close the modal
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
   const graphRef = useRef();
 
 //fetch stack names
@@ -68,6 +84,8 @@ const fetchNoiseStacks = async (userName) => {
 
 const fetchData = async (userName) => {
   setLoading(true);
+  setExceedanceLoading(true); // Show loading for parameter exceedance
+
   try {
     const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
     setSearchResult(result);
@@ -137,35 +155,53 @@ useEffect(() => {
 }, [searchTerm, currentUserName, dispatch]);
 
 useEffect(() => {
-  const userName = storedUserId || currentUserName;
-  console.log(`Joining room: ${userName}`);
-  socket.emit('joinRoom', { userId: userName });
+  const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+  
+  // Reset colors and loading states for the new user
+  resetColors();
+  setExceedanceLoading(true);
 
-  socket.on('stackDataUpdate', (data) => {
+  fetchData(userName); // Fetch general user data
+  fetchNoiseStacks(userName); // Fetch effluent stacks
+
+  // Set up the real-time data listener for the selected user
+  console.log(`Joining room for user: ${userName}`);
+  socket.emit("joinRoom", { userId: userName });
+
+  const handleStackDataUpdate = (data) => {
     console.log(`Real-time data for ${userName}:`, data);
-    setExceedanceColor(data.ExceedanceColor || 'green');
-    setTimeIntervalColor(data.timeIntervalColor || 'green');
-    if (data?.stackData?.length > 0) {
-      setRealTimeData((prevData) => ({
-        ...prevData,
-        ...data.stackData.reduce((acc, item) => {
+
+    // Ensure the data corresponds to the current user
+    if (data.userName === userName) {
+      setExceedanceColor(data.ExceedanceColor || "green");
+      setTimeIntervalColor(data.timeIntervalColor || "green");
+      setExceedanceLoading(false); // Stop loading for parameter exceedance
+
+      if (data?.stackData?.length > 0) {
+        setRealTimeData(data.stackData.reduce((acc, item) => {
           if (item.stackName) {
             acc[item.stackName] = item;
           }
           return acc;
-        }, {}),
-      }));
+        }, {}));
+      } else {
+        setRealTimeData({});
+      }
     } else {
-      console.warn(`No stack data received for ${userName}`);
+      console.warn(`Ignored real-time data for another user: ${data.userName}`);
     }
-  });
+  };
+
+  socket.on("stackDataUpdate", handleStackDataUpdate);
 
   return () => {
-    console.log(`Leaving room: ${userName}`);
-    socket.emit('leaveRoom', { userId: userName });
-    socket.off('stackDataUpdate');
+    // Clean up listeners to prevent race conditions
+    console.log(`Leaving room for user: ${userName}`);
+    socket.emit("leaveRoom", { userId: userName });
+    socket.off("stackDataUpdate", handleStackDataUpdate);
   };
-}, [storedUserId, currentUserName]);
+}, [selectedUserIdFromRedux, currentUserName]);
+
 
 
 
@@ -387,52 +423,105 @@ const noiseParameters = [
 <div className="col-12  justify-content-center align-items-center">
             <h3 className="text-center">{companyName}</h3>
             <div className="color-indicators">
-            <div className="color-indicators d-flex justify-content-center mt-2">
+  <div className="d-flex justify-content-center mt-2">
+    {/* Parameter Exceed Indicator */}
     <div className="color-indicator">
-      <div className="color-circle" style={{ backgroundColor: exceedanceColor }}></div>
+      {exceedanceLoading ? (
+        <div className="spinner-container">
+          <Oval height={20} width={20} color="#236A80" ariaLabel="Loading..." />
+        </div>
+      ) : (
+        <div
+          className="color-circle"
+          style={{ backgroundColor: exceedanceColor }}
+        ></div>
+      )}
       <span className="color-label">Parameter Exceed</span>
     </div>
+
+    {/* Data Interval Indicator */}
     <div className="color-indicator ml-4">
-      <div className="color-circle" style={{ backgroundColor: timeIntervalColor }}></div>
+      {exceedanceLoading ? (
+        <div className="spinner-container">
+          <Oval height={20} width={20} color="#236A80" ariaLabel="Loading..." />
+        </div>
+      ) : (
+        <div
+          className="color-circle"
+          style={{ backgroundColor: timeIntervalColor }}
+        ></div>
+      )}
       <span className="color-label">Data Interval</span>
     </div>
   </div>
-  </div>
+</div>
           </div>
 <div className="row">
-  <div className="col-md-12 col-lg-6 col-sm-12">
-  <div className="border bg-light shadow "  style={{ height: "60vh" , borderRadius:'15px', position: 'relative' }} >
-      {selectedCard ? (
-          <WaterGraphPopup
-            parameter={selectedCard.title}
-            userName={currentUserName}
-            stackName={selectedCard.stackName}
-          />
-        ) : (
-          <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-        )}
-        {/* Download Button */}
-        {selectedCard && (
-            
-            <button
-              onClick={handleDownloadPdf}
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                
-                backgroundColor:'#236a80',
-                color:'white'
-              }}
-              className="btn "
-            >
-             <i class="fa-solid fa-download"></i>
-            </button>
-          )}
-      </div>
+<div className="col-md-12 col-lg-6 col-sm-12 mb-2 ">
+  {/* Graph Container with reference */}
+  <div
+    className="border bg-light shadow"
+    style={{ height: '70vh', borderRadius: '15px' , position:'relative'}}
+    ref={graphRef}
+  >
+    {selectedCard ? (
+      <WaterGraphPopup
+        parameter={selectedCard.title}
+        userName={currentUserName}
+        stackName={selectedCard.stackName}
+      />
+    ) : (
+      <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+    )}
+
+    {/* Download Buttons */}
+    {selectedCard && (
+      <>
+        <button
+          onClick={handleDownloadPdf}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            left:'20px',
+            backgroundColor: '#236a80',
+            color: 'white',
+            marginTop:'10px',
+            marginBottom:'10px',
+          }}
+          className="btn"
+        >
+          <i className="fa-solid fa-download"></i> Download graph
+        </button>
+
+        <button
+          onClick={openModal} // Open the modal
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '20px',
+            backgroundColor: '#236a80',
+            color: 'white',
+            marginTop:'10px',
+            marginBottom:'10px',
+          }}
+          className="btn"
+        >
+          <i className="fa-solid fa-download"></i> Download Average
+        </button> 
+      </>
+    )}
   </div>
+
+  {/* Modal for Downloading Average Data */}
+  <DownloadaverageDataModal
+    isOpen={isModalOpen}
+    onClose={closeModal}
+    userName={currentUserName}
+    stackName={selectedCard?.stackName || ''}
+  />
+</div>
   <div className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow" 
-    style={{ height: "60vh", overflowY: "scroll",  borderRadius:'15px' }}>
+    style={{ height: "70vh", overflowY: "scroll",  borderRadius:'15px' }}>
   {!loading && filteredData.length > 0 ? (
                     filteredData.map((stack, stackIndex) => (
                         noiseStacks.includes(stack.stackName) && (

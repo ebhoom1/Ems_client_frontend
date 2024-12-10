@@ -325,3 +325,14 @@
     display: block;
   }
 }
+.loading-indicator {
+  text-align: center;
+  color: #888;
+  margin-top: 20px;
+}
+
+.no-messages {
+  text-align: center;
+  color: #aaa;
+  margin-top: 20px;
+}

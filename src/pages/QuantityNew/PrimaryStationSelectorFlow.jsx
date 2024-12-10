@@ -35,7 +35,17 @@ const PrimaryStationSelectorFlow = ({ userName, stations, primaryStation, setPri
         <span>+</span>
       </button>
       {isOpen && (
-        <ul className="dropdown-menu show" style={{ position: 'absolute', backgroundColor: '#fff', listStyle: 'none', padding: '10px', border: '1px solid #ccc', marginTop: '5px' }}>
+        <ul className="dropdown-menu show"
+         style={{
+           position: 'absolute',
+           backgroundColor: '#fff',
+          listStyle: 'none',
+          padding: '10px',
+           border: '1px solid #ccc', 
+           marginTop: '-200px',
+          left: '35%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,}}>
           {stations.map((stack, index) => (
             <li key={index} className="dropdown-item" onClick={() => {
               handleSetPrimaryStation(stack);
