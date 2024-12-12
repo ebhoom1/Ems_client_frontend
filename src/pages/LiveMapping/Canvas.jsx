@@ -1,3 +1,4 @@
+// Canvas.jsx (Updated)
 import React, { useState, useCallback, useEffect } from 'react';
 import ReactFlow, {
   addEdge,
@@ -7,11 +8,26 @@ import ReactFlow, {
   useEdgesState,
 } from 'react-flow-renderer';
 import SVGNode from './SVGnode';
-import { useSelector } from 'react-redux'; // Import useSelector for Redux
+import TextNode from './TextNode';
+import { useSelector } from 'react-redux';
 import axios from 'axios';
 
 const nodeTypes = {
   svgNode: SVGNode,
+  textNode: ({ data }) => (
+    <div
+      style={{
+        padding: '10px',
+        backgroundColor: '#fff',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+        cursor: 'move',
+        textAlign: 'center',
+      }}
+    >
+      {data.label}
+    </div>
+  ),
 };
 
 function Canvas() {
@@ -20,13 +36,12 @@ function Canvas() {
   const [isDragging, setIsDragging] = useState(false);
   const [searchUserName, setSearchUserName] = useState('');
   const [currentUserName, setCurrentUserName] = useState('');
-  const [isEditing, setIsEditing] = useState(false); // Tracks whether it's an edit
-  const [noLiveStation, setNoLiveStation] = useState(false); // Tracks if no live station is found
+  const [isEditing, setIsEditing] = useState(false);
+  const [noLiveStation, setNoLiveStation] = useState(false);
 
-  // Redux selectors
   const { userData } = useSelector((state) => state.user);
   const userType = userData?.validUserOne?.userType || '';
-  const loggedUserName = userData?.validUserOne?.userName || ''; // Dynamically fetched username
+  const loggedUserName = userData?.validUserOne?.userName || '';
 
   const onDragStart = () => setIsDragging(true);
   const onDragStop = () => setIsDragging(false);
@@ -40,9 +55,8 @@ function Canvas() {
     event.preventDefault();
   };
 
-  const onDrop = async (event) => {
+  const onDrop = (event) => {
     event.preventDefault();
-
     const reactFlowBounds = event.target.getBoundingClientRect();
     const shapeData = event.dataTransfer.getData('application/reactflow');
 
@@ -59,8 +73,6 @@ function Canvas() {
       return;
     }
 
-    const backendValue = await fetchBackendData(parsedShapeData.id);
-
     const position = {
       x: event.clientX - reactFlowBounds.left,
       y: event.clientY - reactFlowBounds.top,
@@ -68,23 +80,12 @@ function Canvas() {
 
     const newNode = {
       id: `${parsedShapeData.id}_${nodes.length}`,
-      type: 'svgNode',
+      type: parsedShapeData.type,
       position,
-      data: { label: parsedShapeData.label, svgPath: parsedShapeData.svgPath, backendValue },
+      data: { label: parsedShapeData.label, svgPath: parsedShapeData.svgPath },
     };
 
     setNodes((nds) => nds.concat(newNode));
-  };
-
-  const fetchBackendData = async (id) => {
-    if (id === 'meter') {
-      return '34ml/hr';
-    } else if (id === 'energymeter') {
-      return '22kw';
-    } else if (id === 'tank') {
-      return '500L';
-    }
-    return '';
   };
 
   const handleSave = async () => {
@@ -104,7 +105,7 @@ function Canvas() {
       });
       console.log('Saved successfully:', response.data);
       alert('Map saved successfully!');
-      setNoLiveStation(false); // After saving, there is now a live station
+      setNoLiveStation(false);
     } catch (error) {
       console.error('Error saving map:', error);
       alert('Failed to save map. Please try again.');
@@ -118,7 +119,7 @@ function Canvas() {
       setNodes([]);
       setEdges([]);
       setIsEditing(false);
-      setNoLiveStation(true); // Set no live station available
+      setNoLiveStation(true);
     } catch (error) {
       console.error('Error deleting live station:', error);
       alert('Failed to delete live station. Please try again.');
@@ -133,17 +134,16 @@ function Canvas() {
         setNodes(data.nodes || []);
         setEdges(data.edges || []);
         setCurrentUserName(name);
-        setIsEditing(true); // Set editing mode if live station exists
-        setNoLiveStation(false); // Live station is available
-        console.log(`Live station data fetched for ${name}`);
+        setIsEditing(true);
+        setNoLiveStation(false);
       } else {
         setIsEditing(false);
-        setNoLiveStation(true); // No live station found
+        setNoLiveStation(true);
       }
     } catch (error) {
       console.error('Error fetching live station:', error);
       setIsEditing(false);
-      setNoLiveStation(true); // No live station found
+      setNoLiveStation(true);
     }
   };
 
@@ -158,10 +158,8 @@ function Canvas() {
 
   useEffect(() => {
     if (userType === 'admin') {
-      // Admin has a search box to fetch live stations for any user
       setCurrentUserName('');
     } else if (userType === 'user') {
-      // User's live station is fetched directly
       fetchLiveStation(loggedUserName);
     }
   }, [userType, loggedUserName]);
@@ -224,31 +222,3 @@ function Canvas() {
 }
 
 export default Canvas;
-
-
-
-
-/* 
-
-
-import { FaTrash } from 'react-icons/fa'; 
-  {nodes.map((node) => (
-        <div
-           key={node.id}
-          style={{
-            position: 'absolute',
-            left: node.position.x + 50, 
-            top: node.position.y,
-            backgroundColor: 'white',
-            border: '1px solid #ccc',
-            padding: '5px',
-            zIndex: 1000,
-            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.68)',
-          }} 
-        >
-         <FaTrash
-            onClick={() => handleDeleteNode(node.id)}
-            style={{ color: 'red', cursor: 'pointer' }}
-          /> 
-        </div>
-      ))} */

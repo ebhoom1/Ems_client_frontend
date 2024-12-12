@@ -55,6 +55,7 @@ import Waste from './pages/Waste/Waste'
 import EnergyDashboard from './pages/Energy/EnergyLayout';
 import FlowLayout from './pages/QuantityNew/FlowLayout'
 import ViewDifference from './pages/Energy/ViewDifference';
+import WaterQualityTable from './pages/Table/WaterQualityTable';
 
 
 function App() {
@@ -162,6 +163,7 @@ function App() {
                   <Route path="/view-data" element={<ViewComponent />} />
                   <Route path="/waste" element={<Waste />} />
                   <Route path="/viewdifference" element={<ViewDifference />} />
+                  <Route path="/table" element={<WaterQualityTable />} />
 
 
 
@@ -191,6 +193,7 @@ function App() {
 
                   <Route path="/live-station" element={<LIveLayout />} />
                   <Route path="/view-data" element={<ViewComponent />} />
+                  <Route path="/table" element={<WaterQualityTable />} />
 
 
 
