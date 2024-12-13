@@ -2,44 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { Resizable } from 're-resizable';
 import { FaSyncAlt } from 'react-icons/fa'; // Import rotate icon
 
-const SVGNode = ({ data, selected, onDelete, onNodeUpdate }) => {
-  // Log the props to the console for debugging
-  /* useEffect(() => {
-    console.log("SVGNode props:", { data, selected, onDelete, onNodeUpdate });
-  }, [data, selected, onDelete, onNodeUpdate]); */
-
+const SVGNode = ({ data, selected, onNodeUpdate }) => {
   const [size, setSize] = useState({ width: 100, height: 100 });
+  const [rotation, setRotation] = useState(0); // State to track rotation angle
   const [isResizing, setIsResizing] = useState(false);
   const [backendValue, setBackendValue] = useState('');
   const [isPumpOn, setIsPumpOn] = useState(false);
   const [isEditing, setIsEditing] = useState(false); // State to track editing mode
-  const [rotation, setRotation] = useState(0); // State to track rotation angle
 
+  // Set initial size and rotation from data
   useEffect(() => {
     if (data.backendValue) {
       setBackendValue(data.backendValue); // Set the value from backend if it's available
     }
 
-    // Update initial size and rotation from data
     setSize({
       width: data.width || 100,
       height: data.height || 100,
     });
     setRotation(data.rotation || 0);
   }, [data]);
-/* 
-  const handleResize = (e, direction, ref, delta) => {
-    const newWidth = ref.offsetWidth;
-    const newHeight = ref.offsetHeight;
-
-    setSize({
-      width: newWidth,
-      height: newHeight,
-    });
-
-    // Notify parent to update the node with the new size
-    onNodeUpdate(data.id, { width: newWidth, height: newHeight, rotation });
-  }; */
 
   const handleResizeStart = () => {
     setIsResizing(true);
@@ -60,29 +42,39 @@ const SVGNode = ({ data, selected, onDelete, onNodeUpdate }) => {
   const handleRotation = () => {
     const newRotation = (rotation + 45) % 360; // Rotate by 45 degrees
     setRotation(newRotation);
-    
+
     // Notify parent to update the node with the new rotation
-    if (onNodeUpdate) {
-      onNodeUpdate(data.id, { width: size.width, height: size.height, rotation: newRotation, position: { x: size.x, y: size.y } });
-    } else {
-      console.error("onNodeUpdate function is not available.");
-    }
+    onNodeUpdate(data.id, {
+      width: size.width,
+      height: size.height,
+      rotation: newRotation,
+      position: { x: size.x, y: size.y },
+    });
+
+    // Log nodes and edges after rotation (if available)
+    console.log('Nodes after rotation:', data);
   };
-  
+
   const handleResize = (e, direction, ref, delta) => {
     const newWidth = ref.offsetWidth;
     const newHeight = ref.offsetHeight;
-  
+
     setSize({
       width: newWidth,
       height: newHeight,
     });
-  
+
     // Notify parent to update the node with the new size and position
-    onNodeUpdate(data.id, { width: newWidth, height: newHeight, rotation, position: { x: size.x, y: size.y } });
+    onNodeUpdate(data.id, {
+      width: newWidth,
+      height: newHeight,
+      rotation,
+      position: { x: size.x, y: size.y },
+    });
+
+    // Log nodes and edges after resize (if available)
+    console.log('Nodes after resize:', data);
   };
-  
-  
 
   const getResizeConstraints = () => {
     const screenWidth = window.innerWidth;
@@ -134,7 +126,7 @@ const SVGNode = ({ data, selected, onDelete, onNodeUpdate }) => {
 
       {/* Toggle switch for Pump */}
       {data.label === 'Pump' && (
-        <div 
+        <div
           className="toggle-switch"
           onClick={togglePump}
           style={{

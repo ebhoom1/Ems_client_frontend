@@ -76,7 +76,7 @@ const Water = () => {
     { parameter: "pH", value: 'pH', name: 'ph' },
     { parameter: "TDS", value: 'mg/l', name: 'TDS' },
     { parameter: "Turbidity", value: 'NTU', name: 'turbidity' },
-    { parameter: "Temperature", value: '℃', name: 'temperature' },
+    { parameter: "Temperature", value: '℃', name: 'Temp' },
     { parameter: "BOD", value: 'mg/l', name: 'BOD' },
     { parameter: "COD", value: 'mg/l', name: 'COD' },
     { parameter: "TSS", value: 'mg/l', name: 'TSS' },
