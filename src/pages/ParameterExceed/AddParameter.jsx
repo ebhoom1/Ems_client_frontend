@@ -89,7 +89,7 @@ if (error) {
   const industryType = [
     "Sugar", "Cement", "Distillery", "Petrochemical", "Pulp & Paper", "Fertilizer", "Tannery", "Pesticides",
     "Thermal Power Station", "Caustic Soda", "Pharmaceuticals", "Chemical", "Dye and Dye Stuff", "Refinery",
-    "Copper Smelter", "Iron and Steel", "Zinc Smelter", "Aluminium", "STP/ETP", "NWMS/SWMS", "Noise", "Other"
+    "Copper Smelter", "Iron and Steel", "Zinc Smelter", "Aluminium", "STP","ETP", "NWMS/SWMS", "Noise", "Other"
   ];
 
   return (

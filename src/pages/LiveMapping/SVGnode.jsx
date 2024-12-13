@@ -3,6 +3,11 @@ import { Resizable } from 're-resizable';
 import { FaSyncAlt } from 'react-icons/fa'; // Import rotate icon
 
 const SVGNode = ({ data, selected, onDelete, onNodeUpdate }) => {
+  // Log the props to the console for debugging
+  useEffect(() => {
+    console.log("SVGNode props:", { data, selected, onDelete, onNodeUpdate });
+  }, [data, selected, onDelete, onNodeUpdate]);
+
   const [size, setSize] = useState({ width: 100, height: 100 });
   const [isResizing, setIsResizing] = useState(false);
   const [backendValue, setBackendValue] = useState('');
@@ -55,10 +60,16 @@ const SVGNode = ({ data, selected, onDelete, onNodeUpdate }) => {
   const handleRotation = () => {
     const newRotation = (rotation + 45) % 360; // Rotate by 45 degrees
     setRotation(newRotation);
-
+    console.log("Rotation triggered", { newRotation });
+  
     // Notify parent to update the node with the new rotation
-    onNodeUpdate(data.id, { width: size.width, height: size.height, rotation: newRotation });
+    if (onNodeUpdate) {
+      onNodeUpdate(data.id, { width: size.width, height: size.height, rotation: newRotation });
+    } else {
+      console.error("onNodeUpdate function is not available.");
+    }
   };
+  
 
   const getResizeConstraints = () => {
     const screenWidth = window.innerWidth;

@@ -1,4 +1,3 @@
-// Canvas.jsx (Updated)
 import React, { useState, useCallback, useEffect } from 'react';
 import ReactFlow, {
   addEdge,
@@ -99,7 +98,7 @@ function Canvas() {
         url: apiUrl,
         data: {
           userName: currentUserName || loggedUserName,
-          nodes,
+          nodes,  // Ensure rotation is included here
           edges,
         },
       });
@@ -111,6 +110,7 @@ function Canvas() {
       alert('Failed to save map. Please try again.');
     }
   };
+  
 
   const handleDelete = async () => {
     try {
@@ -164,6 +164,13 @@ function Canvas() {
     }
   }, [userType, loggedUserName]);
 
+  const onNodeUpdate = (id, updatedData) => {
+    console.log("onNodeUpdate called with", id, updatedData);
+    setNodes((nds) => nds.map((node) =>
+      node.id === id ? { ...node, data: { ...node.data, ...updatedData } } : node
+    ));
+  };
+
   return (
     <div className="react-flow-container">
       <div className="react-flow-scrollable">
@@ -212,6 +219,17 @@ function Canvas() {
               pointerEvents: isDragging ? 'none' : 'auto',
             }}
           >
+            {/* Loop through nodes and pass data to SVGNode */}
+            {nodes.map((node) => (
+  <SVGNode
+    key={node.id}
+    data={node.data}
+    selected={node.selected}
+   
+    onNodeUpdate={onNodeUpdate}  // Make sure this is passed correctly
+  />
+))}
+
             <Controls />
             <Background />
           </ReactFlow>

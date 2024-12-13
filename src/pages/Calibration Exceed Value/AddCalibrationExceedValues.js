@@ -123,7 +123,10 @@ const AddCalibrationExceedValues = () => {
       category:"Aluminium"
     },
     {
-      category:"STP/ETP"
+      category:"ETP"
+    },
+    {
+      category:"STP"
     },
     {
       category:"NWMS/SWMS"
