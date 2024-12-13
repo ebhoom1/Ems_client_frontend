@@ -76,7 +76,8 @@ const Water = () => {
     { parameter: "pH", value: 'pH', name: 'ph' },
     { parameter: "TDS", value: 'mg/l', name: 'TDS' },
     { parameter: "Turbidity", value: 'NTU', name: 'turbidity' },
-    { parameter: "Temperature", value: '℃', name: 'Temp' },
+    // { parameter: "Temperature", value: '℃', name: 'Temp' },
+ 
     { parameter: "BOD", value: 'mg/l', name: 'BOD' },
     { parameter: "COD", value: 'mg/l', name: 'COD' },
     { parameter: "TSS", value: 'mg/l', name: 'TSS' },
@@ -482,7 +483,7 @@ const handleDownloadPdf = () => {
           style={{ backgroundColor: exceedanceColor }}
         ></div>
       )}
-      <span className="color-label">Parameter Exceed</span>
+      <span className="color-label me-2">Parameter Exceed</span>
     </div>
 
     {/* Data Interval Indicator */}
