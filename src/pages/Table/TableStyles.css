@@ -30,3 +30,13 @@
 .highlight-green {
     background-color: #b6d7a8;
 }
+.time-row {
+    font-size: 10px;
+    text-align: center;
+    color: #666;
+}
+
+.timestamp p {
+    margin: 0;
+    padding: 0;
+}

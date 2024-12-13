@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Resizable } from 're-resizable';
-import { FaSyncAlt, FaTrashAlt } from 'react-icons/fa'; // Import rotate and delete icons
+import { FaSyncAlt } from 'react-icons/fa'; // Import rotate icon
 
-const SVGNode = ({ data, selected, onDelete }) => {
+const SVGNode = ({ data, selected, onDelete, onNodeUpdate }) => {
   const [size, setSize] = useState({ width: 100, height: 100 });
   const [isResizing, setIsResizing] = useState(false);
   const [backendValue, setBackendValue] = useState('');
@@ -14,13 +14,26 @@ const SVGNode = ({ data, selected, onDelete }) => {
     if (data.backendValue) {
       setBackendValue(data.backendValue); // Set the value from backend if it's available
     }
-  }, [data.backendValue]);
+
+    // Update initial size and rotation from data
+    setSize({
+      width: data.width || 100,
+      height: data.height || 100,
+    });
+    setRotation(data.rotation || 0);
+  }, [data]);
 
   const handleResize = (e, direction, ref, delta) => {
+    const newWidth = ref.offsetWidth;
+    const newHeight = ref.offsetHeight;
+
     setSize({
-      width: ref.offsetWidth,
-      height: ref.offsetHeight,
+      width: newWidth,
+      height: newHeight,
     });
+
+    // Notify parent to update the node with the new size
+    onNodeUpdate(data.id, { width: newWidth, height: newHeight, rotation });
   };
 
   const handleResizeStart = () => {
@@ -39,12 +52,14 @@ const SVGNode = ({ data, selected, onDelete }) => {
     setIsEditing(!isEditing); // Toggle editing mode on double-click
   };
 
-  // Rotate by 45 degrees every click
   const handleRotation = () => {
-    setRotation((prevRotation) => (prevRotation + 45) % 360); // Rotate by 45 degrees
+    const newRotation = (rotation + 45) % 360; // Rotate by 45 degrees
+    setRotation(newRotation);
+
+    // Notify parent to update the node with the new rotation
+    onNodeUpdate(data.id, { width: size.width, height: size.height, rotation: newRotation });
   };
 
-  // Function to determine resize constraints based on screen size
   const getResizeConstraints = () => {
     const screenWidth = window.innerWidth;
 
