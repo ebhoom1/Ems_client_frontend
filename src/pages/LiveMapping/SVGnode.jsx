@@ -4,9 +4,9 @@ import { FaSyncAlt } from 'react-icons/fa'; // Import rotate icon
 
 const SVGNode = ({ data, selected, onDelete, onNodeUpdate }) => {
   // Log the props to the console for debugging
-  useEffect(() => {
+  /* useEffect(() => {
     console.log("SVGNode props:", { data, selected, onDelete, onNodeUpdate });
-  }, [data, selected, onDelete, onNodeUpdate]);
+  }, [data, selected, onDelete, onNodeUpdate]); */
 
   const [size, setSize] = useState({ width: 100, height: 100 });
   const [isResizing, setIsResizing] = useState(false);
@@ -27,7 +27,7 @@ const SVGNode = ({ data, selected, onDelete, onNodeUpdate }) => {
     });
     setRotation(data.rotation || 0);
   }, [data]);
-
+/* 
   const handleResize = (e, direction, ref, delta) => {
     const newWidth = ref.offsetWidth;
     const newHeight = ref.offsetHeight;
@@ -39,7 +39,7 @@ const SVGNode = ({ data, selected, onDelete, onNodeUpdate }) => {
 
     // Notify parent to update the node with the new size
     onNodeUpdate(data.id, { width: newWidth, height: newHeight, rotation });
-  };
+  }; */
 
   const handleResizeStart = () => {
     setIsResizing(true);
@@ -60,15 +60,28 @@ const SVGNode = ({ data, selected, onDelete, onNodeUpdate }) => {
   const handleRotation = () => {
     const newRotation = (rotation + 45) % 360; // Rotate by 45 degrees
     setRotation(newRotation);
-    console.log("Rotation triggered", { newRotation });
-  
+    
     // Notify parent to update the node with the new rotation
     if (onNodeUpdate) {
-      onNodeUpdate(data.id, { width: size.width, height: size.height, rotation: newRotation });
+      onNodeUpdate(data.id, { width: size.width, height: size.height, rotation: newRotation, position: { x: size.x, y: size.y } });
     } else {
       console.error("onNodeUpdate function is not available.");
     }
   };
+  
+  const handleResize = (e, direction, ref, delta) => {
+    const newWidth = ref.offsetWidth;
+    const newHeight = ref.offsetHeight;
+  
+    setSize({
+      width: newWidth,
+      height: newHeight,
+    });
+  
+    // Notify parent to update the node with the new size and position
+    onNodeUpdate(data.id, { width: newWidth, height: newHeight, rotation, position: { x: size.x, y: size.y } });
+  };
+  
   
 
   const getResizeConstraints = () => {

@@ -98,7 +98,7 @@ function Canvas() {
         url: apiUrl,
         data: {
           userName: currentUserName || loggedUserName,
-          nodes,  // Ensure rotation is included here
+          nodes,  // Ensure rotation and size are included here
           edges,
         },
       });
@@ -110,6 +110,7 @@ function Canvas() {
       alert('Failed to save map. Please try again.');
     }
   };
+  
   
 
   const handleDelete = async () => {
@@ -146,6 +147,7 @@ function Canvas() {
       setNoLiveStation(true);
     }
   };
+  
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -166,10 +168,13 @@ function Canvas() {
 
   const onNodeUpdate = (id, updatedData) => {
     console.log("onNodeUpdate called with", id, updatedData);
-    setNodes((nds) => nds.map((node) =>
-      node.id === id ? { ...node, data: { ...node.data, ...updatedData } } : node
-    ));
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === id ? { ...node, data: { ...node.data, ...updatedData } } : node
+      )
+    );
   };
+  
 
   return (
     <div className="react-flow-container">

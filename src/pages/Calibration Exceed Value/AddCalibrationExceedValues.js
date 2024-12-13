@@ -135,6 +135,9 @@ const AddCalibrationExceedValues = () => {
       category:"Noise"
     },
     {
+      category:"Hotel"
+    },
+    {
       category:"Zinc Smelter"
     },
     {

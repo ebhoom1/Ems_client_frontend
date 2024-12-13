@@ -92,6 +92,7 @@ const EditParameter = () => {
     { category: "Aluminium" },
     { category: "ETP" },
     { category: "STP" },
+    { category:"Hotel"},
     { category: "NWMS/SWMS" },
     { category: "Noise" },
     { category: "Other" },

@@ -129,6 +129,9 @@ const EditCalibrationExceedValue = () => {
       category:"NWMS/SWMS"
     },
     {
+      category:"Hotel"
+    },
+    {
       category:"Noise"
     },
     {
