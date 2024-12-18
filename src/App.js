@@ -56,6 +56,9 @@ import EnergyDashboard from './pages/Energy/EnergyLayout';
 import FlowLayout from './pages/QuantityNew/FlowLayout'
 import ViewDifference from './pages/Energy/ViewDifference';
 import WaterQualityTable from './pages/Table/WaterQualityTable';
+import UserManual from './pages/LiveMapping/UserManual';
+import ExceedenceReport from './pages/Report/ExceedenceReport';
+import CustomisableReport from './pages/Report/CustomisableReport';
 
 
 function App() {
@@ -164,7 +167,9 @@ function App() {
                   <Route path="/waste" element={<Waste />} />
                   <Route path="/viewdifference" element={<ViewDifference />} />
                   <Route path="/table" element={<WaterQualityTable />} />
-
+                  <Route path="/how-to-use" element={ <UserManual />} />
+                  <Route path="/customisable-report" element={<CustomisableReport />} />
+                  <Route path="/exceedence-report" element={<ExceedenceReport />} />
 
 
 
@@ -180,6 +185,9 @@ function App() {
                   <Route path="/noise" element={<Noise />} />
                   <Route path="/account" element={<Account />} />
                   <Route path="/chat" element={<Chat />} />
+                  <Route path="/how-to-use" element={ <UserManual />} />
+                  
+                  <Route path="/customisable-report" element={<CustomisableReport />} />
 
                   <Route path="/transactions" element={<Transcation />} /> {/* Assuming transaction-related routes */}
                   <Route path="/view-report" element={<ViewReport />} />
@@ -190,7 +198,7 @@ function App() {
                   <Route path="/support-analyser" element={<SupportAnalyser />} />
                   <Route path="/view-report/:userName" element={<ViewReportUser />} />
                   <Route path="/waste" element={<Waste />} />
-
+                  <Route path="/exceedence-report" element={<ExceedenceReport />} />
                   <Route path="/live-station" element={<LIveLayout />} />
                   <Route path="/view-data" element={<ViewComponent />} />
                   <Route path="/table" element={<WaterQualityTable />} />

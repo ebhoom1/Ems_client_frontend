@@ -41,7 +41,10 @@ function Maindashboard() {
   };
 
   useEffect(() => {
-    console.log("userName:", userName); // Debugging the userName value
+    console.log("userName:", userName);
+   
+    
+     // Debugging the userName value
     if (userName) {
       fetchStationTypes(userName);
     } else {

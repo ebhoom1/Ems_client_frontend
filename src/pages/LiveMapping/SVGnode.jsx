@@ -1,27 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Resizable } from 're-resizable';
-import { FaSyncAlt } from 'react-icons/fa'; // Import rotate icon
+import { FaSyncAlt, FaTrashAlt } from 'react-icons/fa';
 
-const SVGNode = ({ data, selected, onNodeUpdate }) => {
+const SVGNode = ({ data, selected, onDelete }) => {
   const [size, setSize] = useState({ width: 100, height: 100 });
-  const [rotation, setRotation] = useState(0); // State to track rotation angle
   const [isResizing, setIsResizing] = useState(false);
-  const [backendValue, setBackendValue] = useState('');
   const [isPumpOn, setIsPumpOn] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // State to track editing mode
+  const [rotation, setRotation] = useState(data.rotation || 0);  // Store rotation
+  const [isEditing, setIsEditing] = useState(false);  // Define isEditing state
 
-  // Set initial size and rotation from data
-  useEffect(() => {
-    if (data.backendValue) {
-      setBackendValue(data.backendValue); // Set the value from backend if it's available
-    }
-
+  const handleResize = (e, direction, ref, delta) => {
     setSize({
-      width: data.width || 100,
-      height: data.height || 100,
+      width: ref.offsetWidth,
+      height: ref.offsetHeight,
     });
-    setRotation(data.rotation || 0);
-  }, [data]);
+  };
 
   const handleResizeStart = () => {
     setIsResizing(true);
@@ -32,58 +25,28 @@ const SVGNode = ({ data, selected, onNodeUpdate }) => {
   };
 
   const togglePump = () => {
-    setIsPumpOn(!isPumpOn); // Toggle pump status
-  };
-
-  const toggleEditing = () => {
-    setIsEditing(!isEditing); // Toggle editing mode on double-click
+    setIsPumpOn(!isPumpOn);
   };
 
   const handleRotation = () => {
-    const newRotation = (rotation + 45) % 360; // Rotate by 45 degrees
+    const newRotation = (rotation + 45) % 360;
     setRotation(newRotation);
-
-    // Notify parent to update the node with the new rotation
-    onNodeUpdate(data.id, {
-      width: size.width,
-      height: size.height,
-      rotation: newRotation,
-      position: { x: size.x, y: size.y },
-    });
-
-    // Log nodes and edges after rotation (if available)
-    console.log('Nodes after rotation:', data);
+    // Save the rotation as part of the data
+    data.rotation = newRotation;
   };
 
-  const handleResize = (e, direction, ref, delta) => {
-    const newWidth = ref.offsetWidth;
-    const newHeight = ref.offsetHeight;
-
-    setSize({
-      width: newWidth,
-      height: newHeight,
-    });
-
-    // Notify parent to update the node with the new size and position
-    onNodeUpdate(data.id, {
-      width: newWidth,
-      height: newHeight,
-      rotation,
-      position: { x: size.x, y: size.y },
-    });
-
-    // Log nodes and edges after resize (if available)
-    console.log('Nodes after resize:', data);
+  const toggleEditing = () => {
+    setIsEditing(!isEditing);  // Toggle the editing state
   };
 
   const getResizeConstraints = () => {
     const screenWidth = window.innerWidth;
 
-    if (screenWidth <= 768) { // Mobile view
+    if (screenWidth <= 768) {
       return { minWidth: 50, minHeight: 50, maxWidth: 150, maxHeight: 150 };
-    } else if (screenWidth <= 1024) { // Tablet view
+    } else if (screenWidth <= 1024) {
       return { minWidth: 75, minHeight: 75, maxWidth: 250, maxHeight: 250 };
-    } else { // Desktop view
+    } else {
       return { minWidth: 100, minHeight: 100, maxWidth: 300, maxHeight: 300 };
     }
   };
@@ -92,14 +55,14 @@ const SVGNode = ({ data, selected, onNodeUpdate }) => {
 
   return (
     <div
-      onDoubleClick={toggleEditing} // Enable editing on double-click
+      onDoubleClick={toggleEditing}
       style={{
         position: 'relative',
         zIndex: isResizing ? 100 : 1,
         border: selected ? '2px solid blue' : 'none',
         boxShadow: isResizing ? '0 0 10px rgba(0,0,0,0.3)' : 'none',
-        transform: `rotate(${rotation}deg)`, // Apply rotation based on state
-        transition: 'transform 0.3s ease', // Smooth transition for rotation
+        transform: `rotate(${rotation}deg)`, // Apply rotation
+        transition: 'transform 0.3s ease',
       }}
     >
       <Resizable
@@ -124,7 +87,7 @@ const SVGNode = ({ data, selected, onNodeUpdate }) => {
         />
       </Resizable>
 
-      {/* Toggle switch for Pump */}
+      {/* Show toggle switch only for the "Pump" node */}
       {data.label === 'Pump' && (
         <div
           className="toggle-switch"
@@ -158,24 +121,6 @@ const SVGNode = ({ data, selected, onNodeUpdate }) => {
         </div>
       )}
 
-      {/* Conditionally render input box for Flowmeter, Energymeter, and Meter */}
-      {['Energymeter', 'Meter', 'Tank'].includes(data.label) && (
-        <input
-          type="text"
-          value={backendValue}
-          readOnly
-          style={{
-            position: 'absolute',
-            bottom: '-1px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '60%',
-            textAlign: 'center',
-          }}
-        />
-      )}
-
-      {/* Show rotation and delete icons when editing */}
       {isEditing && (
         <div
           style={{
@@ -188,9 +133,8 @@ const SVGNode = ({ data, selected, onNodeUpdate }) => {
             alignItems: 'center',
           }}
         >
-          {/* Rotate Icon */}
           <FaSyncAlt
-            onClick={handleRotation} // Rotate the element
+            onClick={handleRotation}
             style={{ cursor: 'pointer', marginTop: '10px' }}
             size={20}
           />

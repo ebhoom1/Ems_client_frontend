@@ -81,13 +81,7 @@ function Canvas() {
       id: `${parsedShapeData.id}_${nodes.length}`,
       type: parsedShapeData.type,
       position,
-      data: {
-        label: parsedShapeData.label,
-        svgPath: parsedShapeData.svgPath,
-        rotation: 0, // default rotation
-        width: 100, // default width
-        height: 100, // default height
-      },
+      data: { label: parsedShapeData.label, svgPath: parsedShapeData.svgPath },
     };
 
     setNodes((nds) => nds.concat(newNode));
@@ -95,7 +89,6 @@ function Canvas() {
 
   const handleSave = async () => {
     try {
-      console.log("Saving nodes and edges:", nodes, edges); // Debugging
       const apiUrl = isEditing
         ? `https://api.ocems.ebhoom.com/api/edit-live-station/${currentUserName || loggedUserName}`
         : 'https://api.ocems.ebhoom.com/api/build-live-station';
@@ -105,7 +98,12 @@ function Canvas() {
         url: apiUrl,
         data: {
           userName: currentUserName || loggedUserName,
-          nodes,
+          nodes: nodes.map(node => ({
+            ...node,
+            rotation: node.data.rotation,  // Save rotation
+            width: node.width,             // Save size
+            height: node.height,           // Save size
+          })),
           edges,
         },
       });
@@ -117,6 +115,7 @@ function Canvas() {
       alert('Failed to save map. Please try again.');
     }
   };
+  
 
   const handleDelete = async () => {
     try {

@@ -36,7 +36,11 @@
 }
 
 
-
+@media (max-width: 2000px){
+  .buttonbg{
+    width: 260px;
+  }
+}
 
 
 @media (max-width: 1500px){

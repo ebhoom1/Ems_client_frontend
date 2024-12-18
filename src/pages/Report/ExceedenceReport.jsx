@@ -154,17 +154,16 @@ const ViewReport = () => {
         {/* Main content */}
         <div className="col-lg-9 col-12">
           <Hedaer />
-       <div className='maindashboard'>
+      {/*  <div className='maindashboard'>
        <Maindashboard/>
-       </div>
-       {/* 
+       </div> */}
+      
        <div className="container-fluid water">
               <div className="row">
                 <div className="col-12 col-md-12 grid-margin">
                   <div className="col-12 d-flex justify-content-between align-items-center m-3">
-                    <h1 className="text-center mt-5">Report</h1>
+                    <h1 className="text-center mt-5">Exceedence Report</h1>
                     
-                    <button className='btn text-light mt-5 me-2' style={{backgroundColor:'#236a80'}} onClick={handleDailyreport}>Daily Report</button>
                   </div>
                   <div className="card last-trips-card mt-2" style={{ overflowX: 'scroll' }}>
                     <div className="card-body">
@@ -252,32 +251,8 @@ const ViewReport = () => {
               <ToastContainer />
             </div>
 
- */}
- <div><h2 className='mt-5 text-center'>REPORTS</h2></div>
-{/*  <div>Select the type of report</div> */}
- <div style={{ marginTop: '50px' }} className="d-flex flex-column align-items-center justify-content-between">
-      <div
-        style={{ borderRadius: '10px', cursor: 'pointer' , color:'#236a80' }}
-        className="border border-solid shadow m-3 p-3 w-50 text-center"
-        onClick={() => navigate('/exceedence-report')}
-      >
-        Exceedence Report
-      </div>
-      <div
-        style={{ borderRadius: '10px', cursor: 'pointer',color:'#236a80'  }}
-        className="border border-solid shadow m-3 p-3 w-50 text-center"
-        onClick={() => navigate('/customisable-report')}
-      >
-        Customisable Report
-      </div>
-      <div
-        style={{ borderRadius: '10px', cursor: 'pointer',color:'#236a80'  }}
-        className="border border-solid shadow m-3 p-3 w-50 text-center"
-        onClick={() => navigate('/table')}
-      >
-        Daily Report
-      </div>
-    </div>
+
+
           
         </div>
       </div>

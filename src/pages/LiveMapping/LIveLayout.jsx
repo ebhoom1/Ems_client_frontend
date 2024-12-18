@@ -5,8 +5,14 @@ import Sidebar from './SideBar';
 import Canvas from './Canvas';
 import DashboardSam from '../Dashboard/DashboardSam';
 import Hedaer from '../Header/Hedaer';
+import { useNavigate } from 'react-router-dom';
 
 function LIveLayout() {
+
+  const navigate = useNavigate()
+  const handleHowtoUse=()=>{
+    navigate('/how-to-use')
+  }
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="container-fluid">
@@ -25,11 +31,25 @@ function LIveLayout() {
             <div>
               <div className="row" style={{ overflowX: 'hidden' }}>
                 <div className="col-12 col-md-12 grid-margin">
-                  <div className="col-12 d-flex justify-content-center align-items-center m-2 text-center">
-                    <h1 className="text-center mt-3" style={{ justifyContent: 'center' }}>
-                      Live Station Mapping 
-                    </h1>
-                  </div>
+                <div className="col-12 d-flex  align-items-center justify-content-center m-2">
+   
+    <h1 className="text-center mt-3">
+        Live Station Mapping
+    </h1>
+</div>
+<div className='d-flex align-items-end justify-content-end mb-2'>
+    <button 
+    onClick={handleHowtoUse}
+        className='btn' 
+        style={{ 
+            color: '#236a80',          // Text color
+            border: '2px solid #236a80' // Border color
+        }}
+    >
+        How to use
+    </button>
+</div>
+
                   <div className="cardn m-">
                     <div className="card-body">
                       <div className="row">

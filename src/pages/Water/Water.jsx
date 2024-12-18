@@ -508,7 +508,7 @@ const handleDownloadPdf = () => {
                   
 
               <div
-                className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow mb-2 graphdiv "
+                className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-2 graphdiv "
                 style={{ height: '70vh', overflowY: 'scroll', borderRadius: '15px' }}
               >
                 {!loading && filteredData.length > 0 ? (
@@ -575,10 +575,10 @@ const handleDownloadPdf = () => {
                 )}
               </div>
               {/* graph  */}
-              <div className="col-md-12 col-lg-6 col-sm-12 mb-2 graphdiv ">
+              
   {/* Graph Container with reference */}
   <div
-    className="border bg-light shadow"
+    className="col-md-12 col-lg-12 col-sm-12 mb-2 graphdiv border bg-light shadow"
     style={{ height: '70vh', borderRadius: '15px' , position:'relative'}}
     ref={graphRef}
   >
@@ -637,7 +637,7 @@ const handleDownloadPdf = () => {
     userName={currentUserName}
     stackName={selectedCard?.stackName || ''}
   />
-</div>
+
 
             </div>
         

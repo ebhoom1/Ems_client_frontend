@@ -48,20 +48,20 @@ const Account = () => {
                   <div className="card-body">
                     <form className="m-5">
                       <div className="row">
-                        <div>
-                          <p>User ID: {userData?.validUserOne?.userName || 'Admin developer'}</p>
-                          <p>Company Name: {userData?.validUserOne?.companyName || 'Ebhoom Solutions'}</p>
-                          <p>Model Name: {userData?.validUserOne?.modelName || 'NIL'}</p>
-                          <p>Name: {userData?.validUserOne?.fname || 'Fazil'}</p>
-                          <p>Email ID: {userData?.validUserOne?.email || 'fazilmm860@gmail.com'}</p>
-                          <p>
+                        <div className='text-light'>
+                          <p className='text-light'>User ID: {userData?.validUserOne?.userName || 'Admin developer'}</p>
+                          <p className='text-light'>Company Name: {userData?.validUserOne?.companyName || 'Ebhoom Solutions'}</p>
+                          <p className='text-light'>Model Name: {userData?.validUserOne?.modelName || 'NIL'}</p>
+                          <p className='text-light'>Name: {userData?.validUserOne?.fname || 'Fazil'}</p>
+                          <p className='text-light'>Email ID: {userData?.validUserOne?.email || 'fazilmm860@gmail.com'}</p>
+                          <p className='text-light'>
                             Password: ************ 
                             <Link to='/reset'>
-                              <button className="btn text-light" style={{ backgroundColor: '#236a80' }}>Change Password</button>
+                              <button className="btn btn-light  ms-5" style={{ color: '#236a80' }}>Change Password</button>
                             </Link>
                           </p>
-                          <p>Subscription Date: {userData?.validUserOne?.subscriptionDate || '2024-06-05'}</p>
-                          <p>Industry Type: {userData?.validUserOne?.industryType || 'Admin'}</p>
+                          <p className='text-light'>Subscription Date: {userData?.validUserOne?.subscriptionDate || '2024-06-05'}</p>
+                          <p className='text-light'>Industry Type: {userData?.validUserOne?.industryType || 'Admin'}</p>
                         </div>
                       </div>
                     </form>

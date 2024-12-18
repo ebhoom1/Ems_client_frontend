@@ -469,9 +469,8 @@ const airParameters = [
   </div>
 </div>
           </div>
-    <div className="row">
-  
-      <div className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow  mb-2" 
+          <div className="row">
+          <div className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow  mb-2" 
         style={{ height: "70vh", overflowY: "scroll",  borderRadius:'15px' }}>
       {!loading && filteredData.length > 0 ? (
                         filteredData.map((stack, stackIndex) => (
@@ -508,10 +507,14 @@ const airParameters = [
                     </div>
                     )}
       </div>
-      <div className="col-md-12 col-lg-6 col-sm-12 mb-2 ">
+          </div>
+    <div className="row">
+  
+     
+     
   {/* Graph Container with reference */}
   <div
-    className="border bg-light shadow"
+    className="col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
     style={{ height: '70vh', borderRadius: '15px' , position:'relative'}}
     ref={graphRef}
   >
@@ -570,7 +573,7 @@ const airParameters = [
     userName={currentUserName}
     stackName={selectedCard?.stackName || ''}
   />
-</div>
+
     </div>
     
     

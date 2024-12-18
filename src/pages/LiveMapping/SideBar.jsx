@@ -154,14 +154,15 @@ function Sidebar() {
             className="form-control mb-2"
           />
           <button
-            className="btn btn-primary"
+            className="btn text-light"
+            style={{backgroundColor:'#236a80'}}
             onClick={handleUpload}
             disabled={!selectedFile}
           >
             Upload SVG
           </button>
         </div>
-        <div className="text-input-container">
+        <div className="text-input-container mt-2">
           <input
             type="text"
             value={newText}
@@ -171,7 +172,8 @@ function Sidebar() {
           />
           <button
             onClick={handleTextAdd}
-            className="btn btn-primary"
+            className="btn text-light"
+            style={{backgroundColor:'#236a80'}}
             disabled={!newText.trim()}
           >
             Add Text
