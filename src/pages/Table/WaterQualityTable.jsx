@@ -219,8 +219,10 @@ const WaterQualityTable = () => {
                         <tr key={index}>
                             <td>{param.name}</td>
                             <td>{param.avg}</td>
-                            <td>{param.min}</td>
-                            <td>{param.max}</td>
+                            <td>{param.min} <br /> 
+                            <span style={{fontSize: '10px'}}>Min Time:  {param.minTime}</span></td>
+                            <td>{param.max} <br />
+                            <span style={{fontSize: '10px'}}>Max Time: {param.maxTime}</span></td>
                             <td>{userDetails.stackName}</td>
                             <td>-</td>
                             <td>-</td>
