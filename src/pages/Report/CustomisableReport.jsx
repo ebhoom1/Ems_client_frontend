@@ -15,7 +15,8 @@ const CustomisableReport = () => {
   const [formData, setFormData] = useState({
     userName: '',
     stackName: '',
-    date: '',
+    startDate: '',
+    endDate: '',
   });
   const [users, setUsers] = useState([]);
   const [stackOptions, setStackOptions] = useState([]);
@@ -72,13 +73,30 @@ const CustomisableReport = () => {
 
     try {
       const token = localStorage.getItem('userdatatoken');
-      await axios.post(`${API_URL}/api/generate-custom-report`, formData, {
+      const response = await axios.post(`${API_URL}/api/generate-custom-report`, formData, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: token,
         },
+        responseType: 'blob', // Ensures the response is a file
       });
-      toast.success('Report generated successfully!');
+
+      // Create a URL for the downloaded file and trigger a download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+
+      // Set filename based on the response headers or a default name
+      const contentDisposition = response.headers['content-disposition'];
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1].replace(/['"]/g, '')
+        : 'custom_report.pdf';
+
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+
+      toast.success('Report downloaded successfully!');
     } catch (error) {
       console.error('Error generating report:', error);
       toast.error('Failed to generate report. Please try again.');
@@ -142,13 +160,26 @@ const CustomisableReport = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label htmlFor="date">Date:</label>
+                <label htmlFor="startDate">Start Date:</label>
                 <input
                   type="date"
-                  id="date"
-                  name="date"
+                  id="startDate"
+                  name="startDate"
                   className="form-control"
-                  value={formData.date}
+                  value={formData.startDate}
+                  onChange={handleInputChange}
+                  style={{ borderRadius: '10px' }}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="endDate">End Date:</label>
+                <input
+                  type="date"
+                  id="endDate"
+                  name="endDate"
+                  className="form-control"
+                  value={formData.endDate}
                   onChange={handleInputChange}
                   style={{ borderRadius: '10px' }}
                   required

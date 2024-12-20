@@ -59,6 +59,7 @@ import WaterQualityTable from './pages/Table/WaterQualityTable';
 import UserManual from './pages/LiveMapping/UserManual';
 import ExceedenceReport from './pages/Report/ExceedenceReport';
 import CustomisableReport from './pages/Report/CustomisableReport';
+import ViewExceedenceList from './pages/ParameterExceed/ViewExceedenceList';
 
 
 function App() {
@@ -170,6 +171,7 @@ function App() {
                   <Route path="/how-to-use" element={ <UserManual />} />
                   <Route path="/customisable-report" element={<CustomisableReport />} />
                   <Route path="/exceedence-report" element={<ExceedenceReport />} />
+                  <Route path="/view-exceedence-list" element={<ViewExceedenceList />} />
 
 
 

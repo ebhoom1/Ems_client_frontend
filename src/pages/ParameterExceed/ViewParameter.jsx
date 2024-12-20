@@ -9,6 +9,7 @@ import DashboardSam from '../Dashboard/DashboardSam';
 import HeaderSim from '../Header/HeaderSim';
 import Maindashboard from '../Maindashboard/Maindashboard';
 import Hedaer from '../Header/Hedaer';
+import AddAvoidExceedence from './AddAvoidExceedence';
 
 function ViewParameter() {
     const navigate = useNavigate();
@@ -16,12 +17,16 @@ function ViewParameter() {
 
     // Redux state to get calibration exceed values
     const { allCalibrationExceedValues, loading, error } = useSelector(state => state.calibrationExceedValue);
+    const { userType, userData } = useSelector((state) => state.user);
 
     const [localCalibrationValues, setLocalCalibrationValues] = useState([]);
     const [filteredCalibrationValues, setFilteredCalibrationValues] = useState([]);
     const [currentUserName, setCurrentUserName] = useState('KSPCB001'); // Default user name
     const [searchQuery, setSearchQuery] = useState(''); // Search input state
-
+    const [showModal, setShowModal] = useState(false);
+    const handleOpenModal = () => setShowModal(true);
+    const handleCloseModal = () => setShowModal(false);
+    
     // Fetch all calibration exceed values when component loads
     useEffect(() => {
         dispatch(fetchAllCalibrationExceedValues());
@@ -73,7 +78,9 @@ function ViewParameter() {
     const handleParameter = () => {
         navigate('/add-parameter');
     };
-
+const handleAvoidExceedenceList=()=>{
+    navigate('/view-exceedence-list')
+}
     // Handle deleting a parameter exceedance value
     const handleDelete = async (calibrationExceedvalueId) => {
         const shouldDelete = window.confirm('Are you sure you want to delete this Parameter Threshold exceedance Value?');
@@ -87,6 +94,7 @@ function ViewParameter() {
             }
         }
     };
+
 
     if (loading) {
         return <div>Loading...</div>;
@@ -116,6 +124,16 @@ function ViewParameter() {
                                 Add Parameter Threshold exceedance Values
                             </Button>
                         </div>
+                        {userData?.validUserOne?.adminType === "EBHOOM" && (
+                        <div className='d-flex'>
+                            <button className="btn text-light" style={{backgroundColor:'#236a80'}} onClick={handleOpenModal}>
+                                Add Avoid Exceedence
+                            </button>
+                            <AddAvoidExceedence  show={showModal} onClose={handleCloseModal} />
+                            <button className='btn text-light ms-2 ' style={{backgroundColor:'#236a80'}} onClick={handleAvoidExceedenceList}> View Avoid Exceedence List</button>
+                        </div>
+                        )}
+
 
                         {/* Table for Previous Parameter Threshold Exceedance Values */}
                         <div className="row mb-5">
