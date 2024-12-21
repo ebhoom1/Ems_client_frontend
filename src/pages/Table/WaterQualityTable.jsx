@@ -16,9 +16,13 @@ const WaterQualityTable = () => {
   const [users, setUsers] = useState([]);
   const [stackOptions, setStackOptions] = useState([]);
   const [selectedUser, setSelectedUser] = useState("");
-  const [stackParameters, setStackParameters] = useState({});
+  const [selectedStack, setSelectedStack] = useState("");
+  const [selectedIndustryType, setSelectedIndustryType] = useState("");
+  const [tablesData, setTablesData] = useState([]);
   const [energyData, setEnergyData] = useState([]);
-  const [qualityData, setQualityData] = useState([]);
+  const [quantityData, setQuantityData] = useState([]);
+  const [minMaxData, setMinMaxData] = useState({ minValues: {}, maxValues: {} });
+  const [calibrationExceed, setCalibrationExceed] = useState({});
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const navigate = useNavigate();
@@ -26,8 +30,6 @@ const WaterQualityTable = () => {
   useEffect(() => {
     if (userType === "admin") {
       fetchUsers();
-    } else {
-      fetchUserData();
     }
   }, [userType]);
 
@@ -48,76 +50,26 @@ const WaterQualityTable = () => {
       const response = await axios.get(
         `${API_URL}/api/get-stacknames-by-userName/${username}`
       );
-      setStackOptions(response.data.stackNames || []);
+  
+      // Filter stack names based on stationType
+      const filteredStackOptions = response.data.stackNames.filter((stack) =>
+        stack.stationType === "energy" || stack.stationType === "effluent_flow"
+      );
+  
+      setStackOptions(filteredStackOptions || []);
     } catch (error) {
       console.error("Error fetching stack names:", error);
     }
   };
-
-  const fetchUserData = async (username) => {
-    const token = localStorage.getItem("userdatatoken");
-    try {
-      const response = await axios.get(`${API_URL}/api/validuser`, {
-        headers: { Authorization: token },
-      });
-
-      if (response.data.status === 201 && response.data.validUserOne) {
-        const user = username
-          ? users.find((u) => u.userName === username)
-          : response.data.validUserOne;
-
-        const { userName, stackName: stacks, companyName, address } = user;
-
-        setUserDetails({
-          companyName,
-          address,
-        });
-
-        const allStackParameters = {};
-        for (const stack of stacks) {
-          const minMaxData = await fetchMinMaxData(userName, stack.name);
-          const avgData = await fetchAvgData(userName, stack.name, startDate, endDate);
-          allStackParameters[stack.name] = mergeParameters(minMaxData, avgData);
-        }
-
-        setStackParameters(allStackParameters);
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  };
-
-  const fetchMinMaxData = async (username, stack) => {
-    try {
-      const response = await axios.get(
-        `${API_URL}/api/minMax/${username}/stack/${stack}`
-      );
-      if (response.data.success) {
-        const { minValues, maxValues, minTimestamps, maxTimestamps } =
-          response.data.data;
-
-        return Object.keys(minValues).map((param) => ({
-          name: param,
-          min: minValues[param],
-          max: maxValues[param],
-          minTime: minTimestamps?.[param]?.time || "N/A",
-          maxTime: maxTimestamps?.[param]?.time || "N/A",
-        }));
-      }
-      return [];
-    } catch (error) {
-      console.error("Error fetching Min/Max data:", error);
-      return [];
-    }
-  };
+  
 
   const fetchAvgData = async (username, stack, start, end) => {
     try {
-      const formattedStartDate = formatDate(start);
-      const formattedEndDate = formatDate(end);
+      const formattedStartDate = start.split("-").reverse().join("-");
+      const formattedEndDate = end.split("-").reverse().join("-");
 
       const response = await axios.get(
-        `${API_URL}/api/average/user/${username}/stack/${stack}/interval/hour/time-range`,
+        `${API_URL}/api/last-entry/user/${username}/stack/${stack}/interval/hour`,
         {
           params: {
             startTime: formattedStartDate,
@@ -127,91 +79,87 @@ const WaterQualityTable = () => {
       );
 
       if (response.data.success) {
-        const avgData = response.data.data.flatMap((item) =>
-          item.stackData ? item.stackData[0]?.parameters || {} : {}
+        setTablesData(
+          response.data.data.map((entry) => ({
+            date: entry.dateAndTime.split(" ")[0],
+            parameters: Object.fromEntries(
+              Object.entries(entry.stackData[0]?.parameters || {}).filter(
+                ([key]) => key !== "_id"
+              )
+            ),
+          }))
         );
-
-        const latestData = avgData.slice(-1); // Take the latest data only
-        return Object.keys(latestData[0] || {}).map((param) => ({
-          name: param,
-          avg: latestData[0][param] || "N/A",
-        }));
       }
-      return [];
     } catch (error) {
       console.error("Error fetching average data:", error);
-      return [];
     }
   };
-
-  const fetchEnergyAndQualityData = async () => {
+  const fetchEnergyData = async (username, start, end) => {
     try {
+      const formattedStartDate = start.split("-").reverse().join("-");
+      const formattedEndDate = end.split("-").reverse().join("-");
+  
       const response = await axios.get(
-        `${API_URL}/api/difference/${selectedUser}?interval=daily&page=1&limit=10`
+        `${API_URL}/api/lastDataByDateRange/${username}/daily/${formattedStartDate}/${formattedEndDate}`
       );
   
-      const data = response.data.data || [];
+      if (response.data.success) {
+        setEnergyData(
+          response.data.data
+            .filter((entry) => entry.stationType === "energy")
+            .map((entry) => ({
+              date: entry.date,
+              stackName: entry.stackName,
+              initialEnergy: entry.initialEnergy,
+              lastEnergy: entry.lastEnergy,
+              energyDifference: entry.energyDifference,
+            }))
+        );
   
-      // Filter and ensure only unique, latest entries for energy data
-      const uniqueEnergyData = [];
-      const energySet = new Set(); // To track unique stack names
-      data
-        .filter((item) =>
-          item.stackName.toLowerCase().includes("energy")
-        )
-        .forEach((item) => {
-          if (!energySet.has(item.stackName)) {
-            energySet.add(item.stackName);
-            uniqueEnergyData.push({
-              name: item.stackName,
-              initialReading: item.initialEnergy,
-              finalReading: item.lastEnergy,
-              difference: item.energyDifference,
-            });
-          }
-        });
-  
-      // Filter and ensure only unique, latest entries for quality data
-      const uniqueQualityData = [];
-      const qualitySet = new Set(); // To track unique stack names
-      data
-        .filter((item) =>
-          item.stackName.toLowerCase().includes("flow") ||
-          item.stackName.toLowerCase().includes("effluent")
-        )
-        .forEach((item) => {
-          if (!qualitySet.has(item.stackName)) {
-            qualitySet.add(item.stackName);
-            uniqueQualityData.push({
-              name: item.stackName,
-              initialReading: item.initialCumulatingFlow,
-              finalReading: item.lastCumulatingFlow,
-              difference: item.cumulatingFlowDifference,
-            });
-          }
-        });
-  
-      setEnergyData(uniqueEnergyData);
-      setQualityData(uniqueQualityData);
+        setQuantityData(
+          response.data.data
+            .filter((entry) => entry.stationType === "effluent_flow")
+            .map((entry) => ({
+              date: entry.date,
+              stackName: entry.stackName,
+              initialCumulatingFlow: entry.initialCumulatingFlow,
+              lastCumulatingFlow: entry.lastCumulatingFlow,
+              cumulatingFlowDifference: entry.cumulatingFlowDifference,
+            }))
+        );
+      }
     } catch (error) {
-      console.error("Error fetching energy and quality data:", error);
+      console.error("Error fetching energy/quantity data:", error);
     }
   };
   
+  
 
-  const mergeParameters = (minMaxData, avgData) => {
-    return minMaxData.map((param) => ({
-      ...param,
-      avg: avgData.find((p) => p.name === param.name)?.avg || "N/A",
-    }));
+  const fetchMinMaxData = async (username, stack) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/minMax/${username}/stack/${stack}`);
+      if (response.data.success) {
+        setMinMaxData({
+          minValues: response.data.data.minValues || {},
+          maxValues: response.data.data.maxValues || {},
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching min/max data:", error);
+    }
   };
 
-  const formatDate = (date) => {
-    const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
-    return `${day}-${month}-${year}`;
+  const fetchCalibrationExceed = async (industryType) => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/api/get-calibration-values-industryType/${industryType}`
+      );
+      if (response.data.success) {
+        setCalibrationExceed(response.data.IndustryTypCalibrationExceedValues[0] || {});
+      }
+    } catch (error) {
+      console.error("Error fetching calibration exceed data:", error);
+    }
   };
 
   const handleUserSelection = (e) => {
@@ -220,12 +168,20 @@ const WaterQualityTable = () => {
     fetchStackNames(username);
   };
 
-  const handleSubmit = async () => {
+  const handleIndustryTypeSelection = (e) => {
+    const industryType = e.target.value;
+    setSelectedIndustryType(industryType);
+    fetchCalibrationExceed(industryType);
+  };
+
+  const handleSubmit = () => {
     if (selectedUser && startDate && endDate) {
-      await fetchUserData(selectedUser);
-      await fetchEnergyAndQualityData();
+      fetchAvgData(selectedUser, selectedStack, startDate, endDate);
+      fetchMinMaxData(selectedUser, selectedStack);
+      fetchEnergyData(selectedUser, startDate, endDate);
+      if (selectedIndustryType) fetchCalibrationExceed(selectedIndustryType);
     } else {
-      alert("Please select user and date range!");
+      alert("Please select user, stack, and date range!");
     }
   };
 
@@ -258,7 +214,7 @@ const WaterQualityTable = () => {
       {userType === "admin" && (
         <div className="mt-2">
           <div className="row">
-            <div className="col-lg-4 mt-4">
+            <div className="col-lg-4">
               <select
                 value={selectedUser}
                 onChange={handleUserSelection}
@@ -272,6 +228,36 @@ const WaterQualityTable = () => {
                 ))}
               </select>
             </div>
+            <div className="col-lg-4">
+              <select
+                value={selectedStack}
+                onChange={(e) => setSelectedStack(e.target.value)}
+                className="form-select"
+              >
+                <option value="">Select Stack</option>
+                {stackOptions.map((stack, index) => (
+                  <option key={index} value={stack.name}>
+                    {stack.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-lg-4">
+              <select
+                value={selectedIndustryType}
+                onChange={handleIndustryTypeSelection}
+                className="form-select"
+              >
+                <option value="">Select Industry Type</option>
+                {users.map((user) => (
+                  <option key={user.industryType} value={user.industryType}>
+                    {user.industryType}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="row mt-3">
             <div className="col-lg-4">
               <label>Start Date:</label>
               <input
@@ -290,95 +276,126 @@ const WaterQualityTable = () => {
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
-          </div>
-          <div className="row mt-3">
-            <button
-              style={{ backgroundColor: "#236a80" }}
-              onClick={handleSubmit}
-              className="btn mt-3 text-light"
-            >
-              Submit
-            </button>
+            <div className="col-lg-4">
+              <button
+                style={{ backgroundColor: "#236a80" }}
+                onClick={handleSubmit}
+                className="btn mt-4 text-light"
+              >
+                Submit
+              </button>
+            </div>
           </div>
         </div>
       )}
 
+     
+
       <div id="table-to-download">
-        <h4 className="text-center mt-3" style={{ color: "#236a80" }}>
-          Report for {userDetails.companyName || "N/A"}
-        </h4>
+      {selectedUser && startDate && endDate && (
+  <h4 className="text-center mt-4" style={{color:'#236a80'}}>
+    Report from{" "}
+    {new Date(startDate).toLocaleDateString("en-GB")} to{" "}
+    {new Date(endDate).toLocaleDateString("en-GB")}
+  </h4>
+)}
 
-        <h4>Energy Report</h4>
-        <table className="report-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Initial Reading</th>
-              <th>Final Reading</th>
-              <th>Difference</th>
-            </tr>
-          </thead>
-          <tbody>
-            {energyData.map((item, index) => (
-              <tr key={index}>
-                <td>{item.name}</td>
-                <td>{item.initialReading}</td>
-                <td>{item.finalReading}</td>
-                <td>{item.difference}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <h4>Quality Report</h4>
-        <table className="report-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Initial Reading</th>
-              <th>Final Reading</th>
-              <th>Difference</th>
-            </tr>
-          </thead>
-          <tbody>
-            {qualityData.map((item, index) => (
-              <tr key={index}>
-                <td>{item.name}</td>
-                <td>{item.initialReading}</td>
-                <td>{item.finalReading}</td>
-                <td>{item.difference}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {Object.keys(stackParameters).map((stackName, index) => (
-          <div key={index}>
-            <h4>Quality Report for Station: {stackName}</h4>
+        {tablesData.map((table, index) => (
+          <div key={index} className="mt-5">
+            <h4 className="text-center">Quality Report for {table.date}</h4>
             <table className="report-table">
               <thead>
                 <tr>
                   <th>Parameter</th>
-                  <th>Avg Value</th>
+                  <th>Average Value</th>
                   <th>Min Value</th>
                   <th>Max Value</th>
-                  <th>Min Acceptable Limits</th>
-                  <th>Max Acceptable Limits</th>
+                  <th>Calibration Exceed</th>
                 </tr>
               </thead>
               <tbody>
-                {stackParameters[stackName].map((param, i) => (
-                  <tr key={i}>
-                    <td>{param.name}</td>
-                    <td>{param.avg}</td>
-                    <td>{param.min}</td>
-                    <td>{param.max}</td>
-                    <td>0</td>
-                    <td>0</td>
+                {Object.entries(table.parameters).map(([key, value], idx) => (
+                  <tr key={idx}>
+                    <td>{key}</td>
+                    <td>{value}</td>
+                    <td>{minMaxData.minValues[key] || "N/A"}</td>
+                    <td>{minMaxData.maxValues[key] || "N/A"}</td>
+                    <td>{calibrationExceed[key] || "N/A"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <h4 className="text-center">Energy Report for {table.date}</h4>
+{stackOptions.length > 0 ? (
+  <table className="report-table">
+    <thead>
+      <tr>
+        <th>Stack Name</th>
+        <th>Initial Energy</th>
+        <th>Last Energy</th>
+        <th>Energy Difference</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {stackOptions
+        .filter((stack) => stack.stationType === "energy") // Filter stacks by stationType
+        .map((stack, idx) => {
+          const energy = energyData.find(
+            (energyd) =>
+              energyd.date === table.date && energyd.stackName === stack.name
+          );
+          return (
+            <tr key={idx}>
+              <td>{stack.name}</td>
+              <td>{energy?.initialEnergy || 0}</td>
+              <td>{energy?.lastEnergy || 0}</td>
+              <td>{energy?.energyDifference || 0}</td>
+              <td>{energy?.total || 0}</td>
+            </tr>
+          );
+        })}
+    </tbody>
+  </table>
+) : (
+  <p className="text-center">No energy report available.</p>
+)}
+
+
+<h4 className="text-center">Quantity Report for {table.date}</h4>
+{stackOptions.length > 0 ? (
+  <table className="report-table">
+    <thead>
+      <tr>
+        <th>Stack Name</th>
+        <th>Initial Flow</th>
+        <th>Last Flow</th>
+        <th>Flow Difference</th>
+      </tr>
+    </thead>
+    <tbody>
+      {stackOptions
+        .filter((stack) => stack.stationType === "effluent_flow") // Filter stacks by stationType
+        .map((stack, idx) => {
+          const quantity = quantityData.find(
+            (quantd) =>
+              quantd.date === table.date && quantd.stackName === stack.name
+          );
+          return (
+            <tr key={idx}>
+              <td>{stack.name}</td>
+              <td>{quantity?.initialCumulatingFlow || 0}</td>
+              <td>{quantity?.lastCumulatingFlow || 0}</td>
+              <td>{quantity?.cumulatingFlowDifference || 0}</td>
+            </tr>
+          );
+        })}
+    </tbody>
+  </table>
+) : (
+  <p className="text-center">No quantity report available.</p>
+)}
+
           </div>
         ))}
       </div>
