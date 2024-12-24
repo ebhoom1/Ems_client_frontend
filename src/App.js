@@ -60,6 +60,7 @@ import UserManual from './pages/LiveMapping/UserManual';
 import ExceedenceReport from './pages/Report/ExceedenceReport';
 import CustomisableReport from './pages/Report/CustomisableReport';
 import ViewExceedenceList from './pages/ParameterExceed/ViewExceedenceList';
+import LogTest from './pages/Login/LogTest';
 
 
 function App() {
@@ -118,6 +119,7 @@ function App() {
                 <Route path="/reset" element={<ResetEmail />} />
                 <Route path='/download-data' element={<Download/>}></Route>
                 <Route path="/" element={<Log />} />
+                <Route path="/log" element={<LogTest />} />
 
 
               {/* Admin Routes */}

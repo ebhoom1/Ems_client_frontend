@@ -165,8 +165,24 @@ const WaterQualityTable = () => {
   const handleUserSelection = (e) => {
     const username = e.target.value;
     setSelectedUser(username);
-    fetchStackNames(username);
+  
+    // Find the selected user's details from the already fetched users
+    const selectedUserDetails = users.find((user) => user.userName === username);
+  
+    if (selectedUserDetails) {
+      setUserDetails({
+        stackName: selectedUserDetails.stackName || "",
+        companyName: selectedUserDetails.companyName || "N/A",
+        address: selectedUserDetails.address || "N/A",
+      });
+      console.log("Selected User Details:", selectedUserDetails);
+    } else {
+      console.error("User details not found for username:", username);
+    }
+  
+    fetchStackNames(username); // Fetch stack names for the user
   };
+  
 
   const handleIndustryTypeSelection = (e) => {
     const industryType = e.target.value;
@@ -294,7 +310,7 @@ const WaterQualityTable = () => {
       <div id="table-to-download">
       {selectedUser && startDate && endDate && (
   <h4 className="text-center mt-4" style={{color:'#236a80'}}>
-    Report from{" "}
+    Report for {userDetails.companyName} from{" "}
     {new Date(startDate).toLocaleDateString("en-GB")} to{" "}
     {new Date(endDate).toLocaleDateString("en-GB")}
   </h4>

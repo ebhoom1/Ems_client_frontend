@@ -263,19 +263,19 @@ const ViewReport = () => {
       >
         Exceedence Report
       </div>
-      <div
+     {/*  <div
         style={{ borderRadius: '10px', cursor: 'pointer',color:'#236a80'  }}
         className="border border-solid shadow m-3 p-3 w-50 text-center"
         onClick={() => navigate('/customisable-report')}
       >
         Customisable Report
-      </div>
+      </div> */}
       <div
         style={{ borderRadius: '10px', cursor: 'pointer',color:'#236a80'  }}
         className="border border-solid shadow m-3 p-3 w-50 text-center"
         onClick={() => navigate('/table')}
       >
-        Daily Report
+        Customisable Report
       </div>
     </div>
           

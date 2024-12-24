@@ -10,7 +10,7 @@ import { ToastContainer, toast } from "react-toastify";
 import Modal from "react-modal";
 import "react-toastify/dist/ReactToastify.css";
 import { loginUser } from "../../redux/features/auth/authSlice";
-import './loginnew.css'
+import './loginnew.css';
 import { API_URL } from "../../utils/apiConfig";
 
 function LoginNew() {
@@ -59,31 +59,43 @@ function LoginNew() {
     { parameter: "Temp", value: '℃', name: "AirTemperature" },
     { parameter: "Humidity", value: '%', name: "Humidity" },
   ]);
-  
-  
+
   const fetchData = async (userName) => {
     setLoading(true);
     try {
-      const result = await dispatch(fetchIotDataByUserName(userName)).unwrap();
-      setSearchResult(result);
-      setCompanyName(result?.companyName || "Unknown Company");
+      console.log(`Fetching data for username: ${userName}`);
+      // Mock data for testing
+      const mockResult = {
+        companyName: "HINDUSTAN ORGANIC CHEMICALS LIMITED",
+        stackData: [
+          {
+            stackName: "STACK_C_HOT_OIL_FURNACE",
+            ph: 7.2,
+            TDS: 350,
+            turbidity: 15,
+            temperature: 40,
+            BOD: 20,
+            COD: 45,
+          },
+        ],
+      };
+      console.log('Mock Data Response:', mockResult);
+      setSearchResult(mockResult);
+      setCompanyName(mockResult.companyName);
       setSearchError("");
     } catch (err) {
+      console.error('Error fetching data:', err);
       setSearchResult(null);
       setCompanyName("Unknown Company");
-      setSearchError(err.message || 'No Result found for this userID');
+      setSearchError(err.message || 'No result found for this userID');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (userId) {
-      fetchData(userId);
-    } else {
-      fetchData(currentUserName);
-    }
-  }, [userId, currentUserName, dispatch]);
+    fetchData(currentUserName);
+  }, [currentUserName]);
 
   const handleCardClick = (card) => {
     setSelectedCard(card);
@@ -120,26 +132,25 @@ function LoginNew() {
   };
 
   const renderBoxesWithValues = (parameters, result) => {
+    if (!result) {
+      return <p className="text-center text-danger">No data available for the selected stack.</p>;
+    }
+
     return parameters
-      .filter((item) => result && result[item.name] && result[item.name] !== 'N/A') // Filter out 'N/A' or undefined values
-      .map((item, index) => {
-        const value = result ? result[item.name] : 'N/A';
-        return (
-          <div className="col-md-4 col-12 grid-margin" key={index}>
-            <div className="card m-3">
-              <div className="card-body">
-                <h5>{item.parameter}</h5>
-                <h6>
-                  <strong>{value}</strong> {item.value}
-                </h6>
-              </div>
+      .filter((item) => result[item.name] && result[item.name] !== 'N/A') // Filter valid values
+      .map((item, index) => (
+        <div className="col-md-4 col-12 grid-margin" key={index}>
+          <div className="card m-3">
+            <div className="card-body">
+              <h5>{item.parameter}</h5>
+              <h6>
+                <strong>{result[item.name]}</strong> {item.value}
+              </h6>
             </div>
           </div>
-        );
-      });
+        </div>
+      ));
   };
-
-  
 
   Modal.setAppElement('#root');
 
