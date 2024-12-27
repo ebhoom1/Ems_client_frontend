@@ -27,14 +27,14 @@ const EditCalibration = () => {
       await dispatch(editCalibration({ userName, updatedData: calibrationData }));
       toast.success('Calibration Updated Successfully');
       setTimeout(() => {
-        navigate('/view-calibration');
-      }, 500);
+        
+      }, 5000);
     } catch (error) {
       console.error('Error in Updating Calibration', error);
       toast.error('Error in Updating Calibration');
       setTimeout(() => {
-        navigate('/view-calibration');
-      }, 3000);
+       
+      }, 5000);
     }
   };
 

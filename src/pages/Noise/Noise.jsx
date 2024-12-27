@@ -335,11 +335,11 @@ const noiseParameters = [
 )}
         <div className="d-flex justify-content-between">
 
-              <ul className="quick-links ml-auto ">
+             {/*  <ul className="quick-links ml-auto ">
                 <button className="btn  mb-2 mt-2 " style={{backgroundColor:'#236a80' , color:'white'}} onClick={() => setShowHistoryModal(true)}>
                   Daily History
                 </button>
-              </ul>
+              </ul> */}
               <ul className="quick-links ml-auto">
               <h5 className='d-flex justify-content-end  '>
        <b>Analyser Health:</b><span className={searchResult?.validationStatus ? 'text-success' : 'text-danger'}>{searchResult?.validationStatus ? 'Good' : 'Problem'}</span></h5>

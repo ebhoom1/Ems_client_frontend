@@ -326,9 +326,9 @@ const handleDownloadPdf = () => {
     </div>
   )}</li>
  
-                <li> <button className="btn text-light " style={{backgroundColor:'#236a80'}} onClick={() => setShowHistoryModal(true)}>
+             {/*    <li> <button className="btn text-light " style={{backgroundColor:'#236a80'}} onClick={() => setShowHistoryModal(true)}>
               Daily History
-            </button></li>
+            </button></li> */}
               </ul>
              
         <div className="row align-items-center mb-5" style={{marginTop:'-100px'}}>

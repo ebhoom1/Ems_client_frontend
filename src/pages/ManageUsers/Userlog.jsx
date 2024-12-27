@@ -821,7 +821,7 @@ const handleLogoDelete = async () => {
 
         {/* add stack */}
         <div className="col-12 d-flex justify-content-between align-items-center m-3" >
-                    <h1 className='text-center mt-5'>Add Stack Names</h1>
+                    <h1 className='text-center mt-5'>Add Station Types</h1>
                 </div>
         <div className="card">
   <div className="card-body">
