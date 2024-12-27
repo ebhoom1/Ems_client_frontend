@@ -124,7 +124,7 @@ const handleAvoidExceedenceList=()=>{
                                 Add Parameter Threshold exceedance Values
                             </Button>
                         </div>
-                        {userData?.validUserOne?.adminType === "EBHOOM" && (
+                       {/*  {userData?.validUserOne?.adminType === "EBHOOM" && (
                         <div className='d-flex'>
                             <button className="btn text-light" style={{backgroundColor:'#236a80'}} onClick={handleOpenModal}>
                                 Add Avoid Exceedence
@@ -132,7 +132,7 @@ const handleAvoidExceedenceList=()=>{
                             <AddAvoidExceedence  show={showModal} onClose={handleCloseModal} />
                             <button className='btn text-light ms-2 ' style={{backgroundColor:'#236a80'}} onClick={handleAvoidExceedenceList}> View Avoid Exceedence List</button>
                         </div>
-                        )}
+                        )} */}
 
 
                         {/* Table for Previous Parameter Threshold Exceedance Values */}

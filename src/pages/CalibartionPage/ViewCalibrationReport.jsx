@@ -4,13 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { fetchCalibrations, deleteCalibration } from './../../redux/features/calibration/calibrationSlice'; 
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Layout from '../Layout/Layout';
 import { fetchIotDataByUserName } from '../../redux/features/iotData/iotDataSlice';
 import DashboardSam from '../Dashboard/DashboardSam';
 import Hedaer from '../Header/Hedaer';
 import Maindashboard from '../Maindashboard/Maindashboard';
 
-function ViewCalibration() {
+function ViewCalibrationReport() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -63,17 +62,6 @@ function ViewCalibration() {
     );
   }, [userCalibrations, selectedUserIdFromRedux, searchTerm]);
 
-  const handleSearchInputChange = (e) => {
-    setSearchQuery(e.target.value);
-  };
-
-  const handleSearch = () => {
-    setSearchTerm(searchQuery);
-  };
-
-  const handleEdit = (calibrationId) => {
-    navigate(`/edit-calibration/${calibrationId}`);
-  };
 
   const handleDelete = async (calibrationId) => {
     if (window.confirm('Are you sure you want to delete this calibration?')) {
@@ -85,10 +73,6 @@ function ViewCalibration() {
       }
     }
   };
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <div className="container-fluid">
@@ -194,4 +178,4 @@ function ViewCalibration() {
   );
 }
 
-export default ViewCalibration;
+export default ViewCalibrationReport;

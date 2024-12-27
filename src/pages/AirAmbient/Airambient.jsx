@@ -323,7 +323,11 @@ const airParameters = [
             <h1 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
       Stack Emmission Dashboard
     </h1>
-            
+    {emissionStacks.length === 0 && (
+        <div className="text-center mt-3">
+          <h5 className='text-danger'><b>No data available for Stack Emission . Please check other available dashboard .</b></h5>
+        </div>
+      )}
               
             {userData?.validUserOne?.userType === 'admin' && (
       <div className='d-flex justify-content-between prevnext '>
@@ -522,8 +526,8 @@ const airParameters = [
           <i className="fa-solid fa-download"></i> Download graph
         </button>
 
-        <button
-          onClick={openModal} // Open the modal
+        {/* <button
+          onClick={openModal} 
           style={{
             position: 'absolute',
             top: '10px',
@@ -536,7 +540,7 @@ const airParameters = [
           className="btn"
         >
           <i className="fa-solid fa-download"></i> Download Average
-        </button> 
+        </button>  */}
       </>
     )}
   </div>

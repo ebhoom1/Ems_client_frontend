@@ -152,9 +152,12 @@ function Header() {
   
   
 
-  const filteredUsers = users.filter(user =>
-    user.userName.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) => 
+      user.userType === 'user' && // Ensure only users with userType 'user' are included
+      user.userName.toLowerCase().includes(searchTerm.toLowerCase()) // Match search term
   );
+  
 
   const savedUserId = sessionStorage.getItem('selectedUserId');
   console.log(savedUserId);

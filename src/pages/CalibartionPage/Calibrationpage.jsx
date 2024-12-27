@@ -62,14 +62,18 @@ if (!userData) {
           adminName:userData.fname,
         }
        await dispatch(addCalibration(calibrationDataToSend)).unwrap();
-        toast.success( `The Calibration Added Successfully`, { position: 'top-right' })
-        setTimeout(() => navigate('/view-calibration'), 3000);
+       toast.success(`The Calibration Added Successfully`, { position: 'top-right' });
+
+setTimeout(() => {
+    // Perform any action here after the timeout if needed
+    console.log('Timeout completed');
+}, 5000);
 
       }
     } catch (error) {
       console.log(error);
       toast.error('An error occurred. Please try again.',error, );
-      setTimeout(()=>{navigate('/view-calibration')},1000)
+      setTimeout(()=>{navigate('/view-calibration')},3000)
     }
   }
 

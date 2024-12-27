@@ -41,7 +41,7 @@ const LogTest = () => {
   const [showCalibrationPopup, setShowCalibrationPopup] = useState(false);
   const [searchResult, setSearchResult] = useState(null);
   const [searchError, setSearchError] = useState("");
-  const [currentUserName, setCurrentUserName] = useState(userType === 'admin' ? "KSPCB001" : userData?.validUserOne?.userName || "KSPCB001");
+  const [currentUserName, setCurrentUserName] = useState("KSPCB002");
   const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(true); // general loading
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -49,7 +49,7 @@ const LogTest = () => {
   const [effluentStacks, setEffluentStacks] = useState([]); // New state to store effluent stacks
   const [realTimeData, setRealTimeData] = useState({});
   const [latestfetchData, setLatestfetchData] = useState(null); // Latest data from fetch
-const [displayedData, setDisplayedData] = useState(null); // Data to display (latest or real-time)
+  const [displayedData, setDisplayedData] = useState({ stackData: [] });
   const [exceedanceLoading, setExceedanceLoading] = useState(false); // For parameter exceedance
   const [exceedanceColor, setExceedanceColor] = useState("loading"); // Default to "loading" for the spinner
   const [timeIntervalColor, setTimeIntervalColor] = useState("loading"); // Default to "loading" for the spinner
@@ -143,7 +143,8 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
       const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
       if (result) {
         setLatestfetchData(result);
-        setDisplayedData(result.stackData ? result : { stackData: [] }); // Fallback to empty stackData
+        setDisplayedData(result?.stackData ? result : { stackData: [] });
+        // Fallback to empty stackData
         setSearchResult(result);
         setCompanyName(result.companyName || "Unknown Company");
       } else {
@@ -240,7 +241,8 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
   };
   
   const renderStackData = (stackData, parameters, image, stackType) => {
-    return stackData.map((stack, index) => (
+    return (stackData || []).map((stack, index) => (
+
       <div key={index} className="col-12 mb-4">
         <div className="stack-box">
           <h4 className="text-center">
@@ -358,7 +360,7 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
     <div className="m-5 p-5">
         <div className="row border border-solid m-5 p-5 d-flex align-items-center justify-content-center shadow" style={{borderRadius:'10px'}}>
           <div className="col-lg-6" style={{ height: '60vh' }}>
-    {userData?.validUserOne?.userType === 'admin' && (
+   
       <div className="d-flex justify-content-between prevnext">
         <div>
           <button onClick={handlePrevUser} disabled={loading} className="btn btn-outline-dark mb-2">
@@ -376,7 +378,7 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
           </button>
         </div>
       </div>
-    )}
+   
 
 <div>
   <div className="row align-items-center">

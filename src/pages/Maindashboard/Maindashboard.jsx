@@ -109,7 +109,7 @@ function Maindashboard() {
                     <Dropdown.Item href="/add-calibration">
                       Add Calibration
                     </Dropdown.Item>
-                    <Dropdown.Item href="/view-calibration">
+                    <Dropdown.Item href="/view-calibration-report">
                       View Calibration
                     </Dropdown.Item>
                   </Dropdown.Menu>

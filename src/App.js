@@ -63,6 +63,7 @@ import ViewExceedenceList from './pages/ParameterExceed/ViewExceedenceList';
 import LogTest from './pages/Login/LogTest';
 import WaterQualityReport from './pages/Table/WaterQualityReport';
 import WaterQualityForm from './pages/Table/WaterQualityForm';
+import ViewCalibrationReport from './pages/CalibartionPage/ViewCalibrationReport';
 
 
 function App() {
@@ -115,14 +116,14 @@ function App() {
           <NotificationProvider>
          
             <Routes>
-             
+            <Route path="/" element={<LogTest />} />
                 <Route path="/login" element={<LoginNew />} />
                 <Route path="/reset-password" element={<Reset />} />
                 <Route path="/reset" element={<ResetEmail />} />
                 <Route path='/download-data' element={<Download/>}></Route>
-                <Route path="/" element={<Log />} />
-                <Route path="/log" element={<LogTest />} />
+                <Route path="/log" element={<Log />} />
 
+                <Route path="/" element={<LogTest />} />
 
               {/* Admin Routes */}
              
@@ -178,6 +179,7 @@ function App() {
                   <Route path="/view-exceedence-list" element={<ViewExceedenceList />} />
                   <Route path="/water-quality-report" element={<WaterQualityReport />} />
                   <Route path="/water-form" element={<WaterQualityForm />} />
+                  <Route path="/view-calibration-report" element={<ViewCalibrationReport />} />
 
 
 
@@ -211,6 +213,7 @@ function App() {
                   <Route path="/live-station" element={<LIveLayout />} />
                   <Route path="/view-data" element={<ViewComponent />} />
                   <Route path="/table" element={<WaterQualityTable />} />
+                  <Route path="/view-calibration-report" element={<ViewCalibrationReport />} />
 
 
 

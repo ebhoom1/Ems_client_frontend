@@ -528,52 +528,7 @@ const handleDownloadPdf = () => {
 
 
 </div>
-           {/*  <div className="row">
-                {!loading && filteredData.length > 0 ? (
-                    filteredData.map((stack, stackIndex) => (
-                        energyStacks.includes(stack.stackName) && (
-                            <div key={stackIndex} className="col-12 mb-4">
-                                <div className="stack-box">
-                                    <h4 className="text-center">{stack.stackName}</h4>
-                                    <div className="row">
-                                        {energyParameters.map((item, index) => {
-                                            const value = stack[item.name];
-                                            return value && value !== 'N/A' ? (
-                                                <div className="col-12 col-md-4 grid-margin" key={index}>
-<div className="card"   onClick={() =>
-                                handleCardClick({ title: item.name }, stack.stackName, currentUserName)
-                              }>                                                        <div className="card-body">
-                                                            <h5>{item.parameter}</h5>
-                                                            <p>
-                                                                <strong style={{ color: '#236A80', fontSize:'24px' }}>{value}</strong> {item.value}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ) : null;
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        )
-                    ))
-                ) : (
-                    <div className="col-12">
-                        <h5>Waiting real-time data available</h5>
-                    </div>
-                )}
-            </div> */}
-
-        {/* {showPopup && selectedCard && (
-          <EnergyGraph
-          isOpen={showPopup}
-          onRequestClose={handleClosePopup}
-          parameter={selectedCard.title}
-          userName={currentUserName}
-          stackName={selectedCard.stackName}
-          />
-        )}
- */}
+           
         {showCalibrationPopup && (
           <CalibrationPopup
             userName={userData?.validUserOne?.userName}

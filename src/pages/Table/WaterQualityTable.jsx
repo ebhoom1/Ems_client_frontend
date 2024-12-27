@@ -66,11 +66,27 @@ const WaterQualityTable = () => {
       setSelectedIndustryType(userData?.industryType || ""); // Preselect user's industry type if available
       fetchStackNames(username); // Fetch stack names for the logged-in user
   
+      // Set user details for logged-in user
+      setUserDetails({
+        stackName: userData?.stackName || "",
+        companyName: userData?.validuserOne?.companyName || "N/A",
+        address: userData?.address || "N/A",
+      });
+  
       if (userData?.industryType) {
         fetchCalibrationExceed(userData.industryType); // Fetch calibration exceed data
       }
     }
   }, [userType, userData]);
+  useEffect(() => {
+    if (userType === "user" && userData) {
+      console.log("Logged-in User Details:", userData);
+      console.log("Company Name:", userData.validUserOne.companyName);
+      console.log("Username:", userData.validUserOne.userName);
+      console.log("Industry Type:", userData.validUserOne.industryType);
+    }
+  }, [userType, userData]);
+  
   const fetchUsers = async () => {
     const token = localStorage.getItem("userdatatoken");
     try {
@@ -443,12 +459,15 @@ const WaterQualityTable = () => {
 
       <div id="table-to-download">
       {selectedUser && startDate && endDate && (
-  <h4 className="text-center mt-4" style={{color:'#236a80'}}>
-    Report for {userDetails.companyName} from{" "}
-    {new Date(startDate).toLocaleDateString("en-GB")} to{" "}
-    {new Date(endDate).toLocaleDateString("en-GB")}
-  </h4>
-)}
+    <h4 className="text-center mt-4" style={{ color: "#236a80" }}>
+      Report for{" "}
+      {userType === "user"
+        ? userData?.validUserOne?.companyName || "N/A"
+        : userDetails.companyName}{" "}
+      from {new Date(startDate).toLocaleDateString("en-GB")} to{" "}
+      {new Date(endDate).toLocaleDateString("en-GB")}
+    </h4>
+  )}
 
         {tablesData.map((table, index) => (
           <div key={index} className="mt-5">
@@ -460,7 +479,7 @@ const WaterQualityTable = () => {
                   <th>Average Value</th>
                   <th>Min Value</th>
                   <th>Max Value</th>
-                  <th>Calibration Exceed</th>
+                  <th>Parameter Exceedence</th>
                 </tr>
               </thead>
               <tbody>

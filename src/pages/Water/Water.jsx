@@ -78,7 +78,9 @@ const Water = () => {
     { parameter: "TDS", value: 'mg/l', name: 'TDS' },
     { parameter: "Turbidity", value: 'NTU', name: 'turbidity' },
     // { parameter: "Temperature", value: '℃', name: 'Temp' },
- 
+ //ammonicalNitrogen
+ { parameter: "Ammonical Nitrogen", value: 'mg/l', name: 'ammonicalNitrogen' },
+
     { parameter: "BOD", value: 'mg/l', name: 'BOD' },
     { parameter: "COD", value: 'mg/l', name: 'COD' },
     { parameter: "TSS", value: 'mg/l', name: 'TSS' },
@@ -366,7 +368,17 @@ const handleDownloadPdf = () => {
                 <h1 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
           Effluent/Sewage Dashboard
         </h1>
-                
+                  {/* Check if no data is available */}
+                 {/* Check if no data is available for stationType == 'effluent' */}
+                {/* Check if effluentStacks are empty */}
+      {effluentStacks.length === 0 && (
+        <div className="text-center mt-3">
+          <h5 className='text-danger'><b>No data available for Effluent/Sewage . Please Check Stack Emission Dashboard .</b></h5>
+        </div>
+      )}
+
+
+
                   
                 {userData?.validUserOne?.userType === 'admin' && (
           <div className='d-flex justify-content-between prevnext '>
@@ -588,8 +600,8 @@ const handleDownloadPdf = () => {
           <i className="fa-solid fa-download"></i> Download graph
         </button>
 
-        <button
-          onClick={openModal} // Open the modal
+        {/* <button
+          onClick={openModal} 
           style={{
             position: 'absolute',
             top: '10px',
@@ -602,7 +614,7 @@ const handleDownloadPdf = () => {
           className="btn"
         >
           <i className="fa-solid fa-download"></i> Download Average
-        </button> 
+        </button>  */}
       </>
     )}
   </div>
