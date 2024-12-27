@@ -13,6 +13,7 @@ const CalibrationExceeded = () => {
   const [currentEntryId, setCurrentEntryId] = useState(null);
   const [currentComment, setCurrentComment] = useState('');
   const [isEditingAdminComment, setIsEditingAdminComment] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false); // Modal state
   const navigate = useNavigate();
   const { searchTerm, isSearchTriggered } = useOutletContext();
   const storedUserId = sessionStorage.getItem('selectedUserId');
@@ -38,7 +39,6 @@ const CalibrationExceeded = () => {
       const userData = userResponse.data;
       if (userData.status === 401 || !userData.validUserOne) {
         console.log('User not valid');
-       
         return;
       }
 
@@ -63,7 +63,6 @@ const CalibrationExceeded = () => {
       }
     } catch (error) {
       console.error('Error validating user or fetching comments:', error);
-     
     }
   };
 
@@ -86,12 +85,26 @@ const CalibrationExceeded = () => {
       setCurrentEntryId(null);
       setCurrentComment('');
       setIsEditingAdminComment(false);
+      setIsModalOpen(false); // Close the modal
     } catch (error) {
       toast.error(`Failed to update ${commentField}`);
     }
   };
 
-  // Print handler function to print only the exceedance table
+  const handleOpenModal = (id, comment, isAdminComment) => {
+    setCurrentEntryId(id);
+    setCurrentComment(comment || '');
+    setIsEditingAdminComment(isAdminComment);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setCurrentEntryId(null);
+    setCurrentComment('');
+    setIsEditingAdminComment(false);
+    setIsModalOpen(false);
+  };
+
   const handlePrint = () => {
     const printContent = document.getElementById('printable-section').innerHTML;
     const originalContent = document.body.innerHTML;
@@ -145,11 +158,9 @@ const CalibrationExceeded = () => {
                               <button
                                 className="btn m-2 text-light"
                                 style={{ backgroundColor: '#236a80' }}
-                                onClick={() => {
-                                  setCurrentEntryId(entry._id);
-                                  setCurrentComment(entry.commentByAdmin || '');
-                                  setIsEditingAdminComment(true);
-                                }}
+                                onClick={() =>
+                                  handleOpenModal(entry._id, entry.commentByAdmin, true)
+                                }
                               >
                                 {entry.commentByAdmin ? 'Edit Admin Comment' : 'Add Admin Comment'}
                               </button>
@@ -157,11 +168,9 @@ const CalibrationExceeded = () => {
                             {userType === 'user' && (
                               <button
                                 className="btn btn-primary m-2"
-                                onClick={() => {
-                                  setCurrentEntryId(entry._id);
-                                  setCurrentComment(entry.commentByUser || '');
-                                  setIsEditingAdminComment(false);
-                                }}
+                                onClick={() =>
+                                  handleOpenModal(entry._id, entry.commentByUser, false)
+                                }
                               >
                                 {entry.commentByUser ? 'Edit User Comment' : 'Add User Comment'}
                               </button>
@@ -180,51 +189,15 @@ const CalibrationExceeded = () => {
                   disabled={currentPage === 1}
                   onClick={() => handlePageChange(-1)}
                 >
-                   <i className="fa-solid fa-arrow-left me-1 "></i>Prev
+                  <i className="fa-solid fa-arrow-left me-1"></i>Prev
                 </button>
                 <button
                   className="btn btn-secondary"
                   onClick={() => handlePageChange(1)}
                 >
-                   Next <i className="fa-solid fa-arrow-right"></i>
+                  Next <i className="fa-solid fa-arrow-right"></i>
                 </button>
               </div>
-              {currentEntryId !== null && (
-                <>
-                  <div className="overlay d-flex align-items-center justify-content-center mt-3" onClick={() => setCurrentEntryId(null)}></div>
-                  <div className="popup ">
-                    <textarea
-                      value={currentComment}
-                      onChange={(e) => setCurrentComment(e.target.value)}
-                      placeholder={isEditingAdminComment ? 'Edit admin comment' : 'Enter comment'}
-                    ></textarea>
-                   <div className="popup-buttons m-2  ">
-                      <button
-                        className="btn btn-success"
-                        onClick={() =>
-                          handleEditComment(
-                            currentEntryId,
-                            isEditingAdminComment ? 'commentByAdmin' : 'commentByUser'
-                          )
-                        }
-                      >
-                        {isEditingAdminComment ? 'Save' : 'Add'}
-                      </button>
-                      <button
-                        className="btn btn-danger"
-                        onClick={() => {
-                          setCurrentEntryId(null);
-                          setCurrentComment('');
-                          setIsEditingAdminComment(false);
-                        }}
-                      >
-                        Cancel
-                      </button
-                      >
-                    </div>
-                  </div>
-                </>
-              )}
 
               <button
                 className="btn btn-light text-success"
@@ -237,6 +210,45 @@ const CalibrationExceeded = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal */}
+      {isModalOpen && (
+  <div className="modal-overlay">
+    <div className="modal-content" style={{backgroundColor:'white'}}>
+      <h5 style={{backgroundColor:'white'}}>{isEditingAdminComment ? 'Edit Admin Comment' : 'Edit User Comment'}</h5>
+      <textarea
+        value={currentComment}
+        onChange={(e) => setCurrentComment(e.target.value)}
+        placeholder={isEditingAdminComment ? 'Edit admin comment' : 'Enter comment'}
+        style={{
+          width: '100%',
+          padding: '10px',
+          borderRadius: '5px',
+          border: '1px solid #ccc',
+          backgroundColor: '#fff', // Ensure the textarea background is white
+          color: '#000', // Ensure the text color is black for readability
+        }}
+      ></textarea>
+      <div className="modal-actions">
+        <button
+          className="btn btn-success"
+          onClick={() =>
+            handleEditComment(
+              currentEntryId,
+              isEditingAdminComment ? 'commentByAdmin' : 'commentByUser'
+            )
+          }
+        >
+          Save
+        </button>
+        <button className="btn btn-danger" onClick={handleCloseModal}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </>
   );
 };

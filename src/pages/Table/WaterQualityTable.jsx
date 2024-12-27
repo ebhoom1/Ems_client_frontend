@@ -5,6 +5,9 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import "./TableStyles.css";
 import { API_URL } from "../../utils/apiConfig";
+import Header from "../Header/Hedaer";
+import Maindashboard from "../Maindashboard/Maindashboard";
+import DashboardSam from "../Dashboard/DashboardSam";
 
 const WaterQualityTable = () => {
   const [userDetails, setUserDetails] = useState({
@@ -12,6 +15,32 @@ const WaterQualityTable = () => {
     companyName: "",
     address: "",
   });
+  const industryTypeList = [
+    { category: "Sugar" },
+    { category: "Cement" },
+    { category: "Distillery" },
+    { category: "Petrochemical" },
+    { category: "Pulp & Paper" },
+    { category: "Fertilizer" },
+    { category: "Tannery" },
+    { category: "Pesticides" },
+    { category: "Thermal Power Station" },
+    { category: "Caustic Soda" },
+    { category: "Pharmaceuticals" },
+    { category: "Chemical" },
+    { category: "Dye and Dye Stuff" },
+    { category: "Refinery" },
+    { category: "Copper Smelter" },
+    { category: "Iron and Steel" },
+    { category: "Zinc Smelter" },
+    { category: "Hotel" },
+    { category: "Aluminium" },
+    { category: "STP/ETP" },
+    { category: "NWMS/SWMS" },
+    { category: "Noise" },
+    { category: "Other" },
+  ];
+  
   const { userType, userData } = useSelector((state) => state.user);
   const [users, setUsers] = useState([]);
   const [stackOptions, setStackOptions] = useState([]);
@@ -26,13 +55,22 @@ const WaterQualityTable = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const navigate = useNavigate();
-
+  const loggedUserName = userData?.validUserOne?.userName || '';
   useEffect(() => {
     if (userType === "admin") {
-      fetchUsers();
+      fetchUsers(); // Fetch all users for admin
+    } else if (userType === "user") {
+      // For logged-in users, set user-specific details
+      const username = userData?.userName || loggedUserName;
+      setSelectedUser(username);
+      setSelectedIndustryType(userData?.industryType || ""); // Preselect user's industry type if available
+      fetchStackNames(username); // Fetch stack names for the logged-in user
+  
+      if (userData?.industryType) {
+        fetchCalibrationExceed(userData.industryType); // Fetch calibration exceed data
+      }
     }
-  }, [userType]);
-
+  }, [userType, userData]);
   const fetchUsers = async () => {
     const token = localStorage.getItem("userdatatoken");
     try {
@@ -53,7 +91,7 @@ const WaterQualityTable = () => {
   
       // Filter stack names based on stationType
       const filteredStackOptions = response.data.stackNames.filter((stack) =>
-        stack.stationType === "energy" || stack.stationType === "effluent_flow"
+        stack.stationType === "energy" || stack.stationType === "effluent_flow" || stack.stationType === "effluent" || stack.stationType === "emission"
       );
   
       setStackOptions(filteredStackOptions || []);
@@ -176,6 +214,13 @@ const WaterQualityTable = () => {
         address: selectedUserDetails.address || "N/A",
       });
       console.log("Selected User Details:", selectedUserDetails);
+  
+      // Check if industryType is available
+      const industryType = selectedUserDetails.industryType || "DefaultIndustry"; // Replace "DefaultIndustry" with a fallback value if needed
+      setSelectedIndustryType(industryType);
+  
+      // Fetch calibration exceed data for the industry type
+      fetchCalibrationExceed(industryType);
     } else {
       console.error("User details not found for username:", username);
     }
@@ -183,11 +228,10 @@ const WaterQualityTable = () => {
     fetchStackNames(username); // Fetch stack names for the user
   };
   
-
   const handleIndustryTypeSelection = (e) => {
     const industryType = e.target.value;
     setSelectedIndustryType(industryType);
-    fetchCalibrationExceed(industryType);
+    fetchCalibrationExceed(industryType); // Fetch calibration exceed data for the selected industry type
   };
 
   const handleSubmit = () => {
@@ -220,31 +264,94 @@ const WaterQualityTable = () => {
   };
 
   return (
-    <div className="table-container">
-      <button className="btn btn-warning me-2" onClick={handleBack}>
-        <i className="fa-solid fa-arrow-left me-1"></i>Back
-      </button>
-      <button onClick={downloadPDF} className="download-btn btn btn-success">
-        Download PDF
-      </button>
-      {userType === "admin" && (
-        <div className="mt-2">
+    <div>
+<div className="container-fluid">
+    <div className="row" >
+    <div className="col-lg-3 d-none d-lg-block ">
+                    <DashboardSam />
+                </div>
+   
+      <div className="col-lg-9 col-12 ">
+        <div className="row1 ">
+          <div className="col-12  " >
+          <div className="headermain">
+    <Header />
+  </div>
+          </div>
+        </div>
+
+    
+      </div>
+      
+
+    </div>
+  </div>
+
+  <div className="container-fluid">
+      <div className="row">
+     
+        <div className="col-lg-3 d-none d-lg-block">
+       
+        </div>
+     
+        <div className="col-lg-9 col-12">
           <div className="row">
-            <div className="col-lg-4">
-              <select
-                value={selectedUser}
-                onChange={handleUserSelection}
-                className="form-select"
-              >
-                <option value="">Select User</option>
-                {users.map((user) => (
-                  <option key={user.userName} value={user.userName}>
-                    {user.userName}
-                  </option>
-                ))}
-              </select>
+            <div className="col-12">
+              
             </div>
-            <div className="col-lg-4">
+          </div>
+          <div className="maindashboard" >
+          <Maindashboard/>
+          </div>
+          <div className="table-container">
+     
+          <button
+  onClick={downloadPDF}
+  className={`download-btn btn btn-success ${userType === "user" ? "mt-5" : ""}`}
+>
+  Download PDF
+</button>
+
+      <h4 className="text-center mt-3">Customise Report </h4>
+    
+        <div className="mt-4 border border-solid shadow m-5 p-5" style={{borderRadius:'10px'}}>
+          <div className="row">
+          <div className="col-lg-6">
+  <select
+    value={selectedUser}
+    onChange={handleUserSelection}
+    className="form-select"
+    style={{
+      cursor: "pointer",
+      backgroundColor: "#fff",
+      borderRadius: "10px",
+    }}
+  >
+    {userType === "admin" ? (
+      <>
+        <option value="">Select User</option>
+        {users.map((user) => (
+          <option key={user.userName} value={user.userName}>
+            {user.userName}
+          </option>
+        ))}
+      </>
+    ) : (
+      <>
+      <option value="">Select User</option>
+      
+        <option  value={loggedUserName}>
+          {loggedUserName}
+        </option>
+  
+    </>
+      
+    )}
+  </select>
+</div>
+
+
+            <div className="col-lg-6">
               <select
                 value={selectedStack}
                 onChange={(e) => setSelectedStack(e.target.value)}
@@ -258,23 +365,10 @@ const WaterQualityTable = () => {
                 ))}
               </select>
             </div>
-            <div className="col-lg-4">
-              <select
-                value={selectedIndustryType}
-                onChange={handleIndustryTypeSelection}
-                className="form-select"
-              >
-                <option value="">Select Industry Type</option>
-                {users.map((user) => (
-                  <option key={user.industryType} value={user.industryType}>
-                    {user.industryType}
-                  </option>
-                ))}
-              </select>
-            </div>
+           
           </div>
           <div className="row mt-3">
-            <div className="col-lg-4">
+          <div className="col-lg-6">
               <label>Start Date:</label>
               <input
                 type="date"
@@ -283,7 +377,7 @@ const WaterQualityTable = () => {
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
-            <div className="col-lg-4">
+            <div className="col-lg-6">
               <label>End Date:</label>
               <input
                 type="date"
@@ -292,18 +386,58 @@ const WaterQualityTable = () => {
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
-            <div className="col-lg-4">
+          
+          
+           
+          
+          
+          </div>
+
+        <div className="row mt-4">
+        <div className="col-lg-6">
+  <select
+    value={selectedIndustryType}
+    onChange={handleIndustryTypeSelection}
+    className="form-select"
+    style={{
+      cursor: "pointer",
+      backgroundColor: "#fff",
+      borderRadius: "10px",
+    }}
+  >
+    <option value="">Select Industry Type</option>
+    {userType === "admin"
+      ? // For Admin: Fetch and display industry types from users
+        users.map((user, index) => (
+          <option key={index} value={user.industryType}>
+            {user.industryType}
+          </option>
+        ))
+      : // For User: Show the static industryTypeList
+        industryTypeList.map((type, index) => (
+          <option key={index} value={type.category}>
+            {type.category}
+          </option>
+        ))}
+  </select>
+</div>
+
+
+
+      
+            <div className="col-lg-6">
               <button
                 style={{ backgroundColor: "#236a80" }}
                 onClick={handleSubmit}
-                className="btn mt-4 text-light"
+                className="btn  text-light"
               >
                 Submit
               </button>
             </div>
-          </div>
+
         </div>
-      )}
+        </div>
+     
 
      
 
@@ -416,6 +550,19 @@ const WaterQualityTable = () => {
         ))}
       </div>
     </div>
+        
+
+
+        </div>
+      </div>
+      
+
+    </div>
+    
+
+    </div>
+    /*  */
+    
   );
 };
 

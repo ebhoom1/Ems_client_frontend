@@ -161,6 +161,7 @@ useEffect(() => {
         modelName: "",
         fname: "",
         email: "",
+        additionalEmail:"",
         mobileNumber: "",
         password: "",
         cpassword: "",
@@ -505,7 +506,7 @@ const handleLogoDelete = async () => {
                                 {/* Select Industry */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="userId" className="form-label">User ID</label>
+                                        <label htmlFor="userId" className="form-label text-light">User ID</label>
                                         <input id="userId" type="text" placeholder='User ID' className="form-control"    value={formData.userName} 
                           onChange={handleInputChange}  name="userName" style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
@@ -516,7 +517,7 @@ const handleLogoDelete = async () => {
                                 {/* Select Company */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="companyName" className="form-label">Company Name </label>
+                                        <label htmlFor="companyName" className="form-label  text-light">Company Name </label>
                                         <input type='text' id="companyName" placeholder='Company Name'    name="companyName"  className="form-control"    value={formData.companyName} 
                           onChange={handleInputChange}   style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
@@ -527,7 +528,7 @@ const handleLogoDelete = async () => {
                               
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="firstName" className="form-label">First Name </label>
+                                        <label htmlFor="firstName" className="form-label  text-light">First Name </label>
                                         <input id="firstName" value={formData.fname}   onChange={handleInputChange} name="fname"  placeholder='First Name ' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
@@ -537,15 +538,23 @@ const handleLogoDelete = async () => {
                                
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="email" className="form-label">Email  </label>
+                                        <label htmlFor="email" className="form-label  text-light">Email  </label>
                                         <input id="email" value={formData.email}   onChange={handleInputChange} type='email' name="email" placeholder='email' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+
+                                    </div>
+                                </div>
+                                {/* additioanl email */}
+                                <div className="col-lg-6 col-md-6 mb-4">
+                                    <div className="form-group">
+                                        <label htmlFor="additionalEmail" className="form-label  text-light">Additional Email  </label>
+                                        <input id="additionalEmail" value={formData.additionalEmail}   onChange={handleInputChange} type='email' name="additionalEmail" placeholder='Additional Email' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
                                 </div>
                                 {/* mobile number */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="mobile" className="form-label">Mobile Number  </label>
+                                        <label htmlFor="mobile" className="form-label  text-light">Mobile Number  </label>
                                         <input id="mobile" value={formData.mobileNumber}   onChange={handleInputChange} name="mobileNumber"  type='text' placeholder=' Enter Mobile Number ' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
@@ -553,7 +562,7 @@ const handleLogoDelete = async () => {
                               {/* model name */}
                               <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="modelName" className="form-label">Model Name  </label>
+                                        <label htmlFor="modelName" className="form-label  text-light">Model Name  </label>
                                         <input id="modelName" value={formData.modelName}   onChange={handleInputChange}  type='text' name="modelName" placeholder='Enter Model name' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
@@ -561,7 +570,7 @@ const handleLogoDelete = async () => {
                                 {/* Poduct ID */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="productID" className="form-label"> Product ID </label>
+                                        <label htmlFor="productID" className="form-label  text-light"> Product ID </label>
                                         <input id="productID"  value={formData.productID}   onChange={handleInputChange}  name="productID" type='text' placeholder='Enter  Poduct ID' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
@@ -569,7 +578,7 @@ const handleLogoDelete = async () => {
                                 {/* Password */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="password" className="form-label"> Password  </label>
+                                        <label htmlFor="password" className="form-label  text-light"> Password  </label>
                                         <input id="password"  value={formData.password}   onChange={handleInputChange}  name="password" type='Password' placeholder='Enter  Password ' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
@@ -577,7 +586,7 @@ const handleLogoDelete = async () => {
                                  {/*  Confirm Password */}
                                  <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="confirmPassword" className="form-label"> Confirm Password  </label>
+                                        <label htmlFor="confirmPassword" className="form-label  text-light"> Confirm Password  </label>
                                         <input id="confirmPassword"  value={formData.cpassword}   onChange={handleInputChange} name="cpassword" type='Password' placeholder='Enter Password ' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
@@ -585,14 +594,14 @@ const handleLogoDelete = async () => {
                                  {/* To Date */}
                                  <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="subscriptionDate" className="form-label"> Date of subscription</label>
+                                        <label htmlFor="subscriptionDate" className="form-label  text-light"> Date of subscription</label>
                                         <input id="subscriptionDate"  value={formData.subscriptionDate}   onChange={handleInputChange} name="subscriptionDate" className="form-control" type="date" style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
                                     </div>
                                 </div>
                                 {/* User Type */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="userType" className="form-label">User Type</label>
+                                        <label htmlFor="userType" className="form-label  text-light">User Type</label>
                                         <select id="userType" className="form-control" value={formData.userType}   onChange={handleInputChange} name="userType" style={{ width: '100%', padding: '15px', borderRadius: '10px' }}>
                                         <option value="select">Select</option>
                                         <option value="admin">Admin</option>
@@ -605,7 +614,7 @@ const handleLogoDelete = async () => {
                                 {/* User Type */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="adminType" className="form-label">Admin Type</label>
+                                        <label htmlFor="adminType" className="form-label  text-light">Admin Type</label>
                                         <select id="adminType" className="form-control" value={formData.adminType}   onChange={handleInputChange} name="adminType" style={{ width: '100%', padding: '15px', borderRadius: '10px' }}>
                                         <option value="select">Select</option>
                                         <option value="KSPCB">KSPCB</option>
@@ -617,7 +626,7 @@ const handleLogoDelete = async () => {
                                 {/* select industry */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="industry" className="form-label">Select Industry</label>
+                                        <label htmlFor="industry" className="form-label  text-light">Select Industry</label>
                                         <select id="industry" value={formData.industryType} name="industryType"  onChange={handleInputChange} className="form-control text-start" style={{ width: '100%', padding: '15px', borderRadius: '10px' }}>
                                             <option>select</option>
                                             {industryType.map((industry, index) => (
@@ -629,7 +638,7 @@ const handleLogoDelete = async () => {
                                 {/* data interval */}
                                 <div className="col-lg-6 col-md-6 mb-4">
   <div className="form-group">
-    <label htmlFor="time" className="form-label">Select Time Interval</label>
+    <label htmlFor="time" className="form-label  text-light">Select Time Interval</label>
     <select 
       id="time" 
       name="dataInteval"  // Match the name with the key in the state
@@ -648,7 +657,7 @@ const handleLogoDelete = async () => {
                                 {/* District */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="district" className="form-label">District</label>
+                                        <label htmlFor="district" className="form-label  text-light">District</label>
                                         <input 
                                             id="district" 
                                             type="text" 
@@ -664,7 +673,7 @@ const handleLogoDelete = async () => {
                                 {/* State */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="state" className="form-label">State</label>
+                                        <label htmlFor="state" className="form-label  text-light">State</label>
                                         <input 
                                             id="state" 
                                             type="text" 
@@ -682,7 +691,7 @@ const handleLogoDelete = async () => {
                                 {/* address */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="address" className="form-label">Address</label>
+                                        <label htmlFor="address" className="form-label  text-light">Address</label>
                                         <input 
                                             id="address" 
                                             type="text" 
@@ -698,7 +707,7 @@ const handleLogoDelete = async () => {
                                 {/* Latitude */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="latitude" className="form-label">Latitude</label>
+                                        <label htmlFor="latitude" className="form-label  text-light">Latitude</label>
                                         <input 
                                             id="latitude" 
                                             type="text" 
@@ -714,7 +723,7 @@ const handleLogoDelete = async () => {
                                 {/* Longitude */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="longitude" className="form-label">Longitude   </label>
+                                        <label htmlFor="longitude" className="form-label  text-light">Longitude   </label>
                                         <input id="longitude"
                                          type='text' 
                                          placeholder='Enter Longitude '
@@ -745,7 +754,7 @@ const handleLogoDelete = async () => {
           {userData?.validUserOne?.adminType === "EBHOOM" && (
            <div className="card mt-4">
            <div className="card-body">
-             <h4 className="text-center">Manage Logo</h4>
+             <h4 className="text-center text-light">Manage Logo</h4>
              <div className="d-flex flex-column align-items-center">
                <input
                  type="text"
@@ -829,7 +838,7 @@ const handleLogoDelete = async () => {
         <div className="row">
           <div className="col-lg-12 col-md-6 mb-4">
             <div className="form-group">
-              <label htmlFor="company" className="form-label">Select Company</label>
+              <label htmlFor="company" className="form-label text-light">Select Company</label>
               <select
   id="company"
   className="form-control"

@@ -117,9 +117,7 @@ const PieChartQuantity = ({ primaryStation, userName }) => {
         },
     };
 
-    if (loading) {
-        return <div className="text-center">Loading...</div>;
-    }
+   
 
     if (error) {
         return <div className="alert alert-danger" role="alert">{error}</div>;

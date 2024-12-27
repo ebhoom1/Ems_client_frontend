@@ -33,18 +33,28 @@ const ChatWindow = ({ currentChat, socket }) => {
     const handleNewMessage = (message) => {
       if (
         currentChat &&
-        (message.from === currentChat.userId || message.from === currentChat.id)
+        (message.from === currentChat.userId || message.to === currentChat.userId)
       ) {
-        setMessages((prev) => [...prev, message]); // Add the new message to the chat
+        setMessages((prev) => {
+          if (prev.find((msg) => msg._id === message._id)) {
+            console.log('Duplicate message ignored:', message);
+            return prev; // Skip adding if the message already exists
+          }
+          return [...prev, message];
+        });
       }
     };
-
+  
+    // Register the listener
     socket.on('newChatMessage', handleNewMessage);
-
+  
+    // Clean up the listener on unmount or dependency change
     return () => {
       socket.off('newChatMessage', handleNewMessage);
     };
   }, [currentChat, socket]);
+  
+  
 
   const sendMessage = async () => {
     if (newMessage.trim() || selectedFiles.length > 0) {
@@ -52,31 +62,33 @@ const ChatWindow = ({ currentChat, socket }) => {
       formData.append('from', currentChat.userId);
       formData.append('to', currentChat.id);
       formData.append('message', newMessage.trim());
-
+  
       selectedFiles.forEach((file) => {
         formData.append('files', file); // Append each file to the formData
       });
-
+  
       try {
-        // Send the message and files together
+        console.log('Sending message:', newMessage.trim()); // Log the message being sent
         const response = await axios.post(`${API_URL}/api/send`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-
+  
         // Emit the message to the socket for real-time updates
         socket.emit('chatMessage', response.data);
-
-        // Update the local message state
-        setMessages((prev) => [...prev, response.data]);
+  
+        // No need to directly update `messages` state here.
+        // Wait for the `newChatMessage` event to handle this.
       } catch (error) {
         console.error('Error sending message:', error);
       }
-
+  
       // Clear input and file states
       setNewMessage("");
       setSelectedFiles([]);
     }
   };
+  
+  
 
   const handleFileShare = () => {
     fileInputRef.current.click();

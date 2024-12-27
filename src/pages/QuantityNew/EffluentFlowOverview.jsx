@@ -103,7 +103,7 @@ const EffluentFlowOverview = () => {
     }
   };
 
-  if (loading || predictionLoading) {
+  /* if (loading || predictionLoading) {
     return (
       <div
         className="d-flex justify-content-center align-items-center"
@@ -118,7 +118,7 @@ const EffluentFlowOverview = () => {
         />
       </div>
     );
-  }
+  } */
 
   return (
     <div className="container-fluid">

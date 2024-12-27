@@ -75,7 +75,7 @@ const EnergyOverview = () => {
   };
   
 
-  if (loading || predictionLoading) {
+  /* if (loading || predictionLoading) {
     return (
       <div
         className="d-flex justify-content-center align-items-center"
@@ -92,7 +92,7 @@ const EnergyOverview = () => {
         />
       </div>
     );
-  }
+  } */
 
   return (
     <div className="container-fluid">

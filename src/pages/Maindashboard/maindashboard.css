@@ -36,16 +36,16 @@
 }
 
 
-@media (max-width: 2000px){
+@media (max-width: 1811px){
   .buttonbg{
-    width: 260px;
+    width: 350px;
   }
 }
 
 
 @media (max-width: 1500px){
   .buttonbg{
-    width: 240px;
+    width: 245px;
   }
 }
 @media (max-width: 1200px){

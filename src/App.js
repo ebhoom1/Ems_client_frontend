@@ -61,6 +61,8 @@ import ExceedenceReport from './pages/Report/ExceedenceReport';
 import CustomisableReport from './pages/Report/CustomisableReport';
 import ViewExceedenceList from './pages/ParameterExceed/ViewExceedenceList';
 import LogTest from './pages/Login/LogTest';
+import WaterQualityReport from './pages/Table/WaterQualityReport';
+import WaterQualityForm from './pages/Table/WaterQualityForm';
 
 
 function App() {
@@ -174,6 +176,9 @@ function App() {
                   <Route path="/customisable-report" element={<CustomisableReport />} />
                   <Route path="/exceedence-report" element={<ExceedenceReport />} />
                   <Route path="/view-exceedence-list" element={<ViewExceedenceList />} />
+                  <Route path="/water-quality-report" element={<WaterQualityReport />} />
+                  <Route path="/water-form" element={<WaterQualityForm />} />
+
 
 
 

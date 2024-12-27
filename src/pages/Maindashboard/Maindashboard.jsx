@@ -12,45 +12,42 @@ function Maindashboard() {
   const navigate = useNavigate();
   const [availableStationTypes, setAvailableStationTypes] = useState([]); // Holds station types with values
   const { userType, userData } = useSelector((state) => state.user); // Get userData from Redux
-
-  const userName = userData?.validUserOne?.userName; // Access userName the same way as in Header
+  const storedUserId = sessionStorage.getItem("selectedUserId"); // For admin, use selected user ID
+  const userName = userType === "admin" ? storedUserId : userData?.validUserOne?.userName; // Adjusted userName
 
   // Fetch station types with values
-  const fetchStationTypes = async (userName) => {
-    try {
-      const apiUrl = `${API_URL}/api/get-stacknames-by-userName/${userName}`;
-      console.log("API URL:", apiUrl);
-      console.log("Fetching station types for user:", userName);
-
-      const response = await fetch(apiUrl);
-      const data = await response.json();
-
-      console.log("Raw fetched data:", data);
-
-      const stationTypesWithValues = data.stackNames.reduce((acc, stack) => {
-        if (!acc.includes(stack.stationType)) acc.push(stack.stationType);
-        return acc;
-      }, []); // Only unique station types
-
-      console.log("Station types with values:", stationTypesWithValues);
-
-      setAvailableStationTypes(stationTypesWithValues);
-    } catch (error) {
-      console.error("Error fetching station types:", error);
-    }
-  };
-
   useEffect(() => {
-    console.log("userName:", userName);
-   
-    
-     // Debugging the userName value
     if (userName) {
       fetchStationTypes(userName);
     } else {
       console.log("userName is not available");
     }
   }, [userName]);
+
+  const fetchStationTypes = async (userName) => {
+    try {
+      const response = await fetch(`${API_URL}/api/get-stacknames-by-userName/${userName}`);
+      const data = await response.json();
+
+      // Ensure the response contains valid station types
+      console.log("Fetched Stack Names:", data);
+
+      if (data.stackNames && data.stackNames.length > 0) {
+        const stationTypesWithValues = data.stackNames
+          .map((stack) => stack.stationType) // Extract stationType
+          .filter((type, index, self) => type && self.indexOf(type) === index); // Remove duplicates
+
+        console.log("Filtered Station Types:", stationTypesWithValues);
+        setAvailableStationTypes(stationTypesWithValues);
+      } else {
+        console.error("No valid station types found for user.");
+        setAvailableStationTypes([]); // Default to an empty array if no station types are found
+      }
+    } catch (error) {
+      console.error("Error fetching station types:", error);
+      setAvailableStationTypes([]); // Set an empty array on error
+    }
+  };
 
   const handleCalibration = () => navigate("/calibration");
   const handleReport = () => navigate("/report");
@@ -67,14 +64,16 @@ function Maindashboard() {
     { name: "Energy", path: "/energy", key: "energy" },
   ];
 
-  // Filter links based on userType and available station types
+  // Filter links based on available station types
   const visibleLinks =
-    userType === "admin"
-      ? allLinks // Show all links for admin
-      : allLinks.filter((link) => availableStationTypes.includes(link.key)); // Filter based on stationType for users
+    availableStationTypes.length > 0
+      ? allLinks.filter((link) => availableStationTypes.includes(link.key))
+      : allLinks;
+
+  console.log("Visible Links:", visibleLinks);
 
   return (
-    <div className=" col-12">
+    <div className="col-12">
       <div className="maindashboard d-flex">
         <div className="flex-grow-1 content bg-light">
           <Navbar
@@ -160,6 +159,8 @@ function Maindashboard() {
 }
 
 export default Maindashboard;
+
+
 
 
 /* 

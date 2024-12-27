@@ -50,9 +50,10 @@ const Water = () => {
   const [selectedStack, setSelectedStack] = useState("all");
   const [effluentStacks, setEffluentStacks] = useState([]); // New state to store effluent stacks
   const [realTimeData, setRealTimeData] = useState({});
-  const [exceedanceLoading, setExceedanceLoading] = useState(false); // For parameter exceedance
-  const [exceedanceColor, setExceedanceColor] = useState("loading"); // Default to "loading" for the spinner
-  const [timeIntervalColor, setTimeIntervalColor] = useState("loading"); // Default to "loading" for the spinner
+  // Remove spinners and set default colors for indicators
+  const [exceedanceColor, setExceedanceColor] = useState("green"); // Default to 'gray'
+  const [timeIntervalColor, setTimeIntervalColor] = useState("green"); // Default to 'gray'
+  
  // Function to reset colors and trigger loading state
  const resetColors = () => {
   setExceedanceColor("loading");
@@ -108,15 +109,15 @@ const Water = () => {
   // Fetching data by username
   const fetchData = async (userName) => {
     setLoading(true);
-    setExceedanceLoading(true); // Show loading for parameter exceedance
+    
     try {
       const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
-  
       if (result) {
-        setSearchResult(result); // Store the entire result object
-        setCompanyName(result.companyName || "Unknown Company"); // Access companyName directly
+        setSearchResult(result);
+        setCompanyName(result.companyName || "Unknown Company");
         console.log('fetchData of Latest:', result); // Check if the result is logged correctly
-        setSearchError("");
+
+        setRealTimeData(result.stackData || []); // Display the latest data initially
       } else {
         throw new Error("No data found for this user.");
       }
@@ -186,47 +187,35 @@ const Water = () => {
 
   useEffect(() => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-    
-    // Reset colors and loading states for the new user
     resetColors();
-    setExceedanceLoading(true);
+    
   
-    fetchData(userName); // Fetch general user data
-    fetchEffluentStacks(userName); // Fetch effluent stacks
+    fetchData(userName); // Fetch latest data first
+    fetchEffluentStacks(userName);
   
-    // Set up the real-time data listener for the selected user
-    console.log(`Joining room for user: ${userName}`);
     socket.emit("joinRoom", { userId: userName });
   
-    const handleStackDataUpdate = (data) => {
-      console.log(`Real-time data for ${userName}:`, data);
-  
-      // Ensure the data corresponds to the current user
-      if (data.userName === userName) {
-        setExceedanceColor(data.ExceedanceColor || "green");
-        setTimeIntervalColor(data.timeIntervalColor || "green");
-        setExceedanceLoading(false); // Stop loading for parameter exceedance
-  
-        if (data?.stackData?.length > 0) {
-          setRealTimeData(data.stackData.reduce((acc, item) => {
-            if (item.stackName) {
-              acc[item.stackName] = item;
-            }
-            return acc;
-          }, {}));
-        } else {
-          setRealTimeData({});
+   const handleStackDataUpdate = (data) => {
+    console.log(`Real-time data for ${userName}:`, data);
+
+  if (data.userName === userName) {
+    setExceedanceColor(data.ExceedanceColor || "green"); // Set 'green' if no color is provided
+    setTimeIntervalColor(data.timeIntervalColor || "green");
+    if (data?.stackData?.length > 0) {
+      setRealTimeData(data.stackData.reduce((acc, item) => {
+        if (item.stackName) {
+          acc[item.stackName] = item;
         }
-      } else {
-        console.warn(`Ignored real-time data for another user: ${data.userName}`);
-      }
-    };
+        return acc;
+      }, {}));
+    }
+  }
+};
+
   
     socket.on("stackDataUpdate", handleStackDataUpdate);
   
     return () => {
-      // Clean up listeners to prevent race conditions
-      console.log(`Leaving room for user: ${userName}`);
       socket.emit("leaveRoom", { userId: userName });
       socket.off("stackDataUpdate", handleStackDataUpdate);
     };
@@ -473,31 +462,19 @@ const handleDownloadPdf = () => {
   <div className="d-flex justify-content-center mt-2">
     {/* Parameter Exceed Indicator */}
     <div className="color-indicator">
-      {exceedanceLoading ? (
-        <div className="spinner-container">
-          <Oval height={20} width={20} color="#236A80" ariaLabel="Loading..." />
-        </div>
-      ) : (
-        <div
-          className="color-circle"
-          style={{ backgroundColor: exceedanceColor }}
-        ></div>
-      )}
+      <div
+        className="color-circle"
+        style={{ backgroundColor: exceedanceColor }}
+      ></div>
       <span className="color-label me-2">Parameter Exceed</span>
     </div>
 
     {/* Data Interval Indicator */}
     <div className="color-indicator ml-4">
-      {exceedanceLoading ? (
-        <div className="spinner-container">
-          <Oval height={20} width={20} color="#236A80" ariaLabel="Loading..." />
-        </div>
-      ) : (
-        <div
-          className="color-circle"
-          style={{ backgroundColor: timeIntervalColor }}
-        ></div>
-      )}
+      <div
+        className="color-circle"
+        style={{ backgroundColor: timeIntervalColor }}
+      ></div>
       <span className="color-label">Data Interval</span>
     </div>
   </div>
