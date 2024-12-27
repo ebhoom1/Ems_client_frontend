@@ -4,12 +4,13 @@ import Navbar from "react-bootstrap/Navbar";
 import Dropdown from "react-bootstrap/Dropdown";
 import Button from "react-bootstrap/Button";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // Import useLocation
 import "./maindashboard.css";
 import { API_URL } from "../../utils/apiConfig";
 
 function Maindashboard() {
   const navigate = useNavigate();
+  const location = useLocation(); // Get the current path
   const [availableStationTypes, setAvailableStationTypes] = useState([]); // Holds station types with values
   const { userType, userData } = useSelector((state) => state.user); // Get userData from Redux
   const storedUserId = sessionStorage.getItem("selectedUserId"); // For admin, use selected user ID
@@ -86,7 +87,11 @@ function Maindashboard() {
               <Navbar.Collapse id="basic-navbar-nav">
                 <Nav className="w-100 justify-content-evenly">
                   {visibleLinks.map((link) => (
-                    <Nav.Link href={link.path} key={link.key}>
+                    <Nav.Link
+                      href={link.path}
+                      key={link.key}
+                      className={location.pathname === link.path ? "active-link" : ""}
+                    >
                       {link.name}
                     </Nav.Link>
                   ))}
@@ -159,7 +164,6 @@ function Maindashboard() {
 }
 
 export default Maindashboard;
-
 
 
 
