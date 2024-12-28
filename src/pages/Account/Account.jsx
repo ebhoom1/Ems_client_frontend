@@ -52,6 +52,14 @@ const Account = () => {
                           <p className="text-light">User ID: {userData?.validUserOne?.userName || 'Admin developer'}</p>
                           <p className="text-light">Company Name: {userData?.validUserOne?.companyName || 'Ebhoom Solutions'}</p>
                           <p className="text-light">Model Name: {userData?.validUserOne?.modelName || 'NIL'}</p>
+                          <div className="text-light">
+                            <p>Model Image :   <img 
+                              src={userData?.validUserOne?.modelImage || '/path/to/image1.png'} 
+                              alt="N/A" 
+                              style={{ width: '150px', height: '150px' }} 
+                            /></p>
+                          
+                          </div>
                           <p className="text-light">Name: {userData?.validUserOne?.fname || 'Fazil'}</p>
                           <p className="text-light">Email ID: {userData?.validUserOne?.email || 'fazilmm860@gmail.com'}</p>
                           <p className="text-light">
@@ -62,18 +70,11 @@ const Account = () => {
                           </p>
                           <p className="text-light">Subscription Date: {userData?.validUserOne?.subscriptionDate || '2024-06-05'}</p>
                           <p className="text-light">Industry Type: {userData?.validUserOne?.industryType || 'Admin'}</p>
+                          <p className="text-light">Analyser Technology: N/A</p>
                           <div className="text-light">
-                            <p>Model Name :   <img 
-                              src={userData?.validUserOne?.modelImage || '/path/to/image1.png'} 
-                              alt="N/A" 
-                              style={{ width: '150px', height: '150px' }} 
-                            /></p>
-                          
-                          </div>
-                          <div className="text-light">
-                            <p>Analyser Technology :  <img 
+                            <p>Analyser Technology Image:  <img 
                               src={userData?.validUserOne?.analyserImage || '/path/to/image2.png'} 
-                              alt="N/A" 
+                               alt="N/A" 
                               style={{ width: '150px', height: '150px' }} 
                             /></p>
                            
