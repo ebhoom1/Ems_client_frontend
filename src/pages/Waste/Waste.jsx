@@ -442,7 +442,7 @@ const handleDownloadPdf = () => {
           </div>
 <div className="row">
 
-  <div className="col-md-12 col-lg-6 col-sm-12 border overflow-auto bg-light shadow" 
+  <div className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow" 
     style={{ height: "70vh", overflowY: "scroll",  borderRadius:'15px' }}>
   {!loading && filteredData.length > 0 ? (
                     filteredData.map((stack, stackIndex) => (
@@ -479,10 +479,10 @@ const handleDownloadPdf = () => {
                 </div>
                 )}
   </div>
-  <div className="col-md-12 col-lg-6 col-sm-12 mb-2 ">
+  
   {/* Graph Container with reference */}
   <div
-    className="border bg-light shadow"
+    className="border bg-light shadow col-md-12 col-lg-12 col-sm-12 mb-2 mt-2"
     style={{ height: '70vh', borderRadius: '15px' , position:'relative'}}
     ref={graphRef}
   >
@@ -515,21 +515,7 @@ const handleDownloadPdf = () => {
           <i className="fa-solid fa-download"></i> Download graph
         </button>
 
-        <button
-          onClick={openModal} // Open the modal
-          style={{
-            position: 'absolute',
-            top: '10px',
-            right: '20px',
-            backgroundColor: '#236a80',
-            color: 'white',
-            marginTop:'10px',
-            marginBottom:'10px',
-          }}
-          className="btn"
-        >
-          <i className="fa-solid fa-download"></i> Download Average
-        </button> 
+        
       </>
     )}
   </div>
@@ -541,7 +527,7 @@ const handleDownloadPdf = () => {
     userName={currentUserName}
     stackName={selectedCard?.stackName || ''}
   />
-</div>
+
 </div>
 
 

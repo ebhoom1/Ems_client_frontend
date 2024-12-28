@@ -28,11 +28,11 @@ const Account = () => {
     <div className="container-fluid">
       <div className="row" style={{ backgroundColor: 'white' }}>
         {/* Sidebar (hidden on mobile) */}
-        <div className="col-lg-3 d-none d-lg-block ">
+        <div className="col-lg-3 d-none d-lg-block">
           <DashboardSam />
         </div>
         {/* Main content */}
-        <div className="col-lg-9 col-12 ">
+        <div className="col-lg-9 col-12">
           <div className="row">
             <div className="col-12">
               <Hedaer />
@@ -48,20 +48,36 @@ const Account = () => {
                   <div className="card-body">
                     <form className="m-5">
                       <div className="row">
-                        <div className='text-light'>
-                          <p className='text-light'>User ID: {userData?.validUserOne?.userName || 'Admin developer'}</p>
-                          <p className='text-light'>Company Name: {userData?.validUserOne?.companyName || 'Ebhoom Solutions'}</p>
-                          <p className='text-light'>Model Name: {userData?.validUserOne?.modelName || 'NIL'}</p>
-                          <p className='text-light'>Name: {userData?.validUserOne?.fname || 'Fazil'}</p>
-                          <p className='text-light'>Email ID: {userData?.validUserOne?.email || 'fazilmm860@gmail.com'}</p>
-                          <p className='text-light'>
+                        <div className="text-light">
+                          <p className="text-light">User ID: {userData?.validUserOne?.userName || 'Admin developer'}</p>
+                          <p className="text-light">Company Name: {userData?.validUserOne?.companyName || 'Ebhoom Solutions'}</p>
+                          <p className="text-light">Model Name: {userData?.validUserOne?.modelName || 'NIL'}</p>
+                          <p className="text-light">Name: {userData?.validUserOne?.fname || 'Fazil'}</p>
+                          <p className="text-light">Email ID: {userData?.validUserOne?.email || 'fazilmm860@gmail.com'}</p>
+                          <p className="text-light">
                             Password: ************ 
-                            <Link to='/reset'>
-                              <button className="btn btn-light  ms-5" style={{ color: '#236a80' }}>Change Password</button>
+                            <Link to="/reset">
+                              <button className="btn btn-light ms-5" style={{ color: '#236a80' }}>Change Password</button>
                             </Link>
                           </p>
-                          <p className='text-light'>Subscription Date: {userData?.validUserOne?.subscriptionDate || '2024-06-05'}</p>
-                          <p className='text-light'>Industry Type: {userData?.validUserOne?.industryType || 'Admin'}</p>
+                          <p className="text-light">Subscription Date: {userData?.validUserOne?.subscriptionDate || '2024-06-05'}</p>
+                          <p className="text-light">Industry Type: {userData?.validUserOne?.industryType || 'Admin'}</p>
+                          <div className="text-light">
+                            <p>Model Name :   <img 
+                              src={userData?.validUserOne?.modelImage || '/path/to/image1.png'} 
+                              alt="N/A" 
+                              style={{ width: '150px', height: '150px' }} 
+                            /></p>
+                          
+                          </div>
+                          <div className="text-light">
+                            <p>Analyser Technology :  <img 
+                              src={userData?.validUserOne?.analyserImage || '/path/to/image2.png'} 
+                              alt="N/A" 
+                              style={{ width: '150px', height: '150px' }} 
+                            /></p>
+                           
+                          </div>
                         </div>
                       </div>
                     </form>
