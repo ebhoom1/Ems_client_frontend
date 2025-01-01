@@ -223,18 +223,27 @@ const handleDownloadPdf = () => {
     
 
     useEffect(() => {
-      fetchPrimaryStation(currentUserName); // Fetch primary station on component mount and userName change
-    }, [currentUserName]);
+      fetchPrimaryStation(storedUserId); // Fetch primary station on component mount and userName change
+    }, [storedUserId]); 
   
-    const fetchPrimaryStation = async (userName) => {
-      try {
-        const response = await axios.get(`${API_URL}/api/primary-station/${userName}`);
-        setPrimaryStation(response.data?.data?.stackName || 'No primary station selected');
-      } catch (error) {
-        console.error('Failed to fetch primary station:', error);
-        setPrimaryStation('No primary station selected');
-      }
-    };
+   const fetchPrimaryStation = async (userName) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/primary-station/${userName}`);
+    
+    // Log the full API response for debugging
+    console.log('API Response:', response);
+
+    // Update primary station state
+    setPrimaryStation(response.data?.data?.stackName || 'No primary station selected');
+  } catch (error) {
+    // Log the error details
+    console.error('Failed to fetch primary station:', error);
+
+    // Set default state when fetch fails
+    setPrimaryStation('No primary station selected');
+  }
+};
+
     const handleSetPrimaryStation = (stationName) => {
       setPrimaryStation(stationName); // Immediately update local state
       const postData = {

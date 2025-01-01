@@ -53,6 +53,7 @@ const Water = () => {
   // Remove spinners and set default colors for indicators
   const [exceedanceColor, setExceedanceColor] = useState("green"); // Default to 'gray'
   const [timeIntervalColor, setTimeIntervalColor] = useState("green"); // Default to 'gray'
+  const [lastEffluentData, setLastEffluentData] = useState({}); // State to store last effluent data
   
  // Function to reset colors and trigger loading state
  const resetColors = () => {
@@ -190,30 +191,42 @@ const Water = () => {
   useEffect(() => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
     resetColors();
-    
   
     fetchData(userName); // Fetch latest data first
     fetchEffluentStacks(userName);
   
     socket.emit("joinRoom", { userId: userName });
   
-   const handleStackDataUpdate = (data) => {
-    console.log(`Real-time data for ${userName}:`, data);
-
-  if (data.userName === userName) {
-    setExceedanceColor(data.ExceedanceColor || "green"); // Set 'green' if no color is provided
-    setTimeIntervalColor(data.timeIntervalColor || "green");
-    if (data?.stackData?.length > 0) {
-      setRealTimeData(data.stackData.reduce((acc, item) => {
-        if (item.stackName) {
-          acc[item.stackName] = item;
+    const handleStackDataUpdate = (data) => {
+      console.log(`Real-time data for ${data.userName}:`, data);
+    
+      if (data.userName === currentUserName) {
+        setExceedanceColor(data.ExceedanceColor || "green"); // Set 'green' if no color is provided
+        setTimeIntervalColor(data.timeIntervalColor || "green");
+    
+        // Check for effluent stationType
+        const effluentData = data.stackData?.find((stack) => stack.stationType === "effluent");
+        if (effluentData) {
+          setLastEffluentData(effluentData); // Update with real-time effluent data
         }
-        return acc;
-      }, {}));
-    }
-  }
-};
-
+    
+        // Update real-time data
+        setRealTimeData((prevState) => {
+          const updatedData = data.stackData.reduce((acc, item) => {
+            if (item.stackName) {
+              acc[item.stackName] = item;
+            }
+            return acc;
+          }, {});
+          // Retain the last effluent data if no effluent data is included in the update
+          if (!effluentData && lastEffluentData?.stackName) {
+            updatedData[lastEffluentData.stackName] = lastEffluentData;
+          }
+          return updatedData;
+        });
+      }
+    };
+    
   
     socket.on("stackDataUpdate", handleStackDataUpdate);
   
@@ -222,7 +235,6 @@ const Water = () => {
       socket.off("stackDataUpdate", handleStackDataUpdate);
     };
   }, [selectedUserIdFromRedux, currentUserName]);
-  
   
 
   
@@ -301,8 +313,13 @@ const handleDownloadPdf = () => {
   };
 
   const filteredData = selectedStack === "all"
+  ? Object.values(realTimeData).length > 0
     ? Object.values(realTimeData)
-    : Object.values(realTimeData).filter(data => data.stackName === selectedStack);
+    : lastEffluentData.stackName
+    ? [lastEffluentData]
+    : []
+  : Object.values(realTimeData).filter((data) => data.stackName === selectedStack);
+
   return (
 <div>
       {/* Show loader while loading */}
@@ -496,73 +513,45 @@ const handleDownloadPdf = () => {
                   <div className="row">
                   
 
-              <div
-                className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-2 graphdiv "
-                style={{ height: '70vh', overflowY: 'scroll', borderRadius: '15px' }}
-              >
-                {!loading && filteredData.length > 0 ? (
-                  filteredData.map((stack, stackIndex) =>
-                    effluentStacks.includes(stack.stackName) ? (
-                      <div key={stackIndex} className="col-12 mb-4">
-                        <div className="stack-box">
-                          <h4 className="text-center mt-3">
-                            {stack.stackName}{' '}
-                            <img
-                              src={effluent}
-                              alt="effluent image"
-                              width={'100px'}
-                            />
-                          </h4>
-                          <div className="row">
-                            {waterParameters.map((item, index) => {
-                              const value = stack[item.name];
-                              return value && value !== 'N/A' ? (
-                                <div
-                                  className="col-12 col-md-4 grid-margin"
-                                  key={index}
-                                >
-                                  <div
-                                    className="card mb-4 stack-card"
-                                    style={{ border: 'none', color: 'white' }}
-                                    onClick={() =>
-                                      handleCardClick(
-                                        { title: item.name },
-                                        stack.stackName,
-                                        currentUserName
-                                      )
-                                    }
-                                  >
-                                    <div className="card-body">
-                                      <h5 style={{ color: '#ffff' }}>
-                                        {item.parameter}
-                                      </h5>
-                                      <p>
-                                        <strong
-                                          style={{
-                                            color: '#ffff',
-                                            fontSize: '24px',
-                                          }}
-                                        >
-                                          {value}
-                                        </strong>{' '}
-                                        {item.value}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                              ) : null;
-                            })}
-                          </div>
-                        </div>
+                  <div className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-2 graphdiv" style={{ height: '70vh', overflowY: 'scroll', borderRadius: '15px' }}>
+  {!loading && filteredData.length > 0 ? (
+    filteredData.map((stack, stackIndex) =>
+      effluentStacks.includes(stack.stackName) ? (
+        <div key={stackIndex} className="col-12 mb-4">
+          <div className="stack-box">
+            <h4 className="text-center mt-3">
+              {stack.stackName}{' '}
+              <img src={effluent} alt="effluent image" width={'100px'} />
+            </h4>
+            <div className="row">
+              {waterParameters.map((item, index) => {
+                const value = stack[item.name];
+                return value && value !== 'N/A' ? (
+                  <div className="col-12 col-md-4 grid-margin" key={index}>
+                    <div className="card mb-4 stack-card" style={{ border: 'none', color: 'white' }} onClick={() => handleCardClick({ title: item.name }, stack.stackName, currentUserName)}>
+                      <div className="card-body">
+                        <h5 style={{ color: '#ffff' }}>{item.parameter}</h5>
+                        <p>
+                          <strong style={{ color: '#ffff', fontSize: '24px' }}>{value}</strong>{' '}
+                          {item.value}
+                        </p>
                       </div>
-                    ) : null
-                  )
-                ) : (
-                  <div className="col-12 d-flex justify-content-center align-items-center mt-5">
-                    <h5>Waiting real-time data available</h5>
+                    </div>
                   </div>
-                )}
-              </div>
+                ) : null;
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null
+    )
+  ) : (
+    <div className="col-12 d-flex justify-content-center align-items-center mt-5">
+      <h5>Waiting real-time data available</h5>
+    </div>
+  )}
+</div>
+
               {/* graph  */}
               
   {/* Graph Container with reference */}

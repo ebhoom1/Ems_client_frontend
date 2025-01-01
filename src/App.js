@@ -64,6 +64,7 @@ import LogTest from './pages/Login/LogTest';
 import WaterQualityReport from './pages/Table/WaterQualityReport';
 import WaterQualityForm from './pages/Table/WaterQualityForm';
 import ViewCalibrationReport from './pages/CalibartionPage/ViewCalibrationReport';
+import ViewUser from './pages/ManageUsers/ViewUser';
 
 
 function App() {
@@ -164,6 +165,8 @@ function App() {
                   <Route path="/calibration-exceeded" element={<CalibrationExceeded />} />
                   <Route path="/manage-user" element={<UsersLog />} />
                   <Route path="/edit/:userId" element={<Edit />} />
+                  <Route path="/view/:userId" element={<ViewUser />} />
+
                   <Route path="/view-notification" element={<Viewnotification />} />
                   <Route path="/edit-parameter/:userName" element={<EditParameter />} />
                   <Route path="/sample" element={<Mainsam />} />

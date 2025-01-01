@@ -973,6 +973,14 @@ const handleLogoDelete = async () => {
       className="list-group-item d-flex justify-content-between align-items-center"
     >
       <span>{user.companyName}</span>
+      <div className="d-flex justify-content-end align-items-center ">
+      <button
+        className="btn me-2"
+        style={{ backgroundColor: 'orange', color: 'white' }}
+        onClick={() => navigate(`/view/${user._id}`, { state: { userId: user.userId } })}
+      >
+        View
+      </button>
       <button
         className="btn"
         style={{ backgroundColor: '#236a80', color: 'white' }}
@@ -980,6 +988,8 @@ const handleLogoDelete = async () => {
       >
         Edit
       </button>
+      </div>
+   
     </li>
   ))}
 </ul>
