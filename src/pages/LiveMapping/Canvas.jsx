@@ -30,17 +30,20 @@ const nodeTypes = {
 };
 
 function Canvas() {
+  const { userId } = useSelector((state) => state.selectedUser);
+
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [searchUserName, setSearchUserName] = useState('');
   const [currentUserName, setCurrentUserName] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [noLiveStation, setNoLiveStation] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false); // New state for edit mode
 
   const { userData } = useSelector((state) => state.user);
   const userType = userData?.validUserOne?.userType || '';
   const loggedUserName = userData?.validUserOne?.userName || '';
+  const storedUserId = sessionStorage.getItem('selectedUserId');
 
   const onDragStart = () => setIsDragging(true);
   const onDragStop = () => setIsDragging(false);
@@ -55,6 +58,8 @@ function Canvas() {
   };
 
   const onDrop = (event) => {
+    if (!isEditMode) return; // Disable dropping when not in edit mode
+
     event.preventDefault();
     const reactFlowBounds = event.target.getBoundingClientRect();
     const shapeData = event.dataTransfer.getData('application/reactflow');
@@ -98,11 +103,11 @@ function Canvas() {
         url: apiUrl,
         data: {
           userName: currentUserName || loggedUserName,
-          nodes: nodes.map(node => ({
+          nodes: nodes.map((node) => ({
             ...node,
-            rotation: node.data.rotation,  // Save rotation
-            width: node.width,             // Save size
-            height: node.height,           // Save size
+            rotation: node.data.rotation,
+            width: node.width,
+            height: node.height,
           })),
           edges,
         },
@@ -110,12 +115,12 @@ function Canvas() {
       console.log('Saved successfully:', response.data);
       alert('Map saved successfully!');
       setNoLiveStation(false);
+      setIsEditMode(false); // Disable edit mode after saving
     } catch (error) {
       console.error('Error saving map:', error);
       alert('Failed to save map. Please try again.');
     }
   };
-  
 
   const handleDelete = async () => {
     try {
@@ -132,6 +137,9 @@ function Canvas() {
   };
 
   const fetchLiveStation = async (name) => {
+    setNodes([]);
+    setEdges([]);
+
     try {
       const response = await axios.get(`https://api.ocems.ebhoom.com/api/find-live-station/${name}`);
       const { data } = response.data;
@@ -152,42 +160,20 @@ function Canvas() {
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchUserName.trim()) {
-      fetchLiveStation(searchUserName.trim());
-    } else {
-      alert('Please enter a valid username');
-    }
-  };
-
   useEffect(() => {
     if (userType === 'admin') {
-      setCurrentUserName('');
+      const selectedUserFromStorage = storedUserId;
+      if (selectedUserFromStorage) {
+        fetchLiveStation(selectedUserFromStorage);
+      }
     } else if (userType === 'user') {
       fetchLiveStation(loggedUserName);
     }
-  }, [userType, loggedUserName]);
+  }, [userType, loggedUserName, storedUserId]);
 
   return (
     <div className="react-flow-container">
       <div className="react-flow-scrollable">
-        {userType === 'admin' && (
-          <div className="admin-search">
-            <form className="d-flex" onSubmit={handleSearch} style={{ marginBottom: '10px' }}>
-              <input
-                type="text"
-                placeholder="Enter username"
-                value={searchUserName}
-                onChange={(e) => setSearchUserName(e.target.value)}
-                className="form-control"
-              />
-              <button type="submit" style={{ backgroundColor: '#236a80' }} className="btn text-light ms-3">
-                Search
-              </button>
-            </form>
-          </div>
-        )}
         {noLiveStation && (
           <div className="text-center text-danger mt-3">
             <h5>{userType === 'admin' ? 'No live station available for this user.' : 'No live station available. Please create a new one.'}</h5>
@@ -195,7 +181,10 @@ function Canvas() {
         )}
         <div className="reactflow-wrapper" style={{ width: '100%', height: '600px' }}>
           <div className="d-flex justify-content-end">
-            <button className="btn btn-success me-3" onClick={handleSave}>
+            <button className="btn btn-warning me-3" onClick={() => setIsEditMode((prev) => !prev)}>
+              {isEditMode ? ' Edit' : ' Edit'}
+            </button>
+            <button className="btn btn-success me-3" onClick={handleSave} disabled={!isEditMode}>
               {isEditing ? 'Update' : 'Save'}
             </button>
             {isEditing && userType === 'admin' && (
@@ -207,14 +196,14 @@ function Canvas() {
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
+            onNodesChange={isEditMode ? onNodesChange : undefined}
+            onEdgesChange={isEditMode ? onEdgesChange : undefined}
+            onConnect={isEditMode ? onConnect : undefined}
             onDragOver={onDragOver}
             onDrop={onDrop}
             nodeTypes={nodeTypes}
             style={{
-              pointerEvents: isDragging ? 'none' : 'auto',
+              pointerEvents: isDragging || !isEditMode ? 'none' : 'auto',
             }}
           >
             <Controls />
