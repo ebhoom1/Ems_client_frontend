@@ -246,8 +246,8 @@ function Edit() {
                                 {/* Password */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
-                                        <label htmlFor="password" className="form-label"> Password  </label>
-                                        <input id="password" type='Password' placeholder='Enter Password ' value={userData.password || ''} name='password' onChange={handleChange}  className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+                                        <label htmlFor="cpassword" className="form-label">  Password  </label>
+                                        <input id="cpassword" type='Password' placeholder='Enter Password ' value={userData.cpassword || ''} name='cpassword' onChange={handleChange} className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
                                 </div>
@@ -336,14 +336,14 @@ function Edit() {
                                     <div className="form-group">
                                         <label htmlFor="district" className="form-label"> District  </label>
                                         <input
-  id="district"
-  type="text"
-  value={userData.district || ''} // Ensure a fallback empty string
-  onChange={handleChange}
-  name="district"
-  className="form-control"
-  style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
-/>
+                                         id="district"
+                                         type="text"
+                                         value={userData.district || ''} // Ensure a fallback empty string
+                                         onChange={handleChange}
+                                         name="district"
+                                         className="form-control"
+                                         style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+                                        />
 
                                     </div>
                                 </div>

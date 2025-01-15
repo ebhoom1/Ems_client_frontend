@@ -26,6 +26,3 @@ const ChatSidebar = ({ chats, selectChat, searchTerm, setSearchTerm }) => {
 
 export default ChatSidebar;
 
-//  import chatavatar from '../../assests/images/admin.png'
-
-//          <img src={chatavatar} alt="Avatar" className="chat-avatar" />

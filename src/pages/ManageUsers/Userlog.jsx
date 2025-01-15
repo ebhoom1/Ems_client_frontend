@@ -13,6 +13,8 @@ const UsersLog = () => {
   const { users, filteredUsers, loading, error } = useSelector(
     (state) => state.userLog
   );
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { userData } = useSelector((state) => state.user);
   const navigate = useNavigate();
   const [sortCategory, setSortCategory] = useState("");
@@ -577,20 +579,66 @@ const handleLogoDelete = async () => {
                                 </div>
                                 {/* Password */}
                                 <div className="col-lg-6 col-md-6 mb-4">
-                                    <div className="form-group">
-                                        <label htmlFor="password" className="form-label  text-light"> Password  </label>
-                                        <input id="password"  value={formData.password}   onChange={handleInputChange}  name="password" type='Password' placeholder='Enter  Password ' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
-
-                                    </div>
-                                </div>
+                <div className="form-group">
+                    <label htmlFor="password" className="form-label text-light"> Password </label>
+                    <div style={{ position: 'relative' }}>
+                        <input
+                            id="password"
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Enter Password"
+                            className="form-control"
+                            style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+                        />
+                        <span
+                            onClick={() => setShowPassword(!showPassword)}
+                            style={{
+                                position: 'absolute',
+                                right: '10px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                cursor: 'pointer',
+                                color: 'gray'
+                            }}
+                        >
+                            {showPassword ? '👁️' : '🙈'}
+                        </span>
+                    </div>
+                </div>
+            </div>
                                  {/*  Confirm Password */}
                                  <div className="col-lg-6 col-md-6 mb-4">
-                                    <div className="form-group">
-                                        <label htmlFor="confirmPassword" className="form-label  text-light"> Confirm Password  </label>
-                                        <input id="confirmPassword"  value={formData.cpassword}   onChange={handleInputChange} name="cpassword" type='Password' placeholder='Enter Password ' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
-
-                                    </div>
-                                </div>
+                <div className="form-group">
+                    <label htmlFor="confirmPassword" className="form-label text-light"> Confirm Password </label>
+                    <div style={{ position: 'relative' }}>
+                        <input
+                            id="confirmPassword"
+                            value={formData.cpassword}
+                            onChange={handleInputChange}
+                            name="cpassword"
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            placeholder="Enter Password"
+                            className="form-control"
+                            style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+                        />
+                        <span
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            style={{
+                                position: 'absolute',
+                                right: '10px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                cursor: 'pointer',
+                                color: 'gray'
+                            }}
+                        >
+                            {showConfirmPassword ? '👁️' : '🙈'}
+                        </span>
+                    </div>
+                </div>
+            </div>
                                  {/* To Date */}
                                  <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">

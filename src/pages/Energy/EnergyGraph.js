@@ -193,7 +193,7 @@ const EnergyGraph = ({ isOpen, onRequestClose, parameter, userName, stackName })
                     <p>Please try a different interval or check back later.</p>
                 </div>
             ) : (
-                <div className="chart-container">
+                <div className="chart-container d-flex align-items-center justify-content-center">
                     <Line data={chartData} options={chartOptions} />
                 </div>
             )}

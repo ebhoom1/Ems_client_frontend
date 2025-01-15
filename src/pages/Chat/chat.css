@@ -68,7 +68,7 @@
 
 .chat-messages {
   overflow-y: auto; /* Allows scrolling */
-  max-height: 300px; /* Adjust based on your layout */
+  max-height: 500px; /* Adjust based on your layout */
 }
 
 .chat-input-box {

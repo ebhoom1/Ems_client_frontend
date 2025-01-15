@@ -72,7 +72,7 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const { userData, loading, userType } = useSelector((state) => state.user);
-  const publicRoutes = ['/download-data' ];
+  const publicRoutes = ['/download-data', '/reset-password', '/reset' ];
 
   useEffect(() => {
     // Only perform user validation for routes that are not in the publicRoutes array

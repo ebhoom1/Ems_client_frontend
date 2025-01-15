@@ -42,7 +42,7 @@ const PrimaryStationSelectorFlow = ({ userName, stations, primaryStation, setPri
           listStyle: 'none',
           padding: '10px',
            border: '1px solid #ccc', 
-           marginTop: '-200px',
+           marginTop: '-300px',
           left: '35%',
           transform: 'translateX(-50%)',
           zIndex: 1000,}}>

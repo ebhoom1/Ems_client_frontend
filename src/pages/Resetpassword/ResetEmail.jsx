@@ -18,47 +18,62 @@ const ResetEmail = () => {
 
   const sendLink = async (e) => {
     e.preventDefault();
-
+  
     if (email === "") {
       toast.error("Email is required");
     } else if (!email.includes("@")) {
-      toast.warning("Include @ in your email");
+      toast.warning("Please include '@' in your email");
     } else {
       try {
-        await dispatch(sendResetLink(email)).unwrap();
+        // Dispatch the reset link action
+        const result = await dispatch(sendResetLink(email)).unwrap();
+  
+        // If successful, clear email and show success message
         setEmail("");
-        toast.success("Reset Email link sent successfully");
+        toast.success(result.message || "Reset Email link sent successfully");
       } catch (error) {
-        toast.error("Invalid User");
+        // Handle backend errors
+        if (error?.status === 401) {
+          toast.error("Invalid email or user does not exist");
+        } else if (error?.status === 500) {
+          toast.error("Server error. Please try again later");
+        } else {
+          toast.error(error.message || "An unknown error occurred");
+        }
       }
     }
   };
+  
 
   return (
-    <div className='login-page'>
-      <div className='bg-light back rounded position-relative shadow w-100' style={{ maxWidth: '500px', padding: '20px' }}>
+    <div className="login-page">
+      <div className="bg-light back rounded position-relative shadow w-100" style={{ maxWidth: "500px", padding: "20px" }}>
         <div className="d-flex align-items-center" style={{ height: "100%" }}>
-          <img className='mt-2 ms-2' src={logo} alt="Ebhoom Logo" style={{ height: '30px', width: 'auto', position: 'absolute', top: '10px', left: '10px' }} />
-
+          <img className="mt-2 ms-2" src={logo} alt="Ebhoom Logo" style={{ height: "30px", width: "auto", position: "absolute", top: "10px", left: "10px" }} />
           <div className="row w-100" style={{ paddingTop: "60px" }}>
             <div className="col-12 d-flex justify-content-center align-items-center" style={{ height: "auto" }}>
-              <form className='w-100' style={{ maxWidth: '400px' }} onSubmit={sendLink}>
-                <p className='me-5'>Enter Email to receive Reset Password link</p>
-                <div className='mb-4' style={{ borderRadius: '10px' }}>
+              <form className="w-100" style={{ maxWidth: "400px" }} onSubmit={sendLink}>
+                <p className="me-5">Enter Email to receive Reset Password link</p>
+                <div className="mb-4" style={{ borderRadius: "10px" }}>
                   <input
                     type="email"
                     name="email"
                     id="email"
                     placeholder="Email"
                     autoComplete="email"
-                    className='w-100 border border-solid shadow-lg p-3 input-box'
+                    className="w-100 border border-solid shadow-lg p-3 input-box"
                     value={email}
                     onChange={setVal}
                   />
                 </div>
-                <div className='mb-4'>
-                  <Button style={{ borderRadius: '20px', backgroundColor: '#236a80' }} className='btn w-100' type="submit" disabled={loading}>
-                    {loading ? 'Sending...' : 'Submit'}
+                <div className="mb-4">
+                  <Button
+                    style={{ borderRadius: "20px", backgroundColor: "#236a80", border: "none" }}
+                    className="btn w-100"
+                    type="submit"
+                    disabled={loading}
+                  >
+                    {loading ? "Sending..." : "Submit"}
                   </Button>
                 </div>
               </form>

@@ -275,24 +275,19 @@ const handleDownloadPdf = () => {
             </div>
           </div>
         </div>
-        <ul className="quick-links ml-auto d-flex">
-                {latestData && (
-                  <li >
-                    <h5>Analyser Health: </h5>
-                     {searchResult?.validationStatus ? (
+       <div className="row">
+        <div className="col-lg-4"> {latestData && (
+                  
+                    <h5>Analyser Health: {searchResult?.validationStatus ? (
                       <h5 style={{ color: "green" }}>Good</h5>
                     ) : (
                       <h5 style={{ color: "red" }}>Problem</h5>
-                    )} 
-                  </li>
-                )}
-<li className="dashboard-header text-center">
-  <b>
-  <li className=" text-center" style={{marginLeft:'150px'}}><b><h2>WATER DASHBOARD</h2></b></li>
-  </b>
-</li>
-               
-              </ul>
+                    )} </h5> )}
+                    </div>
+        <div className="col-lg-4 text-center"><b><h3>WATER DASHBOARD</h3></b></div>
+        <div className="col-lg-4"></div>
+       </div>
+
               <ul className="d-flex align-items-center justify-content-between" style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
                 <li>{searchResult?.stackData && searchResult.stackData.length > 0 && (
     <div className="stack-dropdown">
@@ -468,21 +463,7 @@ const handleDownloadPdf = () => {
           <i className="fa-solid fa-download"></i> Download graph
         </button>
 
-        <button
-          onClick={openModal} // Open the modal
-          style={{
-            position: 'absolute',
-            top: '10px',
-            right: '20px',
-            backgroundColor: '#236a80',
-            color: 'white',
-            marginTop:'10px',
-            marginBottom:'10px',
-          }}
-          className="btn"
-        >
-          <i className="fa-solid fa-download"></i> Download Average
-        </button> 
+       
       </>
     )}
   </div>

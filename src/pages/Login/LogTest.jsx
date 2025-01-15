@@ -357,9 +357,19 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
   return (
     <>
       <div>
-    <div className="m-5 p-5">
-        <div className="row border border-solid m-5 p-5 d-flex align-items-center justify-content-center shadow" style={{borderRadius:'10px'}}>
-          <div className="col-lg-6" style={{ height: '60vh' }}>
+    <div className="m-5 p-5 ">
+    <div
+  className="row border border-solid m-5 p-5 d-flex align-items-center justify-content-center shadow"
+  style={{
+    borderRadius: '10px',
+    backgroundImage: `url("https://static.vecteezy.com/system/resources/thumbnails/004/242/510/small/abstract-wave-trendy-geometric-abstract-background-with-white-and-blue-gradient-vector.jpg")`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)', // Add semi-transparent white overlay
+    backdropFilter: 'blur(5px)', // Optional: adds a blurred effect
+  }}
+>     <div className="col-lg-6" style={{ height: '70vh' }}>
    
       <div className="d-flex justify-content-between prevnext">
         <div>
@@ -544,7 +554,7 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
       )}
     </div>
   </div>
-        <div className="col-lg-6 " style={{height:'60vh'}}>
+        <div className="col-lg-6 " style={{ height:'50vh'}}>
           
         <div className=' d-flex justify-content-center ' >
       <div className='bg-light  rounded  shadow w-100' style={{ maxWidth: '500px', padding: '20px' }}>
@@ -559,7 +569,7 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
           <div className="col d-flex justify-content-center align-items-center" style={{ height: "auto" }}>
             <form className='w-100' style={{ maxWidth: '400px' }}>
               <div className='mb-4' style={{ borderRadius: '20%' }}>
-                
+            
                 <input
                   type="email"
                   value={inpval.email}
@@ -571,22 +581,34 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
                   className='w-100 border border-solid shadow-lg p-3 input-box'
                 />
               </div>
-              <div className='mb-4' style={{ borderRadius: '20px' }}>
-                <input
-                  type={passShow ? "text" : "password"} 
-                  onChange={setVal}
-                  value={inpval.password} 
-                  name="password"
-                  id="password"
-                  placeholder="Enter Your password"
-                  autoComplete="current-password"
-                  className='w-100 border border-solid shadow-lg p-3 input-box'
-                />
-              </div>
-              <div className='d-flex justify-content-between mb-2'>
-                <div className="showpass" onClick={() => setPassShow(!passShow)}>
-                  {passShow ? "Hide" : "Show"}
-                </div>
+              <div className='mb-4' style={{ borderRadius: '20px', position: 'relative' }}>
+  <input
+    type={passShow ? "text" : "password"} 
+    onChange={setVal}
+    value={inpval.password} 
+    name="password"
+    id="password"
+    placeholder="Enter Your Password"
+    autoComplete="current-password"
+    className='w-100 border border-solid shadow-lg p-3 input-box'
+    style={{ paddingRight: '50px' }} // Add padding to avoid text overlap with icon
+  />
+  <i
+    className={`fa-solid ${passShow ? 'fa-eye' : 'fa-eye-slash'}`}
+    style={{
+      position: 'absolute',
+      right: '15px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      cursor: 'pointer',
+      color: '#236a80',
+    }}
+    onClick={() => setPassShow(!passShow)} // Toggle password visibility
+  ></i>
+</div>
+
+              <div className='d-flex justify-content-end mb-2'>
+                
                 <Link to={'/reset'} style={{ textDecoration: 'none' }}>Forgot Password</Link>
               </div>
               <select className="input-field mb-4 w-100 border border-solid shadow-lg p-3 input-box"

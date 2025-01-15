@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';  // Toastify styles
 import { useNavigate } from 'react-router-dom';
@@ -8,7 +8,8 @@ import DashboardSam from '../Dashboard/DashboardSam';
 
 function ManageUser() {
   const navigate = useNavigate();
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const industryType = [
       { category: "Sugar" },
       { category: "Cement" },
@@ -66,7 +67,7 @@ function ManageUser() {
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
                                         <label htmlFor="industry" className="form-label">User ID</label>
-                                        <input id="to-date" placeholder='User ID' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+                                        <input id="industry" placeholder='User ID' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
                                 </div>
@@ -76,7 +77,7 @@ function ManageUser() {
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
                                         <label htmlFor="industry" className="form-label">Company Name </label>
-                                        <input id="to-date" placeholder='User ID' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+                                        <input id="industry" placeholder='User ID' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
 
                                     </div>
                                 </div>
@@ -126,20 +127,60 @@ function ManageUser() {
                                 </div>
                                 {/* Password */}
                                 <div className="col-lg-6 col-md-6 mb-4">
-                                    <div className="form-group">
-                                        <label htmlFor="password" className="form-label"> Password  </label>
-                                        <input id="passwpasswordord" type='Password' placeholder='Enter  Password ' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+    <div className="form-group">
+        <label htmlFor="password" className="form-label">Password</label>
+        <div style={{ position: 'relative' }}>
+            <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter Password"
+                className="form-control"
+                style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+            />
+            <span
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    cursor: 'pointer',
+                }}
+            >
+                {showPassword ? 'show' : 'hide'}
+            </span>
+        </div>
+    </div>
+</div>
 
-                                    </div>
-                                </div>
                                  {/*  Confirm Password */}
                                  <div className="col-lg-6 col-md-6 mb-4">
-                                    <div className="form-group">
-                                        <label htmlFor="industry" className="form-label"> Confirm Password  </label>
-                                        <input id="to-date" type='Password' placeholder='Enter Password ' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+    <div className="form-group">
+        <label htmlFor="confirm-password" className="form-label">ok Password</label>
+        <div style={{ position: 'relative' }}>
+            <input
+                id="confirm-password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Enter Password"
+                className="form-control"
+                style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+            />
+            <span
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    cursor: 'pointer',
+                }}
+            >
+                {showConfirmPassword ? 'show' : 'hide'}
+            </span>
+        </div>
+    </div>
+</div>
 
-                                    </div>
-                                </div>
                                  {/* To Date */}
                                  <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">

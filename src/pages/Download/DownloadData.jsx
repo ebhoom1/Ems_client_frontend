@@ -74,8 +74,15 @@ function DownloadData() {
       toast.success('Download successful!');
     } catch (error) {
       console.error('Error downloading data:', error);
-      toast.error('Failed to download data.');
+      // Check for specific error response
+    if (error.response && error.response.status === 404) {
+      toast.warn('No data available for the selected date range.');
+    } else {
+      toast.error('Failed to download data. Please try again.');
     }
+    }
+     // Check for specific error response
+     
   };
 
   return (
