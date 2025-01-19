@@ -65,6 +65,10 @@ import WaterQualityReport from './pages/Table/WaterQualityReport';
 import WaterQualityForm from './pages/Table/WaterQualityForm';
 import ViewCalibrationReport from './pages/CalibartionPage/ViewCalibrationReport';
 import ViewUser from './pages/ManageUsers/ViewUser';
+import Generator from './pages/Generator/Generator';
+import WasteNew from './pages/Waste/WasteNew';
+import Pump from './pages/Pump/Pump';
+import WasteDashboard from './pages/Waste/WasteDashboard';
 
 
 function App() {
@@ -173,7 +177,7 @@ function App() {
                   <Route path="/live-station" element={<LIveLayout />} />
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/view-data" element={<ViewComponent />} />
-                  <Route path="/waste" element={<Waste />} />
+                  <Route path="/waste" element={<WasteNew />} />
                   <Route path="/viewdifference" element={<ViewDifference />} />
                   <Route path="/table" element={<WaterQualityTable />} />
                   <Route path="/how-to-use" element={ <UserManual />} />
@@ -183,13 +187,11 @@ function App() {
                   <Route path="/water-quality-report" element={<WaterQualityReport />} />
                   <Route path="/water-form" element={<WaterQualityForm />} />
                   <Route path="/view-calibration-report" element={<ViewCalibrationReport />} />
-
-
-
+                  <Route path="/generator" element={<Generator />} />
+                  <Route path="/pump" element={<Pump />} />
 
                 </Route>
               )}
-
               {/* User Routes */}
               {userType === "user" && (
                 <Route path="/" element={<PrivateLayout />}>
@@ -199,10 +201,8 @@ function App() {
                   <Route path="/noise" element={<Noise />} />
                   <Route path="/account" element={<Account />} />
                   <Route path="/chat" element={<Chat />} />
-                  <Route path="/how-to-use" element={ <UserManual />} />
-                  
+                  <Route path="/how-to-use" element={ <UserManual />} />                  
                   <Route path="/customisable-report" element={<CustomisableReport />} />
-
                   <Route path="/transactions" element={<Transcation />} /> {/* Assuming transaction-related routes */}
                   <Route path="/view-report" element={<ViewReport />} />
                   <Route path="/edit-report/:userName" element={<EditReport />} />
@@ -211,14 +211,13 @@ function App() {
                   <Route path="/energy" element={<EnergyDashboard />} />
                   <Route path="/support-analyser" element={<SupportAnalyser />} />
                   <Route path="/view-report/:userName" element={<ViewReportUser />} />
-                  <Route path="/waste" element={<Waste />} />
+                  <Route path="/waste" element={<WasteNew />} />
                   <Route path="/exceedence-report" element={<ExceedenceReport />} />
                   <Route path="/live-station" element={<LIveLayout />} />
                   <Route path="/view-data" element={<ViewComponent />} />
                   <Route path="/table" element={<WaterQualityTable />} />
                   <Route path="/view-calibration-report" element={<ViewCalibrationReport />} />
-
-
+                  <Route path="/generator" element={<Generator />} />
 
                 </Route>
               )}

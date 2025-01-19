@@ -61,15 +61,17 @@ function Maindashboard() {
     { name: "Stack Emission", path: "/ambient", key: "emission" },
     { name: "Noise", path: "/noise", key: "noise" },
     { name: "Waste", path: "/waste", key: "waste" },
+    { name: "Generator", path: "/generator", key: "generator" },
     { name: "Effluent Flow", path: "/quantity", key: "effluent_flow" },
     { name: "Energy", path: "/energy", key: "energy" },
   ];
 
   // Filter links based on available station types
-  const visibleLinks =
-    availableStationTypes.length > 0
-      ? allLinks.filter((link) => availableStationTypes.includes(link.key))
-      : allLinks;
+  // Filter links based on available station types, but always include "Waste" and "Generator"
+  const visibleLinks = allLinks.filter(
+    (link) =>
+      availableStationTypes.includes(link.key) || link.key === "waste" || link.key === "generator"
+  );
 
   console.log("Visible Links:", visibleLinks);
 
@@ -167,62 +169,3 @@ export default Maindashboard;
 
 
 
-/* 
-{userType !== "user" && (
-            <div className="flex-md-row mt-3 button-section bg-light">
-              <div className="d-flex flex-md-row justify-content-around align-items-center">
-                <Dropdown className="m-2 buttonbg rounded">
-                  <Dropdown.Toggle
-                    className="btn buttonbg shadow"
-                    style={{ background: "#236a80", border: "none" }}
-                  >
-                    Calibration
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu>
-                    <Dropdown.Item href="/add-calibration">
-                      Add Calibration
-                    </Dropdown.Item>
-                    <Dropdown.Item href="/view-calibration">
-                      View Calibration
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-
-                <Dropdown className="m-2">
-                  <Dropdown.Toggle
-                    className="btn buttonbg shadow"
-                    style={{ background: "#236a80", border: "none" }}
-                  >
-                    Report
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu>
-                    <Dropdown.Item href="/report">Add Report</Dropdown.Item>
-                    <Dropdown.Item href="/view-report">
-                      View Report
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-              </div>
-
-              <div
-                className="d-flex flex-md-row"
-                style={{ backgroundColor: "transparent" }}
-              >
-                <Button
-                  className="btn buttonbg shadow m-2 p-0"
-                  onClick={handleDownload}
-                  style={{ background: "#236a80", border: "none" }}
-                >
-                  Download
-                </Button>
-                <Button
-                  className="btn buttonbg shadow m-2"
-                  onClick={handleParameter}
-                  style={{ background: "#236a80", border: "none" }}
-                >
-                  Parameter Exceedence
-                </Button>
-              </div>
-            </div>
-          )}
-*/

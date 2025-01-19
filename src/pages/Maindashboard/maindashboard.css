@@ -45,12 +45,12 @@
 
 @media (max-width: 1500px){
   .buttonbg{
-    width: 245px;
+    width: 250px;
   }
 }
 @media (max-width: 1200px){
   .buttonbg{
-    width: 220px;
+    width: 225px;
   }
 }
 @media (max-width: 1000px){

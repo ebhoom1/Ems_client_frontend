@@ -46,7 +46,7 @@ const Water = () => {
   const [currentUserName, setCurrentUserName] = useState(userType === 'admin' ? "KSPCB001" : userData?.validUserOne?.userName);
   const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(true); // general loading
-    const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedStack, setSelectedStack] = useState("all");
   const [effluentStacks, setEffluentStacks] = useState([]); // New state to store effluent stacks
   const [realTimeData, setRealTimeData] = useState({});
