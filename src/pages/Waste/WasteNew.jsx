@@ -322,7 +322,7 @@ const handleEdit = (waste) => {
             <Modal.Body>
             <form className="custom-report-form" onSubmit={handleSubmit}>
   <div className="row">
-    <div className="form-group col-md-6">
+    <div className="form-group col-md-12">
       <label htmlFor="userName">User Name:</label>
       <select
         id="userName"
