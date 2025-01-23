@@ -63,7 +63,7 @@ const FlowConsuptionCards = ({ userName, primaryStation }) => {
             height={200}
             labelFontSize="10px"
             valueTextFontSize="16px"
-            currentValueText={`Daily Consumption: ${flowData.flowDailyConsumption} kWh`}
+            currentValueText={`Daily Consumption: ${flowData.flowDailyConsumption} m³`}
           />
         </div>
         <div className="energy-flow-item">
@@ -78,7 +78,7 @@ const FlowConsuptionCards = ({ userName, primaryStation }) => {
             height={200}
             labelFontSize="10px"
             valueTextFontSize="16px"
-            currentValueText={`Monthly Consumption: ${flowData.flowMonthlyConsumption} kWh`}
+            currentValueText={`Monthly Consumption: ${flowData.flowMonthlyConsumption} m³`}
           />
         </div>
         <div className="energy-flow-item">
@@ -93,7 +93,7 @@ const FlowConsuptionCards = ({ userName, primaryStation }) => {
             height={200}
             labelFontSize="10px"
             valueTextFontSize="16px"
-            currentValueText={`Yearly Consumption: ${flowData.flowYearlyConsumption} kWh`}
+            currentValueText={`Yearly Consumption: ${flowData.flowYearlyConsumption} m³`}
           />
         </div>
       </div>

@@ -50,6 +50,8 @@ const QuantityFlow = () => {
   const [realTimeData, setRealTimeData] = useState({});
   const [exceedanceColor, setExceedanceColor] = useState("green"); // Default to 'gray'
   const [timeIntervalColor, setTimeIntervalColor] = useState("green"); // Default to 'gray'inner
+  const [last10MinData, setLast10MinData] = useState({});
+
    // Function to reset colors and trigger loading state
  const resetColors = () => {
   setExceedanceColor("loading");
@@ -81,83 +83,71 @@ const QuantityFlow = () => {
     }
   };
   
-  
   const fetchData = async (userName) => {
-     setLoading(true);
-   
-     try {
-       if (userName === "HH014") {
-         // Fetch last 10 minutes data for HH014
-         const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
-   
-         // Filter energy stationType data
-         const effluentFlowdata = last10MinData.flatMap(record =>
-           record.records.filter(stack => stack.stackData.some(item => item.stationType === "effluent_flow"))
-         );
-   
-         console.log("Last 10 Minutes Effluent flow Data:", effluentFlowdata);
-   
-         // Set searchResult to last10MinData for consistency
-         setSearchResult(last10MinData);
-         console.log("searchResult for HH014:", last10MinData);
-   
-         // Extract stackNames from the energyData and update energyStacks
-         const stacks = effluentFlowdata.flatMap(record =>
-           record.stackData.filter(stack => stack.stationType === "effluent_flow").map(stack => stack.stackName)
-         );
-         setEffluentFlowStacks(stacks);
-   
-         // Pick the first or most recent data point
-         const singleData = effluentFlowdata.length > 0 ? effluentFlowdata[effluentFlowdata.length - 1] : null; // Use the last record
-         const formattedData = singleData
-           ? {
-               stackName: singleData.stackName,
-               ...singleData.stackData.find(item => item.stationType === "effluent_flow"),
-             }
-           : null;
-   
-         if (!realTimeData || Object.keys(realTimeData).length === 0) {
-           // If no real-time data is available, show the last 10 minutes' last record
-           console.log("Showing the last value from the last 10 minutes.");
-           setRealTimeData(formattedData ? [formattedData] : []);
-         } else {
-           console.log("Real-time data is already available.");
-         }
-       } else {
-         // Fetch the latest data for other users
-         const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
-   
-         if (result) {
-           setSearchResult(result); // Save the result in state
-           console.log("fetchData of Latest - searchResult:", result);
-           console.log("searchResult.stackData:", result.stackData);
-   
-           setCompanyName(result.companyName || "Unknown Company");
-   
-           // Extract stackNames from the stackData and update energyStacks
-           const stacks = result.stackData
-             ?.filter(stack => stack.stationType === "effluent_flow")
-             .map(stack => stack.stackName) || [];
-           setEffluentFlowStacks(stacks);
-   
-           // Show latest data until real-time data comes
-           if (!realTimeData || Object.keys(realTimeData).length === 0) {
-             console.log("Displaying fetched latest data until real-time data is available.");
-             setRealTimeData(result.stackData || []);
-           }
-         } else {
-           throw new Error("No data found for this user.");
-         }
-       }
-     } catch (err) {
-       console.error("Error fetching data:", err.message);
-       setSearchResult(null);
-       setCompanyName("Unknown Company");
-       setSearchError(err.message || "No result found for this userID");
-     } finally {
-       setLoading(false);
-     }
-   };
+    setLoading(true);
+  
+    try {
+      if (userName === "HH014") {
+        // Fetch last 10 minutes data for HH014
+        const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
+  
+        // Filter effluent_flow station type data
+        const effluentFlowData = last10MinData.flatMap((record) =>
+          record.records.flatMap((stack) =>
+            stack.stackData.filter((item) => item.stationType === "effluent_flow")
+          )
+        );
+  
+        console.log("Last 10 Minutes Effluent Flow Data:", effluentFlowData);
+  
+        // Convert last 10 minutes data to an object keyed by stackName
+        const last10MinDataByStackName = effluentFlowData.reduce((acc, item) => {
+          acc[item.stackName] = item;
+          return acc;
+        }, {});
+  
+        setSearchResult(Object.values(last10MinDataByStackName)); // Save last 10 minutes data for display
+        setEffluentFlowStacks(Object.keys(last10MinDataByStackName)); // Update stack names
+      } else {
+        // Fetch the latest data for other users
+        const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
+  
+        if (result) {
+          console.log("Latest Data Response:", result);
+  
+          setCompanyName(result.companyName || "Unknown Company");
+  
+          // Filter effluent_flow station type data
+          const latestEffluentFlowData = result.stackData
+            ?.filter((stack) => stack.stationType === "effluent_flow")
+            ?.reduce((acc, item) => {
+              acc[item.stackName] = item; // Use stackName as the unique key
+              return acc;
+            }, {});
+  
+          console.log("Latest Effluent Flow Data:", latestEffluentFlowData);
+  
+          setSearchResult(Object.values(latestEffluentFlowData || {})); // Update display data
+          setEffluentFlowStacks(Object.keys(latestEffluentFlowData || {})); // Update stack names
+  
+          if (!realTimeData || Object.keys(realTimeData).length === 0) {
+            console.log("Displaying fetched latest data until real-time data is available.");
+            setRealTimeData(latestEffluentFlowData || {}); // Save for real-time use
+          }
+        } else {
+          throw new Error("No data found for this user.");
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching data:", err.message);
+      setSearchResult(null);
+      setCompanyName("Unknown Company");
+      setSearchError(err.message || "No result found for this userID");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   
 
   useEffect(() => {
@@ -181,45 +171,68 @@ const QuantityFlow = () => {
        socket.emit("joinRoom", { userId: userName });
      
        const handleStackDataUpdate = async (data) => {
-         console.log(`Real-time data for ${userName}:`, data);
-     
-         if (data.userName === userName) {
-           setExceedanceColor(data.ExceedanceColor || "green"); // Set default color
-           setTimeIntervalColor(data.timeIntervalColor || "green");
-     
-           if (data?.stackData?.length > 0) {
-             const effluentFlowData = data.stackData.filter((item) => item.stationType === "effluent_flow");
-     
-             if (effluentFlowData.length > 0) {
-               // If real-time energy data is available, use it
-               const processedData = effluentFlowData.reduce((acc, item) => {
-                 if (item.stackName) {
-                   acc[item.stackName] = item;
-                 }
-                 return acc;
-               }, {});
-     
-               setRealTimeData(processedData);
-               console.log("Processed Real-Time Energy Data:", processedData);
-             } else {
-               // No real-time energy data, fallback to the latest record from the last 10 minutes
-               console.log("No real-time energy data. Fetching the latest data from the last 10 minutes...");
-               const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
-     
-               // Get the latest record
-               const fallbackData = last10MinData
-                 .flatMap((record) =>
-                   record.records.flatMap((stack) => stack.stackData.filter((item) => item.stationType === "effluent_flow"))
-                 )
-                 .slice(-1); // Take only the latest record
-     
-               setRealTimeData(fallbackData || []);
-               console.log("Fallback Latest 10-Minute Energy Data:", fallbackData);
-             }
-           }
-         }
-       };
-     
+        console.log(`Real-time data for ${userName}:`, data);
+      
+        if (data.userName === userName) {
+          setExceedanceColor(data.ExceedanceColor || "green"); // Set default color
+          setTimeIntervalColor(data.timeIntervalColor || "green");
+      
+          if (data?.stackData?.length > 0) {
+            const effluentFlowData = data.stackData.filter(
+              (item) => item.stationType === "effluent_flow"
+            );
+      
+            if (effluentFlowData.length > 0) {
+              // Process real-time data
+              const processedRealTimeData = effluentFlowData.reduce((acc, item) => {
+                if (item.stackName) {
+                  acc[item.stackName] = item;
+                }
+                return acc;
+              }, {});
+      
+              // Merge real-time data with the existing last 10-minute data
+              setRealTimeData((prevRealTimeData) => {
+                const mergedData = { ...prevRealTimeData, ...processedRealTimeData };
+      
+                // Move real-time stacks to the top of the list
+                const sortedData = Object.values(mergedData).sort((a, b) => {
+                  const isRealTimeA = processedRealTimeData[a.stackName] ? 1 : 0;
+                  const isRealTimeB = processedRealTimeData[b.stackName] ? 1 : 0;
+                  return isRealTimeB - isRealTimeA; // Real-time data first
+                });
+      
+                return sortedData.reduce((acc, item) => {
+                  acc[item.stackName] = item; // Convert back to an object
+                  return acc;
+                }, {});
+              });
+      
+              console.log("Processed and Merged Real-Time Effluent Flow Data:", processedRealTimeData);
+            } else {
+              // No real-time effluent data; fallback to the last 10-minute data
+              console.log("No real-time effluent flow data. Fetching the latest data from the last 10 minutes...");
+              const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
+      
+              // Extract effluent flow data from the last 10 minutes
+              const fallbackData = last10MinData
+                .flatMap((record) =>
+                  record.records.flatMap((stack) =>
+                    stack.stackData.filter((item) => item.stationType === "effluent_flow")
+                  )
+                )
+                .reduce((acc, item) => {
+                  acc[item.stackName] = item; // Ensure uniqueness by stackName
+                  return acc;
+                }, {});
+      
+              setRealTimeData(fallbackData || {});
+              console.log("Fallback Latest 10-Minute Effluent Flow Data:", fallbackData);
+            }
+          }
+        }
+      };
+      
        socket.on("stackDataUpdate", handleStackDataUpdate);
      
        return () => {
@@ -292,9 +305,11 @@ const handleDownloadPdf = () => {
 
 
 
-  const filteredData = selectedStack === "all"
-    ? Object.values(realTimeData)
-    : Object.values(realTimeData).filter(data => data.stackName === selectedStack);
+  const filteredData = Object.values({
+    ...last10MinData,
+    ...realTimeData, // Overwrite last10MinData with real-time data
+  }).sort((a, b) => (realTimeData[b.stackName] ? 1 : -1)); // Ensure real-time data is on top
+  
     const effluentFlowParameters = [
       { parameter: "Cumulating Flow", value: "m³", name: "cumulatingFlow" },
       { parameter: "Flow Rate", value: "m³", name: "flowRate" },
@@ -491,80 +506,89 @@ const handleDownloadPdf = () => {
                 </div>
             )}
 <div className="row mb-5">
-<div
-  className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
-  style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
->
-  {!loading && Object.values(realTimeData).length > 0 ? (
-    Object.values(realTimeData).map((stack, stackIndex) => (
-      <div key={stackIndex} className="col-12 mb-4">
-        <div className="stack-box">
-          <h4 className="text-center">
-            {stack.stackName} <img src={effluent} alt="energy image" width="100px" />
-          </h4>
-          <div className="row">
-            {/* Iterate over parameters */}
-            {effluentFlowParameters.map((item, index) => {
-              const value = stack[item.name];
-              const isFlowRate = item.name === "flowRate";
+  <div
+    className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
+    style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
+  >
+    {!loading && Object.values(realTimeData).length > 0 ? (
+      // Display real-time data and fallback data
+      Object.values(realTimeData).map((stack, stackIndex) => (
+        <div key={stackIndex} className="col-12 mb-4">
+          <div className="stack-box">
+            <h4 className="text-center">
+              {stack.stackName}{" "}
+              <img src={effluent} alt="energy image" width="100px" />
+            </h4>
+            <div className="row">
+              {/* Iterate over parameters */}
+              {effluentFlowParameters.map((item, index) => {
+                const value = stack[item.name];
+                const isFlowRate = item.name === "flowRate";
 
-              return (
-                <div className="col-12 col-md-4 grid-margin" key={index}>
+                return (
                   <div
-                    className="card mb-3"
-                    style={{
-                      border: "none",
-                      cursor: "pointer",
-                      backgroundColor: isFlowRate && !value ? "#f8f9fa" : undefined, // Light background for missing flow rate
-                    }}
-                    onClick={() => handleCardClick(stack, item)}  // Click only if value exists
+                    className="col-12 col-md-4 grid-margin"
+                    key={index}
                   >
-                    <div className="card-body">
-                      <h5 className="text-light">{item.parameter}</h5>
-                      <p className="text-light">
-                        <strong
-                          className="text-light"
-                          style={{ color: isFlowRate && !value ? "#6c757d" : "#236A80", fontSize: "24px" }}
-                        >
-                          {value || 0} {/* Show 0 if value is not present */}
-                        </strong>{" "}
-                        {item.value}
-                      </p>
+                    <div
+                      className="card mb-3"
+                      style={{
+                        border: "none",
+                        cursor: "pointer",
+                        backgroundColor: isFlowRate && !value ? "#f8f9fa" : undefined, // Light background for missing flow rate
+                      }}
+                      onClick={() => handleCardClick(stack, item)}
+                    >
+                      <div className="card-body">
+                        <h5 className="text-light">{item.parameter}</h5>
+                        <p className="text-light">
+                          <strong
+                            className="text-light"
+                            style={{
+                              color: isFlowRate && !value ? "#6c757d" : "#236A80",
+                              fontSize: "24px",
+                            }}
+                          >
+                            {value || 0} {/* Show 0 if value is not present */}
+                          </strong>{" "}
+                          {item.value}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
+      ))
+    ) : (
+      <div className="col-12">
+        <h5 className="text-center mt-5">Waiting for real-time data ...</h5>
       </div>
-    ))
-  ) : (
-    <div className="col-12">
-      <h5 className="text-center mt-5">Waiting for real-time data ...</h5>
-    </div>
-  )}
-</div>
-
+    )}
+  </div>
 
   {/* Graph Container with reference */}
   <div
-    className=" col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
-    style={{ height: '70vh', borderRadius: '15px' , position:'relative'}}
+    className="col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
+    style={{
+      height: "70vh",
+      borderRadius: "15px",
+      position: "relative",
+    }}
     ref={graphRef}
   >
- {selectedCard ? (
-  <FlowGraph
-    key={`${selectedCard.stackName}-${selectedCard.name}`} // Unique key for each selection
-    parameter={selectedCard.name}
-    userName={currentUserName}
-    stackName={selectedCard.stackName}
-  />
-) : (
-  <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-)}
-
-
+    {selectedCard ? (
+      <FlowGraph
+        key={`${selectedCard.stackName}-${selectedCard.name}`} // Unique key for each selection
+        parameter={selectedCard.name}
+        userName={currentUserName}
+        stackName={selectedCard.stackName}
+      />
+    ) : (
+      <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+    )}
 
     {/* Download Buttons */}
     {selectedCard && (
@@ -572,25 +596,23 @@ const handleDownloadPdf = () => {
         <button
           onClick={handleDownloadPdf}
           style={{
-            position: 'absolute',
-            top: '10px',
-            left:'20px',
-            backgroundColor: '#236a80',
-            color: 'white',
-            marginTop:'10px',
-            marginBottom:'10px',
+            position: "absolute",
+            top: "10px",
+            left: "20px",
+            backgroundColor: "#236a80",
+            color: "white",
+            marginTop: "10px",
+            marginBottom: "10px",
           }}
           className="btn"
         >
           <i className="fa-solid fa-download"></i> Download graph
         </button>
-
-       
       </>
     )}
   </div>
-
 </div>
+
            
         {showCalibrationPopup && (
           <CalibrationPopup
