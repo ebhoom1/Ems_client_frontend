@@ -549,9 +549,10 @@ const handleDownloadPdf = () => {
                               fontSize: "24px",
                             }}
                           >
-                            {value || 0} {/* Show 0 if value is not present */}
-                          </strong>{" "}
-                          {item.value}
+                            
+                            {value ? parseFloat(value).toFixed(2) : "0.00"} {/* Ensure 2 decimal places */}
+                        </strong>{" "}
+                        {item.value}
                         </p>
                       </div>
                     </div>

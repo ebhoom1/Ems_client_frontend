@@ -621,7 +621,7 @@ const handleDownloadPdf = () => {
                           className="text-light"
                           style={{ color: "#236A80", fontSize: "24px" }}
                         >
-                          {value}
+                         {parseFloat(value).toFixed(2)} {/* Changed to limit value to 2 decimal places */}
                         </strong>{" "}
                         {item.value}
                       </p>
