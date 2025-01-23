@@ -500,38 +500,68 @@ const handleDownloadPdf = () => {
             {stack.stackName} <img src={effluent} alt="energy image" width="100px" />
           </h4>
           <div className="row">
-            {/* Iterate over parameters */}
-            {effluentFlowParameters.map((item, index) => {
-              const value = stack[item.name];
-              const isFlowRate = item.name === "flowRate";
-
-              return (
-                <div className="col-12 col-md-4 grid-margin" key={index}>
-                  <div
-                    className="card mb-3"
-                    style={{
-                      border: "none",
-                      cursor: "pointer",
-                      backgroundColor: isFlowRate && !value ? "#f8f9fa" : undefined, // Light background for missing flow rate
-                    }}
-                    onClick={() => isFlowRate && value ? handleCardClick(stack, item) : null} // Click only if value exists
-                  >
-                    <div className="card-body">
-                      <h5 className="text-light">{item.parameter}</h5>
-                      <p className="text-light">
-                        <strong
-                          className="text-light"
-                          style={{ color: isFlowRate && !value ? "#6c757d" : "#236A80", fontSize: "24px" }}
-                        >
-                          {value || 0} {/* Show 0 if value is not present */}
-                        </strong>{" "}
-                        {item.value}
-                      </p>
+            {/* Check if stackName is "STP inlet" */}
+            {stack.stackName === "STP inlet"
+              ? effluentFlowParameters.map((item, index) => (
+                  <div className="col-12 col-md-4 grid-margin" key={index}>
+                    <div
+                      className="card mb-3"
+                      style={{
+                        border: "none",
+                        cursor: "default", // No click for 0 value
+                        backgroundColor: "#f8f9fa", // Light background
+                      }}
+                    >
+                      <div className="card-body">
+                        <h5 className="text-light">{item.parameter}</h5>
+                        <p className="text-light">
+                          <strong
+                            className="text-light"
+                            style={{
+                              color: "#6c757d", // Gray color for 0 value
+                              fontSize: "24px",
+                            }}
+                          >
+                            0
+                          </strong>{" "}
+                          {item.value}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                ))
+              : effluentFlowParameters.map((item, index) => {
+                  const value = stack[item.name];
+                  return (
+                    <div className="col-12 col-md-4 grid-margin" key={index}>
+                      <div
+                        className="card mb-3"
+                        style={{
+                          border: "none",
+                          cursor: value ? "pointer" : "default", // Click only if value exists
+                          backgroundColor: !value ? "#f8f9fa" : undefined, // Light background for missing value
+                        }}
+                        onClick={() => value && handleCardClick(stack, item)} // Click only if value exists
+                      >
+                        <div className="card-body">
+                          <h5 className="text-light">{item.parameter}</h5>
+                          <p className="text-light">
+                            <strong
+                              className="text-light"
+                              style={{
+                                color: !value ? "#6c757d" : "#236A80", // Gray for missing value
+                                fontSize: "24px",
+                              }}
+                            >
+                              {value || 0} {/* Show 0 if value is not present */}
+                            </strong>{" "}
+                            {item.value}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
           </div>
         </div>
       </div>
