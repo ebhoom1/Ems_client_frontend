@@ -229,14 +229,17 @@ const QuantityFlow = () => {
      }, [selectedUserIdFromRedux, currentUserName]);
 
   
-const handleCardClick = (stack, parameter) => {
-  // Set the selected card with the stack name and parameter
-  setSelectedCard({
-    stackName: stack.stackName,
-    title: parameter.parameter, // Set the title for the graph
-    name: parameter.name, // Parameter key for fetching data
-  });
-};
+   
+  const handleCardClick = (stack, parameter) => {
+    // Set the selected card with the stack name and parameter
+    setSelectedCard({
+      stackName: stack.stackName,
+      title: parameter.parameter, // Set the title for the graph
+      name: parameter.name, // Parameter key for fetching data
+    });
+  };
+  
+    
 
 
   const handleClosePopup = () => {
@@ -500,68 +503,38 @@ const handleDownloadPdf = () => {
             {stack.stackName} <img src={effluent} alt="energy image" width="100px" />
           </h4>
           <div className="row">
-            {/* Check if stackName is "STP inlet" */}
-            {stack.stackName === "STP inlet"
-              ? effluentFlowParameters.map((item, index) => (
-                  <div className="col-12 col-md-4 grid-margin" key={index}>
-                    <div
-                      className="card mb-3"
-                      style={{
-                        border: "none",
-                        cursor: "default", // No click for 0 value
-                        backgroundColor: "#f8f9fa", // Light background
-                      }}
-                    >
-                      <div className="card-body">
-                        <h5 className="text-light">{item.parameter}</h5>
-                        <p className="text-light">
-                          <strong
-                            className="text-light"
-                            style={{
-                              color: "#6c757d", // Gray color for 0 value
-                              fontSize: "24px",
-                            }}
-                          >
-                            0
-                          </strong>{" "}
-                          {item.value}
-                        </p>
-                      </div>
+            {/* Iterate over parameters */}
+            {effluentFlowParameters.map((item, index) => {
+              const value = stack[item.name];
+              const isFlowRate = item.name === "flowRate";
+
+              return (
+                <div className="col-12 col-md-4 grid-margin" key={index}>
+                  <div
+                    className="card mb-3"
+                    style={{
+                      border: "none",
+                      cursor: "pointer",
+                      backgroundColor: isFlowRate && !value ? "#f8f9fa" : undefined, // Light background for missing flow rate
+                    }}
+                    onClick={() => handleCardClick(stack, item)}  // Click only if value exists
+                  >
+                    <div className="card-body">
+                      <h5 className="text-light">{item.parameter}</h5>
+                      <p className="text-light">
+                        <strong
+                          className="text-light"
+                          style={{ color: isFlowRate && !value ? "#6c757d" : "#236A80", fontSize: "24px" }}
+                        >
+                          {value || 0} {/* Show 0 if value is not present */}
+                        </strong>{" "}
+                        {item.value}
+                      </p>
                     </div>
                   </div>
-                ))
-              : effluentFlowParameters.map((item, index) => {
-                  const value = stack[item.name];
-                  return (
-                    <div className="col-12 col-md-4 grid-margin" key={index}>
-                      <div
-                        className="card mb-3"
-                        style={{
-                          border: "none",
-                          cursor: value ? "pointer" : "default", // Click only if value exists
-                          backgroundColor: !value ? "#f8f9fa" : undefined, // Light background for missing value
-                        }}
-                        onClick={() => value && handleCardClick(stack, item)} // Click only if value exists
-                      >
-                        <div className="card-body">
-                          <h5 className="text-light">{item.parameter}</h5>
-                          <p className="text-light">
-                            <strong
-                              className="text-light"
-                              style={{
-                                color: !value ? "#6c757d" : "#236A80", // Gray for missing value
-                                fontSize: "24px",
-                              }}
-                            >
-                              {value || 0} {/* Show 0 if value is not present */}
-                            </strong>{" "}
-                            {item.value}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -580,18 +553,17 @@ const handleDownloadPdf = () => {
     style={{ height: '70vh', borderRadius: '15px' , position:'relative'}}
     ref={graphRef}
   >
-   {selectedCard ? (
-  <div>
-  
-    <FlowGraph
-      parameter={selectedCard.name}
-      userName={currentUserName}
-      stackName={selectedCard.stackName}
-    />
-  </div>
+ {selectedCard ? (
+  <FlowGraph
+    key={`${selectedCard.stackName}-${selectedCard.name}`} // Unique key for each selection
+    parameter={selectedCard.name}
+    userName={currentUserName}
+    stackName={selectedCard.stackName}
+  />
 ) : (
   <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
 )}
+
 
 
     {/* Download Buttons */}
