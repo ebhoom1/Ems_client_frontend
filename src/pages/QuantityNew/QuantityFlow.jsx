@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
+import { fetchLast10MinDataByUserName, fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
 import CalibrationPopup from '../Calibration/CalibrationPopup';
 import { useOutletContext } from 'react-router-dom';
 import { Oval } from 'react-loader-spinner';
@@ -65,7 +66,7 @@ const QuantityFlow = () => {
   }; // Default color
   const graphRef = useRef();
 
-  // Fetch stack names and filter energy stationType stacks
+  // Fetch stack names and filter effluentflow stationType stacks
   // Fetch stack names and filter effluentFlow stationType stacks
   const fetchEffluentFlowStacks = async (userName) => {
     try {
@@ -81,29 +82,83 @@ const QuantityFlow = () => {
   };
   
   
-
   const fetchData = async (userName) => {
-    setLoading(true);
-    
-    try {
-      const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
-      if (result) {
-        setSearchResult(result);
-        setCompanyName(result.companyName || "Unknown Company");
-        console.log('fetchData of Latest:', result); // Check if the result is logged correctly
+     setLoading(true);
+   
+     try {
+       if (userName === "HH014") {
+         // Fetch last 10 minutes data for HH014
+         const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
+   
+         // Filter energy stationType data
+         const effluentFlowdata = last10MinData.flatMap(record =>
+           record.records.filter(stack => stack.stackData.some(item => item.stationType === "effluent_flow"))
+         );
+   
+         console.log("Last 10 Minutes Effluent flow Data:", effluentFlowdata);
+   
+         // Set searchResult to last10MinData for consistency
+         setSearchResult(last10MinData);
+         console.log("searchResult for HH014:", last10MinData);
+   
+         // Extract stackNames from the energyData and update energyStacks
+         const stacks = effluentFlowdata.flatMap(record =>
+           record.stackData.filter(stack => stack.stationType === "effluent_flow").map(stack => stack.stackName)
+         );
+         setEffluentFlowStacks(stacks);
+   
+         // Pick the first or most recent data point
+         const singleData = effluentFlowdata.length > 0 ? effluentFlowdata[effluentFlowdata.length - 1] : null; // Use the last record
+         const formattedData = singleData
+           ? {
+               stackName: singleData.stackName,
+               ...singleData.stackData.find(item => item.stationType === "effluent_flow"),
+             }
+           : null;
+   
+         if (!realTimeData || Object.keys(realTimeData).length === 0) {
+           // If no real-time data is available, show the last 10 minutes' last record
+           console.log("Showing the last value from the last 10 minutes.");
+           setRealTimeData(formattedData ? [formattedData] : []);
+         } else {
+           console.log("Real-time data is already available.");
+         }
+       } else {
+         // Fetch the latest data for other users
+         const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
+   
+         if (result) {
+           setSearchResult(result); // Save the result in state
+           console.log("fetchData of Latest - searchResult:", result);
+           console.log("searchResult.stackData:", result.stackData);
+   
+           setCompanyName(result.companyName || "Unknown Company");
+   
+           // Extract stackNames from the stackData and update energyStacks
+           const stacks = result.stackData
+             ?.filter(stack => stack.stationType === "effluent_flow")
+             .map(stack => stack.stackName) || [];
+           setEffluentFlowStacks(stacks);
+   
+           // Show latest data until real-time data comes
+           if (!realTimeData || Object.keys(realTimeData).length === 0) {
+             console.log("Displaying fetched latest data until real-time data is available.");
+             setRealTimeData(result.stackData || []);
+           }
+         } else {
+           throw new Error("No data found for this user.");
+         }
+       }
+     } catch (err) {
+       console.error("Error fetching data:", err.message);
+       setSearchResult(null);
+       setCompanyName("Unknown Company");
+       setSearchError(err.message || "No result found for this userID");
+     } finally {
+       setLoading(false);
+     }
+   };
   
-        setRealTimeData(result.stackData || []); // Display the latest data initially
-      } else {
-        throw new Error("No data found for this user.");
-      }
-    } catch (err) {
-      setSearchResult(null);
-      setCompanyName("Unknown Company");
-      setSearchError(err.message || 'No result found for this userID');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     const userName = storedUserId || currentUserName;
@@ -115,48 +170,93 @@ const QuantityFlow = () => {
 
   useEffect(() => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-    resetColors();
-    
   
-    fetchData(userName); // Fetch latest data first
+    resetColors();
+  
+    // Fetch latest data and stack names
+    fetchData(userName);
     fetchEffluentFlowStacks(userName);
   
+    // Join the user's room for real-time updates
     socket.emit("joinRoom", { userId: userName });
   
-   const handleStackDataUpdate = (data) => {
-    console.log(`Real-time data for ${userName}:`, data);
+    const handleStackDataUpdate = async (data) => {
+      console.log(`Real-time data for ${userName}:`, data);
   
-  if (data.userName === userName) {
-    setExceedanceColor(data.ExceedanceColor || "green"); // Set 'green' if no color is provided
-    setTimeIntervalColor(data.timeIntervalColor || "green");
-    if (data?.stackData?.length > 0) {
-      setRealTimeData(data.stackData.reduce((acc, item) => {
-        if (item.stackName) {
-          acc[item.stackName] = item;
+      if (data.userName === userName) {
+        setExceedanceColor(data.ExceedanceColor || "green");
+        setTimeIntervalColor(data.timeIntervalColor || "green");
+  
+        if (data?.stackData?.length > 0) {
+          const effluentFlowData = data.stackData.filter(
+            (item) => item.stationType === "effluent_flow"
+          );
+  
+          if (effluentFlowData.length > 0) {
+            // Map incorrect stack names and process data
+            const processedData = effluentFlowData.reduce((acc, item) => {
+              const correctedStackName =
+                item.stackName === "STP inlet" ? "ETP outlet" : item.stackName;
+  
+              if (correctedStackName) {
+                acc[correctedStackName] = { ...item, stackName: correctedStackName };
+              }
+              return acc;
+            }, {});
+  
+            setRealTimeData(processedData);
+            console.log("Processed Real-Time Effluent Flow Data:", processedData);
+          } else {
+            // Handle fallback to the last 10 minutes' data
+            console.log("No real-time data. Fetching fallback data...");
+  
+            try {
+              const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
+  
+              const fallbackData = last10MinData
+                .flatMap((record) =>
+                  record.records.flatMap((stack) =>
+                    stack.stackData.filter((item) => item.stationType === "effluent_flow")
+                  )
+                )
+                .map((item) => ({
+                  ...item,
+                  stackName: item.stackName === "STP inlet" ? "ETP outlet" : item.stackName,
+                }))
+                .slice(-1); // Take the latest record
+  
+              setRealTimeData(fallbackData || []);
+              console.log("Fallback Latest 10-Minute Data:", fallbackData);
+            } catch (err) {
+              console.error("Error fetching fallback data:", err.message);
+            }
+          }
         }
-        return acc;
-      }, {}));
-    }
-  }
-  };
+      }
+    };
   
-  
+    // Listen for real-time data updates
     socket.on("stackDataUpdate", handleStackDataUpdate);
   
     return () => {
+      // Cleanup: Leave room and remove listeners
       socket.emit("leaveRoom", { userId: userName });
       socket.off("stackDataUpdate", handleStackDataUpdate);
     };
-  }, [selectedUserIdFromRedux, currentUserName]);
+  }, [selectedUserIdFromRedux, storedUserId, currentUserName]);
+  
 
 
+  
+const handleCardClick = (stack, parameter) => {
+  // Set the selected card with the stack name and parameter
+  setSelectedCard({
+    stackName: stack.stackName,
+    title: parameter.parameter, // Set the title for the graph
+    name: parameter.name, // Parameter key for fetching data
+  });
+};
 
-  const handleCardClick = (card, stackName) => {
-    // Ensure we use the correct userName when admin searches for a user.
-    const userName = searchTerm || currentUserName;
-    setSelectedCard({ ...card, stackName, userName });
-    setShowPopup(true);
-  };
 
   const handleClosePopup = () => {
     setShowPopup(false);
@@ -236,15 +336,14 @@ const handleDownloadPdf = () => {
       setPrimaryStation(stationName); // Immediately update local state
       const postData = {
         userName: currentUserName,
-        stationType: 'effluent_flow', // Assuming 'energy' is always the type for now
-        stackName: stationName
+        stationType: 'effluent_flow', // Assuming 'energy' as the station type
+        stackName: stationName,
       };
       axios.post(`${API_URL}/api/set-primary-station`, postData)
-        .then(response => {
+        .then((response) => {
           console.log('Primary station set:', response.data);
-          // You might want to fetch new data here or ensure the child component reacts to the change
         })
-        .catch(error => {
+        .catch((error) => {
           console.error('Error setting primary station:', error);
         });
     };
@@ -288,44 +387,59 @@ const handleDownloadPdf = () => {
         <div className="col-lg-4"></div>
        </div>
 
-              <ul className="d-flex align-items-center justify-content-between" style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-                <li>{searchResult?.stackData && searchResult.stackData.length > 0 && (
-    <div className="stack-dropdown">
-      <label htmlFor="stackSelect" className="label-select">Select Station:</label>
-      <div className="styled-select-wrapper">
-        <select
-          id="stackSelect"
-          className="form-select styled-select"
-          value={selectedStack}
-          onChange={handleStackChange}
-        >
-          <option value="all">All Stacks</option>
-          {searchResult.stackData
-            .filter(stack => effluentFlowStacks.includes(stack.stackName)) // Filter only energy stations
-            .map((stack, index) => (
-              <option key={index} value={stack.stackName}>
-                {stack.stackName}
+       <ul
+  className="d-flex align-items-center justify-content-between"
+  style={{ listStyleType: 'none', padding: 0, margin: 0 }}
+>
+  <li>
+    {effluentFlowStacks.length > 0 ? (
+      <div className="stack-dropdown">
+        <label htmlFor="stackSelect" className="label-select">Select Station:</label>
+        <div className="styled-select-wrapper">
+          <select
+            id="stackSelect"
+            className="form-select styled-select"
+            value={selectedStack}
+            onChange={handleStackChange}
+          >
+            <option value="all">All Stacks</option>
+            {effluentFlowStacks.map((stackName, index) => (
+              <option key={index} value={stackName || "Unknown"}>
+                {stackName || "Unknown Station"}
               </option>
             ))}
-        </select>
+          </select>
+        </div>
       </div>
-        {/* Primary station dropdown component */}
-       <div>
-         <PrimaryStationSelectorFlow
-                stations={searchResult.stackData.filter(stack => effluentFlowStacks.includes(stack.stackName)).map(stack => stack.stackName)}
-                userName={currentUserName}
-                setPrimaryStation={setPrimaryStation}
-                primaryStation={primaryStation}
-
-              />
-              </div>
-    </div>
-  )}</li>
- 
-              {/*   <li> <button className="btn text-light " style={{backgroundColor:'#236a80'}} onClick={() => setShowHistoryModal(true)}>
-              Daily History
-            </button></li> */}
-              </ul>
+    ) : (
+      <h5 className="text-center">No stations available</h5>
+    )}
+  </li>
+  <li>
+    {effluentFlowStacks.length > 0 && (
+      <div className="stack-dropdown">
+        <label htmlFor="primaryStationSelect" className="label-select">Set Primary Station:</label>
+        <div className="styled-select-wrapper">
+          <select
+            id="primaryStationSelect"
+            className="form-select styled-select"
+            value={primaryStation}
+            onChange={(e) => handleSetPrimaryStation(e.target.value)} // Call your handler function
+          >
+            <option value="" disabled>
+              Select Primary Station
+            </option>
+            {effluentFlowStacks.map((stackName, index) => (
+              <option key={index} value={stackName}>
+                {stackName}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    )}
+  </li>
+</ul>
              
         <div className="row align-items-center mb-5" style={{marginTop:'-100px'}}>
         <div className="col-md-4">
@@ -340,7 +454,9 @@ const handleDownloadPdf = () => {
           
         </div> 
         <div className="col-12  justify-content-center align-items-center">
-            <h3 className="text-center">{companyName}</h3>
+        <h3 className="text-center">
+  {storedUserId === "HH014" ? " Hilton Manyata" : companyName}
+</h3>
             <div className="color-indicators">
   <div className="d-flex justify-content-center mt-2">
     {/* Parameter Exceed Indicator */}
@@ -391,58 +507,73 @@ const handleDownloadPdf = () => {
                 </div>
             )}
 <div className="row mb-5">
-
-  <div className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-2" 
-        style={{ height: "65vh", overflowY: "scroll",  borderRadius:'15px' }}> 
-  {!loading && filteredData.length > 0 ? (
-                    filteredData.map((stack, stackIndex) => (
-                        effluentFlowStacks.includes(stack.stackName) && (
-                            <div key={stackIndex} className="col-12 mb-4">
-                                <div className="stack-box">
-                                    <h4 className="text-center ">{stack.stackName} <img src={effluent} alt='effluent image' width='100px'></img></h4>
-                                    <div className="row">
-                                        {effluentFlowParameters.map((item, index) => {
-                                            const value = stack[item.name];
-                                            return value && value !== 'N/A' ? (
-                                                <div className="col-12 col-md-4 grid-margin" key={index}>
-                                                 <div className="card mb-3" style={{border:'none'}}   onClick={() =>
-                                               handleCardClick({ title: item.name }, stack.stackName, currentUserName) }>                                                        <div className="card-body">
-                                                            <h5 className="text-light">{item.parameter}</h5>
-                                                            <p className='text-light'>
-                                                                <strong className="text-light" style={{ color: '#236A80', fontSize:'24px' }}>{value}</strong> {item.value}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ) : null;
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        )
-                    ))
-                ) : (
-                    <div className="col-12">
-                        <h5 className="mt-5 text-center">Waiting real-time data available</h5>
+<div
+  className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
+  style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
+>
+  {!loading && Object.values(realTimeData).length > 0 ? (
+    Object.values(realTimeData).map((stack, stackIndex) => (
+      <div key={stackIndex} className="col-12 mb-4">
+        <div className="stack-box">
+          <h4 className="text-center">
+            {stack.stackName} <img src={effluent} alt="energy image" width="100px" />
+          </h4>
+          <div className="row">
+            {effluentFlowParameters.map((item, index) => {
+              const value = stack[item.name];
+              return value && value !== "N/A" ? (
+                <div className="col-12 col-md-4 grid-margin" key={index}>
+                  <div
+                    className="card mb-3"
+                    style={{ border: "none", cursor: "pointer" }}
+                    onClick={() => handleCardClick(stack, item)} // Add card click handler here
+                  >
+                    <div className="card-body">
+                      <h5 className="text-light">{item.parameter}</h5>
+                      <p className="text-light">
+                        <strong
+                          className="text-light"
+                          style={{ color: "#236A80", fontSize: "24px" }}
+                        >
+                          {value}
+                        </strong>{" "}
+                        {item.value}
+                      </p>
                     </div>
-                )}
-  </div>
-  
+                  </div>
+                </div>
+              ) : null;
+            })}
+          </div>
+        </div>
+      </div>
+    ))
+  ) : (
+    <div className="col-12">
+      <h5 className="text-center mt-5">Waiting for real-time data ...</h5>
+    </div>
+  )}
+</div>
+
   {/* Graph Container with reference */}
   <div
-    className="border bg-light shadow col-md-12 col-lg-12 col-sm-12 mb-2"
-    style={{ height: '73vh', borderRadius: '15px' , position:'relative'}}
+    className=" col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
+    style={{ height: '70vh', borderRadius: '15px' , position:'relative'}}
     ref={graphRef}
   >
-    {selectedCard ? (
-      <FlowGraph
-        parameter={selectedCard.title}
-        userName={currentUserName}
-        stackName={selectedCard.stackName}
-      />
-    ) : (
-      <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-    )}
+   {selectedCard ? (
+  <div>
+  
+    <FlowGraph
+      parameter={selectedCard.name}
+      userName={currentUserName}
+      stackName={selectedCard.stackName}
+    />
+  </div>
+) : (
+  <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+)}
+
 
     {/* Download Buttons */}
     {selectedCard && (
@@ -467,17 +598,6 @@ const handleDownloadPdf = () => {
       </>
     )}
   </div>
-
-  {/* Modal for Downloading Average Data */}
-  <DownloadaverageDataModal
-    isOpen={isModalOpen}
-    onClose={closeModal}
-    userName={currentUserName}
-    stackName={selectedCard?.stackName || ''}
-  />
-
-
-
 
 </div>
            

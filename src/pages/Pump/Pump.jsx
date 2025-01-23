@@ -13,7 +13,7 @@ const Pump = () => {
   const handleToggle = (pumpId, pumpName, isOn) => {
     const status = isOn ? "ON" : "OFF"; // Convert boolean to ON/OFF
     const payload = {
-      product_id: "7", // Replace with your actual product_id
+      product_id: "14", // Replace with your actual product_id
       pumps: [
         {
           pumpId, // Add pumpId
@@ -51,7 +51,7 @@ const Pump = () => {
             onChange={() => {
               const newStatus = !pump1Status;
               setPump1Status(newStatus);
-              handleToggle("5", "Pump1", newStatus); // Pump1 with pumpId = 5
+              handleToggle("PUMP01", "Pump1", newStatus); // Pump1 with pumpId = 5
             }}
           />
           <span className="slider round"></span>
@@ -78,7 +78,7 @@ const Pump = () => {
             onChange={() => {
               const newStatus = !pump2Status;
               setPump2Status(newStatus);
-              handleToggle("4", "Pump2", newStatus); // Pump2 with pumpId = 4
+              handleToggle("PUMP02", "Pump2", newStatus); // Pump2 with pumpId = 4
             }}
           />
           <span className="slider round"></span>

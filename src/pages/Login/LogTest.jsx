@@ -8,7 +8,6 @@ import { API_URL } from "../../utils/apiConfig";
 import { io } from 'socket.io-client';
 import effluent from '../../assests/images/effluentimage.svg'
 import { Row, Button } from 'react-bootstrap';
-import './login.css';
 import { Link } from 'react-router-dom';
 import logo from '../../assests/images/ebhoom.png';
 import { useNavigate } from "react-router-dom";
@@ -16,6 +15,7 @@ import { ToastContainer, toast } from "react-toastify";
 import Modal from "react-modal";
 import "react-toastify/dist/ReactToastify.css";
 import { loginUser } from "../../redux/features/auth/authSlice";
+import './login.css'
 // Initialize Socket.IO
 const socket = io(API_URL, { 
   transports: ['websocket'], 
@@ -357,9 +357,9 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
   return (
     <>
       <div>
-    <div className="m-5 p-5 ">
+    <div className="maindiv ">
     <div
-  className="row border border-solid m-5 p-5 d-flex align-items-center justify-content-center shadow"
+  className="subdiv row border border-solid d-flex align-items-center justify-content-center shadow"
   style={{
     borderRadius: '10px',
     backgroundImage: `url("https://static.vecteezy.com/system/resources/thumbnails/004/242/510/small/abstract-wave-trendy-geometric-abstract-background-with-white-and-blue-gradient-vector.jpg")`,
@@ -369,7 +369,8 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
     backgroundColor: 'rgba(255, 255, 255, 0.6)', // Add semi-transparent white overlay
     backdropFilter: 'blur(5px)', // Optional: adds a blurred effect
   }}
->     <div className="col-lg-6" style={{ height: '70vh' }}>
+> 
+    <div className="col-lg-6 dataColumn" style={{ height: '70vh' }}>
    
       <div className="d-flex justify-content-between prevnext">
         <div>
@@ -554,7 +555,7 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
       )}
     </div>
   </div>
-        <div className="col-lg-6 " style={{ height:'50vh'}}>
+        <div className="col-lg-6 loginColumn " style={{ height:'50vh'}}>
           
         <div className=' d-flex justify-content-center ' >
       <div className='bg-light  rounded  shadow w-100' style={{ maxWidth: '500px', padding: '20px' }}>
@@ -641,3 +642,5 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
 };
 
 export default LogTest; 
+
+

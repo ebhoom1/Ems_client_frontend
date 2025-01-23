@@ -34,9 +34,10 @@ const EnergyDashboard = () => {
             <div className="col-12">
               <Header />
             </div>
-            <div className="col-12">
-              <Maindashboard />
-            </div>
+            <div className={`col-12 ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : ''}`}>
+  <Maindashboard />
+</div>
+
            
           </div>
        {/*    <div className="row">

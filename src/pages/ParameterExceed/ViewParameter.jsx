@@ -142,19 +142,7 @@ const handleAvoidExceedenceList=()=>{
                                     <h1 className="text-center mt-3" style={{ justifyContent: 'center' }}>Previous Parameter Threshold exceedance Values</h1>
                                 </div>
                                 <div className="card last-trips-card mt-2" style={{ overflowX: 'scroll' }}>
-                                   {/*  <div className="card-header p-3 pt-4 d-flex align-items-center search-container m-3">
-                                        <input
-                                            type="text"
-                                            placeholder="Enter username"
-                                            className="p-2 search-input"
-                                            value={searchQuery}
-                                            onChange={handleSearchInputChange}
-                                            style={{ borderRadius: '10px' }}
-                                        />
-                                        <button className="btn btn-outline-primary ms-2 search-button" onClick={handleSearch}>
-                                            Search
-                                        </button>
-                                    </div> */}
+                                  
                                     <div className="card-body">
                                         <table className="table table-borderless">
                                             <thead className="m-5">

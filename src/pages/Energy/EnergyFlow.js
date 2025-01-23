@@ -1,7 +1,9 @@
+
+
 import React, { useEffect, useState  , useRef } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchIotDataByUserName } from "../../redux/features/iotData/iotDataSlice";
-import { fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
+import { fetchLast10MinDataByUserName, fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
 import EnergyGraph from './EnergyGraph';
 import CalibrationPopup from '../Calibration/CalibrationPopup';
 import CalibrationExceeded from '../Calibration/CalibrationExceeded';
@@ -75,40 +77,109 @@ const EnergyFlow = () => {
   const fetchEnergyStacks = async (userName) => {
     try {
       const response = await fetch(`${API_URL}/api/get-stacknames-by-userName/${userName}`);
-      const data = await response.json(); // Make sure to parse the JSON
+      const data = await response.json(); // Parse the JSON response
+  
+      // Filter and map energy stacks
       const energyStacks = data.stackNames
-        .filter(stack => stack.stationType === 'energy')
-        .map(stack => stack.name); // Use 'name' instead of 'stackName'
-      setEnergyStacks(energyStacks);
+        .filter(stack => stack.stationType === 'energy') // Filter for stationType === 'energy'
+        .map(stack => stack.name); // Map to stack.name
+  
+      console.log("Fetched Energy Stacks:", energyStacks); // Log the energyStacks to the console
+      setEnergyStacks(energyStacks); // Update the state with energy stacks
     } catch (error) {
-      console.error("Error fetching energy stacks:", error);
+      console.error("Error fetching energy stacks:", error); // Log any errors
     }
   };
-  
-
   const fetchData = async (userName) => {
     setLoading(true);
-    
+  
     try {
-      const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
-      if (result) {
-        setSearchResult(result);
-        setCompanyName(result.companyName || "Unknown Company");
-        console.log('fetchData of Latest:', result); // Check if the result is logged correctly
-
-        setRealTimeData(result.stackData || []); // Display the latest data initially
+      if (userName === "HH014") {
+        // Fetch last 10 minutes data for HH014
+        const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
+  
+        // Filter energy stationType data
+        const energyData = last10MinData.flatMap(record =>
+          record.records.filter(stack => stack.stackData.some(item => item.stationType === "energy"))
+        );
+  
+        console.log("Last 10 Minutes Energy Data:", energyData);
+  
+        // Set searchResult to last10MinData for consistency
+        setSearchResult(last10MinData);
+        console.log("searchResult for HH014:", last10MinData);
+  
+        // Extract stackNames from the energyData and update energyStacks
+        const stacks = energyData.flatMap(record =>
+          record.stackData.filter(stack => stack.stationType === "energy").map(stack => stack.stackName)
+        );
+        setEnergyStacks(stacks);
+  
+        // Pick the first or most recent data point
+        const singleData = energyData.length > 0 ? energyData[energyData.length - 1] : null; // Use the last record
+        const formattedData = singleData
+          ? {
+              stackName: singleData.stackName,
+              ...singleData.stackData.find(item => item.stationType === "energy"),
+            }
+          : null;
+  
+        if (!realTimeData || Object.keys(realTimeData).length === 0) {
+          // If no real-time data is available, show the last 10 minutes' last record
+          console.log("Showing the last value from the last 10 minutes.");
+          setRealTimeData(formattedData ? [formattedData] : []);
+        } else {
+          console.log("Real-time data is already available.");
+        }
       } else {
-        throw new Error("No data found for this user.");
+        // Fetch the latest data for other users
+        const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
+  
+        if (result) {
+          setSearchResult(result); // Save the result in state
+          console.log("fetchData of Latest - searchResult:", result);
+          console.log("searchResult.stackData:", result.stackData);
+  
+          setCompanyName(result.companyName || "Unknown Company");
+  
+          // Extract stackNames from the stackData and update energyStacks
+          const stacks = result.stackData
+            ?.filter(stack => stack.stationType === "energy")
+            .map(stack => stack.stackName) || [];
+          setEnergyStacks(stacks);
+  
+          // Show latest data until real-time data comes
+          if (!realTimeData || Object.keys(realTimeData).length === 0) {
+            console.log("Displaying fetched latest data until real-time data is available.");
+            setRealTimeData(result.stackData || []);
+          }
+        } else {
+          throw new Error("No data found for this user.");
+        }
       }
     } catch (err) {
+      console.error("Error fetching data:", err.message);
       setSearchResult(null);
       setCompanyName("Unknown Company");
-      setSearchError(err.message || 'No result found for this userID');
+      setSearchError(err.message || "No result found for this userID");
     } finally {
       setLoading(false);
     }
   };
+  
+  
+  
+ 
+  
 
+  useEffect(() => {
+    const userName = storedUserId || currentUserName;
+    fetchData(userName);
+    setCurrentUserName(userName);
+    fetchEnergyStacks(userName);
+    fetchPrimaryStation(userName);
+  }, [storedUserId, currentUserName]);
+  
   useEffect(() => {
     const userName = storedUserId || currentUserName;
     fetchData(userName);
@@ -118,31 +189,55 @@ const EnergyFlow = () => {
   }, [storedUserId, currentUserName]);
   useEffect(() => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-    resetColors();
-    
   
-    fetchData(userName); // Fetch latest data first
+    resetColors();
+  
+    // Fetch latest data first
+    fetchData(userName);
     fetchEnergyStacks(userName);
   
+    // Join the user's room
     socket.emit("joinRoom", { userId: userName });
   
-   const handleStackDataUpdate = (data) => {
-    console.log(`Real-time data for ${userName}:`, data);
-
-  if (data.userName === userName) {
-    setExceedanceColor(data.ExceedanceColor || "green"); // Set 'green' if no color is provided
-    setTimeIntervalColor(data.timeIntervalColor || "green");
-    if (data?.stackData?.length > 0) {
-      setRealTimeData(data.stackData.reduce((acc, item) => {
-        if (item.stackName) {
-          acc[item.stackName] = item;
+    const handleStackDataUpdate = async (data) => {
+      console.log(`Real-time data for ${userName}:`, data);
+  
+      if (data.userName === userName) {
+        setExceedanceColor(data.ExceedanceColor || "green"); // Set default color
+        setTimeIntervalColor(data.timeIntervalColor || "green");
+  
+        if (data?.stackData?.length > 0) {
+          const energyData = data.stackData.filter((item) => item.stationType === "energy");
+  
+          if (energyData.length > 0) {
+            // If real-time energy data is available, use it
+            const processedData = energyData.reduce((acc, item) => {
+              if (item.stackName) {
+                acc[item.stackName] = item;
+              }
+              return acc;
+            }, {});
+  
+            setRealTimeData(processedData);
+            console.log("Processed Real-Time Energy Data:", processedData);
+          } else {
+            // No real-time energy data, fallback to the latest record from the last 10 minutes
+            console.log("No real-time energy data. Fetching the latest data from the last 10 minutes...");
+            const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
+  
+            // Get the latest record
+            const fallbackData = last10MinData
+              .flatMap((record) =>
+                record.records.flatMap((stack) => stack.stackData.filter((item) => item.stationType === "energy"))
+              )
+              .slice(-1); // Take only the latest record
+  
+            setRealTimeData(fallbackData || []);
+            console.log("Fallback Latest 10-Minute Energy Data:", fallbackData);
+          }
         }
-        return acc;
-      }, {}));
-    }
-  }
-};
-
+      }
+    };
   
     socket.on("stackDataUpdate", handleStackDataUpdate);
   
@@ -151,14 +246,20 @@ const EnergyFlow = () => {
       socket.off("stackDataUpdate", handleStackDataUpdate);
     };
   }, [selectedUserIdFromRedux, currentUserName]);
+  
+  
 
 
-  const handleCardClick = (card, stackName) => {
-    // Ensure we use the correct userName when admin searches for a user.
-    const userName = searchTerm || currentUserName;
-    setSelectedCard({ ...card, stackName, userName });
-    setShowPopup(true);
+
+  const handleCardClick = (stack, parameter) => {
+    // Set the selected card with the stack name and parameter
+    setSelectedCard({
+      stackName: stack.stackName,
+      title: parameter.parameter, // Set the title for the graph
+      name: parameter.name, // Parameter key for fetching data
+    });
   };
+  
 
   const handleClosePopup = () => {
     setShowPopup(false);
@@ -244,22 +345,22 @@ const handleDownloadPdf = () => {
   }
 };
 
-    const handleSetPrimaryStation = (stationName) => {
-      setPrimaryStation(stationName); // Immediately update local state
-      const postData = {
-        userName: currentUserName,
-        stationType: 'energy', // Assuming 'energy' is always the type for now
-        stackName: stationName
-      };
-      axios.post(`${API_URL}/api/set-primary-station`, postData)
-        .then(response => {
-          console.log('Primary station set:', response.data);
-          // You might want to fetch new data here or ensure the child component reacts to the change
-        })
-        .catch(error => {
-          console.error('Error setting primary station:', error);
-        });
-    };
+const handleSetPrimaryStation = (stationName) => {
+  setPrimaryStation(stationName); // Immediately update local state
+  const postData = {
+    userName: currentUserName,
+    stationType: 'energy', // Assuming 'energy' as the station type
+    stackName: stationName,
+  };
+  axios.post(`${API_URL}/api/set-primary-station`, postData)
+    .then((response) => {
+      console.log('Primary station set:', response.data);
+    })
+    .catch((error) => {
+      console.error('Error setting primary station:', error);
+    });
+};
+
     
   
     
@@ -288,90 +389,81 @@ const handleDownloadPdf = () => {
           </div>
         </div>
         <div className="row">
-        <div className="col-lg-4"> {latestData && (
-                  
-                    <h5>Analyser Health: {searchResult?.validationStatus ? (
-                      <h5 style={{ color: "green" }}>Good</h5>
-                    ) : (
-                      <h5 style={{ color: "red" }}>Problem</h5>
-                    )} </h5> )}
-                    </div>
-        <div className="col-lg-4 text-center"><b><h3>ENERGY DASHBOARD</h3></b></div>
-        <div className="col-lg-4"></div>
-       </div>
-              <ul className="d-flex align-items-center justify-content-between" style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-                <li>{searchResult?.stackData && searchResult.stackData.length > 0 && (
-    <div className="stack-dropdown">
-      <label htmlFor="stackSelect" className="label-select">Select Station:</label>
-      <div className="styled-select-wrapper">
-        <select
-          id="stackSelect"
-          className="form-select styled-select"
-          value={selectedStack}
-          onChange={handleStackChange}
-        >
-          <option value="all">All Stacks</option>
-          {searchResult.stackData
-            .filter(stack => energyStacks.includes(stack.stackName)) // Filter only energy stations
-            .map((stack, index) => (
-              <option key={index} value={stack.stackName}>
-                {stack.stackName}
+  <div className="col-lg-4">
+    {latestData && (
+      <h5>
+        Analyser Health: {searchResult?.validationStatus ? (
+          <h5 style={{ color: "green" }}>Good</h5>
+        ) : (
+          <h5 style={{ color: "red" }}>Problem</h5>
+        )}
+      </h5>
+    )}
+  </div>
+  <div className="col-lg-4 text-center">
+    <b><h3>ENERGY DASHBOARD</h3></b>
+  </div>
+  <div className="col-lg-4"></div>
+</div>
+
+<ul
+  className="d-flex align-items-center justify-content-between"
+  style={{ listStyleType: 'none', padding: 0, margin: 0 }}
+>
+  <li>
+    {energyStacks.length > 0 ? (
+      <div className="stack-dropdown">
+        <label htmlFor="stackSelect" className="label-select">Select Station:</label>
+        <div className="styled-select-wrapper">
+          <select
+            id="stackSelect"
+            className="form-select styled-select"
+            value={selectedStack}
+            onChange={handleStackChange}
+          >
+            <option value="all">All Stacks</option>
+            {energyStacks.map((stackName, index) => (
+              <option key={index} value={stackName || "Unknown"}>
+                {stackName || "Unknown Station"}
               </option>
             ))}
-        </select>
+          </select>
+        </div>
       </div>
-        {/* Primary station dropdown component */}
-       <div>
-         <PrimaryStationSelector
-                stations={searchResult.stackData.filter(stack => energyStacks.includes(stack.stackName)).map(stack => stack.stackName)}
-                userName={currentUserName}
-                setPrimaryStation={setPrimaryStation}
-                primaryStation={primaryStation}
+    ) : (
+      <h5 className="text-center">No stations available</h5>
+    )}
+  </li>
+  <li>
+    {energyStacks.length > 0 && (
+      <div className="stack-dropdown">
+        <label htmlFor="primaryStationSelect" className="label-select">Set Primary Station:</label>
+        <div className="styled-select-wrapper">
+          <select
+            id="primaryStationSelect"
+            className="form-select styled-select"
+            value={primaryStation}
+            onChange={(e) => handleSetPrimaryStation(e.target.value)} // Call your handler function
+          >
+            <option value="" disabled>
+              Select Primary Station
+            </option>
+            {energyStacks.map((stackName, index) => (
+              <option key={index} value={stackName}>
+                {stackName}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    )}
+  </li>
+</ul>
 
-              />
-              </div>
-    </div>
-  )}</li>
- 
-             {/*    <li> <button className="btn text-light " style={{backgroundColor:'#236a80'}} onClick={() => setShowHistoryModal(true)}>
-              Daily History
-            </button></li> */}
-              </ul>
-             
+
         <div className="row align-items-center mb-5" style={{marginTop:'-100px'}}>
         <div className="col-md-4">
- {/*  {searchResult?.stackData && searchResult.stackData.length > 0 && (
-    <div className="stack-dropdown">
-      <label htmlFor="stackSelect" className="label-select">Select Station:</label>
-      <div className="styled-select-wrapper">
-        <select
-          id="stackSelect"
-          className="form-select styled-select"
-          value={selectedStack}
-          onChange={handleStackChange}
-        >
-          <option value="all">All Stacks</option>
-          {searchResult.stackData
-            .filter(stack => energyStacks.includes(stack.stackName)) 
-            .map((stack, index) => (
-              <option key={index} value={stack.stackName}>
-                {stack.stackName}
-              </option>
-            ))}
-        </select>
-      </div>
-      
-       <div>
-         <PrimaryStationSelector
-                stations={searchResult.stackData.filter(stack => energyStacks.includes(stack.stackName)).map(stack => stack.stackName)}
-                userName={currentUserName}
-                setPrimaryStation={setPrimaryStation}
-                primaryStation={primaryStation}
-
-              />
-              </div>
-    </div>
-  )} */}
+ 
 </div>
           <div className="col-md-4">
         <div className="col-md-4" style={{marginTop:'100px'}}>
@@ -382,8 +474,11 @@ const handleDownloadPdf = () => {
         />
         </div>
         <div className="col-12  justify-content-center align-items-center">
-            <h3 className="text-center">{companyName}</h3>
-            <div className="color-indicators">
+        
+        <h3 className="text-center">
+  {storedUserId === "HH014" ? " Hilton Manyata" : companyName}
+</h3>
+   <div className="color-indicators">
   <div className="d-flex justify-content-center mt-2">
     {/* Parameter Exceed Indicator */}
     <div className="color-indicator">
@@ -407,16 +502,7 @@ const handleDownloadPdf = () => {
           </div>            
           </div>
 
-          {/* <div className="col-md-4 d-flex justify-content-end " style={{marginTop:'100px'}}>
-            <button className="btn btn-primary" onClick={() => setShowHistoryModal(true)}>
-              Daily History
-            </button>
-            {userData?.validUserOne && userData.validUserOne.userType === 'user' && (
-              <button type="submit" onClick={handleOpenCalibrationPopup} className="btn btn-primary ml-2">
-                Calibration
-              </button>
-            )}
-          </div> */}
+        
         </div>
 
         {loading && (
@@ -433,59 +519,73 @@ const handleDownloadPdf = () => {
                 </div>
             )}
 <div className="row mb-5">
-
-
-  <div className="col-md-12 col-lg-12 col-sm-12  border overflow-auto bg-light shadow mb-3 " 
-        style={{ height: "65vh", overflowY: "scroll",  borderRadius:'15px' }}> 
-  {!loading && filteredData.length > 0 ? (
-                    filteredData.map((stack, stackIndex) => (
-                        energyStacks.includes(stack.stackName) && (
-                            <div key={stackIndex} className="col-12 mb-4">
-                                <div className="stack-box">
-                                    <h4 className="text-center ">{stack.stackName} <img src={energy} alt='energy image' width='100px'></img></h4>
-                                    <div className="row">
-                                        {energyParameters.map((item, index) => {
-                                            const value = stack[item.name];
-                                            return value && value !== 'N/A' ? (
-                                                <div className="col-12 col-md-4 grid-margin" key={index}>
-                                                 <div className="card mb-3" style={{border:'none'}}   onClick={() =>
-                                               handleCardClick({ title: item.name }, stack.stackName, currentUserName) }>                                                        <div className="card-body">
-                                                            <h5 className="text-light">{item.parameter}</h5>
-                                                            <p className='text-light'>
-                                                                <strong className="text-light" style={{ color: '#236A80', fontSize:'24px' }}>{value}</strong> {item.value}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ) : null;
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        )
-                    ))
-                ) : (
-                    <div className="col-12">
-                        <h5 className="text-center mt-5">Waiting real-time data available</h5>
+<div
+  className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
+  style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
+>
+  {!loading && Object.values(realTimeData).length > 0 ? (
+    Object.values(realTimeData).map((stack, stackIndex) => (
+      <div key={stackIndex} className="col-12 mb-4">
+        <div className="stack-box">
+          <h4 className="text-center">
+            {stack.stackName} <img src={energy} alt="energy image" width="100px" />
+          </h4>
+          <div className="row">
+            {energyParameters.map((item, index) => {
+              const value = stack[item.name];
+              return value && value !== "N/A" ? (
+                <div className="col-12 col-md-4 grid-margin" key={index}>
+                  <div
+                    className="card mb-3"
+                    style={{ border: "none", cursor: "pointer" }}
+                    onClick={() => handleCardClick(stack, item)} // Add card click handler here
+                  >
+                    <div className="card-body">
+                      <h5 className="text-light">{item.parameter}</h5>
+                      <p className="text-light">
+                        <strong
+                          className="text-light"
+                          style={{ color: "#236A80", fontSize: "24px" }}
+                        >
+                          {value}
+                        </strong>{" "}
+                        {item.value}
+                      </p>
                     </div>
-                )}
-  </div>
- 
+                  </div>
+                </div>
+              ) : null;
+            })}
+          </div>
+        </div>
+      </div>
+    ))
+  ) : (
+    <div className="col-12">
+      <h5 className="text-center mt-5">Waiting for real-time data ...</h5>
+    </div>
+  )}
+</div>
+
   {/* Graph Container with reference */}
   <div
     className=" col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
     style={{ height: '70vh', borderRadius: '15px' , position:'relative'}}
     ref={graphRef}
   >
-    {selectedCard ? (
-      <EnergyGraph
-        parameter={selectedCard.title}
-        userName={currentUserName}
-        stackName={selectedCard.stackName}
-      />
-    ) : (
-      <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-    )}
+   {selectedCard ? (
+  <div>
+  
+    <EnergyGraph
+      parameter={selectedCard.name}
+      userName={currentUserName}
+      stackName={selectedCard.stackName}
+    />
+  </div>
+) : (
+  <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+)}
+
 
     {/* Download Buttons */}
     {selectedCard && (
@@ -511,17 +611,8 @@ const handleDownloadPdf = () => {
     )}
   </div>
 
-  {/* Modal for Downloading Average Data */}
-  <DownloadaverageDataModal
-    isOpen={isModalOpen}
-    onClose={closeModal}
-    userName={currentUserName}
-    stackName={selectedCard?.stackName || ''}
-  />
-
-
 </div>
-           
+
         {showCalibrationPopup && (
           <CalibrationPopup
             userName={userData?.validUserOne?.userName}

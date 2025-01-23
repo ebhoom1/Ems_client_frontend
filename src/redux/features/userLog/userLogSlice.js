@@ -48,6 +48,18 @@ export const fetchUserLatestByUserName = createAsyncThunk(
     }
   }
 );
+// Add a new thunk to fetch the last 10 minutes of IoT data
+export const fetchLast10MinDataByUserName = createAsyncThunk(
+  'userLog/fetchLast10MinDataByUserName',
+  async (userName, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/tenmin/${userName}`);
+      return response.data.data; // Assuming the data field contains the required records
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Error fetching last 10 minutes of data.");
+    }
+  }
+);
 export const fetchUserByCompanyName = createAsyncThunk(
   'userLog/fetchUserByCompanyName',
   async(companyName,{rejectWithValue})=>{
@@ -208,6 +220,7 @@ const userLogSlice = createSlice({
     selectedUser: null,
     stackNames: [], 
     latestUser: null,
+    last10MinData: null, // Add state for storing last 10 minutes data
     loading: false,
     error: null,
     logo: null, // State for logo management
@@ -259,6 +272,19 @@ const userLogSlice = createSlice({
       .addCase(fetchUserLatestByUserName.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || 'Failed to fetch the latest user data';
+      })
+       // Add cases for fetchLast10MinDataByUserName
+       .addCase(fetchLast10MinDataByUserName.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchLast10MinDataByUserName.fulfilled, (state, action) => {
+        state.loading = false;
+        state.last10MinData = action.payload; // Store the last 10 minutes data
+      })
+      .addCase(fetchLast10MinDataByUserName.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || 'Failed to fetch the last 10 minutes data';
       })
       .addCase(fetchUserByUserName.pending,(state)=>{
         state.loading = false;

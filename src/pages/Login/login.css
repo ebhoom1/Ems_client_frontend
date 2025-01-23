@@ -1,99 +1,68 @@
+/* General styling */
 
-
-.banner {
-  height: 500px; 
-  background-image: url('https://i.pinimg.com/736x/0e/08/8e/0e088eac5855f615a1e26f56e3054d71.jpg');
-  background-size: cover;
-  position: relative;
-  background-position: center;
-  overflow: hidden;
-}
-
-.banner .wave {
-  position: absolute;
+.login-page-container {
   width: 100%;
-  left: 0;
-  height: 100vh; 
-}
-/* .back{
-  background-image: url();
-  background-size: cover;
-  background-repeat: no-repeat;
-} */
-.input-box{
-  width: 100%;
-  padding: 10px;
-  border-radius: 30px;
-  border: 0;
-  background-color: rgba(189, 237, 248, 0.318);
-  outline-color: #236a80;
-}
-body, html {
-  height: 100%;
-  margin: 0;
-}
-
-.login-page {
-  /* Ensure the background covers the entire page */
-  background-image: url('https://images.rawpixel.com/image_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIyLTA2L2pvYjk3OS1lbGVtZW50LTExYS5qcGc.jpg');
-  background-size: cover;  /* Make sure the image covers the entire area */
-  background-position: center;  /* Center the image */
-  background-repeat: no-repeat;  /* Prevent the image from repeating */
   height: 100vh;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  padding: 0; /* Remove padding for full screen */
+  margin: 0; /* Remove margin for full screen */
 }
 
-.back {
-  /* Set the background color of the container to semi-transparent to see the background image through it */
-  background-color: rgba(255, 255, 255, 0.9);  
+.dataColumn {
+  display: block;
 }
-/*  
+
+.loginColumn {
+  display: block;
+}
+
+/* Mobile-specific styling */
 @media (max-width: 576px) {
-  .login-page .d-flex {
-    justify-content:center;
+  .dataColumn {
+    display: none; /* Hide the data column on small screens */
   }
-  
-  .login-page img, 
-  .login-page .btn {
+
+  .login-page-container {
+    padding: 0; /* Ensure no padding for mobile */
+  }
+
+  .loginColumn {
+    width: 100%;
     margin: 0;
-  }
-}
- */
- @media (max-width: 576px) {
-  .login-page .d-flex {
-    justify-content: space-between;
-    flex-wrap: nowrap;
-    overflow: hidden;
+    padding: 0; /* Make login column take full width */
   }
 
-  .login-page img {
-    max-width: 50%;
-    flex-shrink: 1;
-  }
-
-  .login-page .btn {
-    padding: 5px 10px;
+  .btn {
+    padding: 10px;
     font-size: 14px;
-    flex-shrink: 1;
+  }
+
+  .maindiv, .subdiv {
+    margin: 0;
+    padding: 0;
   }
 }
-/* General styling */
-.d-flex {
-display: flex;
+
+.maindiv, .subdiv {
+  margin: 50px;
+  padding: 50px;
+}
+@media (max-width: 430px) {
+  
+  .maindiv, .subdiv {
+    margin: 15px;
+    padding: 0px;
+  
+    height: 100vh;
+  }
+}
+.input-box {
+  border-radius: 50px;
+  border: 2px solid ; /* Default border */
+
+ 
 }
 
-.align-items-center {
-align-items: center;
-}
-
-.justify-content-between {
-justify-content: space-between;
-}
-
-.flex-nowrap {
-flex-wrap: nowrap;
-}
-
-/* Responsive behavior */

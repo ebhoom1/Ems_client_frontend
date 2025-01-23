@@ -75,7 +75,7 @@ const EnergyConsumptionCards = ({ userName, primaryStation }) => {
             width={250}
             height={200}
             labelFontSize="10px"
-            valueTextFontSize="16px"
+            valueTextFontSize="12px"
             currentValueText={`Daily Consumption: ${energyData.energyDailyConsumption} kWh`}
           />
         </div>
@@ -90,7 +90,7 @@ const EnergyConsumptionCards = ({ userName, primaryStation }) => {
             width={250}
             height={200}
             labelFontSize="10px"
-            valueTextFontSize="16px"
+            valueTextFontSize="12px"
             currentValueText={`Monthly Consumption: ${energyData.energyMonthlyConsumption} kWh`}
           />
         </div>
@@ -105,7 +105,7 @@ const EnergyConsumptionCards = ({ userName, primaryStation }) => {
             width={250}
             height={200}
             labelFontSize="10px"
-            valueTextFontSize="16px"
+            valueTextFontSize="12px"
             currentValueText={`Yearly Consumption: ${energyData.energyYearlyConsumption} kWh`}
           />
         </div>
