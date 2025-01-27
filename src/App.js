@@ -69,6 +69,7 @@ import Generator from './pages/Generator/Generator';
 import WasteNew from './pages/Waste/WasteNew';
 import Pump from './pages/Pump/Pump';
 import WasteDashboard from './pages/Waste/WasteDashboard';
+import WasteDash from './pages/Waste/WasteDash';
 
 
 function App() {
@@ -178,6 +179,8 @@ function App() {
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/view-data" element={<ViewComponent />} />
                   <Route path="/waste" element={<WasteNew />} />
+                  <Route path="/waste-dashboard" element={<WasteDashboard />} />
+                  <Route path="/waste-dash" element={<WasteDash />} />
                   <Route path="/viewdifference" element={<ViewDifference />} />
                   <Route path="/table" element={<WaterQualityTable />} />
                   <Route path="/how-to-use" element={ <UserManual />} />

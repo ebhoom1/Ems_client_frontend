@@ -1,0 +1,12 @@
+.filter-container {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.5s ease, opacity 0.5s ease;
+  }
+  
+  .filter-container.show {
+    max-height: 200px; /* Adjust based on content height */
+    opacity: 1;
+  }
+  
