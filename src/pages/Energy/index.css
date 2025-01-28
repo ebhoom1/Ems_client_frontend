@@ -179,4 +179,14 @@
   }
   
   
+  /*  */
+  
+  @media (max-width:658px) {
+     .popup-title
+    {
+      margin-top: 70px;
+
+    }
+    
+  }
   

@@ -112,8 +112,8 @@ function ViewCalibrationReport() {
                           <th className='custom-width'>After</th>
                           <th className='custom-width'>Technician</th>
                           <th className='custom-width'>Notes</th>
-                          <th className='custom-width'>Edit</th>
-                          <th className='custom-width'>Delete</th>
+                          <th className=''>Edit</th>
+                          <th className=''>Delete</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -133,7 +133,7 @@ function ViewCalibrationReport() {
                               <td>{calibration.notes}</td>
                               <td>
                                 <Link to={`/edit-calibration/${calibration.userName}`}>
-                                  <button type="button" className="btn btn-primary mb-2"> Edit </button>
+                                  <button type="button" className="btn btn-warning mb-2"> Edit </button>
                                 </Link>
                               </td>
                               <td>

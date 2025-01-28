@@ -465,8 +465,8 @@ const handleSetPrimaryStation = (stationName) => {
         <div className="col-md-4">
  
 </div>
-          <div className="col-md-4">
-        <div className="col-md-4" style={{marginTop:'100px'}}>
+          <div className="">
+        <div className="" style={{marginTop:'150px'}}>
           {/* Pass userName and primaryStation as props */}
           <EnergyConsumptionCards
           userName={currentUserName}

@@ -124,44 +124,45 @@ const ReportCheck = () => {
                         <p><strong>User Name:</strong> {userName}</p>
                         <p><strong>Station Name:</strong> {stackName}</p>
                     </div>
-
                     <div className="custom-table-responsive">
-  <table className="custom-table">
-    <thead className="custom-table-header">
-      <tr>
-        <th>SI.No</th>
-        <th>Stack Name</th>
-        <th>Exceeded Parameter</th>
-        <th>Exceeded Value</th>
-        <th>Date</th>
-        <th>Time</th>
-        <th>User Remark Comment</th>
-        <th>Admin Remark Comment</th>
-      </tr>
-    </thead>
-    <tbody>
-      {entries.length > 0 ? (
-        entries.map((item, index) => (
-          <tr key={index} className="custom-table-row">
-            <td>{index + 1 + (page - 1) * limit}</td>
-            <td>{item.stackName}</td>
-            <td>{item.parameter}</td>
-            <td>{item.value}</td>
-            <td>{item.formattedDate}</td>
-            <td>{item.formattedTime}</td>
-            <td>{item.commentByUser || 'N/A'}</td>
-            <td>{item.commentByAdmin || 'N/A'}</td>
-          </tr>
-        ))
-      ) : (
+  <div className="custom-table-container">
+    <table className="custom-table">
+      <thead className="custom-table-header">
         <tr>
-          <td colSpan="8" className="text-center custom-no-data">
-            No Exceedance Data Available
-          </td>
+          <th>SI.No</th>
+          <th>Stack Name</th>
+          <th>Exceeded Parameter</th>
+          <th>Exceeded Value</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>User Remark Comment</th>
+          <th>Admin Remark Comment</th>
         </tr>
-      )}
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        {entries.length > 0 ? (
+          entries.map((item, index) => (
+            <tr key={index} className="custom-table-row">
+              <td>{index + 1 + (page - 1) * limit}</td>
+              <td>{item.stackName}</td>
+              <td>{item.parameter}</td>
+              <td>{item.value}</td>
+              <td>{item.formattedDate}</td>
+              <td>{item.formattedTime}</td>
+              <td>{item.commentByUser || 'N/A'}</td>
+              <td>{item.commentByAdmin || 'N/A'}</td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="8" className="text-center custom-no-data">
+              No Exceedance Data Available
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
 
   {/* Pagination Controls */}
   <div className="custom-pagination">
@@ -183,48 +184,49 @@ const ReportCheck = () => {
   </div>
 </div>
 
+
                
 
                     <div className="row mt-4">
                         <div className="col-12 col-md-12 grid-margin">
                             <div className="card m-1">
                                 <div className="card-body">
-                                    <h1 className="text-center mt-3">Validate Data</h1>
-                                    <form className="m-5 p-5">
+                                    <h1 className="text-center mt-3 text-light">Validate Data</h1>
+                                    <form className="m-1 p-1">
                                         <div className="row">
                                             <div className="col-lg-6 mb-4">
                                                 <div className="form-group">
-                                                    <label><strong>From Date:</strong></label>
+                                                    <label><strong className='text-light'>From Date:</strong></label>
                                                     <input type="text" className="form-control" value={dateFrom} readOnly />
                                                 </div>
                                             </div>
                                             <div className="col-lg-6 mb-4">
                                                 <div className="form-group">
-                                                    <label><strong>To Date:</strong></label>
+                                                    <label><strong className='text-light'>To Date:</strong></label>
                                                     <input type="text" className="form-control" value={dateTo} readOnly />
                                                 </div>
                                             </div>
                                             <div className="col-lg-6 mb-4">
                                                 <div className="form-group">
-                                                    <label><strong>Industry:</strong></label>
+                                                    <label><strong className='text-light'>Industry:</strong></label>
                                                     <input type="text" className="form-control" value={industry} readOnly />
                                                 </div>
                                             </div>
                                             <div className="col-lg-6 mb-4">
                                                 <div className="form-group">
-                                                    <label><strong>Company:</strong></label>
+                                                    <label><strong className='text-light'>Company:</strong></label>
                                                     <input type="text" className="form-control" value={company} readOnly />
                                                 </div>
                                             </div>
                                             <div className="col-lg-6 mb-4">
                                                 <div className="form-group">
-                                                    <label><strong>User Name:</strong></label>
+                                                    <label><strong className='text-light'>User Name:</strong></label>
                                                     <input type="text" className="form-control" value={userName} readOnly />
                                                 </div>
                                             </div>
                                             <div className="col-lg-6 mb-4">
                                                 <div className="form-group">
-                                                    <label><strong>Engineer Name:</strong></label>
+                                                    <label><strong className='text-light'> Engineer Name:</strong></label>
                                                     <input
                                                         type="text"
                                                         className="form-control"

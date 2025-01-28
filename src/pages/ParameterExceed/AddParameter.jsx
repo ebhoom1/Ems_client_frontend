@@ -108,7 +108,7 @@ if (error) {
           <div className="row" style={{ overflowX: 'hidden' }}>
             <div className="col-12 col-md-12 grid-margin">
               <div className="col-12 d-flex justify-content-between align-items-center m-3">
-                <h1 className="text-center mt-5">Add Calibration Exceedance Values</h1>
+                <h1 className="text-center mt-5">Set Parameter Exceedance Values</h1>
               </div>
               <div className="card m-2">
                 <div className="card-body">

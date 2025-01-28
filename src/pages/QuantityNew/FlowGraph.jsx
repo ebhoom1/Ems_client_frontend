@@ -162,7 +162,7 @@ const FlowGraph = ({ isOpen, onRequestClose, parameter, userName, stackName }) =
 
     return (
         <div>
-            <h5 style={{marginTop:'1px'}} className="popup-title   text-center">{parameter} - {stackName}</h5>
+            <h5  className="popup-title   text-center">{parameter} - {stackName}</h5>
             <div className="interval-buttons align-items-center justify-content-center mt-3">
                 {['day', 'month', 'year'].map((interval) => (
                     <button

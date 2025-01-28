@@ -158,46 +158,62 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
     };
 
     return (
-       <div>
-            <h5 style={{marginTop:'60px'}} className="popup-title text-center">{parameter} - {stackName}</h5>
-
-            <div className="interval-buttons align-items-center justify-content-center mt-3 " >
-                {['hour', 'day', 'week', 'month', 'sixmonths', 'year'].map((interval) => (
-                    <button
-                        key={interval}
-                        className={`interval-btn ${timeInterval === interval ? 'active' : ''}`}
-                        onClick={() => setTimeInterval(interval)}
-                        style={{backgroundColor:'#236a80' , margin:'1px' , color:'#ffff' , border:'none' , alignItems:'center' , justifyContent:'center' , padding:'7px' , borderRadius:'5px' , marginLeft:'10px'}}
-                    >
-                        {interval.charAt(0).toUpperCase() + interval.slice(1)}
-                    </button>
-                ))}
+        <div>
+        <h5 style={{ marginTop: '20px' }} className="popup-title text-center">
+            {parameter} - {stackName}
+        </h5>
+    
+        <div 
+            className="col interval-buttons d-flex align-items-center justify-content-center mt-3 flex-wrap"
+            style={{ gap: '10px' }}
+        >
+            {['hour', 'day', 'week', 'month', 'sixmonths', 'year'].map((interval) => (
+                <button
+                    key={interval}
+                    className={`interval-btn ${timeInterval === interval ? 'active' : ''}`}
+                    onClick={() => setTimeInterval(interval)}
+                    style={{
+                        backgroundColor: '#236a80',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '7px 15px',
+                        borderRadius: '5px',
+                        textAlign: 'center',
+                        minWidth: '80px',
+                    }}
+                >
+                    {interval.charAt(0).toUpperCase() + interval.slice(1)}
+                </button>
+            ))}
+        </div>
+    
+        {loading ? (
+            <div className="loading-container d-flex align-items-center justify-content-center ">
+                <Oval
+                    height={60}
+                    width={60}
+                    color="#236A80"
+                    ariaLabel="Fetching details"
+                    secondaryColor="#e0e0e0"
+                    strokeWidth={2}
+                    strokeWidthSecondary={2}
+                />
+                <p className="mt-3">Loading data, please wait...</p>
             </div>
-
-            {loading ? (
-                <div className="loading-container d-flex align-item-center justify-content-center ">
-                    <Oval
-                        height={60}
-                        width={60}
-                        color="#236A80"
-                        ariaLabel="Fetching details"
-                        secondaryColor="#e0e0e0"
-                        strokeWidth={2}
-                        strokeWidthSecondary={2}
-                    />
-                    <p className='mt-3'>Loading data, please wait...</p>
-                </div>
-            ) : graphData.length === 0 ? (
-                <div className="no-data-container mt-3">
-                    <h5>No data available for {parameter} ({timeInterval})</h5>
-                    <p>Please try a different interval or check back later.</p>
-                </div>
-            ) : (
-                <div className="chart-container mt-3 d-flex align-items-center justify-content-center  " style={{height:'300px' }}>
-                    <Line data={chartData} options={chartOptions} />
-                </div>
-            )}
-       </div>
+        ) : graphData.length === 0 ? (
+            <div className="no-data-container mt-3">
+                <h5>No data available for {parameter} ({timeInterval})</h5>
+                <p>Please try a different interval or check back later.</p>
+            </div>
+        ) : (
+            <div
+                className="chart-container mt-3 d-flex align-items-center justify-content-center"
+                style={{ height: '300px' }}
+            >
+                <Line data={chartData} options={chartOptions} />
+            </div>
+        )}
+    </div>
     );
 };
 

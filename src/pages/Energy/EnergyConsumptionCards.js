@@ -62,55 +62,56 @@ const EnergyConsumptionCards = ({ userName, primaryStation }) => {
   }, [primaryStation]);
 
   return (
-    <div className="energy-flow-container">
-      <div className='d-flex shadow' style={{ marginLeft: '200px', borderRadius: '15px', border: '1px solid #ccc', backgroundColor: 'white' }}>
-        <div className="energy-flow-item">
-          <ReactD3Speedometer
-            value={energyData.energyDailyConsumption}
-            maxValue={10000}
-            needleColor="red"
-            startColor="green"
-            segments={10}
-            endColor="blue"
-            width={250}
-            height={200}
-            labelFontSize="10px"
-            valueTextFontSize="12px"
-            currentValueText={`Daily Consumption: ${energyData.energyDailyConsumption} kWh`}
-          />
-        </div>
-        <div className="energy-flow-item">
-          <ReactD3Speedometer
-            value={energyData.energyMonthlyConsumption}
-            maxValue={30000}
-            needleColor="red"
-            startColor="green"
-            segments={10}
-            endColor="blue"
-            width={250}
-            height={200}
-            labelFontSize="10px"
-            valueTextFontSize="12px"
-            currentValueText={`Monthly Consumption: ${energyData.energyMonthlyConsumption} kWh`}
-          />
-        </div>
-        <div className="energy-flow-item">
-          <ReactD3Speedometer
-            value={energyData.energyYearlyConsumption}
-            maxValue={30000}
-            needleColor="red"
-            startColor="green"
-            segments={10}
-            endColor="blue"
-            width={250}
-            height={200}
-            labelFontSize="10px"
-            valueTextFontSize="12px"
-            currentValueText={`Yearly Consumption: ${energyData.energyYearlyConsumption} kWh`}
-          />
-        </div>
+  
+  
+    <div className='row mt-4'>
+    <div className='col-lg-4 col-md-4 d-flex align-items-center justify-content-center  '>
+    <ReactD3Speedometer
+        value={parseFloat(energyData.energyDailyConsumption.toFixed(2))} // Ensure two decimal places
+          maxValue={10000}
+          needleColor="red"
+          startColor="green"
+          segments={10}
+          endColor="blue"
+          width={250}
+          height={200}
+          labelFontSize="10px"
+          valueTextFontSize="12px"
+          currentValueText={`Daily Consumption: ${energyData.energyDailyConsumption.toFixed(2)} kWh`} // Display two decimal places
+        />
+      </div>
+      <div className='col-lg-4 col-md-4 d-flex align-items-center justify-content-center  '>
+      <ReactD3Speedometer
+          value={parseFloat(energyData.energyMonthlyConsumption.toFixed(2))} // Ensure two decimal places          maxValue={30000}
+          needleColor="red"
+          startColor="green"
+          segments={10}
+          endColor="blue"
+          width={250}
+          height={200}
+          labelFontSize="10px"
+          valueTextFontSize="12px"
+          currentValueText={`Monthly Consumption: ${energyData.energyMonthlyConsumption.toFixed(2)} kWh`} // Display two decimal places
+        />
+      </div>
+      <div className='col-lg-4 col-md-4 d-flex align-items-center justify-content-center  '>
+      <ReactD3Speedometer
+          value={parseFloat(energyData.energyYearlyConsumption.toFixed(2))} // Ensure two decimal places
+          maxValue={30000}
+          needleColor="red"
+          startColor="green"
+          segments={10}
+          endColor="blue"
+          width={250}
+          height={200}
+          labelFontSize="10px"
+          valueTextFontSize="12px"
+          currentValueText={`Yearly Consumption: ${energyData.energyYearlyConsumption.toFixed(2)} kWh`} // Display two decimal places
+
+        />
       </div>
     </div>
+  
   );
 };
 

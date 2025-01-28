@@ -93,22 +93,24 @@ setTimeout(() => {
           <DashboardSam />
         </div>
         {/* Main content */}
-        <div className="col-lg-9 col-12">
+        <div className="col-lg-9 col-12 ">
           <Hedaer />
        <div className='maindashboard'>
        <Maindashboard/>
        </div>
        <div className="row" >
             <div className="col-12 col-md-12 grid-margin">
-              <h1 className="text-center mt-5">Calibration Added By</h1>
-              <div className="card m-1">
+            
+              <div className="card  mt-5">
+            
                 <div className="card-body ">
                   <form onSubmit={handleSubmit} className=" calibcard">
                     <div className="row">
                       {/* User ID */}
+                      <h1 className="text-center text-light mb-3">Calibration Added By</h1>
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label">User ID</label>
+                          <label className="form-label text-light">User ID</label>
                           <input
                             type="text"
                             name="userName"
@@ -116,7 +118,7 @@ setTimeout(() => {
                             onChange={handleInputChange}
                             placeholder="User ID"
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'none'  }}
                           />
                         </div>
                       </div>
@@ -124,7 +126,7 @@ setTimeout(() => {
                       {/* Date of Calibration Added */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label">Date of Calibration Added</label>
+                          <label className="form-label text-light">Date of Calibration Added</label>
                           <input
                             type="date"
                             name="dateOfCalibrationAdded"
@@ -138,7 +140,7 @@ setTimeout(() => {
 
                       {/* Time of Calibration Added */}
                       <div className="col-lg-6 col-md-6 mb-4">
-                        <div className="form-group">
+                        <div className="form-group text-light">
                           <label className="form-label">Time of Calibration Added</label>
                           <input
                             type="text"
@@ -155,7 +157,7 @@ setTimeout(() => {
                       {/* User Name */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label">User Name</label>
+                          <label className="form-label text-light">User Name</label>
                           <input
                             type="text"
                             name="fname"
@@ -170,7 +172,7 @@ setTimeout(() => {
                     </div>
 
                     <div className="row">
-                      <h1 className="text-center">Add Calibration Details</h1>
+                      <h1 className="text-center text-light mt-5">Add Calibration Details</h1>
                       {/* Model Name */}
 
 
@@ -183,7 +185,7 @@ setTimeout(() => {
 
                          {/*  </div> */}
                          <div className="col-lg-6 col-md-6 mb-4">
-                        <div className="form-group">
+                        <div className="form-group text-light">
                           <label className="form-label">User ID</label>
                           <input
                             type="text"
@@ -201,7 +203,7 @@ setTimeout(() => {
 
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label">Model Name</label>
+                          <label className="form-label text-light">Model Name</label>
                           <input
                             type="text"
                             name="equipmentName"
@@ -216,7 +218,7 @@ setTimeout(() => {
 
                       {/* Date */}
                       <div className="col-lg-6 col-md-6 mb-4">
-                        <div className="form-group">
+                        <div className="form-group text-light">
                           <label className="form-label">Date of Calibration</label>
                           <input
                             type="date"
@@ -228,11 +230,11 @@ setTimeout(() => {
                           />
                         </div>
                       </div>
-<h1 className='text-center'>Results</h1>
+                     <h1 className='text-center text-light mt-5'>Results</h1>
                       {/* Before */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label">Before</label>
+                          <label className="form-label text-light">Before</label>
                           <textarea
                             name="before"
                             value={calibrationData?.before || ''}
@@ -246,7 +248,7 @@ setTimeout(() => {
 
                       {/* After */}
                       <div className="col-lg-6 col-md-6 mb-4">
-                        <div className="form-group">
+                        <div className="form-group text-light">
                           <label className="form-label">After</label>
                           <textarea
                             name="after"
@@ -262,7 +264,7 @@ setTimeout(() => {
                       {/* Technician */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label">Technician</label>
+                          <label className="form-label text-light">Technician</label>
                           <input
                             type="text"
                             name="technician"
@@ -277,7 +279,7 @@ setTimeout(() => {
 
                       {/* Notes */}
                       <div className="col-lg-6 col-md-6 mb-4">
-                        <div className="form-group">
+                        <div className="form-group text-light">
                           <label className="form-label">Notes</label>
                           <textarea
                             name="notes"

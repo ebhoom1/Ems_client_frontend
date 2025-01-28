@@ -121,7 +121,7 @@ const handleAvoidExceedenceList=()=>{
                         {/* Add Parameter Button */}
                         <div className="align-items-center justify-content-center d-flex mt-5 mb-4">
                             <Button onClick={handleParameter} className="p-3 btn parameterbtn align-items-center justify-content-center d-flex" style={{ border: 'none' }}>
-                                Add Parameter Threshold exceedance Values
+                               <strong className='text-dark'> Add Parameter Threshold exceedance Values</strong>
                             </Button>
                         </div>
                        {/*  {userData?.validUserOne?.adminType === "EBHOOM" && (

@@ -139,11 +139,7 @@ function DashboardSam() {
           </li>
           {userType === 'admin' && (
             <>
-              <li className='list active text-center'>
-                <a href="/live-emmision" style={{ textDecoration: 'none', color: '#ffffff' }}>
-                  <span className='title'>Live Emission Video</span>
-                </a>
-              </li>
+            
               <li className='list active text-center'>
                 <a href="/manage-user" style={{ textDecoration: 'none', color: '#ffffff' }}>
                   <span className='title'>Manage Users</span>
@@ -176,6 +172,11 @@ function DashboardSam() {
               <span className='title'>Account</span>
             </a>
           </li>
+          <li className='list active text-center'>
+                <a href="/live-emmision" style={{ textDecoration: 'none', color: '#ffffff' }}>
+                  <span className='title'>Live Emission Video</span>
+                </a>
+              </li>
           {userType === 'user' && (
             <>
               <li className='list active text-center'>

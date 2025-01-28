@@ -205,4 +205,11 @@
     width: 250px;
     margin: 30px;
   }
-  
+  @media (max-width:658px) {
+    .popup-title
+   {
+     margin-top: 70px;
+
+   }
+   
+ }

@@ -199,7 +199,7 @@ function Header() {
                 </div>
               )}
 
-              <Dropdown ref={dropdownRef} className="me-3" onToggle={handleDropdownClick} >
+              <Dropdown ref={dropdownRef} className="me-2" onToggle={handleDropdownClick} >
                 <Dropdown.Toggle as={Nav.Link} bsPrefix="p-0" id="user-dropdown">
                   <i className="fa-solid fa-user"></i>
                 </Dropdown.Toggle>

@@ -34,23 +34,75 @@
   width: 260px;
 
 }
-
+@media (max-width: 1900px){
+  .buttonbg{
+    width: 315px;
+  }
+}
 
 @media (max-width: 1811px){
   .buttonbg{
-    width: 288px;
+    width: 310px;
+  }
+}
+
+
+@media (max-width: 1791px){
+  .buttonbg{
+    width: 290px;
+  }
+}
+@media (max-width: 1650px){
+  .buttonbg{
+    width: 275px;
+  }
+}
+@media (max-width: 1592px){
+  .buttonbg{
+    width: 265px;
   }
 }
 
 
 @media (max-width: 1500px){
   .buttonbg{
-    width: 250px;
+    width: 230px;
+  }
+
+}
+@media (max-width: 1497px){
+  .buttonbg{
+    width: 240px;
+  }
+}
+@media (max-width: 1400px){
+  .buttonbg{
+    width: 220px;
+  }
+}
+@media (max-width: 1300px){
+  .buttonbg{
+    width: 200px;
+  }
+}
+@media (max-width: 1294px){
+  .buttonbg{
+    width: 210px;
+  }
+}
+@media (max-width: 1230px){
+  .buttonbg{
+    width: 200px;
   }
 }
 @media (max-width: 1200px){
   .buttonbg{
-    width: 225px;
+    width: 192px;
+  }
+}
+@media (max-width: 1100px){
+  .buttonbg{
+    width: 170px;
   }
 }
 @media (max-width: 1000px){
@@ -58,14 +110,45 @@
     width: 200px;
   }
 }
-@media (max-width: 450px){
+@media (max-width: 920px){
   .buttonbg{
     width: 180px;
   }
 }
+@media (max-width: 820px){
+  .buttonbg{
+    width: 175px;
+  }
+}
+@media (max-width: 800px){
+  .buttonbg{
+    width: 165px;
+    
+  }
+}
+@media (max-width: 600px){
+  .buttonbg{
+    width: 185px;
+  }
+}
+@media (max-width: 485px){
+  .buttonbg{
+    width: 170px;
+  }
+}
+@media (max-width: 450px){
+  .buttonbg{
+    width: 155px;
+  }
+}
 @media (max-width: 400px){
   .buttonbg{
-    width: 160px;
+    width: 155px;
+  }
+}
+@media (max-width: 375px){
+  .buttonbg{
+    width: 140px;
   }
 }
 
@@ -113,7 +196,7 @@
   }
 
   .button-container .buttonbg {
-    width: calc(50% - 10px); /* 50% width minus margin */
+   
     margin-bottom: 10px; /* Margin between rows */
   }
 }

@@ -306,9 +306,9 @@ const handleDownloadPdf = () => {
 
 
   const filteredData = Object.values({
-    ...last10MinData, // Use last 10-minute data as the base
-    ...realTimeData,  // Overwrite with real-time data if available
-  }).sort((a, b) => (realTimeData[b.stackName] ? 1 : -1)); // Real-time data on top
+    ...last10MinData,
+    ...realTimeData, // Overwrite last10MinData with real-time data
+  }).sort((a, b) => (realTimeData[b.stackName] ? 1 : -1)); // Ensure real-time data is on top
   
     const effluentFlowParameters = [
       { parameter: "Cumulating Flow", value: "m³", name: "cumulatingFlow" },
@@ -346,7 +346,6 @@ const handleDownloadPdf = () => {
           console.error('Error setting primary station:', error);
         });
     };
-    
     
   
     
@@ -445,8 +444,8 @@ const handleDownloadPdf = () => {
         <div className="col-md-4">
  {/*   */}
 </div>
-          <div className="col-md-4">
-     <div className="col-md-4" style={{marginTop:'100px'}}>
+          <div className="">
+     <div className="" style={{marginTop:'150px'}}>
         <FlowConsuptionCards
           userName={currentUserName}
           primaryStation={primaryStation}

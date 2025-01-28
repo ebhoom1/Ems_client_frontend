@@ -93,7 +93,7 @@
     border-collapse: collapse;
     background-color: rgba(245, 245, 245, 0.9); /* Smoky white background */
     border-radius: 10px;
-    overflow: hidden; /* Ensure rounded corners */
+    overflow: scroll; /* Ensure rounded corners */
   }
   
   .custom-table th,
@@ -140,3 +140,64 @@
     font-weight: 500;
   }
   
+
+  /* Container for horizontal scrolling */
+.custom-table-container {
+  overflow-x: auto; /* Enable horizontal scrolling */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling for mobile devices */
+  margin-bottom: 15px; /* Add spacing below the table */
+}
+
+.custom-table {
+  width: 100%; /* Ensure the table takes full width */
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.custom-table-header th {
+  background-color: #f1f1f1;
+  font-weight: bold;
+  padding: 10px;
+  border: 1px solid #ddd;
+}
+
+.custom-table-row td {
+  padding: 8px;
+  border: 1px solid #ddd;
+}
+
+.custom-no-data {
+  padding: 15px;
+  font-style: italic;
+  color: #888;
+}
+
+/* Pagination controls */
+.custom-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.custom-pagination-button {
+  margin: 0 5px;
+  padding: 5px 10px;
+  font-size: 14px;
+}
+
+.custom-pagination-info {
+  font-size: 14px;
+  margin: 0 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .custom-table-container {
+    overflow-x: auto; /* Ensures horizontal scrolling on small screens */
+  }
+
+  .custom-pagination-info {
+    font-size: 12px; /* Reduce font size for pagination info */
+  }
+}

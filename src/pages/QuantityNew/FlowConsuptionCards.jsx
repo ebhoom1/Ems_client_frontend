@@ -49,7 +49,55 @@ const FlowConsuptionCards = ({ userName, primaryStation }) => {
   }, [primaryStation]);
 
   return (
-    <div className="energy-flow-container">
+    <div className='row mt-4'>
+    <div className='col-lg-4 col-md-4 d-flex align-items-center justify-content-center'>
+      <ReactD3Speedometer
+        value={parseFloat(flowData.flowDailyConsumption.toFixed(2))} // Ensure 2 decimal places
+        maxValue={10000}
+        needleColor="red"
+        startColor="green"
+        segments={10}
+        endColor="blue"
+        width={250}
+        height={200}
+        labelFontSize="10px"
+        valueTextFontSize="12px"
+        currentValueText={`Daily Consumption: ${flowData.flowDailyConsumption.toFixed(2)} m³`} // Display 2 decimal places
+      />
+    </div>
+    <div className='col-lg-4 col-md-4 d-flex align-items-center justify-content-center'>
+      <ReactD3Speedometer
+        value={parseFloat(flowData.flowMonthlyConsumption.toFixed(2))} // Ensure 2 decimal places
+        maxValue={30000}
+        needleColor="red"
+        startColor="green"
+        segments={10}
+        endColor="blue"
+        width={250}
+        height={200}
+        labelFontSize="10px"
+        valueTextFontSize="12px"
+        currentValueText={`Monthly Consumption: ${flowData.flowMonthlyConsumption.toFixed(2)} m³`} // Display 2 decimal places
+      />
+    </div>
+    <div className='col-lg-4 col-md-4 d-flex align-items-center justify-content-center'>
+      <ReactD3Speedometer
+        value={parseFloat(flowData.flowYearlyConsumption.toFixed(2))} // Ensure 2 decimal places
+        maxValue={30000}
+        needleColor="red"
+        startColor="green"
+        segments={10}
+        endColor="blue"
+        width={250}
+        height={200}
+        labelFontSize="10px"
+        valueTextFontSize="12px"
+        currentValueText={`Yearly Consumption: ${flowData.flowYearlyConsumption.toFixed(2)} m³`} // Display 2 decimal places
+      />
+    </div>
+  </div>
+  
+   /*  <div className="energy-flow-container">
       <div className='d-flex  shadow' style={{ marginLeft: '200px', borderRadius: '15px', border: '1px solid #ccc' ,backgroundColor:'white' }}>
         <div className="energy-flow-item">
           <ReactD3Speedometer
@@ -97,7 +145,7 @@ const FlowConsuptionCards = ({ userName, primaryStation }) => {
           />
         </div>
       </div>
-    </div>
+    </div> */
   );
   
 };

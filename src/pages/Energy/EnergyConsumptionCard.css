@@ -1,0 +1,53 @@
+.energy-flow-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    overflow-x: auto; /* Allow horizontal scrolling if items overflow */
+  }
+  
+  .energy-flow-wrapper {
+    display: flex;
+    flex-wrap: nowrap; /* Ensure items stay in one row */
+    gap: 20px;
+    justify-content: space-between; /* Space items evenly in the row */
+    max-width: 100%; /* Ensure the container takes full width */
+    overflow-x: auto; /* Allow scrolling for overflow */
+  }
+  
+  .energy-flow-item {
+    flex: 0 0 250px; /* Each item has a fixed width of 250px */
+    max-width: 250px; /* Prevent items from exceeding their size */
+    border-radius: 15px;
+    border: 1px solid #ccc;
+    background-color: white;
+    text-align: center;
+    padding: 10px;
+  }
+  
+  /* Media Queries */
+  
+  /* Tablet and Laptop View (769px to 1024px) */
+  @media (max-width: 1024px) and (min-width: 769px) {
+    .energy-flow-wrapper {
+      flex-wrap: nowrap; /* Force items to stay in one row */
+      justify-content: flex-start; /* Align items to the left */
+    }
+  
+    .energy-flow-container {
+      overflow-x: auto; /* Allow horizontal scrolling if necessary */
+    }
+  }
+  
+  /* Mobile View (≤768px) */
+  @media (max-width: 768px) {
+    .energy-flow-wrapper {
+      flex-direction: column; /* Stack items vertically */
+      align-items: center;
+    }
+  
+    .energy-flow-item {
+      flex: 1 1 100%; /* Take full width in mobile view */
+      max-width: 90%; /* Add padding for better appearance */
+    }
+  }
+  

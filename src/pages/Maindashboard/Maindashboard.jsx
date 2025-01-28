@@ -60,10 +60,10 @@ function Maindashboard() {
     { name: "Effluent/Sewage", path: "/water", key: "effluent" },
     { name: "Stack Emission", path: "/ambient", key: "emission" },
     { name: "Noise", path: "/noise", key: "noise" },
-    { name: "Waste", path: "/waste", key: "waste" },
-    { name: "Generator", path: "/generator", key: "generator" },
     { name: "Effluent Flow", path: "/quantity", key: "effluent_flow" },
     { name: "Energy", path: "/energy", key: "energy" },
+    { name: "Waste", path: "/waste", key: "waste" },
+    { name: "Generator", path: "/generator", key: "generator" },
   ];
 
   // Filter links based on available station types
@@ -143,7 +143,7 @@ function Maindashboard() {
                 style={{ backgroundColor: "transparent" }}
               >
                 <Button
-                  className="btn buttonbg shadow m-2 p-0"
+                  className="btn buttonbg shadow m-2 "
                   onClick={handleDownload}
                   style={{ background: "#236a80", border: "none" }}
                 >
