@@ -17,6 +17,7 @@ import PieChartQuantity from "./PieChartQuantity";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import DownloadaverageDataModal from "../Water/DownloadaverageDataModal";
+import { Dropdown } from "react-bootstrap";
 // Initialize Socket.IO
 const socket = io(API_URL, { 
   transports: ['websocket'], 
@@ -391,7 +392,8 @@ const handleDownloadPdf = () => {
   style={{ listStyleType: 'none', padding: 0, margin: 0 }}
 >
   <li>
-    {effluentFlowStacks.length > 0 ? (
+   <Dropdown>
+   {effluentFlowStacks.length > 0 ? (
       <div className="stack-dropdown">
         <label htmlFor="stackSelect" className="label-select">Select Station:</label>
         <div className="styled-select-wrapper">
@@ -413,8 +415,10 @@ const handleDownloadPdf = () => {
     ) : (
       <h5 className="text-center">No stations available</h5>
     )}
+   </Dropdown>
   </li>
   <li>
+    <Dropdown>
     {effluentFlowStacks.length > 0 && (
       <div className="stack-dropdown">
         <label htmlFor="primaryStationSelect" className="label-select">Set Primary Station:</label>
@@ -437,6 +441,7 @@ const handleDownloadPdf = () => {
         </div>
       </div>
     )}
+    </Dropdown>
   </li>
 </ul>
              

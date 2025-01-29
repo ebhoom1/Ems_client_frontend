@@ -221,6 +221,7 @@ function App() {
                   <Route path="/table" element={<WaterQualityTable />} />
                   <Route path="/view-calibration-report" element={<ViewCalibrationReport />} />
                   <Route path="/generator" element={<Generator />} />
+                  <Route path="/live-emmision" element={<LiveEmmission />} />
 
                 </Route>
               )}

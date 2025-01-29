@@ -199,6 +199,11 @@ function DashboardSam() {
                   <span className='title'>Payment</span>
                 </a>
               </li>
+              <li className='list active text-center'>
+                <a href="/live-emmision" style={{ textDecoration: 'none', color: '#ffffff' }}>
+                  <span className='title'>Live Emission Video</span>
+                </a>
+              </li>
             </>
           )}
           <li className='list active text-center'>

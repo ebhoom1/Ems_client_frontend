@@ -23,6 +23,7 @@ import PieChartEnergy from "./PieChartEnergy";
 import PrimaryStationSelector from "./PrimaryStationSelector";
 import BillCalculator from "./BillCalculator";
 import DownloadaverageDataModal from "../Water/DownloadaverageDataModal";
+import { Dropdown } from "react-bootstrap";
 
 // Initialize Socket.IO
 const socket = io(API_URL, { 
@@ -411,7 +412,7 @@ const handleSetPrimaryStation = (stationName) => {
   style={{ listStyleType: 'none', padding: 0, margin: 0 }}
 >
   <li>
-    {energyStacks.length > 0 ? (
+    <Dropdown> {energyStacks.length > 0 ? (
       <div className="stack-dropdown">
         <label htmlFor="stackSelect" className="label-select">Select Station:</label>
         <div className="styled-select-wrapper">
@@ -432,10 +433,11 @@ const handleSetPrimaryStation = (stationName) => {
       </div>
     ) : (
       <h5 className="text-center">No stations available</h5>
-    )}
+    )}</Dropdown>
+   
   </li>
   <li>
-    {energyStacks.length > 0 && (
+    <Dropdown>{energyStacks.length > 0 && (
       <div className="stack-dropdown">
         <label htmlFor="primaryStationSelect" className="label-select">Set Primary Station:</label>
         <div className="styled-select-wrapper">
@@ -456,7 +458,7 @@ const handleSetPrimaryStation = (stationName) => {
           </select>
         </div>
       </div>
-    )}
+    )}</Dropdown>
   </li>
 </ul>
 
