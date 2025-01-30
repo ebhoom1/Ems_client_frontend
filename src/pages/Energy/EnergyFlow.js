@@ -324,9 +324,9 @@ const handleDownloadPdf = () => {
     const [primaryStation, setPrimaryStation] = useState(""); // State to hold the primary station name
     
 
-    useEffect(() => {
-      fetchPrimaryStation(storedUserId); // Fetch primary station on component mount and userName change
-    }, [storedUserId]); 
+   useEffect(() => {
+       fetchPrimaryStation(currentUserName); // Fetch primary station on component mount and userName change
+     }, [currentUserName]);
   
    const fetchPrimaryStation = async (userName) => {
   try {
@@ -346,21 +346,26 @@ const handleDownloadPdf = () => {
   }
 };
 
-const handleSetPrimaryStation = (stationName) => {
-  setPrimaryStation(stationName); // Immediately update local state
-  const postData = {
-    userName: currentUserName,
-    stationType: 'energy', // Assuming 'energy' as the station type
-    stackName: stationName,
-  };
-  axios.post(`${API_URL}/api/set-primary-station`, postData)
-    .then((response) => {
-      console.log('Primary station set:', response.data);
-    })
-    .catch((error) => {
-      console.error('Error setting primary station:', error);
-    });
+const handleSetPrimaryStation = async (stationName) => {
+  try {
+    const postData = {
+      userName: currentUserName,
+      stationType: "energy",
+      stackName: stationName,
+    };
+    
+    const response = await axios.post(`${API_URL}/api/set-primary-station`, postData);
+    
+    console.log("Primary station set:", response.data);
+    
+    // Ensure the state is updated correctly
+    setPrimaryStation(response.data?.data?.stackName || stationName);
+  } catch (error) {
+    console.error("Error setting primary station:", error);
+  }
 };
+
+
 
     
   
@@ -474,6 +479,8 @@ const handleSetPrimaryStation = (stationName) => {
           userName={currentUserName}
           primaryStation={primaryStation}
         />
+          
+
         </div>
         <div className="col-12  justify-content-center align-items-center">
         

@@ -62,13 +62,14 @@ const Quantity = () => {
   };
 
   // Fetch difference data by userName and interval, filtered by effluentFlowStacks
+  // Fetch difference data by userName and interval, filtered by effluentFlowStacks
   const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
     try {
       const response = await axios.get(
-        `${API_URL}/api/difference/${userName}?interval=daily&page=${page}&limit=${limit}`
+        `${API_URL}/api/difference/${userName}?interval=daily`
       );
       const { data } = response;
-
+  
       if (data && data.success) {
         const filteredData = data.data
           .map((item) => ({
@@ -77,9 +78,16 @@ const Quantity = () => {
             time: new Date(item.timestamp).toLocaleTimeString(),
           }))
           .filter((item) => effluentFlowStacks.includes(item.stackName));
-
-        setDifferenceData(filteredData);
-        setTotalPages(Math.ceil(data.total / limit));
+  
+        // Sort by timestamp in descending order (most recent first)
+        const sortedData = filteredData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  
+        // Reverse the sorted data to show recent first and paginate
+        const start = (page - 1) * limit;
+        const paginatedData = sortedData.slice(start, start + limit);
+  
+        setDifferenceData(paginatedData);
+        setTotalPages(Math.ceil(sortedData.length / limit));
       } else {
         setDifferenceData([]);
       }
@@ -89,6 +97,7 @@ const Quantity = () => {
       setLoading(false); // Stop loading once the data fetching is done
     }
   };
+  
 
   // Fetch effluent flow stacks and difference data together
   useEffect(() => {
@@ -137,12 +146,12 @@ const Quantity = () => {
             <div className="card-body">
               <h2 className="text-center text-light mt-2">Water Flow</h2>
               <div className="mb-3 d-flex justify-content-between">
-                <button
+               {/*  <button
                   className={`btn ${viewType === "daily" ? "btn-primary" : "btn-outline-primary"} mr-2`}
                   onClick={() => setViewType("daily")}
                 >
                   Daily View
-                </button>
+                </button> */}
 
                 <button className="btn btn-success" onClick={() => setModalOpen(true)}>
                   View
