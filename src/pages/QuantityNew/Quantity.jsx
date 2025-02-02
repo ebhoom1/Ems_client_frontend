@@ -62,42 +62,58 @@ const Quantity = () => {
   };
 
   // Fetch difference data by userName and interval, filtered by effluentFlowStacks
-  // Fetch difference data by userName and interval, filtered by effluentFlowStacks
-  const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
+  const fetchDifferenceData = async (userName, page = 1, limit = 50) => {
     try {
-      const response = await axios.get(
-        `${API_URL}/api/difference/${userName}?interval=daily`
-      );
-      const { data } = response;
-  
-      if (data && data.success) {
-        const filteredData = data.data
-          .map((item) => ({
-            ...item,
-            date: new Date(item.timestamp).toLocaleDateString(),
-            time: new Date(item.timestamp).toLocaleTimeString(),
-          }))
-          .filter((item) => effluentFlowStacks.includes(item.stackName));
-  
-        // Sort by timestamp in descending order (most recent first)
-        const sortedData = filteredData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  
-        // Reverse the sorted data to show recent first and paginate
-        const start = (page - 1) * limit;
-        const paginatedData = sortedData.slice(start, start + limit);
-  
-        setDifferenceData(paginatedData);
-        setTotalPages(Math.ceil(sortedData.length / limit));
-      } else {
-        setDifferenceData([]);
-      }
+        let finalData = [];
+
+        // Fetch normal paginated data
+        const response = await axios.get(
+            `${API_URL}/api/difference/${userName}?interval=daily&page=${page}&limit=${limit}`
+        );
+        const { data } = response;
+
+        if (data && data.success) {
+            let sortedData = data.data
+                .map((item) => ({
+                    ...item,
+                    date: new Date(item.timestamp).toLocaleDateString(),
+                    time: new Date(item.timestamp).toLocaleTimeString(),
+                }))
+                .sort((b , a) => new Date(a.timestamp) - new Date(b.timestamp)); // Sort DESCENDING
+
+            const today = new Date().toLocaleDateString();
+
+            if (page === 1) {
+                // Fetch all available records to ensure we get today's data
+                const allDataResponse = await axios.get(`${API_URL}/api/difference/${userName}?interval=daily`);
+                const allData = allDataResponse.data?.data || [];
+
+                // Extract today's records from the full dataset
+                const todaysRecords = allData.filter((item) =>
+                    new Date(item.timestamp).toLocaleDateString() === today
+                );
+
+                // Show today's data first, then continue with other data
+                finalData = [...todaysRecords, ...sortedData.filter(item => !todaysRecords.includes(item))];
+            } else {
+                // Normal pagination for older records
+                finalData = sortedData;
+            }
+
+            setDifferenceData(finalData);
+            setTotalPages(Math.ceil(data.total / limit)); // Correct total pages
+        } else {
+            setDifferenceData([]);
+        }
     } catch (error) {
-      console.error("Error fetching difference data:", error);
+        console.error("Error fetching difference data:", error);
     } finally {
-      setLoading(false); // Stop loading once the data fetching is done
+        setLoading(false);
     }
-  };
-  
+};
+
+
+
 
   // Fetch effluent flow stacks and difference data together
   useEffect(() => {
@@ -115,10 +131,10 @@ const Quantity = () => {
   useEffect(() => {
     if (effluentFlowStacks.length > 0) {
       const userName = storedUserId || currentUserName;
-      fetchDifferenceData(userName, currentPage); // Fetch page 1 data immediately
+      fetchDifferenceData(userName, currentPage, 50); // Fetch with pagination
     }
-  }, [effluentFlowStacks, storedUserId, currentUserName, currentPage]); // Trigger when effluentFlowStacks are set
-
+  }, [effluentFlowStacks, storedUserId, currentUserName, currentPage]);
+  
   useEffect(() => {
     if (differenceData.length) {
       const uniqueHeaders = extractHeaders(differenceData, viewType);
@@ -189,8 +205,11 @@ const Quantity = () => {
                               );
                               return (
                                 <td key={index}>
-                                  {matchingRecord?.initialCumulatingFlow || "N/A"}
-                                </td>
+                                {matchingRecord?.initialCumulatingFlow !== undefined
+                                  ? parseFloat(matchingRecord.initialCumulatingFlow).toFixed(2)
+                                  : "N/A"}
+                              </td>
+                            
                               );
                             })}
                           </tr>
@@ -202,8 +221,12 @@ const Quantity = () => {
                               );
                               return (
                                 <td key={index}>
-                                  {matchingRecord?.lastCumulatingFlow || "N/A"}
-                                </td>
+  {matchingRecord?.lastCumulatingFlow !== undefined
+    ? parseFloat(matchingRecord.lastCumulatingFlow).toFixed(2)
+    : "N/A"}
+</td>
+
+                            
                               );
                             })}
                           </tr>
@@ -215,8 +238,10 @@ const Quantity = () => {
                               );
                               return (
                                 <td key={index}>
-                                  {matchingRecord?.cumulatingFlowDifference || "N/A"}
-                                </td>
+                                {matchingRecord?.cumulatingFlowDifference !== undefined
+                                  ? parseFloat(matchingRecord.cumulatingFlowDifference).toFixed(2)
+                                  : "N/A"}
+                              </td>
                               );
                             })}
                           </tr>

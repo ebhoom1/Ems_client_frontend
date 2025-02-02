@@ -124,7 +124,7 @@ const EffluentFlowOverview = () => {
     <div className="container-fluid">
       <div className="row mt-4">
         {/* Left Section */}
-        <div className="col-md-12 col-lg-6">
+       {/*  <div className="col-md-12 col-lg-6">
           <h3 className="text-center">Total Inflow and Outflow</h3>
           <div className="row">
             <div className="col-md-6 mb-4">
@@ -188,10 +188,10 @@ const EffluentFlowOverview = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Right Section */}
-        <div className="col-md-12 col-lg-6">
+        <div className="col-md-12 col-lg-12">
           <div className="card" style={{ height: '100%' }}>
             <ConsuptionPredictionGraphQuantity />
           </div>

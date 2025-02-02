@@ -52,7 +52,10 @@ const QuantityFlow = () => {
   const [exceedanceColor, setExceedanceColor] = useState("green"); // Default to 'gray'
   const [timeIntervalColor, setTimeIntervalColor] = useState("green"); // Default to 'gray'inner
   const [last10MinData, setLast10MinData] = useState({});
-
+  const [dailyConsumption, setDailyConsumption] = useState({});
+  const [initialFlows, setInitialFlows] = useState({}); 
+  const [lastFlows, setLastFlows] = useState({});  // New state for last recorded flows
+  
    // Function to reset colors and trigger loading state
  const resetColors = () => {
   setExceedanceColor("loading");
@@ -148,8 +151,58 @@ const QuantityFlow = () => {
       setLoading(false);
     }
   };
-  
-  
+  const fetchDifferenceData = async (userName) => {
+    try {
+        const response = await axios.get(`${API_URL}/api/difference/${userName}?interval=daily`);
+        const { data } = response;
+
+        if (data && data.success) {
+            const initialFlowData = {};
+            const lastFlowData = {}; // Store lastCumulatingFlow separately
+
+            data.data.forEach(item => {
+                initialFlowData[item.stackName] = item.initialCumulatingFlow; 
+                lastFlowData[item.stackName] = item.lastCumulatingFlow; // Store lastCumulatingFlow
+            });
+
+            console.log("✅ Initial Flows from API:", initialFlowData);
+            console.log("✅ Last Flows from API:", lastFlowData);
+
+            setInitialFlows(initialFlowData);
+            setLastFlows(lastFlowData); // Store last flows in state
+        }
+    } catch (error) {
+        console.error("❌ Error fetching difference data:", error);
+    }
+};
+
+useEffect(() => {
+  if (lastFlows && initialFlows) {
+      const consumptionData = {};
+
+      console.log("📊 Last Cumulating Flow Data:", lastFlows);
+      console.log("📌 Initial Flow Data:", initialFlows);
+
+      Object.keys(lastFlows).forEach(stackName => {
+          const lastFlow = lastFlows[stackName] || 0;
+          const initialFlow = initialFlows[stackName] || 0;
+          const difference = Math.max(0, lastFlow - initialFlow); // Ensure non-negative values
+
+          console.log(`🔹 Stack: ${stackName} | Initial Flow: ${initialFlow} | Last Flow: ${lastFlow} | Daily Consumption: ${difference}`);
+
+          consumptionData[stackName] = difference;
+      });
+
+      setDailyConsumption(consumptionData);
+  }
+}, [lastFlows, initialFlows]);
+
+
+
+useEffect(() => {
+    const userName = storedUserId || currentUserName;
+    fetchDifferenceData(userName);
+}, [storedUserId, currentUserName]);
 
   useEffect(() => {
     const userName = storedUserId || currentUserName;
@@ -455,10 +508,10 @@ const handleDownloadPdf = () => {
 </div>
           <div className="">
      <div className="" style={{marginTop:'150px'}}>
-        <FlowConsuptionCards
+       {/*  <FlowConsuptionCards
           userName={currentUserName}
           primaryStation={primaryStation}
-        />
+        /> */}
           
         </div> 
         <div className="col-12  justify-content-center align-items-center">
@@ -568,7 +621,24 @@ const handleDownloadPdf = () => {
                   </div>
                 );
               })}
+
+
+<div className="col-md-4 grid-margin">
+    <div className="card mb-3" style={{ border: "none" }}>
+        <div className="card-body">
+            <h5 className="text-light">Daily Consumption</h5>
+            <p className="text-light">
+                <strong style={{ color: "#ffff", fontSize: "24px" }}>
+                    {dailyConsumption[stack.stackName] ? dailyConsumption[stack.stackName].toFixed(2) : "0.00"}
+                </strong> m³
+            </p>
+        </div>
+    </div>
+</div>
+
             </div>
+          
+
           </div>
         </div>
       ))

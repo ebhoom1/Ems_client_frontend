@@ -59,7 +59,9 @@ const FlowGraph = ({ isOpen, onRequestClose, parameter, userName, stackName }) =
                 `${API_URL}/api/hourly-data?userName=${userName}&stackName=${stackName}&date=${formattedDate}`
             );
             const result = await response.json();
-            if (result.success && result.data.length > 0) {
+            console.log("API Response:", result); // Log API response
+    
+            if (result.success && Array.isArray(result.data) && result.data.length > 0) {
                 setGraphData(result.data);
             } else {
                 toast.error('No data available');
@@ -72,22 +74,29 @@ const FlowGraph = ({ isOpen, onRequestClose, parameter, userName, stackName }) =
             setLoading(false);
         }
     };
+    
 
     const processData = () => {
-        const labels = graphData.map((entry) => moment(entry.date + ' ' + entry.hour, 'DD/MM/YYYY HH').format('DD/MM/YYYY HH:mm'));
-        const values = graphData.map((entry) => entry.stack.flow);
-
-        return { labels, values };
+        if (!graphData || graphData.length === 0) {
+            return { labels: [], values: [] }; // Return empty arrays to avoid errors
+        }
+    
+        return {
+            labels: graphData.map((entry) => 
+                moment(entry.date + ' ' + entry.hour, 'DD/MM/YYYY HH').format('DD/MM/YYYY HH:mm')
+            ),
+            values: graphData.map((entry) => (entry?.stack?.flow ?? 0)), // Ensure `flow` exists, fallback to 0
+        };
     };
+    
 
     const { labels, values } = processData();
-
     const chartData = {
         labels,
         datasets: [
             {
                 label: `${parameter} - ${stackName}`,
-                data: values,
+                data: values.length > 0 ? values : [0], // Default to [0] if empty
                 fill: false,
                 backgroundColor: '#236a80',
                 borderColor: '#236A80',
@@ -98,7 +107,7 @@ const FlowGraph = ({ isOpen, onRequestClose, parameter, userName, stackName }) =
             },
         ],
     };
-
+    
     const chartOptions = {
         responsive: true,
         plugins: {

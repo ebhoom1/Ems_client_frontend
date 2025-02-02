@@ -475,10 +475,10 @@ const handleSetPrimaryStation = async (stationName) => {
           <div className="">
         <div className="" style={{marginTop:'150px'}}>
           {/* Pass userName and primaryStation as props */}
-          <EnergyConsumptionCards
+        {/*   <EnergyConsumptionCards
           userName={currentUserName}
           primaryStation={primaryStation}
-        />
+        /> */}
           
 
         </div>

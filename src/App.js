@@ -204,6 +204,7 @@ function App() {
                   <Route path="/noise" element={<Noise />} />
                   <Route path="/account" element={<Account />} />
                   <Route path="/chat" element={<Chat />} />
+                  <Route path="/download" element={<DownloadData />} />
                   <Route path="/how-to-use" element={ <UserManual />} />                  
                   <Route path="/customisable-report" element={<CustomisableReport />} />
                   <Route path="/transactions" element={<Transcation />} /> {/* Assuming transaction-related routes */}

@@ -4,7 +4,7 @@ import moment from "moment";
 import { io } from "socket.io-client";
 import ReactD3Speedometer from "react-d3-speedometer";
 import "./index.css";
-
+import { API_URL } from "../../utils/apiConfig";
 const FlowConsuptionCards = ({ userName, primaryStation }) => {
   const [flowData, setFlowData] = useState({
     flowDailyConsumption: 0,
@@ -29,7 +29,7 @@ const FlowConsuptionCards = ({ userName, primaryStation }) => {
     try {
       console.log(`📡 Fetching consumption data for User: ${userName}, Station: ${station}, Date: ${date}`);
 
-      const response = await axios.get(`https://api.ocems.ebhoom.com/api/consumptionData`, {
+      const response = await axios.get(`${API_URL}`, {
         params: {
           userName,
           stackName: station,
