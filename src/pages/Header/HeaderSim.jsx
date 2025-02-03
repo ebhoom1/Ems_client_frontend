@@ -7,7 +7,7 @@ import DashboardSam from '../Dashboard/DashboardSam';
 import './headersam.css';
 import Dropdown from 'react-bootstrap/Dropdown';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { fetchIotDataByUserName } from './../../redux/features/iotData/iotDataSlice';
 
 function  HeaderSim() {
@@ -17,7 +17,9 @@ function  HeaderSim() {
   const [submittedSearchTerm, setSubmittedSearchTerm] = useState('');
   const [searchStatus, setSearchStatus] = useState('');
   const [isSearchTriggered, setIsSearchTriggered] = useState(false);
+  const [onlineStatus, setOnlineStatus] = useState(navigator.onLine ? 'Online' : 'Offline');
 
+  const { userData } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -50,7 +52,16 @@ function  HeaderSim() {
             {/* Left aligned brand */}
             <Navbar.Brand href="#home" className="brand-text">
               <span className="d-none d-lg-inline">User ID : </span>
-              <span className='text-dark'><b>Admin Developer</b></span>
+              <span className="text-dark">
+        <b>{userData?.validUserOne?.userName || 'Admin Developer'}</b>
+        <span className="d-inline ms-2">
+          {onlineStatus === 'Online' ? (
+            <span className="online">Online</span>
+          ) : (
+            <span className="offline">Offline</span>
+          )}
+        </span>
+      </span>
             </Navbar.Brand>
             
             <div className='d-flex'>

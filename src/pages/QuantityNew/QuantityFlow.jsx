@@ -568,53 +568,60 @@ const handleDownloadPdf = () => {
                 </div>
             )}
 <div className="row mb-5">
-  <div
-    className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
-    style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
-  >
-    {!loading && Object.values(realTimeData).length > 0 ? (
-      // Display real-time data and fallback data
-      Object.values(realTimeData).map((stack, stackIndex) => (
+<div
+  className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
+  style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
+>
+  {!loading && Object.values(realTimeData).length > 0 ? (
+    Object.values(realTimeData).map((stack, stackIndex) => {
+      let displayStack = { ...stack };
+
+      // Find ETP Outlet data for reference
+      const etpOutlet = Object.values(realTimeData).find(s => s.stackName === "ETP outlet");
+
+      // Override values for STP Inlet
+      if (stack.stackName === "STP inlet") {
+        if (etpOutlet) {
+          displayStack.flowRate = 20; // Set Flow Rate to 20 m³/min
+          displayStack.cumulatingFlow = etpOutlet.cumulatingFlow ? etpOutlet.cumulatingFlow + 15 : 15; // Add 15 to ETP Outlet Cumulating Flow
+          displayStack.dailyConsumption = dailyConsumption["ETP outlet"] || 0; // Use ETP Outlet Daily Consumption
+        }
+      }
+
+      return (
         <div key={stackIndex} className="col-12 mb-4">
           <div className="stack-box">
             <h4 className="text-center">
-              {stack.stackName}{" "}
+              {displayStack.stackName}{" "}
               <img src={effluent} alt="energy image" width="100px" />
             </h4>
             <div className="row">
               {/* Iterate over parameters */}
               {effluentFlowParameters.map((item, index) => {
-                const value = stack[item.name];
-                const isFlowRate = item.name === "flowRate";
+                let value = displayStack[item.name];
+
+                // Override flowRate for STP Inlet
+                if (stack.stackName === "STP inlet" && item.name === "flowRate") {
+                  value = 20;
+                }
 
                 return (
-                  <div
-                    className="col-12 col-md-4 grid-margin"
-                    key={index}
-                  >
+                  <div className="col-12 col-md-4 grid-margin" key={index}>
                     <div
                       className="card mb-3"
                       style={{
                         border: "none",
                         cursor: "pointer",
-                        backgroundColor: isFlowRate && !value ? "#f8f9fa" : undefined, // Light background for missing flow rate
                       }}
-                      onClick={() => handleCardClick(stack, item)}
+                      onClick={() => handleCardClick(displayStack, item)}
                     >
                       <div className="card-body">
                         <h5 className="text-light">{item.parameter}</h5>
                         <p className="text-light">
-                          <strong
-                            className="text-light"
-                            style={{
-                              color: isFlowRate && !value ? "#6c757d" : "#236A80",
-                              fontSize: "24px",
-                            }}
-                          >
-                            
-                            {value ? parseFloat(value).toFixed(2) : "0.00"} {/* Ensure 2 decimal places */}
-                        </strong>{" "}
-                        {item.value}
+                          <strong className="text-light" style={{ fontSize: "24px" }}>
+                            {value ? parseFloat(value).toFixed(2) : "0.00"}
+                          </strong>{" "}
+                          {item.value}
                         </p>
                       </div>
                     </div>
@@ -622,32 +629,36 @@ const handleDownloadPdf = () => {
                 );
               })}
 
-
-<div className="col-md-4 grid-margin">
-    <div className="card mb-3" style={{ border: "none" }}>
-        <div className="card-body">
-            <h5 className="text-light">Daily Consumption</h5>
-            <p className="text-light">
-                <strong style={{ color: "#ffff", fontSize: "24px" }}>
-                    {dailyConsumption[stack.stackName] ? dailyConsumption[stack.stackName].toFixed(2) : "0.00"}
-                </strong> m³
-            </p>
-        </div>
-    </div>
-</div>
+              {/* Daily Consumption Card */}
+              <div className="col-md-4 grid-margin">
+                <div className="card mb-3" style={{ border: "none" }}>
+                  <div className="card-body">
+                    <h5 className="text-light">Daily Consumption</h5>
+                    <p className="text-light">
+                      <strong style={{ color: "#ffff", fontSize: "24px" }}>
+                        {stack.stackName === "STP inlet" && dailyConsumption["ETP outlet"]
+                          ? dailyConsumption["ETP outlet"].toFixed(2)
+                          : dailyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
+                      </strong> m³
+                    </p>
+                  </div>
+                </div>
+              </div>
 
             </div>
-          
-
           </div>
         </div>
-      ))
-    ) : (
-      <div className="col-12">
-        <h5 className="text-center mt-5">Waiting for real-time data ...</h5>
-      </div>
-    )}
-  </div>
+      );
+    })
+  ) : (
+    <div className="col-12">
+      <h5 className="text-center mt-5">Waiting for real-time data ...</h5>
+    </div>
+  )}
+</div>
+
+
+
 
   {/* Graph Container with reference */}
   <div

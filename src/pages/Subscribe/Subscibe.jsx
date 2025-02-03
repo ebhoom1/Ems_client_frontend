@@ -19,7 +19,7 @@ const Subscibe = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-
+  const userData = useSelector((state) => state.user.userData); // Fixed userData reference
   useEffect(() => {
     dispatch(fetchUsers());
   }, [dispatch]);
@@ -116,7 +116,29 @@ const Subscibe = () => {
       console.error("Error creating order:", error);
     }
   };
-
+  useEffect(() => {
+    const fetchFilteredUsers = async () => {
+      try {
+        if (userData?.validUserOne) {
+          let response;
+          if (userData.validUserOne.adminType) {
+            response = await axios.get(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`);
+          } else {
+            response = await axios.get(`${API_URL}/api/getallusers`);
+          }
+          dispatch(fetchUsers(response.data.users));
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        toast.error('Failed to fetch users.');
+      }
+    };
+  
+    if (userData?.validUserOne) {
+      fetchFilteredUsers();
+    }
+  }, [dispatch, userData]);
+  
   return (
     <div className="container-fluid mb-5">
       <div className="row">
