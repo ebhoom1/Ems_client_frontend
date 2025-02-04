@@ -212,11 +212,11 @@ function DashboardSam() {
               </li>
             </>
           )}
-          <li className='list active text-center'>
+         {/*  <li className='list active text-center'>
             <a href="/support-analyser" style={{ textDecoration: 'none', color: '#ffffff' }}>
               <span className='title'>Supported Analyser</span>
             </a>
-          </li>
+          </li> */}
         </ul>
       </div>
     </div>
