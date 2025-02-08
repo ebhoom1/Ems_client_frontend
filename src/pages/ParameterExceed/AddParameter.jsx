@@ -440,7 +440,7 @@ if (error) {
 
                       </div>
                     </div>
-                    <button type="submit" onClick={handleSubmit} className="btn me-2" style={{ backgroundColor: '#236a80', color: 'white' }}>Add Calibration</button>
+                    <button type="submit" onClick={handleSubmit} className="btn me-2" style={{ backgroundColor: '#236a80', color: 'white' }}>Add Limit</button>
                     <button type="button" className="btn btn-danger me-2" onClick={handleCancel}>Cancel</button>
                   </form>
                   <ToastContainer />

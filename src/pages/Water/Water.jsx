@@ -607,19 +607,13 @@ const handleDownloadPdf = () => {
           </h4>
           <div className="row">
             {waterParameters.map((item, index) => {
-              let value = stack[item.name];
-
-              // Apply the BOD and COD adjustment logic
-              if (item.name === "BOD" || item.name === "COD") {
-                value = parseFloat(value) - 150; // Subtract 150 from BOD and COD values
-              }
-
+              const value = stack[item.name];
               return value && value !== "N/A" ? (
                 <div className="col-12 col-md-4 grid-margin" key={index}>
                   <div
                     className="card mb-3"
-                    style={{ border: "none", cursor: "pointer" }}
-                    onClick={() => handleCardClick({ title: item.parameter }, stack.stackName)}
+                    style={{ border: "none", cursor: "pointer" }} // Added cursor pointer for better UX
+                    onClick={() => handleCardClick({ title: item.parameter }, stack.stackName)} // Trigger handleCardClick on click
                   >
                     <div className="card-body">
                       <h5 className="text-light">{item.parameter}</h5>
@@ -628,7 +622,7 @@ const handleDownloadPdf = () => {
                           className="text-light"
                           style={{ color: "#236A80", fontSize: "24px" }}
                         >
-                          {parseFloat(value).toFixed(2)} {/* Ensures two decimal places */}
+                         {parseFloat(value).toFixed(2)} {/* Changed to limit value to 2 decimal places */}
                         </strong>{" "}
                         {item.value}
                       </p>
@@ -647,7 +641,6 @@ const handleDownloadPdf = () => {
     </div>
   )}
 </div>
-
 
   <div
   className="col-md-12 col-lg-12 col-sm-12 mb-2 graphdiv border bg-light shadow"

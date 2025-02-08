@@ -9,25 +9,52 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchIotDataByUserName } from './../../redux/features/iotData/iotDataSlice';
+import { fetchUser, logoutUser } from './../../redux/features/user/userSlice';
+import { setSelectedUser } from '../../redux/features/selectedUsers/selectedUserSlice'; 
+import { toast } from 'react-toastify';
 
 function  HeaderSim() {
   const [show, setShow] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [userName, setUserName] = useState('');
   const [submittedSearchTerm, setSubmittedSearchTerm] = useState('');
   const [searchStatus, setSearchStatus] = useState('');
   const [isSearchTriggered, setIsSearchTriggered] = useState(false);
   const [onlineStatus, setOnlineStatus] = useState(navigator.onLine ? 'Online' : 'Offline');
-
+  const [users, setUsers] = useState([]);
   const { userData } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
-  const handleSignOut = () => {
-    navigate('/');
+ const handleSignOut = async () => {
+    try {
+      // Clear session storage
+      sessionStorage.removeItem('selectedUserId'); // Remove stored selected user ID
+      sessionStorage.clear(); // Optionally clear all session storage
+  
+      // Dispatch logout action
+      await dispatch(logoutUser()).unwrap();
+  
+      // Clear Redux state for selected user
+      dispatch(setSelectedUser(null));
+  
+      // Clear local state
+      setUserName('');
+      setUsers([]);
+  
+      toast.success('Logged out successfully.', { position: 'top-center' });
+  
+      // Navigate to login page
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Failed to log out. Please try again.', { position: 'top-center' });
+    }
   };
+  
 
   const handleSearch = async (event) => {
     event.preventDefault();
@@ -80,7 +107,7 @@ function  HeaderSim() {
                       <img src="https://cdn.pixabay.com/photo/2020/07/01/12/58/icon-5359553_640.png" width={'50px'} alt="" />
                     </Dropdown.Item>
                     <Dropdown.Item href="#signout">Admin-Developer</Dropdown.Item>
-                    <Dropdown.Item href="#signout" onClick={handleSignOut}>Sign Out</Dropdown.Item>
+                    <Dropdown.Item  onClick={handleSignOut}>Sign Out</Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
               </div>

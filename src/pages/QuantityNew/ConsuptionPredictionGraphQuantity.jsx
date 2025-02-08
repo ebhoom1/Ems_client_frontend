@@ -198,6 +198,7 @@ const ConsuptionPredictionGraphQuantity = () => {
             onChange={handleUserChange}
             placeholder="Select User Name"
             isMulti={false}
+            className='ms-2'
           />
         </div>
         <div className="col-md-6 mb-3">
@@ -209,6 +210,7 @@ const ConsuptionPredictionGraphQuantity = () => {
             placeholder="Select Stack Name(s)"
             isDisabled={!stackOptions.length}
             isMulti={true}
+               className='me-2'
           />
           {stackOptions.length === 0 && (
             <p className="text-muted mt-2">
@@ -223,6 +225,7 @@ const ConsuptionPredictionGraphQuantity = () => {
             onChange={(option) => setSelectedMonth(option.value)}
             placeholder="Select Month"
             value={months.find((m) => m.value === selectedMonth)}
+              className='ms-2'
           />
         </div>
       </div>

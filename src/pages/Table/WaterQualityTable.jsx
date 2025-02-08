@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import html2pdf from "html2pdf.js";
@@ -40,7 +41,7 @@ const WaterQualityTable = () => {
     { category: "Noise" },
     { category: "Other" },
   ];
-  
+
   const { userType, userData } = useSelector((state) => state.user);
   const [users, setUsers] = useState([]);
   const [stackOptions, setStackOptions] = useState([]);
@@ -55,7 +56,8 @@ const WaterQualityTable = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const navigate = useNavigate();
-  const loggedUserName = userData?.validUserOne?.userName || '';
+  const loggedUserName = userData?.validUserOne?.userName || "";
+
   useEffect(() => {
     if (userType === "admin") {
       fetchUsers(); // Fetch all users for admin
@@ -65,28 +67,20 @@ const WaterQualityTable = () => {
       setSelectedUser(username);
       setSelectedIndustryType(userData?.industryType || ""); // Preselect user's industry type if available
       fetchStackNames(username); // Fetch stack names for the logged-in user
-  
+
       // Set user details for logged-in user
       setUserDetails({
         stackName: userData?.stackName || "",
         companyName: userData?.validuserOne?.companyName || "N/A",
         address: userData?.address || "N/A",
       });
-  
+
       if (userData?.industryType) {
         fetchCalibrationExceed(userData.industryType); // Fetch calibration exceed data
       }
     }
   }, [userType, userData]);
-  useEffect(() => {
-    if (userType === "user" && userData) {
-      console.log("Logged-in User Details:", userData);
-      console.log("Company Name:", userData.validUserOne.companyName);
-      console.log("Username:", userData.validUserOne.userName);
-      console.log("Industry Type:", userData.validUserOne.industryType);
-    }
-  }, [userType, userData]);
-  
+
   const fetchUsers = async () => {
     const token = localStorage.getItem("userdatatoken");
     try {
@@ -104,18 +98,21 @@ const WaterQualityTable = () => {
       const response = await axios.get(
         `${API_URL}/api/get-stacknames-by-userName/${username}`
       );
-  
+
       // Filter stack names based on stationType
-      const filteredStackOptions = response.data.stackNames.filter((stack) =>
-        stack.stationType === "energy" || stack.stationType === "effluent_flow" || stack.stationType === "effluent" || stack.stationType === "emission"
+      const filteredStackOptions = response.data.stackNames.filter(
+        (stack) =>
+          stack.stationType === "energy" ||
+          stack.stationType === "effluent_flow" ||
+          stack.stationType === "effluent" ||
+          stack.stationType === "emission"
       );
-  
+
       setStackOptions(filteredStackOptions || []);
     } catch (error) {
       console.error("Error fetching stack names:", error);
     }
   };
-  
 
   const fetchAvgData = async (username, stack, start, end) => {
     try {
@@ -133,61 +130,115 @@ const WaterQualityTable = () => {
       );
 
       if (response.data.success) {
-        setTablesData(
-          response.data.data.map((entry) => ({
-            date: entry.dateAndTime.split(" ")[0],
-            parameters: Object.fromEntries(
-              Object.entries(entry.stackData[0]?.parameters || {}).filter(
-                ([key]) => key !== "_id"
-              )
-            ),
-          }))
+        const data = response.data.data;
+
+        // Calculate average values for each parameter
+        const avgParameters = data.reduce((acc, entry) => {
+          Object.entries(entry.stackData[0]?.parameters || {}).forEach(([key, value]) => {
+            if (key !== "_id") {
+              if (!acc[key]) {
+                acc[key] = { sum: 0, count: 0 };
+              }
+              acc[key].sum += parseFloat(value);
+              acc[key].count += 1;
+            }
+          });
+          return acc;
+        }, {});
+
+        const avgValues = Object.fromEntries(
+          Object.entries(avgParameters).map(([key, { sum, count }]) => [
+            key,
+            (sum / count).toFixed(2),
+          ])
         );
+
+        setTablesData([{ date: `${start} to ${end}`, parameters: avgValues }]);
       }
     } catch (error) {
       console.error("Error fetching average data:", error);
     }
   };
-  const fetchEnergyData = async (username, start, end) => {
+
+  const fetchEnergyAndFlowData = async (username, start, end) => {
     try {
-      const formattedStartDate = start.split("-").reverse().join("-");
-      const formattedEndDate = end.split("-").reverse().join("-");
-  
+      // Format dates as `dd-MM-yyyy` to match the API endpoint
+      const formattedStartDate = start.split("-").reverse().join("-"); // Convert `yyyy-MM-dd` to `dd-MM-yyyy`
+      const formattedEndDate = end.split("-").reverse().join("-"); // Convert `yyyy-MM-dd` to `dd-MM-yyyy`
+
       const response = await axios.get(
-        `${API_URL}/api/lastDataByDateRange/${username}/daily/${formattedStartDate}/${formattedEndDate}`
+        `${API_URL}/api/energyAndFlowData/${username}/${formattedStartDate}/${formattedEndDate}`
       );
-  
+
       if (response.data.success) {
-        setEnergyData(
-          response.data.data
-            .filter((entry) => entry.stationType === "energy")
-            .map((entry) => ({
-              date: entry.date,
-              stackName: entry.stackName,
-              initialEnergy: entry.initialEnergy,
-              lastEnergy: entry.lastEnergy,
-              energyDifference: entry.energyDifference,
-            }))
-        );
-  
-        setQuantityData(
-          response.data.data
-            .filter((entry) => entry.stationType === "effluent_flow")
-            .map((entry) => ({
-              date: entry.date,
-              stackName: entry.stackName,
-              initialCumulatingFlow: entry.initialCumulatingFlow,
-              lastCumulatingFlow: entry.lastCumulatingFlow,
-              cumulatingFlowDifference: entry.cumulatingFlowDifference,
-            }))
-        );
+        const data = response.data.data;
+
+        // Debug: Log the entire API response
+        console.log("API Response:", data);
+
+        // Filter data for the start and end dates
+        const startDateData = data.filter((entry) => entry.date === formattedStartDate.split("-").join("/")); // Convert `dd-MM-yyyy` to `dd/MM/yyyy`
+        const endDateData = data.filter((entry) => entry.date === formattedEndDate.split("-").join("/")); // Convert `dd-MM-yyyy` to `dd/MM/yyyy`
+
+        console.log("Start Date Data:", startDateData);
+        console.log("End Date Data:", endDateData);
+
+        // Prepare energy data
+        const energyData = stackOptions
+          .filter((stack) => stack.stationType === "energy")
+          .map((stack) => {
+            const startEnergy = startDateData.find(
+              (entry) => entry.stackName === stack.name && entry.stationType === "energy"
+            );
+            const endEnergy = endDateData.find(
+              (entry) => entry.stackName === stack.name && entry.stationType === "energy"
+            );
+
+            const initialEnergy = parseFloat(startEnergy?.initialEnergy || 0).toFixed(2);
+            const lastEnergy = parseFloat(endEnergy?.lastEnergy || 0).toFixed(2);
+            const energyDifference = (parseFloat(lastEnergy) - parseFloat(initialEnergy)).toFixed(2);
+
+            return {
+              stackName: stack.name,
+              initialEnergy,
+              lastEnergy,
+              energyDifference,
+            };
+          });
+
+        console.log("Energy Data:", energyData);
+        setEnergyData(energyData);
+
+        // Prepare quantity data
+        const quantityData = stackOptions
+          .filter((stack) => stack.stationType === "effluent_flow")
+          .map((stack) => {
+            const startFlow = startDateData.find(
+              (entry) => entry.stackName === stack.name && entry.stationType === "effluent_flow"
+            );
+            const endFlow = endDateData.find(
+              (entry) => entry.stackName === stack.name && entry.stationType === "effluent_flow"
+            );
+
+            const initialCumulatingFlow = parseFloat(startFlow?.initialCumulatingFlow || 0).toFixed(2);
+            const lastCumulatingFlow = parseFloat(endFlow?.lastCumulatingFlow || 0).toFixed(2);
+            const cumulatingFlowDifference = (parseFloat(lastCumulatingFlow) - parseFloat(initialCumulatingFlow)).toFixed(2);
+
+            return {
+              stackName: stack.name,
+              initialCumulatingFlow,
+              lastCumulatingFlow,
+              cumulatingFlowDifference,
+            };
+          });
+
+        console.log("Quantity Data:", quantityData);
+        setQuantityData(quantityData);
       }
     } catch (error) {
-      console.error("Error fetching energy/quantity data:", error);
+      console.error("Error fetching energy and flow data:", error);
     }
   };
-  
-  
 
   const fetchMinMaxData = async (username, stack) => {
     try {
@@ -219,10 +270,10 @@ const WaterQualityTable = () => {
   const handleUserSelection = (e) => {
     const username = e.target.value;
     setSelectedUser(username);
-  
+
     // Find the selected user's details from the already fetched users
     const selectedUserDetails = users.find((user) => user.userName === username);
-  
+
     if (selectedUserDetails) {
       setUserDetails({
         stackName: selectedUserDetails.stackName || "",
@@ -230,20 +281,20 @@ const WaterQualityTable = () => {
         address: selectedUserDetails.address || "N/A",
       });
       console.log("Selected User Details:", selectedUserDetails);
-  
+
       // Check if industryType is available
       const industryType = selectedUserDetails.industryType || "DefaultIndustry"; // Replace "DefaultIndustry" with a fallback value if needed
       setSelectedIndustryType(industryType);
-  
+
       // Fetch calibration exceed data for the industry type
       fetchCalibrationExceed(industryType);
     } else {
       console.error("User details not found for username:", username);
     }
-  
+
     fetchStackNames(username); // Fetch stack names for the user
   };
-  
+
   const handleIndustryTypeSelection = (e) => {
     const industryType = e.target.value;
     setSelectedIndustryType(industryType);
@@ -254,7 +305,7 @@ const WaterQualityTable = () => {
     if (selectedUser && startDate && endDate) {
       fetchAvgData(selectedUser, selectedStack, startDate, endDate);
       fetchMinMaxData(selectedUser, selectedStack);
-      fetchEnergyData(selectedUser, startDate, endDate);
+      fetchEnergyAndFlowData(selectedUser, startDate, endDate);
       if (selectedIndustryType) fetchCalibrationExceed(selectedIndustryType);
     } else {
       alert("Please select user, stack, and date range!");
@@ -278,223 +329,190 @@ const WaterQualityTable = () => {
   const handleBack = () => {
     navigate("/view-report");
   };
-
   return (
     <div>
-<div className="container-fluid">
-    <div className="row" >
-    <div className="col-lg-3 d-none d-lg-block ">
-                    <DashboardSam />
+      <div className="container-fluid">
+        <div className="row">
+          <div className="col-lg-3 d-none d-lg-block">
+            <DashboardSam />
+          </div>
+          <div className="col-lg-9 col-12">
+            <div className="row1">
+              <div className="col-12">
+                <div className="headermain">
+                  <Header />
                 </div>
-   
-      <div className="col-lg-9 col-12 ">
-        <div className="row1 ">
-          <div className="col-12  " >
-          <div className="headermain">
-    <Header />
-  </div>
+              </div>
+            </div>
           </div>
         </div>
-
-    
       </div>
-      
 
-    </div>
-  </div>
-
-  <div className="container-fluid">
-      <div className="row">
-     
-        <div className="col-lg-3 d-none d-lg-block">
-       
-        </div>
-     
-        <div className="col-lg-9 col-12">
-          <div className="row">
-            <div className="col-12">
-              
+      <div className="container-fluid">
+        <div className="row">
+          <div className="col-lg-3 d-none d-lg-block"></div>
+          <div className="col-lg-9 col-12">
+            <div className="row">
+              <div className="col-12"></div>
             </div>
-          </div>
-          <div className="maindashboard" >
-          <Maindashboard/>
-          </div>
-          <div className="table-container">
-     
-          <button
-  onClick={downloadPDF}
-  className={`download-btn btn btn-success ${userType === "user" ? "mt-5" : ""}`}
->
-  Download PDF
-</button>
-
-      <h4 className="text-center mt-3">Customise Report </h4>
-    
-        <div className="mt-4 border border-solid shadow m-5 p-5" style={{borderRadius:'10px'}}>
-          <div className="row">
-          <div className="col-lg-6">
-  <select
-    value={selectedUser}
-    onChange={handleUserSelection}
-    className="form-select"
-    style={{
-      cursor: "pointer",
-      backgroundColor: "#fff",
-      borderRadius: "10px",
-    }}
-  >
-    {userType === "admin" ? (
-      <>
-        <option value="">Select User</option>
-        {users.map((user) => (
-          <option key={user.userName} value={user.userName}>
-            {user.userName}
-          </option>
-        ))}
-      </>
-    ) : (
-      <>
-      <option value="">Select User</option>
-      
-        <option  value={loggedUserName}>
-          {loggedUserName}
-        </option>
-  
-    </>
-      
-    )}
-  </select>
-</div>
-
-
-            <div className="col-lg-6">
-              <select
-                value={selectedStack}
-                onChange={(e) => setSelectedStack(e.target.value)}
-                className="form-select"
-              >
-                <option value="">Select Stack</option>
-                {stackOptions.map((stack, index) => (
-                  <option key={index} value={stack.name}>
-                    {stack.name}
-                  </option>
-                ))}
-              </select>
+            <div className="maindashboard">
+              <Maindashboard />
             </div>
-           
-          </div>
-          <div className="row mt-3">
-          <div className="col-lg-6">
-              <label>Start Date:</label>
-              <input
-                type="date"
-                className="form-control"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div className="col-lg-6">
-              <label>End Date:</label>
-              <input
-                type="date"
-                className="form-control"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-          
-          
-           
-          
-          
-          </div>
-
-        <div className="row mt-4">
-        <div className="col-lg-6">
-  <select
-    value={selectedIndustryType}
-    onChange={handleIndustryTypeSelection}
-    className="form-select"
-    style={{
-      cursor: "pointer",
-      backgroundColor: "#fff",
-      borderRadius: "10px",
-    }}
-  >
-    <option value="">Select Industry Type</option>
-    {userType === "admin"
-      ? // For Admin: Fetch and display industry types from users
-        users.map((user, index) => (
-          <option key={index} value={user.industryType}>
-            {user.industryType}
-          </option>
-        ))
-      : // For User: Show the static industryTypeList
-        industryTypeList.map((type, index) => (
-          <option key={index} value={type.category}>
-            {type.category}
-          </option>
-        ))}
-  </select>
-</div>
-
-
-
-      
-            <div className="col-lg-6">
+            <div className="table-container">
               <button
-                style={{ backgroundColor: "#236a80" }}
-                onClick={handleSubmit}
-                className="btn  text-light"
+                onClick={downloadPDF}
+                className={`download-btn btn btn-success ${userType === "user" ? "mt-5" : ""}`}
               >
-                Submit
+                Download PDF
               </button>
-            </div>
 
-        </div>
-        </div>
-     
+              <h4 className="text-center mt-3">Customise Report </h4>
 
-     
+              <div className="mt-4 border border-solid shadow m-5 p-5" style={{ borderRadius: "10px" }}>
+                <div className="row">
+                  <div className="col-lg-6">
+                    <select
+                      value={selectedUser}
+                      onChange={handleUserSelection}
+                      className="form-select"
+                      style={{
+                        cursor: "pointer",
+                        backgroundColor: "#fff",
+                        borderRadius: "10px",
+                      }}
+                    >
+                      {userType === "admin" ? (
+                        <>
+                          <option value="">Select User</option>
+                          {users.map((user) => (
+                            <option key={user.userName} value={user.userName}>
+                              {user.userName}
+                            </option>
+                          ))}
+                        </>
+                      ) : (
+                        <>
+                          <option value="">Select User</option>
+                          <option value={loggedUserName}>{loggedUserName}</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
 
-      <div id="table-to-download">
-      {selectedUser && startDate && endDate && (
-    <h4 className="text-center mt-4" style={{ color: "#236a80" }}>
-      Report for{" "}
-      {userType === "user"
-        ? userData?.validUserOne?.companyName || "N/A"
-        : userDetails.companyName}{" "}
-      from {new Date(startDate).toLocaleDateString("en-GB")} to{" "}
-      {new Date(endDate).toLocaleDateString("en-GB")}
-    </h4>
-  )}
+                  <div className="col-lg-6">
+                    <select
+                      value={selectedStack}
+                      onChange={(e) => setSelectedStack(e.target.value)}
+                      className="form-select"
+                    >
+                      <option value="">Select Stack</option>
+                      {stackOptions.map((stack, index) => (
+                        <option key={index} value={stack.name}>
+                          {stack.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="row mt-3">
+                  <div className="col-lg-6">
+                    <label>Start Date:</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="col-lg-6">
+                    <label>End Date:</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
 
-        {tablesData.map((table, index) => (
-          <div key={index} className="mt-5">
-            <h4 className="text-center">Quality Report for {table.date}</h4>
-            <table className="report-table">
-              <thead>
-                <tr>
-                  <th>Parameter</th>
-                  <th>Average Value</th>
-                  <th>Min Value</th>
-                  <th>Max Value</th>
-                  <th>Parameter Exceedence</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(table.parameters).map(([key, value], idx) => (
-                  <tr key={idx}>
-                    <td>{key}</td>
-                    <td>{value}</td>
-                    <td>{minMaxData.minValues[key] || "N/A"}</td>
-                    <td>{minMaxData.maxValues[key] || "N/A"}</td>
-                    <td>{calibrationExceed[key] || "N/A"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <h4 className="text-center">Energy Report for {table.date}</h4>
+                <div className="row mt-4">
+                  <div className="col-lg-6">
+                    <select
+                      value={selectedIndustryType}
+                      onChange={handleIndustryTypeSelection}
+                      className="form-select"
+                      style={{
+                        cursor: "pointer",
+                        backgroundColor: "#fff",
+                        borderRadius: "10px",
+                      }}
+                    >
+                      <option value="">Select Industry Type</option>
+                      {userType === "admin"
+                        ? users.map((user, index) => (
+                            <option key={index} value={user.industryType}>
+                              {user.industryType}
+                            </option>
+                          ))
+                        : industryTypeList.map((type, index) => (
+                            <option key={index} value={type.category}>
+                              {type.category}
+                            </option>
+                          ))}
+                    </select>
+                  </div>
+
+                  <div className="col-lg-6">
+                    <button
+                      style={{ backgroundColor: "#236a80" }}
+                      onClick={handleSubmit}
+                      className="btn text-light"
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="table-to-download">
+                {selectedUser && startDate && endDate && (
+                  <h4 className="text-center mt-4" style={{ color: "#236a80" }}>
+                    Report for{" "}
+                    {userType === "user"
+                      ? userData?.validUserOne?.companyName || "N/A"
+                      : userDetails.companyName}{" "}
+                    from {new Date(startDate).toLocaleDateString("en-GB")} to{" "}
+                    {new Date(endDate).toLocaleDateString("en-GB")}
+                  </h4>
+                )}
+
+                {tablesData.map((table, index) => (
+                  <div key={index} className="mt-5">
+                    <h4 className="text-center">Quality Report</h4>
+                    <table className="report-table">
+                      <thead>
+                        <tr>
+                          <th>Parameter</th>
+                          <th>Average Value</th>
+                          <th>Min Value</th>
+                          <th>Max Value</th>
+                          <th>Parameter Exceedence</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(table.parameters).map(([key, value], idx) => (
+                          <tr key={idx}>
+                            <td>{key}</td>
+                            <td>{value}</td>
+                            <td>{minMaxData.minValues[key] || "N/A"}</td>
+                            <td>{minMaxData.maxValues[key] || "N/A"}</td>
+                            <td>{calibrationExceed[key] || "N/A"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    <h4 className="text-center">Energy Report </h4>
 {stackOptions.length > 0 ? (
   <table className="report-table">
     <thead>
@@ -502,28 +520,18 @@ const WaterQualityTable = () => {
         <th>Stack Name</th>
         <th>Initial Energy</th>
         <th>Last Energy</th>
-        <th>Energy Difference</th>
-        <th>Total</th>
+        <th>Total Energy kWh</th>
       </tr>
     </thead>
     <tbody>
-      {stackOptions
-        .filter((stack) => stack.stationType === "energy") // Filter stacks by stationType
-        .map((stack, idx) => {
-          const energy = energyData.find(
-            (energyd) =>
-              energyd.date === table.date && energyd.stackName === stack.name
-          );
-          return (
-            <tr key={idx}>
-              <td>{stack.name}</td>
-              <td>{energy?.initialEnergy || 0}</td>
-              <td>{energy?.lastEnergy || 0}</td>
-              <td>{energy?.energyDifference || 0}</td>
-              <td>{energy?.total || 0}</td>
-            </tr>
-          );
-        })}
+      {energyData.map((energy, idx) => (
+        <tr key={idx}>
+          <td>{energy.stackName}</td>
+          <td>{energy.initialEnergy}</td>
+          <td>{energy.lastEnergy}</td>
+          <td>{Math.abs(parseFloat(energy.energyDifference)).toFixed(2)}</td> {/* Ensure no negative sign */}
+        </tr>
+      ))}
     </tbody>
   </table>
 ) : (
@@ -531,7 +539,7 @@ const WaterQualityTable = () => {
 )}
 
 
-<h4 className="text-center">Quantity Report for {table.date}</h4>
+<h4 className="text-center">Quantity Report </h4>
 {stackOptions.length > 0 ? (
   <table className="report-table">
     <thead>
@@ -539,49 +547,32 @@ const WaterQualityTable = () => {
         <th>Stack Name</th>
         <th>Initial Flow</th>
         <th>Last Flow</th>
-        <th>Flow Difference</th>
+        <th>Total Flow m3</th>
       </tr>
     </thead>
     <tbody>
-      {stackOptions
-        .filter((stack) => stack.stationType === "effluent_flow") // Filter stacks by stationType
-        .map((stack, idx) => {
-          const quantity = quantityData.find(
-            (quantd) =>
-              quantd.date === table.date && quantd.stackName === stack.name
-          );
-          return (
-            <tr key={idx}>
-              <td>{stack.name}</td>
-              <td>{quantity?.initialCumulatingFlow || 0}</td>
-              <td>{quantity?.lastCumulatingFlow || 0}</td>
-              <td>{quantity?.cumulatingFlowDifference || 0}</td>
-            </tr>
-          );
-        })}
+      {quantityData.map((quantity, idx) => (
+        <tr key={idx}>
+          <td>{quantity.stackName}</td>
+          <td>{quantity.initialCumulatingFlow}</td>
+          <td>{quantity.lastCumulatingFlow}</td>
+          <td>{Math.abs(parseFloat(quantity.cumulatingFlowDifference)).toFixed(2)}</td> {/* Removes negative sign */}
+        </tr>
+      ))}
     </tbody>
   </table>
 ) : (
   <p className="text-center">No quantity report available.</p>
 )}
 
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        ))}
-      </div>
-    </div>
-        
-
-
         </div>
       </div>
-      
-
     </div>
-    
-
-    </div>
-    /*  */
-    
   );
 };
 

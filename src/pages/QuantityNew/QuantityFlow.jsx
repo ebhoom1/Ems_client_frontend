@@ -452,7 +452,7 @@ const handleDownloadPdf = () => {
    <Dropdown>
    {effluentFlowStacks.length > 0 ? (
       <div className="stack-dropdown">
-        <label htmlFor="stackSelect" className="label-select">Select Station:</label>
+       
         <div className="styled-select-wrapper">
           <select
             id="stackSelect"
@@ -475,7 +475,7 @@ const handleDownloadPdf = () => {
    </Dropdown>
   </li>
   <li>
-    <Dropdown>
+  {/*   <Dropdown>
     {effluentFlowStacks.length > 0 && (
       <div className="stack-dropdown">
         <label htmlFor="primaryStationSelect" className="label-select">Set Primary Station:</label>
@@ -498,7 +498,7 @@ const handleDownloadPdf = () => {
         </div>
       </div>
     )}
-    </Dropdown>
+    </Dropdown> */}
   </li>
 </ul>
              
@@ -623,6 +623,14 @@ const handleDownloadPdf = () => {
                           </strong>{" "}
                           {item.value}
                         </p>
+
+                        {/* From Date and To Date (Real-time latest date) */}
+                        {item.name === "cumulatingFlow" && (
+                          <p className="text-secondary" style={{ fontSize: "12px", marginTop: "-5px" }}>
+                            <strong>From:</strong> 22/02/2025 &nbsp; | &nbsp;
+                            <strong>To:</strong> {displayStack.date ? displayStack.date : "Fetching..."}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -656,6 +664,7 @@ const handleDownloadPdf = () => {
     </div>
   )}
 </div>
+
 
 
 
@@ -712,7 +721,7 @@ const handleDownloadPdf = () => {
           />
         )}
       
-      <PieChartQuantity primaryStation={primaryStation} userName={currentUserName} />
+    {/*   <PieChartQuantity primaryStation={primaryStation} userName={currentUserName} /> */}
 
         <DailyHistoryModal 
   isOpen={showHistoryModal} 

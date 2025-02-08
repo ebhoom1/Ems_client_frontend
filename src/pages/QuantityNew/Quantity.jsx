@@ -48,69 +48,91 @@ const Quantity = () => {
     : userData?.validUserOne?.userName;
 
   // Fetch effluent flow stacks
-  const fetchEffluentFlowStacks = async (userName) => {
-    try {
-      const response = await fetch(`${API_URL}/api/get-stacknames-by-userName/${userName}`);
-      const data = await response.json(); // Make sure to parse the JSON
-      const effluentFlowStacks = data.stackNames
-        .filter((stack) => stack.stationType === 'effluent_flow')
-        .map(stack => stack.name); // Use 'name' instead of 'stackName'
-      setEffluentFlowStacks(effluentFlowStacks);
-    } catch (error) {
-      console.error("Error fetching effluentFlow stacks:", error);
+ // Group data by stackName and filter effluent_flow station types
+const groupDataByStackName = (data, effluentFlowStacks) => {
+  const groupedData = {};
+  data.forEach((item) => {
+    if (effluentFlowStacks.includes(item.stackName)) { // ✅ Filter by effluent_flow stationType
+      if (!groupedData[item.stackName]) {
+        groupedData[item.stackName] = [];
+      }
+      groupedData[item.stackName].push(item);
     }
-  };
+  });
+  return groupedData;
+};
+
+// Fetch effluent flow stacks
+const fetchEffluentFlowStacks = async (userName) => {
+  try {
+    const response = await fetch(`${API_URL}/api/get-stacknames-by-userName/${userName}`);
+    const data = await response.json(); // Make sure to parse the JSON
+
+    if (data.stackNames) {
+      const effluentFlowStacks = data.stackNames
+        .filter((stack) => stack.stationType === 'effluent_flow') // ✅ Filter only effluent_flow
+        .map(stack => stack.name); // ✅ Use 'name' instead of 'stackName'
+      setEffluentFlowStacks(effluentFlowStacks);
+    }
+  } catch (error) {
+    console.error("Error fetching effluentFlow stacks:", error);
+  }
+};
+
+// Render only stacks with `effluent_flow`
+const groupedData = groupDataByStackName(differenceData, effluentFlowStacks);
+
 
   // Fetch difference data by userName and interval, filtered by effluentFlowStacks
-  const fetchDifferenceData = async (userName, page = 1, limit = 50) => {
+  const fetchDifferenceData = async (userName, page = 1, limit = 30) => {
     try {
-        let finalData = [];
-
-        // Fetch normal paginated data
-        const response = await axios.get(
-            `${API_URL}/api/difference/${userName}?interval=daily&page=${page}&limit=${limit}`
-        );
-        const { data } = response;
-
-        if (data && data.success) {
-            let sortedData = data.data
-                .map((item) => ({
-                    ...item,
-                    date: new Date(item.timestamp).toLocaleDateString(),
-                    time: new Date(item.timestamp).toLocaleTimeString(),
-                }))
-                .sort((b , a) => new Date(a.timestamp) - new Date(b.timestamp)); // Sort DESCENDING
-
-            const today = new Date().toLocaleDateString();
-
-            if (page === 1) {
-                // Fetch all available records to ensure we get today's data
-                const allDataResponse = await axios.get(`${API_URL}/api/difference/${userName}?interval=daily`);
-                const allData = allDataResponse.data?.data || [];
-
-                // Extract today's records from the full dataset
-                const todaysRecords = allData.filter((item) =>
-                    new Date(item.timestamp).toLocaleDateString() === today
-                );
-
-                // Show today's data first, then continue with other data
-                finalData = [...todaysRecords, ...sortedData.filter(item => !todaysRecords.includes(item))];
-            } else {
-                // Normal pagination for older records
-                finalData = sortedData;
-            }
-
-            setDifferenceData(finalData);
-            setTotalPages(Math.ceil(data.total / limit)); // Correct total pages
+      let finalData = [];
+  
+      // Fetch normal paginated data
+      const response = await axios.get(
+        `${API_URL}/api/difference/${userName}?interval=daily&page=${page}&limit=${limit}`
+      );
+      const { data } = response;
+  
+      if (data && data.success) {
+        let sortedData = data.data
+          .map((item) => ({
+            ...item,
+            date: new Date(item.timestamp).toLocaleDateString(),
+            time: new Date(item.timestamp).toLocaleTimeString(),
+          }))
+          .sort((b, a) => new Date(a.timestamp) - new Date(b.timestamp)); // Sort DESCENDING
+  
+        const today = new Date().toLocaleDateString();
+  
+        if (page === 1) {
+          // Fetch all available records to ensure we get today's data
+          const allDataResponse = await axios.get(`${API_URL}/api/difference/${userName}?interval=daily`);
+          const allData = allDataResponse.data?.data || [];
+  
+          // Extract today's records from the full dataset
+          const todaysRecords = allData.filter((item) =>
+            new Date(item.timestamp).toLocaleDateString() === today
+          );
+  
+          // Show today's data first, then continue with other data
+          finalData = [...todaysRecords, ...sortedData.filter(item => !todaysRecords.includes(item))];
         } else {
-            setDifferenceData([]);
+          // Normal pagination for older records
+          finalData = sortedData;
         }
+  
+        setDifferenceData(finalData);
+        setTotalPages(Math.ceil(data.total / limit)); // Correct total pages
+      } else {
+        setDifferenceData([]);
+      }
     } catch (error) {
-        console.error("Error fetching difference data:", error);
+      console.error("Error fetching difference data:", error);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
 
 
@@ -134,7 +156,6 @@ const Quantity = () => {
       fetchDifferenceData(userName, currentPage, 50); // Fetch with pagination
     }
   }, [effluentFlowStacks, storedUserId, currentUserName, currentPage]);
-  
   useEffect(() => {
     if (differenceData.length) {
       const uniqueHeaders = extractHeaders(differenceData, viewType);
@@ -144,7 +165,6 @@ const Quantity = () => {
     }
   }, [differenceData, viewType]);
 
-  const groupedData = groupDataByStackName(differenceData);
 
   const handleNextPage = () => {
     if (currentPage < totalPages) setCurrentPage((prev) => prev + 1);
@@ -193,61 +213,59 @@ const Quantity = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(groupedData).map(([stackName, records], stackIndex) => (
-                        <React.Fragment key={stackIndex}>
-                          <tr>
-                            <td rowSpan={3}>{stackIndex + 1}</td>
-                            <td rowSpan={3}>{stackName}</td>
-                            <td>Initial Flow</td>
-                            {headers.map((header, index) => {
-                              const matchingRecord = records.find(
-                                (item) => item.date === header || item.time === header
-                              );
-                              return (
-                                <td key={index}>
-                                {matchingRecord?.initialCumulatingFlow !== undefined
-                                  ? parseFloat(matchingRecord.initialCumulatingFlow).toFixed(2)
-                                  : "N/A"}
-                              </td>
-                            
-                              );
-                            })}
-                          </tr>
-                          <tr>
-                            <td>Final Flow</td>
-                            {headers.map((header, index) => {
-                              const matchingRecord = records.find(
-                                (item) => item.date === header || item.time === header
-                              );
-                              return (
-                                <td key={index}>
-  {matchingRecord?.lastCumulatingFlow !== undefined
-    ? parseFloat(matchingRecord.lastCumulatingFlow).toFixed(2)
-    : "N/A"}
-</td>
+  {Object.entries(groupedData).map(([stackName, records], stackIndex) => (
+    <React.Fragment key={stackIndex}>
+      <tr>
+        <td rowSpan={3}>{stackIndex + 1}</td>
+        <td rowSpan={3}>{stackName}</td>
+        <td>Initial Flow</td>
+        {headers.map((header, index) => {
+          const matchingRecord = records.find(
+            (item) => item.date === header || item.time === header
+          );
+          return (
+            <td key={index}>
+              {matchingRecord?.initialCumulatingFlow !== undefined
+                ? parseFloat(matchingRecord.initialCumulatingFlow).toFixed(2)
+                : "N/A"}
+            </td>
+          );
+        })}
+      </tr>
+      <tr>
+        <td>Final Flow</td>
+        {headers.map((header, index) => {
+          const matchingRecord = records.find(
+            (item) => item.date === header || item.time === header
+          );
+          return (
+            <td key={index}>
+              {matchingRecord?.lastCumulatingFlow !== undefined
+                ? parseFloat(matchingRecord.lastCumulatingFlow).toFixed(2)
+                : "N/A"}
+            </td>
+          );
+        })}
+      </tr>
+      <tr>
+        <td>Flow Difference</td>
+        {headers.map((header, index) => {
+          const matchingRecord = records.find(
+            (item) => item.date === header || item.time === header
+          );
+          return (
+            <td key={index}>
+              {matchingRecord?.cumulatingFlowDifference !== undefined
+                ? parseFloat(matchingRecord.cumulatingFlowDifference).toFixed(2)
+                : "N/A"}
+            </td>
+          );
+        })}
+      </tr>
+    </React.Fragment>
+  ))}
+</tbody>
 
-                            
-                              );
-                            })}
-                          </tr>
-                          <tr>
-                            <td>Flow Difference</td>
-                            {headers.map((header, index) => {
-                              const matchingRecord = records.find(
-                                (item) => item.date === header || item.time === header
-                              );
-                              return (
-                                <td key={index}>
-                                {matchingRecord?.cumulatingFlowDifference !== undefined
-                                  ? parseFloat(matchingRecord.cumulatingFlowDifference).toFixed(2)
-                                  : "N/A"}
-                              </td>
-                              );
-                            })}
-                          </tr>
-                        </React.Fragment>
-                      ))}
-                    </tbody>
                   </table>
                 )}
               </div>

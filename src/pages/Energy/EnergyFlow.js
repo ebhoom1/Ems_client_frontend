@@ -419,8 +419,8 @@ const handleSetPrimaryStation = async (stationName) => {
   <li>
     <Dropdown> {energyStacks.length > 0 ? (
       <div className="stack-dropdown">
-        <label htmlFor="stackSelect" className="label-select">Select Station:</label>
-        <div className="styled-select-wrapper">
+{/*         <label htmlFor="stackSelect" className="label-select">Select Station:</label>
+ */}        <div className="styled-select-wrapper">
           <select
             id="stackSelect"
             className="form-select styled-select"
@@ -442,7 +442,7 @@ const handleSetPrimaryStation = async (stationName) => {
    
   </li>
   <li>
-    <Dropdown>{energyStacks.length > 0 && (
+  {/*   <Dropdown>{energyStacks.length > 0 && (
       <div className="stack-dropdown">
         <label htmlFor="primaryStationSelect" className="label-select">Set Primary Station:</label>
         <div className="styled-select-wrapper">
@@ -463,7 +463,7 @@ const handleSetPrimaryStation = async (stationName) => {
           </select>
         </div>
       </div>
-    )}</Dropdown>
+    )}</Dropdown> */}
   </li>
 </ul>
 
