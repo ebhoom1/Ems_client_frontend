@@ -6,6 +6,7 @@ import { API_URL } from "../../utils/apiConfig";
 import EnergyDataModal from "./EnergyDataModal";
 import './index.css';
 import carbon from '../../assests/images/carbon.png';
+import ConsuptionPredictionGraphQuantity from "../QuantityNew/ConsuptionPredictionGraphQuantity";
 
 // Extract unique headers (dates or hours)
 const extractHeaders = (data, viewType) => {
@@ -184,8 +185,9 @@ const Energy = () => {
                               );
                               return (
                                 <td key={index}>
-                                  {matchingRecord?.initialEnergy || "N/A"}
-                                </td>
+                                {matchingRecord?.initialEnergy ? matchingRecord.initialEnergy.toFixed(2) : "N/A"}
+                              </td>
+                              
                               );
                             })}
                           </tr>
@@ -197,8 +199,9 @@ const Energy = () => {
                               );
                               return (
                                 <td key={index}>
-                                  {matchingRecord?.lastEnergy || "N/A"}
-                                </td>
+                                {matchingRecord?.lastEnergy ? matchingRecord.lastEnergy.toFixed(2) : "N/A"}
+                              </td>
+                              
                               );
                             })}
                           </tr>
@@ -210,8 +213,9 @@ const Energy = () => {
                               );
                               return (
                                 <td key={index}>
-                                  {matchingRecord?.energyDifference || "N/A"}
-                                </td>
+                                {matchingRecord?.energyDifference ? matchingRecord.energyDifference.toFixed(2) : "N/A"}
+                              </td>
+                              
                               );
                             })}
                           </tr>
@@ -249,7 +253,10 @@ const Energy = () => {
         </div>
 
         <div className="col-md-12 col-lg-6 mb-3">
-          <div className="card full-height-card shadow" style={{ border: 'none' }}>
+        <div className="card" style={{ height: '100%' }}>
+          <ConsuptionPredictionGraphQuantity />
+        </div>
+         {/*  <div className="card full-height-card shadow" style={{ border: 'none' }}>
             <div className="col-md-12">
               <h2 className="text-center mb-4 mt-2 text-light">Carbon Emission <img src={carbon} alt="carbon" width={'100px'}></img></h2>
               <div className="row">
@@ -276,7 +283,7 @@ const Energy = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

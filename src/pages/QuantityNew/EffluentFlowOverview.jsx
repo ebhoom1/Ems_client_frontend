@@ -190,12 +190,12 @@ const EffluentFlowOverview = () => {
           </div>
         </div> */}
 
-        {/* Right Section */}
-        <div className="col-md-12 col-lg-12">
+       
+       {/*  <div className="col-md-12 col-lg-12">
           <div className="card" style={{ height: '100%' }}>
             <ConsuptionPredictionGraphQuantity />
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

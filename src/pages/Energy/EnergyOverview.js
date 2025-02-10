@@ -97,8 +97,8 @@ const EnergyOverview = () => {
   return (
     <div className="container-fluid">
     <div className="row mt-4">
-      {/* Left Section */}
-      <div className="col-md-12 col-lg-6">
+    
+    {/*   <div className="col-md-12 col-lg-6">
         <h3 className="text-center mb-4">Total Energy Usage</h3>
         <div className="row">
           <div className="col-md-12 mb-4">
@@ -128,13 +128,13 @@ const EnergyOverview = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
   
-      {/* Right Section */}
+   
       <div className="col-md-12 col-lg-6">
-        <div className="card" style={{ height: '100%' }}>
+       {/*  <div className="card" style={{ height: '100%' }}>
           <ConsumptionPredictionGraphEnergy />
-        </div>
+        </div> */}
       </div>
     </div>
   </div>

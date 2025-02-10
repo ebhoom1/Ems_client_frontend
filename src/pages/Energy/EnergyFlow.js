@@ -629,11 +629,11 @@ const handleSetPrimaryStation = async (stationName) => {
           />
         )}
       <div className="row">
-        <div className="col-lg-6 col-sm-12    ">
+        {/* <div className="col-lg-6 col-sm-12    ">
         <PieChartEnergy primaryStation={primaryStation} userName={currentUserName} />
 
-        </div>
-        <div className="col-lg-6 col-sm-12">
+        </div> */}
+        <div className="col-lg-12 col-sm-12">
         <BillCalculator searchTerm={storedUserId} userData={userData} userType={userType} />
 
           </div>

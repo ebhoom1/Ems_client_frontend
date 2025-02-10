@@ -518,8 +518,8 @@ const WaterQualityTable = () => {
     <thead>
       <tr>
         <th>Stack Name</th>
-        <th>Initial Energy</th>
-        <th>Last Energy</th>
+        <th>Initial Reading</th>
+        <th>Last Reading</th>
         <th>Total Energy kWh</th>
       </tr>
     </thead>
@@ -545,21 +545,40 @@ const WaterQualityTable = () => {
     <thead>
       <tr>
         <th>Stack Name</th>
-        <th>Initial Flow</th>
-        <th>Last Flow</th>
+        <th>Initial Reading</th>
+        <th>Last Reading</th>
         <th>Total Flow m3</th>
       </tr>
     </thead>
     <tbody>
-      {quantityData.map((quantity, idx) => (
-        <tr key={idx}>
-          <td>{quantity.stackName}</td>
-          <td>{quantity.initialCumulatingFlow}</td>
-          <td>{quantity.lastCumulatingFlow}</td>
-          <td>{Math.abs(parseFloat(quantity.cumulatingFlowDifference)).toFixed(2)}</td> {/* Removes negative sign */}
-        </tr>
-      ))}
-    </tbody>
+  {quantityData
+    .sort((a, b) => {
+      const order = [
+        "ETP outlet",
+        "STP inlet",
+        "STP acf outlet",
+        "STP uf outlet",
+        "STP softener outlet",
+        "STP garden outlet 1",
+        "STP garden outlet 2",
+      ];
+
+      // Ensure that items not in the order array are pushed to the end
+      const indexA = order.indexOf(a.stackName);
+      const indexB = order.indexOf(b.stackName);
+
+      return (indexA === -1 ? order.length : indexA) - (indexB === -1 ? order.length : indexB);
+    })
+    .map((quantity, idx) => (
+      <tr key={idx}>
+        <td>{quantity.stackName}</td>
+        <td>{quantity.initialCumulatingFlow}</td>
+        <td>{quantity.lastCumulatingFlow}</td>
+        <td>{Math.abs(parseFloat(quantity.cumulatingFlowDifference)).toFixed(2)}</td> {/* Removes negative sign */}
+      </tr>
+    ))}
+</tbody>
+
   </table>
 ) : (
   <p className="text-center">No quantity report available.</p>

@@ -5,6 +5,7 @@ import { API_URL } from "../../utils/apiConfig";
 import FlowDataModal from "./FlowDataModal";
 import './index.css';
 import carbon from '../../assests/images/carbon.png';
+import ConsuptionPredictionGraphQuantity from "./ConsuptionPredictionGraphQuantity";
 
 // Extract unique headers (dates or hours)
 const extractHeaders = (data, viewType) => {
@@ -298,7 +299,7 @@ const groupedData = groupDataByStackName(differenceData, effluentFlowStacks);
         </div>
 
         <div className="col-md-12 col-lg-6 mb-2">
-          <div className="card full-height-card shadow" style={{border:'none'}} >
+         {/*  <div className="card full-height-card shadow" style={{border:'none'}} >
             <div className="col-md-12">
               <h2 className="text-center mb-4 mt-2 text-light">Carbon Emission <img src={carbon} alt="carbon" width={'100px'}></img></h2>
               <div className="row">
@@ -326,7 +327,10 @@ const groupedData = groupDataByStackName(differenceData, effluentFlowStacks);
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
+            <div className="card" style={{ height: '100%' }}>
+                      <ConsuptionPredictionGraphQuantity />
+                    </div>
         </div>
       </div>
     </div>
