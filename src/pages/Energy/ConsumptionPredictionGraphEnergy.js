@@ -188,7 +188,7 @@ const ConsumptionGraphEnergy = () => {
 
   return (
     <div className="energy-flow-containe">
-      <h3 className="text-center mb-4 text-light">Monthly Energy Consumption</h3>
+      <h3 className="text-center mb-4 text-light"> Energy Consumption</h3>
       <div className="row mb-4 d-flex align-items-center">
         <div className="col-md-6 mb-3 ">
           <Select

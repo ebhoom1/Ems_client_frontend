@@ -516,8 +516,11 @@ const handleDownloadPdf = () => {
         </div> 
         <div className="col-12  justify-content-center align-items-center">
         <h3 className="text-center">
-  {storedUserId === "HH014" ? " Hilton Manyata" : companyName}
+  {storedUserId === "HH014" || currentUserName === "HH014" ? "Hilton Manyata" : companyName}
 </h3>
+        {/* <h3 className="text-center">
+  {storedUserId === "HH014" ? " Hilton Manyata" : companyName}
+</h3> */}
             <div className="color-indicators">
   <div className="d-flex justify-content-center mt-2">
     {/* Parameter Exceed Indicator */}
@@ -626,11 +629,12 @@ const handleDownloadPdf = () => {
 
                         {/* From Date and To Date (Real-time latest date) */}
                         {item.name === "cumulatingFlow" && (
-                          <p className="text-secondary" style={{ fontSize: "12px", marginTop: "-5px" }}>
-                            <strong>From:</strong> 22/02/2025 &nbsp; | &nbsp;
-                            <strong>To:</strong> {displayStack.date ? displayStack.date : "Fetching..."}
-                          </p>
-                        )}
+  <p className="text-light" style={{ fontSize: "12px", marginTop: "-5px" }}>
+    <strong>From:</strong> 22/02/2025 &nbsp; | &nbsp;
+    <strong>To:</strong> {displayStack.date ? displayStack.date : new Date().toLocaleDateString("en-GB")}
+  </p>
+)}
+
                       </div>
                     </div>
                   </div>

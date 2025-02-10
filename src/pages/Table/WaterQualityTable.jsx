@@ -62,24 +62,28 @@ const WaterQualityTable = () => {
     if (userType === "admin") {
       fetchUsers(); // Fetch all users for admin
     } else if (userType === "user") {
-      // For logged-in users, set user-specific details
       const username = userData?.userName || loggedUserName;
       setSelectedUser(username);
-      setSelectedIndustryType(userData?.industryType || ""); // Preselect user's industry type if available
-      fetchStackNames(username); // Fetch stack names for the logged-in user
-
-      // Set user details for logged-in user
+  
+      // ✅ Ensure industryType is properly retrieved
+      let industryType = userData?.validUserOne?.industryType || userData?.industryType || "";
+      setSelectedIndustryType(industryType);
+  
+      fetchStackNames(username);
+  
       setUserDetails({
         stackName: userData?.stackName || "",
-        companyName: userData?.validuserOne?.companyName || "N/A",
-        address: userData?.address || "N/A",
+        companyName: userData?.validUserOne?.companyName || "N/A",
+        address: userData?.validUserOne?.address || userData?.address || "N/A",
       });
-
-      if (userData?.industryType) {
-        fetchCalibrationExceed(userData.industryType); // Fetch calibration exceed data
+  
+      if (industryType) {
+        fetchCalibrationExceed(industryType);
       }
     }
   }, [userType, userData]);
+  
+  
 
   const fetchUsers = async () => {
     const token = localStorage.getItem("userdatatoken");
@@ -270,30 +274,29 @@ const WaterQualityTable = () => {
   const handleUserSelection = (e) => {
     const username = e.target.value;
     setSelectedUser(username);
-
-    // Find the selected user's details from the already fetched users
+  
     const selectedUserDetails = users.find((user) => user.userName === username);
-
+  
     if (selectedUserDetails) {
       setUserDetails({
         stackName: selectedUserDetails.stackName || "",
         companyName: selectedUserDetails.companyName || "N/A",
         address: selectedUserDetails.address || "N/A",
       });
-      console.log("Selected User Details:", selectedUserDetails);
-
-      // Check if industryType is available
-      const industryType = selectedUserDetails.industryType || "DefaultIndustry"; // Replace "DefaultIndustry" with a fallback value if needed
+  
+      // ✅ Properly fetch industry type with fallback
+      const industryType =
+        selectedUserDetails?.validUserOne?.industryType ||
+        selectedUserDetails?.industryType ||
+        "Not Available";
+        
       setSelectedIndustryType(industryType);
-
-      // Fetch calibration exceed data for the industry type
       fetchCalibrationExceed(industryType);
-    } else {
-      console.error("User details not found for username:", username);
     }
-
-    fetchStackNames(username); // Fetch stack names for the user
+  
+    fetchStackNames(username);
   };
+  
 
   const handleIndustryTypeSelection = (e) => {
     const industryType = e.target.value;
@@ -400,18 +403,21 @@ const WaterQualityTable = () => {
                   </div>
 
                   <div className="col-lg-6">
-                    <select
-                      value={selectedStack}
-                      onChange={(e) => setSelectedStack(e.target.value)}
-                      className="form-select"
-                    >
-                      <option value="">Select Stack</option>
-                      {stackOptions.map((stack, index) => (
-                        <option key={index} value={stack.name}>
-                          {stack.name}
-                        </option>
-                      ))}
-                    </select>
+                  <select
+  value={selectedStack}
+  onChange={(e) => setSelectedStack(e.target.value)}
+  className="form-select"
+>
+  <option value="">Select Stack</option>
+  {stackOptions
+    .filter((stack) => stack.name === "STP")
+    .map((stack, index) => (
+      <option key={index} value={stack.name}>
+        {stack.name}
+      </option>
+    ))}
+</select>
+
                   </div>
                 </div>
                 <div className="row mt-3">
@@ -437,29 +443,28 @@ const WaterQualityTable = () => {
 
                 <div className="row mt-4">
                   <div className="col-lg-6">
-                    <select
-                      value={selectedIndustryType}
-                      onChange={handleIndustryTypeSelection}
-                      className="form-select"
-                      style={{
-                        cursor: "pointer",
-                        backgroundColor: "#fff",
-                        borderRadius: "10px",
-                      }}
-                    >
-                      <option value="">Select Industry Type</option>
-                      {userType === "admin"
-                        ? users.map((user, index) => (
-                            <option key={index} value={user.industryType}>
-                              {user.industryType}
-                            </option>
-                          ))
-                        : industryTypeList.map((type, index) => (
-                            <option key={index} value={type.category}>
-                              {type.category}
-                            </option>
-                          ))}
-                    </select>
+                  <select
+  value={selectedIndustryType}
+  onChange={handleIndustryTypeSelection}
+  className="form-select"
+>
+  <option value="">Select Industry Type</option>
+  {userType === "admin"
+    ? users.map((user, index) => (
+        <option key={index} value={user.industryType}>
+          {user.industryType}
+        </option>
+      ))
+    : industryTypeList.map((type, index) => (
+        <option key={index} value={type.category}>
+          {type.category}
+        </option>
+      ))}
+</select>
+{/* <p className="mt-2 text-muted">
+  {selectedIndustryType ? `Selected Industry Type: ${selectedIndustryType}` : "No Industry Type Selected"}
+</p> */}
+
                   </div>
 
                   <div className="col-lg-6">
@@ -520,7 +525,7 @@ const WaterQualityTable = () => {
         <th>Stack Name</th>
         <th>Initial Reading</th>
         <th>Last Reading</th>
-        <th>Total Energy kWh</th>
+        <th>Total kWh</th>
       </tr>
     </thead>
     <tbody>
@@ -547,7 +552,7 @@ const WaterQualityTable = () => {
         <th>Stack Name</th>
         <th>Initial Reading</th>
         <th>Last Reading</th>
-        <th>Total Flow m3</th>
+        <th>Total m3</th>
       </tr>
     </thead>
     <tbody>

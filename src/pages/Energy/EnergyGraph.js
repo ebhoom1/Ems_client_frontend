@@ -42,11 +42,11 @@ const EnergyGraph = ({ isOpen, onRequestClose, parameter, userName, stackName })
     const getFormattedDate = () => {
         switch (timeInterval) {
             case 'day':
-                return moment().format('DD/MM/YYYY'); // Today's date
+                return moment().format('DD/MM/YYYY'); 
             case 'month':
-                return moment().format('MM'); // Current month
+                return moment().format('MM/YYYY'); 
             case 'year':
-                return moment().format('YYYY'); // Current year
+                return moment().format('YYYY'); 
             default:
                 return '';
         }
@@ -60,15 +60,10 @@ const EnergyGraph = ({ isOpen, onRequestClose, parameter, userName, stackName })
                 `${API_URL}/api/hourly-data?userName=${userName}&stackName=${stackName}&date=${formattedDate}`
             );
             const result = await response.json();
-            console.log("Fetched Data:", result.data); // Debugging
-
+            console.log("API Response:", result);
+    
             if (result.success && Array.isArray(result.data) && result.data.length > 0) {
-                // Ensure entries with `stack` exist
-                const validData = result.data.filter(entry => entry.stack);
-                if (validData.length === 0) {
-                    toast.error('No valid data available');
-                }
-                setGraphData(validData);
+                setGraphData(result.data);
             } else {
                 toast.error('No data available');
                 setGraphData([]);
@@ -82,27 +77,31 @@ const EnergyGraph = ({ isOpen, onRequestClose, parameter, userName, stackName })
     };
 
     const processData = () => {
-        if (!Array.isArray(graphData) || graphData.length === 0) {
+        if (!graphData || graphData.length === 0) {
             return { labels: [], values: [] };
         }
-
-        const labels = graphData.map((entry) => 
-            moment(entry.date + ' ' + entry.hour, 'DD/MM/YYYY HH').format('DD/MM/YYYY HH:mm')
-        );
-
-        const values = graphData.map((entry) => entry.stack?.energy ?? 0);
-
+    
+        const labels = [];
+        const values = [];
+    
+        graphData.forEach(entry => {
+            const matchingStack = entry.stacks.find(stack => stack.stackName === stackName);
+            if (matchingStack) {
+                labels.push(moment(`${entry.date} ${entry.hour}`, 'DD/MM/YYYY HH').format('DD/MM/YYYY HH:mm'));
+                values.push(matchingStack.energy || 0);
+            }
+        });
+    
         return { labels, values };
     };
 
     const { labels, values } = processData();
-
     const chartData = {
         labels,
         datasets: [
             {
                 label: `${parameter} - ${stackName}`,
-                data: values,
+                data: values.length > 0 ? values : [0], 
                 fill: false,
                 backgroundColor: '#236a80',
                 borderColor: '#236A80',
@@ -113,7 +112,7 @@ const EnergyGraph = ({ isOpen, onRequestClose, parameter, userName, stackName })
             },
         ],
     };
-
+    
     const chartOptions = {
         responsive: true,
         plugins: {
@@ -130,15 +129,13 @@ const EnergyGraph = ({ isOpen, onRequestClose, parameter, userName, stackName })
                     label: (tooltipItem) => `Value: ${tooltipItem.raw}`,
                     title: (tooltipItems) => `Time: ${tooltipItems[0].label}`,
                 },
-                titleFont: { size: 18 },
-                bodyFont: { size: 16 },
             },
         },
         scales: {
             x: {
                 title: {
                     display: true,
-                    text: 'Interval',
+                    text: 'Time Interval',
                 },
                 ticks: {
                     autoSkip: true,
@@ -158,11 +155,13 @@ const EnergyGraph = ({ isOpen, onRequestClose, parameter, userName, stackName })
 
     return (
         <div>
-            <h6 className="popup-title mb-1">{parameter} - {stackName}</h6>
-            <div className="interval-buttons">
-                {['day', 'month', 'year'].map((interval) => (
+            <h5 className="popup-title text-center">{parameter} - {stackName}</h5>
+            <div className="interval-buttons align-items-center justify-content-center mt-3">
+                {['day'].map((interval) => ( /*                 {['day', 'month', 'year'].map((interval) => (
+ */
                     <button
                         key={interval}
+                        style={{ backgroundColor: '#236a80', margin: '5px', color: '#fff', border: 'none', padding: '7px', borderRadius: '5px', marginLeft: '10px' }}
                         className={`interval-btn ${timeInterval === interval ? 'active' : ''}`}
                         onClick={() => setTimeInterval(interval)}
                     >
@@ -172,21 +171,12 @@ const EnergyGraph = ({ isOpen, onRequestClose, parameter, userName, stackName })
             </div>
             {loading ? (
                 <div className="loading-container">
-                    <Oval
-                        height={60}
-                        width={60}
-                        color="#236A80"
-                        ariaLabel="Fetching details"
-                        secondaryColor="#e0e0e0"
-                        strokeWidth={2}
-                        strokeWidthSecondary={2}
-                    />
+                    <Oval height={60} width={60} color="#236A80" ariaLabel="Fetching details" strokeWidth={2} />
                     <p>Loading data, please wait...</p>
                 </div>
             ) : graphData.length === 0 ? (
                 <div className="no-data-container">
                     <h5>No data available for {parameter} ({timeInterval})</h5>
-                    <p>Please try a different interval or check back later.</p>
                 </div>
             ) : (
                 <div className="chart-container d-flex align-items-center justify-content-center">

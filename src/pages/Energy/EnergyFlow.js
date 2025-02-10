@@ -483,10 +483,12 @@ const handleSetPrimaryStation = async (stationName) => {
 
         </div>
         <div className="col-12  justify-content-center align-items-center">
-        
         <h3 className="text-center">
-  {storedUserId === "HH014" ? " Hilton Manyata" : companyName}
+  {storedUserId === "HH014" || currentUserName === "HH014" ? "Hilton Manyata" : companyName}
 </h3>
+       {/*  <h3 className="text-center">
+  {storedUserId === "HH014" ? " Hilton Manyata" : companyName}
+</h3> */}
    <div className="color-indicators">
   <div className="d-flex justify-content-center mt-2">
     {/* Parameter Exceed Indicator */}
