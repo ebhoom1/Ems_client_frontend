@@ -7,6 +7,7 @@ import EnergyDataModal from "./EnergyDataModal";
 import './index.css';
 import carbon from '../../assests/images/carbon.png';
 import ConsuptionPredictionGraphQuantity from "../QuantityNew/ConsuptionPredictionGraphQuantity";
+import ConsumptionGraphEnergy from "./ConsumptionPredictionGraphEnergy";
 
 // Extract unique headers (dates or hours)
 const extractHeaders = (data, viewType) => {
@@ -254,7 +255,7 @@ const Energy = () => {
 
         <div className="col-md-12 col-lg-6 mb-3">
         <div className="card" style={{ height: '100%' }}>
-          <ConsuptionPredictionGraphQuantity />
+          <ConsumptionGraphEnergy />
         </div>
          {/*  <div className="card full-height-card shadow" style={{ border: 'none' }}>
             <div className="col-md-12">
