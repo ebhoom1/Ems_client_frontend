@@ -143,7 +143,7 @@ const Energy = () => {
   return (
     <div className="container-fluid">
       <div className="row mt-5">
-        <div className="col-md-12 col-lg-6 mb-3">
+        <div className="col-md-12 col-lg-12 mb-3">
           <div className="card" style={{ height: "100%" }}>
             <div className="card-body">
               <h2 className="text-center text-light mt-2">Energy Flow</h2>
@@ -253,7 +253,7 @@ const Energy = () => {
           </div>
         </div>
 
-        <div className="col-md-12 col-lg-6 mb-3">
+        <div className="col-md-12 col-lg-12 mb-3">
         <div className="card" style={{ height: '100%' }}>
           <ConsumptionGraphEnergy />
         </div>

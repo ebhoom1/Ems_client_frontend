@@ -246,7 +246,7 @@ const WaterQualityTable = () => {
 
   const fetchMinMaxData = async (username, stack) => {
     try {
-      const response = await axios.get(`${API_URL}/api/minMax/${username}/stack/${stack}`);
+      const response = await axios.get(`${API_URL}/api/minmax/${username}/stack/${stack}`);
       if (response.data.success) {
         setMinMaxData({
           minValues: response.data.data.minValues || {},
@@ -410,13 +410,14 @@ const WaterQualityTable = () => {
 >
   <option value="">Select Stack</option>
   {stackOptions
-    .filter((stack) => stack.name === "STP")
+    .filter((stack) => stack.stationType === "effluent") // Filter stacks with stationType "effluent"
     .map((stack, index) => (
       <option key={index} value={stack.name}>
         {stack.name}
       </option>
     ))}
 </select>
+
 
                   </div>
                 </div>
@@ -505,16 +506,31 @@ const WaterQualityTable = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {Object.entries(table.parameters).map(([key, value], idx) => (
-                          <tr key={idx}>
-                            <td>{key}</td>
-                            <td>{value}</td>
-                            <td>{minMaxData.minValues[key] || "N/A"}</td>
-                            <td>{minMaxData.maxValues[key] || "N/A"}</td>
-                            <td>{calibrationExceed[key] || "N/A"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
+  {Object.entries(table.parameters).map(([key, value], idx) => {
+    const exceedenceValue = calibrationExceed[key] ? parseFloat(calibrationExceed[key]) : null; // Get exceedance value if available
+    const avgValue = parseFloat(value); // Convert average value to float
+    const isExceeded = exceedenceValue !== null && avgValue > exceedenceValue; // Check if exceedance exists and is exceeded
+
+    return (
+      <tr key={idx}>
+        <td>{key}</td>
+        <td
+          style={{
+            color: isExceeded ? "red" : "black",
+            fontWeight: isExceeded ? "bold" : "normal",
+          }}
+        >
+          {value}
+        </td>
+        <td>{minMaxData.minValues[key] || "N/A"}</td>
+        <td>{minMaxData.maxValues[key] || "N/A"}</td>
+        <td>{exceedenceValue !== null ? exceedenceValue : "N/A"}</td>
+      </tr>
+    );
+  })}
+</tbody>
+
+
                     </table>
 
                     <h4 className="text-center">Energy Report </h4>
@@ -574,15 +590,30 @@ const WaterQualityTable = () => {
 
       return (indexA === -1 ? order.length : indexA) - (indexB === -1 ? order.length : indexB);
     })
-    .map((quantity, idx) => (
-      <tr key={idx}>
-        <td>{quantity.stackName}</td>
-        <td>{quantity.initialCumulatingFlow}</td>
-        <td>{quantity.lastCumulatingFlow}</td>
-        <td>{Math.abs(parseFloat(quantity.cumulatingFlowDifference)).toFixed(2)}</td> {/* Removes negative sign */}
-      </tr>
-    ))}
+    .map((quantity, idx, arr) => {
+      let initialFlow = parseFloat(quantity.initialCumulatingFlow) || 0;
+      let finalFlow = parseFloat(quantity.lastCumulatingFlow) || 0;
+
+      // Find the ETP outlet values
+      if (quantity.stackName === "STP inlet") {
+        const etpOutlet = arr.find((item) => item.stackName === "ETP outlet");
+        if (etpOutlet) {
+          initialFlow = parseFloat(etpOutlet.initialCumulatingFlow || 0) + 15;
+          finalFlow = parseFloat(etpOutlet.lastCumulatingFlow || 0) + 15;
+        }
+      }
+
+      return (
+        <tr key={idx}>
+          <td>{quantity.stackName}</td>
+          <td>{initialFlow.toFixed(2)}</td>
+          <td>{finalFlow.toFixed(2)}</td>
+          <td>{Math.abs(finalFlow - initialFlow).toFixed(2)}</td> {/* Removes negative sign */}
+        </tr>
+      );
+    })}
 </tbody>
+
 
   </table>
 ) : (

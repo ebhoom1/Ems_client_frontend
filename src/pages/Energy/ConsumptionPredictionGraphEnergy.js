@@ -228,7 +228,7 @@ const ConsumptionGraphEnergy = () => {
           <p className="ml-3">Loading data, please wait...</p>
         </div>
       ) : (
-        <div className="chart-container">
+        <div className="">
           <Line data={chartData} options={chartOptions} />
         </div>
       )}

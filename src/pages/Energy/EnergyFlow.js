@@ -58,6 +58,11 @@ const EnergyFlow = () => {
   const [realTimeData, setRealTimeData] = useState({})
   const [exceedanceColor, setExceedanceColor] = useState("green"); // Default to 'gray'
   const [timeIntervalColor, setTimeIntervalColor] = useState("green"); // Default to 'gray'
+  const [initialEnergy, setInitialEnergy] = useState({});
+const [lastEnergy, setLastEnergy] = useState({});
+const [dailyEnergyConsumption, setDailyEnergyConsumption] = useState({});
+const [isDownloading, setIsDownloading] = useState(false);
+
    // Function to reset colors and trigger loading state
  const resetColors = () => {
   setExceedanceColor("loading");
@@ -168,6 +173,30 @@ const EnergyFlow = () => {
     }
   };
   
+  const fetchEnergyDifferenceData = async (userName) => {
+    try {
+        const response = await axios.get(`${API_URL}/api/difference/${userName}?interval=daily`);
+        const { data } = response;
+
+        if (data && data.success) {
+            const initialEnergyData = {};
+            const lastEnergyData = {};
+
+            data.data.forEach(item => {
+                initialEnergyData[item.stackName] = item.initialEnergy; 
+                lastEnergyData[item.stackName] = item.lastEnergy;
+            });
+
+            console.log("✅ Initial Energy from API:", initialEnergyData);
+            console.log("✅ Last Energy from API:", lastEnergyData);
+
+            setInitialEnergy(initialEnergyData);
+            setLastEnergy(lastEnergyData);
+        }
+    } catch (error) {
+        console.error("❌ Error fetching energy difference data:", error);
+    }
+};
   
   
  
@@ -179,6 +208,7 @@ const EnergyFlow = () => {
     setCurrentUserName(userName);
     fetchEnergyStacks(userName);
     fetchPrimaryStation(userName);
+    fetchEnergyDifferenceData(userName);
   }, [storedUserId, currentUserName]);
   
   useEffect(() => {
@@ -199,42 +229,57 @@ const EnergyFlow = () => {
   
     // Join the user's room
     socket.emit("joinRoom", { userId: userName });
-  
     const handleStackDataUpdate = async (data) => {
       console.log(`Real-time data for ${userName}:`, data);
-  
+      console.log("timestamp", data.timestamp);
+    
       if (data.userName === userName) {
-        setExceedanceColor(data.ExceedanceColor || "green"); // Set default color
+        setExceedanceColor(data.ExceedanceColor || "green");
         setTimeIntervalColor(data.timeIntervalColor || "green");
-  
+    
         if (data?.stackData?.length > 0) {
           const energyData = data.stackData.filter((item) => item.stationType === "energy");
-  
+    
           if (energyData.length > 0) {
-            // If real-time energy data is available, use it
+            // ✅ Create a new object with the timestamp
             const processedData = energyData.reduce((acc, item) => {
               if (item.stackName) {
-                acc[item.stackName] = item;
+                acc[item.stackName] = {
+                  ...item, // Copy existing properties
+                  timestamp: data.timestamp, // Add timestamp
+                };
               }
               return acc;
             }, {});
-  
+    
             setRealTimeData(processedData);
             console.log("Processed Real-Time Energy Data:", processedData);
           } else {
             // No real-time energy data, fallback to the latest record from the last 10 minutes
             console.log("No real-time energy data. Fetching the latest data from the last 10 minutes...");
             const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
-  
+    
             // Get the latest record
             const fallbackData = last10MinData
               .flatMap((record) =>
-                record.records.flatMap((stack) => stack.stackData.filter((item) => item.stationType === "energy"))
+                record.records.flatMap((stack) =>
+                  stack.stackData.filter((item) => item.stationType === "energy")
+                )
               )
               .slice(-1); // Take only the latest record
-  
-            setRealTimeData(fallbackData || []);
-            console.log("Fallback Latest 10-Minute Energy Data:", fallbackData);
+    
+            // ✅ Add timestamp to fallback data by creating a new object
+            if (fallbackData.length > 0) {
+              const updatedFallbackData = fallbackData.map((item) => ({
+                ...item, // Copy existing properties
+                timestamp: last10MinData[last10MinData.length - 1]?.timestamp || "N/A", // Add timestamp
+              }));
+    
+              setRealTimeData(updatedFallbackData);
+              console.log("Fallback Latest 10-Minute Energy Data:", updatedFallbackData);
+            } else {
+              setRealTimeData([]);
+            }
           }
         }
       }
@@ -269,17 +314,34 @@ const EnergyFlow = () => {
 /* graph as pdf  */
 const handleDownloadPdf = () => {
   const input = graphRef.current;
-  
+
+  // Hide the button before capturing the content
+  const downloadButton = input.querySelector('.btn');
+  if (downloadButton) {
+    downloadButton.style.display = 'none';
+  }
+
+  // Set downloading state to true
+  setIsDownloading(true);
+
   // Use html2canvas to capture the content of the graph container
   html2canvas(input).then((canvas) => {
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('landscape', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    
+
     // Add image to PDF
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
     pdf.save('graph.pdf');
+
+    // Restore the button visibility after the download is complete
+    if (downloadButton) {
+      downloadButton.style.display = 'inline-block';
+    }
+
+    // Reset downloading state
+    setIsDownloading(false);
   });
 };
   const handleOpenCalibrationPopup = () => {
@@ -309,6 +371,7 @@ const handleDownloadPdf = () => {
   const handleStackChange = (event) => {
     setSelectedStack(event.target.value);
   };
+
 
 
 
@@ -368,7 +431,27 @@ const handleSetPrimaryStation = async (stationName) => {
 
 
     
-  
+useEffect(() => {
+  if (lastEnergy && initialEnergy) {
+      const energyConsumptionData = {};
+
+      console.log("📊 Last Recorded Energy:", lastEnergy);
+      console.log("📌 Initial Energy Data:", initialEnergy);
+
+      Object.keys(lastEnergy).forEach(stackName => {
+          const lastValue = lastEnergy[stackName] || 0;
+          const initialValue = initialEnergy[stackName] || 0;
+          const difference = Math.max(0, lastValue - initialValue);
+
+          console.log(`🔹 Stack: ${stackName} | Initial Energy: ${initialValue} | Last Energy: ${lastValue} | Daily Consumption: ${difference}`);
+
+          energyConsumptionData[stackName] = difference;
+      });
+
+      setDailyEnergyConsumption(energyConsumptionData);
+  }
+}, [lastEnergy, initialEnergy]);
+
     
    
   return (
@@ -535,42 +618,96 @@ const handleSetPrimaryStation = async (stationName) => {
   style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
 >
   {!loading && Object.values(realTimeData).length > 0 ? (
-    Object.values(realTimeData).map((stack, stackIndex) => (
-      <div key={stackIndex} className="col-12 mb-4">
-        <div className="stack-box">
-          <h4 className="text-center">
-            {stack.stackName} <img src={energy} alt="energy image" width="100px" />
-          </h4>
-          <div className="row">
-            {energyParameters.map((item, index) => {
-              const value = stack[item.name];
-              return value && value !== "N/A" ? (
-                <div className="col-12 col-md-4 grid-margin" key={index}>
-                  <div
-                    className="card mb-3"
-                    style={{ border: "none", cursor: "pointer" }}
-                    onClick={() => handleCardClick(stack, item)} // Add card click handler here
-                  >
-                    <div className="card-body">
-                      <h5 className="text-light">{item.parameter}</h5>
-                      <p className="text-light">
-                        <strong
-                          className="text-light"
-                          style={{ color: "#236A80", fontSize: "24px" }}
-                        >
-                          {parseFloat(value).toFixed(2)} {/* Changed to limit value to 2 decimal places */}
-                        </strong>{" "}
-                        {item.value}
-                      </p>
+    Object.values(realTimeData).map((stack, stackIndex) => {
+      // ✅ Extract timestamp from realTimeData OR fallback to stack-specific timestamp
+      const timestamp =
+        stack?.timestamp || // Use stack-specific timestamp (if exists)
+        realTimeData?.timestamp || // Use top-level timestamp
+        (stack?.stackData && stack.stackData[0]?.timestamp) || // Check inside stackData
+        "N/A"; // Default if missing
+
+      // ✅ Debugging Log
+      console.log(`Stack: ${stack.stackName}, Timestamp:`, timestamp);
+
+      // ✅ Format the timestamp
+      const formattedTimestamp =
+        timestamp !== "N/A" && !isNaN(new Date(timestamp).getTime())
+          ? {
+              date: new Date(timestamp).toLocaleDateString("en-GB"), // Date in DD/MM/YYYY format
+              time: new Date(timestamp).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "numeric",
+                hour12: true, // Use 12-hour format (e.g., 11.13 PM)
+              }),
+            }
+          : null;
+
+      return (
+        <div key={stackIndex} className="col-12 mb-4">
+          <div className="stack-box">
+            <h4 className="text-center">
+              {stack.stackName} <img src={energy} alt="energy image" width="100px" />
+            </h4>
+
+            {/* ✅ Display Timestamp */}
+            <p className="text-center text-muted">
+              {formattedTimestamp ? (
+                <>
+                  Last updated: <br />
+                  <span style={{ fontSize: "14px" }}>{formattedTimestamp.date}</span> <br />
+                  <span style={{ fontSize: "14px" }}>{formattedTimestamp.time}</span>
+                </>
+              ) : (
+                "N/A"
+              )}
+            </p>
+
+            <div className="row">
+              {energyParameters.map((item, index) => {
+                const value = stack[item.name];
+                return value && value !== "N/A" ? (
+                  <div className="col-12 col-md-4 grid-margin" key={index}>
+                    <div
+                      className="card mb-3"
+                      style={{ border: "none", cursor: "pointer" }}
+                      onClick={() => handleCardClick(stack, item)}
+                    >
+                      <div className="card-body">
+                        <h5 className="text-light">{item.parameter}</h5>
+                        <p className="text-light">
+                          <strong
+                            className="text-light"
+                            style={{ color: "#236A80", fontSize: "24px" }}
+                          >
+                            {parseFloat(value).toFixed(2)}
+                          </strong>{" "}
+                          {item.value}
+                        </p>
+                      </div>
                     </div>
                   </div>
+                ) : null;
+              })}
+
+              {/* ✅ Daily Energy Consumption Card */}
+              <div className="col-md-4 grid-margin">
+                <div className="card mb-3" style={{ border: "none" }}>
+                  <div className="card-body">
+                    <h5 className="text-light">Daily Energy Consumption</h5>
+                    <p className="text-light">
+                      <strong style={{ color: "#ffff", fontSize: "24px" }}>
+                        {dailyEnergyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
+                      </strong>{" "}
+                      kW/hr
+                    </p>
+                  </div>
                 </div>
-              ) : null;
-            })}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    ))
+      );
+    })
   ) : (
     <div className="col-12">
       <h5 className="text-center mt-5">Waiting for real-time data ...</h5>
@@ -580,47 +717,42 @@ const handleSetPrimaryStation = async (stationName) => {
 
   {/* Graph Container with reference */}
   <div
-    className=" col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
-    style={{ height: '70vh', borderRadius: '15px' , position:'relative'}}
-    ref={graphRef}
-  >
-   {selectedCard ? (
-  <div>
-  
-    <EnergyGraph
-      parameter={selectedCard.name}
-      userName={currentUserName}
-      stackName={selectedCard.stackName}
-    />
-  </div>
-) : (
-  <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-)}
+      className="col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
+      style={{ height: '70vh', borderRadius: '15px', position: 'relative' }}
+      ref={graphRef}
+    >
+      {selectedCard ? (
+        <div>
+          <EnergyGraph
+            parameter={selectedCard.name}
+            userName={currentUserName}
+            stackName={selectedCard.stackName}
+          />
+        </div>
+      ) : (
+        <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+      )}
 
-
-    {/* Download Buttons */}
-    {selectedCard && (
-      <>
+      {/* Download Buttons */}
+      {selectedCard && (
         <button
           onClick={handleDownloadPdf}
           style={{
             position: 'absolute',
             top: '10px',
-            left:'20px',
+            left: '20px',
             backgroundColor: '#236a80',
             color: 'white',
-            marginTop:'10px',
-            marginBottom:'10px',
+            marginTop: '10px',
+            marginBottom: '10px',
+            display: isDownloading ? 'none' : 'inline-block', // Hide the button when downloading
           }}
           className="btn"
         >
           <i className="fa-solid fa-download"></i> Download graph
         </button>
-
-       
-      </>
-    )}
-  </div>
+      )}
+    </div>
 
 </div>
 

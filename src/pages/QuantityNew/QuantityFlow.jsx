@@ -55,7 +55,7 @@ const QuantityFlow = () => {
   const [dailyConsumption, setDailyConsumption] = useState({});
   const [initialFlows, setInitialFlows] = useState({}); 
   const [lastFlows, setLastFlows] = useState({});  // New state for last recorded flows
-  
+  const [isDownloading, setIsDownloading] = useState(false);
    // Function to reset colors and trigger loading state
  const resetColors = () => {
   setExceedanceColor("loading");
@@ -223,7 +223,6 @@ useEffect(() => {
      
        // Join the user's room
        socket.emit("joinRoom", { userId: userName });
-     
        const handleStackDataUpdate = async (data) => {
         console.log(`Real-time data for ${userName}:`, data);
       
@@ -237,10 +236,13 @@ useEffect(() => {
             );
       
             if (effluentFlowData.length > 0) {
-              // Process real-time data
+              // Process real-time data and include the timestamp
               const processedRealTimeData = effluentFlowData.reduce((acc, item) => {
                 if (item.stackName) {
-                  acc[item.stackName] = item;
+                  acc[item.stackName] = {
+                    ...item, // Copy existing properties
+                    timestamp: data.timestamp, // Add timestamp
+                  };
                 }
                 return acc;
               }, {});
@@ -272,7 +274,12 @@ useEffect(() => {
               const fallbackData = last10MinData
                 .flatMap((record) =>
                   record.records.flatMap((stack) =>
-                    stack.stackData.filter((item) => item.stationType === "effluent_flow")
+                    stack.stackData
+                      .filter((item) => item.stationType === "effluent_flow")
+                      .map((item) => ({
+                        ...item, // Copy existing properties
+                        timestamp: record.timestamp, // Add timestamp from the record
+                      }))
                   )
                 )
                 .reduce((acc, item) => {
@@ -286,7 +293,6 @@ useEffect(() => {
           }
         }
       };
-      
        socket.on("stackDataUpdate", handleStackDataUpdate);
      
        return () => {
@@ -340,17 +346,34 @@ useEffect(() => {
 /* graph as pdf  */
 const handleDownloadPdf = () => {
   const input = graphRef.current;
-  
+
+  // Hide the button before capturing the content
+  const downloadButton = input.querySelector('.btn');
+  if (downloadButton) {
+    downloadButton.style.display = 'none';
+  }
+
+  // Set downloading state to true
+  setIsDownloading(true);
+
   // Use html2canvas to capture the content of the graph container
   html2canvas(input).then((canvas) => {
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('landscape', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    
+
     // Add image to PDF
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
     pdf.save('graph.pdf');
+
+    // Restore the button visibility after the download is complete
+    if (downloadButton) {
+      downloadButton.style.display = 'inline-block';
+    }
+
+    // Reset downloading state
+    setIsDownloading(false);
   });
 };
   const handleStackChange = (event) => {
@@ -579,15 +602,35 @@ const handleDownloadPdf = () => {
     Object.values(realTimeData).map((stack, stackIndex) => {
       let displayStack = { ...stack };
 
+      // ✅ Extract timestamp from stack OR fallback to general realTimeData timestamp
+      const timestamp =
+        stack?.timestamp || 
+        realTimeData?.timestamp || 
+        (stack?.stackData && stack.stackData[0]?.timestamp) || 
+        "N/A";
+
+      // ✅ Format timestamp if available
+      const formattedTimestamp =
+        timestamp !== "N/A" && !isNaN(new Date(timestamp).getTime())
+          ? {
+              date: new Date(timestamp).toLocaleDateString("en-GB"), // DD/MM/YYYY
+              time: new Date(timestamp).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "numeric",
+                hour12: true,
+              }),
+            }
+          : null;
+
       // Find ETP Outlet data for reference
       const etpOutlet = Object.values(realTimeData).find(s => s.stackName === "ETP outlet");
 
       // Override values for STP Inlet
       if (stack.stackName === "STP inlet") {
         if (etpOutlet) {
-          displayStack.flowRate = 20; // Set Flow Rate to 20 m³/min
-          displayStack.cumulatingFlow = etpOutlet.cumulatingFlow ? etpOutlet.cumulatingFlow + 15 : 15; // Add 15 to ETP Outlet Cumulating Flow
-          displayStack.dailyConsumption = dailyConsumption["ETP outlet"] || 0; // Use ETP Outlet Daily Consumption
+          displayStack.flowRate = 20;
+          displayStack.cumulatingFlow = etpOutlet.cumulatingFlow ? etpOutlet.cumulatingFlow + 15 : 15;
+          displayStack.dailyConsumption = dailyConsumption["ETP outlet"] || 0;
         }
       }
 
@@ -598,12 +641,24 @@ const handleDownloadPdf = () => {
               {displayStack.stackName}{" "}
               <img src={effluent} alt="energy image" width="100px" />
             </h4>
+
+            {/* ✅ Display Timestamp */}
+            <p className="text-center text-muted">
+              {formattedTimestamp ? (
+                <>
+                  Last updated: 
+                
+                  <span style={{ fontSize: "14px" }}>{formattedTimestamp.time}</span>
+                </>
+              ) : (
+                "N/A"
+              )}
+            </p>
+
             <div className="row">
-              {/* Iterate over parameters */}
               {effluentFlowParameters.map((item, index) => {
                 let value = displayStack[item.name];
 
-                // Override flowRate for STP Inlet
                 if (stack.stackName === "STP inlet" && item.name === "flowRate") {
                   value = 20;
                 }
@@ -612,10 +667,7 @@ const handleDownloadPdf = () => {
                   <div className="col-12 col-md-4 grid-margin" key={index}>
                     <div
                       className="card mb-3"
-                      style={{
-                        border: "none",
-                        cursor: "pointer",
-                      }}
+                      style={{ border: "none", cursor: "pointer" }}
                       onClick={() => handleCardClick(displayStack, item)}
                     >
                       <div className="card-body">
@@ -626,15 +678,6 @@ const handleDownloadPdf = () => {
                           </strong>{" "}
                           {item.value}
                         </p>
-
-                        {/* From Date and To Date (Real-time latest date) */}
-                        {item.name === "cumulatingFlow" && (
-  <p className="text-light" style={{ fontSize: "12px", marginTop: "-5px" }}>
-    <strong>From:</strong> 22/02/2025 &nbsp; | &nbsp;
-    <strong>To:</strong> {displayStack.date ? displayStack.date : new Date().toLocaleDateString("en-GB")}
-  </p>
-)}
-
                       </div>
                     </div>
                   </div>
@@ -651,7 +694,8 @@ const handleDownloadPdf = () => {
                         {stack.stackName === "STP inlet" && dailyConsumption["ETP outlet"]
                           ? dailyConsumption["ETP outlet"].toFixed(2)
                           : dailyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
-                      </strong> m³
+                      </strong>{" "}
+                      m³
                     </p>
                   </div>
                 </div>
@@ -673,48 +717,45 @@ const handleDownloadPdf = () => {
 
 
 
+
   {/* Graph Container with reference */}
   <div
-    className="col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
-    style={{
-      height: "70vh",
-      borderRadius: "15px",
-      position: "relative",
-    }}
-    ref={graphRef}
-  >
-    {selectedCard ? (
-      <FlowGraph
-        key={`${selectedCard.stackName}-${selectedCard.name}`} // Unique key for each selection
-        parameter={selectedCard.name}
-        userName={currentUserName}
-        stackName={selectedCard.stackName}
-      />
-    ) : (
-      <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-    )}
+      className="col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
+      style={{ height: '70vh', borderRadius: '15px', position: 'relative' }}
+      ref={graphRef}
+    >
+      {selectedCard ? (
+        <div>
+          <FlowGraph
+            parameter={selectedCard.name}
+            userName={currentUserName}
+            stackName={selectedCard.stackName}
+          />
+        </div>
+      ) : (
+        <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+      )}
 
-    {/* Download Buttons */}
-    {selectedCard && (
-      <>
+      {/* Download Buttons */}
+      {selectedCard && (
         <button
           onClick={handleDownloadPdf}
           style={{
-            position: "absolute",
-            top: "10px",
-            left: "20px",
-            backgroundColor: "#236a80",
-            color: "white",
-            marginTop: "10px",
-            marginBottom: "10px",
+            position: 'absolute',
+            top: '10px',
+            left: '20px',
+            backgroundColor: '#236a80',
+            color: 'white',
+            marginTop: '10px',
+            marginBottom: '10px',
+            display: isDownloading ? 'none' : 'inline-block', // Hide the button when downloading
           }}
           className="btn"
         >
           <i className="fa-solid fa-download"></i> Download graph
         </button>
-      </>
-    )}
-  </div>
+      )}
+    </div>
 </div>
 
            

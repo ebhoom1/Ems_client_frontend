@@ -178,7 +178,7 @@ const groupedData = groupDataByStackName(differenceData, effluentFlowStacks);
   return (
     <div className="container-fluid">
       <div className="row mt-5">
-        <div className="col-md-12 col-lg-6 mb-2">
+        <div className="col-md-12 col-lg-12 mb-2">
           <div className="card" style={{ height: "100%" }}>
             <div className="card-body">
               <h2 className="text-center text-light mt-2">Water Flow</h2>
@@ -298,7 +298,7 @@ const groupedData = groupDataByStackName(differenceData, effluentFlowStacks);
           </div>
         </div>
 
-        <div className="col-md-12 col-lg-6 mb-2">
+        <div className="col-md-12 col-lg-12 mb-2">
          {/*  <div className="card full-height-card shadow" style={{border:'none'}} >
             <div className="col-md-12">
               <h2 className="text-center mb-4 mt-2 text-light">Carbon Emission <img src={carbon} alt="carbon" width={'100px'}></img></h2>
