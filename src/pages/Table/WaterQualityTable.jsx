@@ -244,20 +244,47 @@ const WaterQualityTable = () => {
     }
   };
 
-  const fetchMinMaxData = async (username, stack) => {
+  const fetchMinMaxData = async (username, stack, fromDate, toDate) => {
     try {
-      const response = await axios.get(`${API_URL}/api/minmax/${username}/stack/${stack}`);
+      // ✅ Convert the date format from "YYYY-MM-DD" (user input) to "DD/MM/YYYY" (API format)
+      const formattedFromDate = fromDate.split("-").reverse().join("/"); // e.g., 13/02/2025
+      const formattedToDate = toDate.split("-").reverse().join("/"); // e.g., 13/02/2025
+  
+      console.log(`🔍 Fetching Min-Max Data for: ${username}, Stack: ${stack}, From: ${formattedFromDate}, To: ${formattedToDate}`);
+  
+      // ✅ Construct API URL with user-selected dates
+      const response = await axios.get(
+        `${API_URL}/api/maxmin/${username}/${stack}?fromDate=${formattedFromDate}&toDate=${formattedToDate}`
+      );
+  
       if (response.data.success) {
-        setMinMaxData({
-          minValues: response.data.data.minValues || {},
-          maxValues: response.data.data.maxValues || {},
-        });
+        const apiData = response.data.data.find(item => item.stackName === stack);
+  
+        if (apiData) {
+          console.log("✅ Min-Max API Response:", apiData);
+  
+          setMinMaxData({
+            minValues: apiData.minValues || {}, // Ensure fallback
+            maxValues: apiData.maxValues || {}, // Ensure fallback
+          });
+  
+          console.log("✅ Stored Min Values:", apiData.minValues);
+          console.log("✅ Stored Max Values:", apiData.maxValues);
+        } else {
+          console.warn("⚠ No Data Found for Selected Stack");
+          setMinMaxData({ minValues: {}, maxValues: {} });
+        }
+      } else {
+        console.warn("⚠ API Response Success = false");
+        setMinMaxData({ minValues: {}, maxValues: {} });
       }
     } catch (error) {
-      console.error("Error fetching min/max data:", error);
+      console.error("❌ Error fetching min/max data:", error);
+      setMinMaxData({ minValues: {}, maxValues: {} });
     }
   };
-
+  
+  
   const fetchCalibrationExceed = async (industryType) => {
     try {
       const response = await axios.get(
@@ -305,15 +332,19 @@ const WaterQualityTable = () => {
   };
 
   const handleSubmit = () => {
-    if (selectedUser && startDate && endDate) {
+    if (selectedUser && selectedStack && startDate && endDate) {
       fetchAvgData(selectedUser, selectedStack, startDate, endDate);
-      fetchMinMaxData(selectedUser, selectedStack);
+      fetchMinMaxData(selectedUser, selectedStack, startDate, endDate); // ✅ Pass dates
       fetchEnergyAndFlowData(selectedUser, startDate, endDate);
-      if (selectedIndustryType) fetchCalibrationExceed(selectedIndustryType);
+  
+      if (selectedIndustryType) {
+        fetchCalibrationExceed(selectedIndustryType);
+      }
     } else {
       alert("Please select user, stack, and date range!");
     }
   };
+  
 
   const downloadPDF = () => {
     const element = document.getElementById("table-to-download");
@@ -507,9 +538,9 @@ const WaterQualityTable = () => {
                       </thead>
                       <tbody>
   {Object.entries(table.parameters).map(([key, value], idx) => {
-    const exceedenceValue = calibrationExceed[key] ? parseFloat(calibrationExceed[key]) : null; // Get exceedance value if available
-    const avgValue = parseFloat(value); // Convert average value to float
-    const isExceeded = exceedenceValue !== null && avgValue > exceedenceValue; // Check if exceedance exists and is exceeded
+    const exceedenceValue = calibrationExceed[key] ? parseFloat(calibrationExceed[key]) : null; 
+    const avgValue = parseFloat(value); 
+    const isExceeded = exceedenceValue !== null && avgValue > exceedenceValue; 
 
     return (
       <tr key={idx}>
@@ -522,13 +553,14 @@ const WaterQualityTable = () => {
         >
           {value}
         </td>
-        <td>{minMaxData.minValues[key] || "N/A"}</td>
-        <td>{minMaxData.maxValues[key] || "N/A"}</td>
+        <td>{minMaxData.minValues[key] !== undefined ? minMaxData.minValues[key] : "N/A"}</td>
+        <td>{minMaxData.maxValues[key] !== undefined ? minMaxData.maxValues[key] : "N/A"}</td>
         <td>{exceedenceValue !== null ? exceedenceValue : "N/A"}</td>
       </tr>
     );
   })}
 </tbody>
+
 
 
                     </table>
