@@ -62,6 +62,7 @@ const EnergyFlow = () => {
 const [lastEnergy, setLastEnergy] = useState({});
 const [dailyEnergyConsumption, setDailyEnergyConsumption] = useState({});
 const [isDownloading, setIsDownloading] = useState(false);
+const [lastValidTimestamp, setLastValidTimestamp] = useState(null);
 
    // Function to reset colors and trigger loading state
  const resetColors = () => {
@@ -127,6 +128,7 @@ const [isDownloading, setIsDownloading] = useState(false);
           ? {
               stackName: singleData.stackName,
               ...singleData.stackData.find(item => item.stationType === "energy"),
+              timestamp: singleData.timestamp, // Extract timestamp from the last record
             }
           : null;
   
@@ -613,107 +615,106 @@ useEffect(() => {
                 </div>
             )}
 <div className="row mb-5">
-<div
-  className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
-  style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
->
-  {!loading && Object.values(realTimeData).length > 0 ? (
-    Object.values(realTimeData).map((stack, stackIndex) => {
-      // ✅ Extract timestamp from realTimeData OR fallback to stack-specific timestamp
-      const timestamp =
-        stack?.timestamp || // Use stack-specific timestamp (if exists)
-        realTimeData?.timestamp || // Use top-level timestamp
-        (stack?.stackData && stack.stackData[0]?.timestamp) || // Check inside stackData
-        "N/A"; // Default if missing
 
-      // ✅ Debugging Log
-      console.log(`Stack: ${stack.stackName}, Timestamp:`, timestamp);
+  <div
+    className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
+    style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
+  >
+    {!loading && Object.values(realTimeData).length > 0 ? (
+      Object.values(realTimeData).map((stack, stackIndex) => {
+        // Extract timestamp from realTimeData OR fallback to stack-specific timestamp
+        const timestamp =
+          stack?.timestamp || // Use stack-specific timestamp (if exists)
+          realTimeData?.timestamp || // Use top-level timestamp
+          (stack?.stackData && stack.stackData[0]?.timestamp) || // Check inside stackData
+          "N/A"; // Default if missing
 
-      // ✅ Format the timestamp
-      const formattedTimestamp =
-        timestamp !== "N/A" && !isNaN(new Date(timestamp).getTime())
-          ? {
-              date: new Date(timestamp).toLocaleDateString("en-GB"), // Date in DD/MM/YYYY format
-              time: new Date(timestamp).toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "numeric",
-                hour12: true, // Use 12-hour format (e.g., 11.13 PM)
-              }),
-            }
-          : null;
+        // Format the timestamp
+        const formattedTimestamp =
+          timestamp !== "N/A" && !isNaN(new Date(timestamp).getTime())
+            ? {
+                date: new Date(timestamp).toLocaleDateString("en-GB"), // Date in DD/MM/YYYY format
+                time: new Date(timestamp).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "numeric",
+                  hour12: true, // Use 12-hour format (e.g., 11.13 PM)
+                }),
+              }
+            : null;
 
-      return (
-        <div key={stackIndex} className="col-12 mb-4">
-          <div className="stack-box">
-            <h4 className="text-center">
-              {stack.stackName} <img src={energy} alt="energy image" width="100px" />
-            </h4>
+        return (
+          <div key={stackIndex} className="col-12 mb-4">
+            <div className="stack-box">
+              <h4 className="text-center">
+                {stack.stackName} <img src={energy} alt="energy image" width="100px" />
+              </h4>
 
-            {/* ✅ Display Timestamp */}
-            <p className="text-center text-muted">
-              {formattedTimestamp ? (
-                <>
-                  Last updated: <br />
-                  <span style={{ fontSize: "14px" }}>{formattedTimestamp.date}</span> <br />
-                  <span style={{ fontSize: "14px" }}>{formattedTimestamp.time}</span>
-                </>
-              ) : (
-                "N/A"
-              )}
-            </p>
+              {/* Display Timestamp */}
+              <p className="text-center text-muted">
+                {formattedTimestamp ? (
+                  <>
+                    Last updated: <br />
+                    <span style={{ fontSize: "14px" }}>{formattedTimestamp.date}</span> <br />
+                    <span style={{ fontSize: "14px" }}>{formattedTimestamp.time}</span>
+                  </>
+                ) : (
+                  "N/A"
+                )}
+              </p>
 
-            <div className="row">
-              {energyParameters.map((item, index) => {
-                const value = stack[item.name];
-                return value && value !== "N/A" ? (
-                  <div className="col-12 col-md-4 grid-margin" key={index}>
-                    <div
-                      className="card mb-3"
-                      style={{ border: "none", cursor: "pointer" }}
-                      onClick={() => handleCardClick(stack, item)}
-                    >
-                      <div className="card-body">
-                        <h5 className="text-light">{item.parameter}</h5>
-                        <p className="text-light">
-                          <strong
-                            className="text-light"
-                            style={{ color: "#236A80", fontSize: "24px" }}
-                          >
-                            {parseFloat(value).toFixed(2)}
-                          </strong>{" "}
-                          {item.value}
-                        </p>
+              <div className="row">
+                {energyParameters.map((item, index) => {
+                  const value = stack[item.name];
+                  return value && value !== "N/A" ? (
+                    <div className="col-12 col-md-4 grid-margin" key={index}>
+                      <div
+                        className="card mb-3"
+                        style={{ border: "none", cursor: "pointer" }}
+                        onClick={() => handleCardClick(stack, item)}
+                      >
+                        <div className="card-body">
+                          <h5 className="text-light">{item.parameter}</h5>
+                          <p className="text-light">
+                            <strong
+                              className="text-light"
+                              style={{ color: "#236A80", fontSize: "24px" }}
+                            >
+                              {parseFloat(value).toFixed(2)}
+                            </strong>{" "}
+                            {item.value}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : null;
-              })}
+                  ) : null;
+                })}
 
-              {/* ✅ Daily Energy Consumption Card */}
-              <div className="col-md-4 grid-margin">
-                <div className="card mb-3" style={{ border: "none" }}>
-                  <div className="card-body">
-                    <h5 className="text-light">Daily Energy Consumption</h5>
-                    <p className="text-light">
-                      <strong style={{ color: "#ffff", fontSize: "24px" }}>
-                        {dailyEnergyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
-                      </strong>{" "}
-                      kW/hr
-                    </p>
+                {/* Daily Energy Consumption Card */}
+                <div className="col-md-4 grid-margin">
+                  <div className="card mb-3" style={{ border: "none" }}>
+                    <div className="card-body">
+                      <h5 className="text-light">Daily Energy Consumption</h5>
+                      <p className="text-light">
+                        <strong style={{ color: "#ffff", fontSize: "24px" }}>
+                          {dailyEnergyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
+                        </strong>{" "}
+                        kW/hr
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      );
-    })
-  ) : (
-    <div className="col-12">
-      <h5 className="text-center mt-5">Waiting for real-time data ...</h5>
-    </div>
-  )}
-</div>
+        );
+      })
+    ) : (
+      <div className="col-12">
+        <h5 className="text-center mt-5">Waiting for real-time data ...</h5>
+      </div>
+    )}
+  </div>
+
 
   {/* Graph Container with reference */}
   <div

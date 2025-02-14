@@ -502,7 +502,7 @@ const WaterQualityTable = () => {
                           <th>Average Value</th>
                           <th>Min Value</th>
                           <th>Max Value</th>
-                          <th>Parameter Exceedence</th>
+                          <th>Exceedence Limits</th>
                         </tr>
                       </thead>
                       <tbody>

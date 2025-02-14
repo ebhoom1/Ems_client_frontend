@@ -62,22 +62,62 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
     
     const processData = () => {
         if (!Array.isArray(graphData) || graphData.length === 0) {
+            console.warn("⚠️ No valid data found in graphData!");
             return { labels: [], values: [] };
         }
     
-        const labels = graphData.map((entry) =>
-            moment(entry.timestamp).format('DD/MM/YYYY HH:mm') // Using timestamp for consistency
-        );
+        const labels = [];
+        const values = [];
     
-        const values = graphData.map((entry) => {
-            const stack = entry.stackData.find(
-                (stack) => stack.stackName === stackName
+        graphData.forEach((entry, index) => {
+            console.log(`📌 Processing Entry ${index + 1}:`, entry);
+    
+            if (!entry.stackData || !Array.isArray(entry.stackData) || entry.stackData.length === 0) {
+                console.warn(`⚠️ No stackData found in entry ${index + 1}`);
+                return;
+            }
+    
+            // ✅ Find the stack that matches the selected stackName
+            const stack = entry.stackData.find((s) => s.stackName === stackName);
+            
+            if (!stack) {
+                console.warn(`⚠️ No matching stack found for stackName: ${stackName}`);
+                return;
+            }
+    
+            console.log("✅ Filtered Stack:", stack);
+    
+            if (!stack.parameters || typeof stack.parameters !== "object") {
+                console.warn(`⚠️ No parameters found in stack ${stackName}`);
+                return;
+            }
+    
+            console.log("📌 Stack Parameters:", stack.parameters);
+    
+            // ✅ Handle Case Sensitivity for `ph`
+            const paramKey = Object.keys(stack.parameters).find(
+                (key) => key.toLowerCase() === parameter.toLowerCase()
             );
-            return stack?.parameters?.[parameter] || 0; // Safely access parameters
+    
+            if (!paramKey) {
+                console.warn(`⚠️ Parameter '${parameter}' not found in stack parameters!`);
+                return;
+            }
+    
+            const paramValue = stack.parameters[paramKey] || 0;
+    
+            // ✅ Add processed label and value
+            labels.push(moment(entry.timestamp).format("DD/MM/YYYY HH:mm"));
+            values.push(parseFloat(paramValue)); // Ensure value is a valid number
         });
+    
+        console.log("✅ Processed Labels:", labels);
+        console.log("✅ Processed Values:", values);
     
         return { labels, values };
     };
+    
+    
     
     const { labels, values } = processData();
     const chartData = {

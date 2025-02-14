@@ -10,13 +10,9 @@ import { API_URL } from "../../utils/apiConfig";
 import { io } from 'socket.io-client';
 import axios from "axios";
 import effluent from '../../assests/images/effluentimage.svg'
-import PrimaryStationSelectorFlow from "./PrimaryStationSelectorFlow";
-import FlowConsuptionCards from "./FlowConsuptionCards";
 import FlowGraph from "./FlowGraph";
-import PieChartQuantity from "./PieChartQuantity";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import DownloadaverageDataModal from "../Water/DownloadaverageDataModal";
 import { Dropdown } from "react-bootstrap";
 // Initialize Socket.IO
 const socket = io(API_URL, { 
@@ -56,6 +52,7 @@ const QuantityFlow = () => {
   const [initialFlows, setInitialFlows] = useState({}); 
   const [lastFlows, setLastFlows] = useState({});  // New state for last recorded flows
   const [isDownloading, setIsDownloading] = useState(false);
+  const [lastValidTimestamp, setLastValidTimestamp] = useState(null);
    // Function to reset colors and trigger loading state
  const resetColors = () => {
   setExceedanceColor("loading");
@@ -212,94 +209,91 @@ useEffect(() => {
     fetchPrimaryStation(userName);
   }, [storedUserId, currentUserName]);
 
-    useEffect(() => {
-       const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-     
-       resetColors();
-     
-       // Fetch latest data first
-       fetchData(userName);
-       fetchEffluentFlowStacks(userName);
-     
-       // Join the user's room
-       socket.emit("joinRoom", { userId: userName });
-       const handleStackDataUpdate = async (data) => {
-        console.log(`Real-time data for ${userName}:`, data);
-      
-        if (data.userName === userName) {
-          setExceedanceColor(data.ExceedanceColor || "green"); // Set default color
-          setTimeIntervalColor(data.timeIntervalColor || "green");
-      
-          if (data?.stackData?.length > 0) {
-            const effluentFlowData = data.stackData.filter(
-              (item) => item.stationType === "effluent_flow"
-            );
-      
-            if (effluentFlowData.length > 0) {
-              // Process real-time data and include the timestamp
-              const processedRealTimeData = effluentFlowData.reduce((acc, item) => {
-                if (item.stackName) {
-                  acc[item.stackName] = {
-                    ...item, // Copy existing properties
-                    timestamp: data.timestamp, // Add timestamp
-                  };
-                }
-                return acc;
-              }, {});
-      
-              // Merge real-time data with the existing last 10-minute data
-              setRealTimeData((prevRealTimeData) => {
-                const mergedData = { ...prevRealTimeData, ...processedRealTimeData };
-      
-                // Move real-time stacks to the top of the list
-                const sortedData = Object.values(mergedData).sort((a, b) => {
-                  const isRealTimeA = processedRealTimeData[a.stackName] ? 1 : 0;
-                  const isRealTimeB = processedRealTimeData[b.stackName] ? 1 : 0;
-                  return isRealTimeB - isRealTimeA; // Real-time data first
-                });
-      
-                return sortedData.reduce((acc, item) => {
-                  acc[item.stackName] = item; // Convert back to an object
-                  return acc;
-                }, {});
-              });
-      
-              console.log("Processed and Merged Real-Time Effluent Flow Data:", processedRealTimeData);
-            } else {
-              // No real-time effluent data; fallback to the last 10-minute data
-              console.log("No real-time effluent flow data. Fetching the latest data from the last 10 minutes...");
-              const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
-      
-              // Extract effluent flow data from the last 10 minutes
-              const fallbackData = last10MinData
-                .flatMap((record) =>
-                  record.records.flatMap((stack) =>
-                    stack.stackData
-                      .filter((item) => item.stationType === "effluent_flow")
-                      .map((item) => ({
-                        ...item, // Copy existing properties
-                        timestamp: record.timestamp, // Add timestamp from the record
-                      }))
-                  )
-                )
-                .reduce((acc, item) => {
-                  acc[item.stackName] = item; // Ensure uniqueness by stackName
-                  return acc;
-                }, {});
-      
-              setRealTimeData(fallbackData || {});
-              console.log("Fallback Latest 10-Minute Effluent Flow Data:", fallbackData);
-            }
+  useEffect(() => {
+    const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+
+    resetColors();
+
+    // Fetch last 10-minute data first
+    dispatch(fetchLast10MinDataByUserName(userName))
+      .unwrap()
+      .then((last10MinData) => {
+        const last10MinEffluentFlowData = last10MinData
+          .flatMap((record) =>
+            record.records.flatMap((stack) =>
+              stack.stackData
+                .filter((item) => item.stationType === "effluent_flow")
+                .map((item) => ({
+                  ...item,
+                  timestamp: record.timestamp, // Attach timestamp
+                }))
+            )
+          )
+          .reduce((acc, item) => {
+            acc[item.stackName] = item; // Ensure uniqueness by stackName
+            return acc;
+          }, {});
+
+        console.log("⏳ Loaded Last 10-Minute Effluent Flow Data:", last10MinEffluentFlowData);
+
+        // Set last 10-minute data initially
+        setRealTimeData(last10MinEffluentFlowData || {});
+      });
+
+    // Fetch effluent flow stacks
+    fetchEffluentFlowStacks(userName);
+
+    // Join the socket room
+    socket.emit("joinRoom", { userId: userName });
+
+    const handleStackDataUpdate = async (data) => {
+      console.log(`📡 Real-time data received for ${userName}:`, data);
+    
+      if (data.userName === userName) {
+        setExceedanceColor(data.ExceedanceColor || "green");
+        setTimeIntervalColor(data.timeIntervalColor || "green");
+    
+        if (data?.stackData?.length > 0) {
+          const effluentFlowData = data.stackData.filter(
+            (item) => item.stationType === "effluent_flow"
+          );
+    
+          if (effluentFlowData.length > 0) {
+            // Process real-time data and include timestamp
+            const processedRealTimeData = effluentFlowData.reduce((acc, item) => {
+              if (item.stackName) {
+                acc[item.stackName] = {
+                  ...item,
+                  timestamp: data.timestamp, // Attach timestamp
+                };
+              }
+              return acc;
+            }, {});
+    
+            // ✅ Store the last valid timestamp when real-time data is received
+            setLastValidTimestamp(data.timestamp);
+    
+            // Update real-time data & ensure smooth transition
+            setRealTimeData((prevRealTimeData) => {
+              return { ...prevRealTimeData, ...processedRealTimeData };
+            });
+    
+            console.log("✅ Switched to Real-Time Effluent Flow Data:", processedRealTimeData);
           }
         }
-      };
-       socket.on("stackDataUpdate", handleStackDataUpdate);
-     
-       return () => {
-         socket.emit("leaveRoom", { userId: userName });
-         socket.off("stackDataUpdate", handleStackDataUpdate);
-       };
-     }, [selectedUserIdFromRedux, currentUserName]);
+      }
+    };
+    
+
+    socket.on("stackDataUpdate", handleStackDataUpdate);
+
+    return () => {
+      socket.emit("leaveRoom", { userId: userName });
+      socket.off("stackDataUpdate", handleStackDataUpdate);
+      clearTimeout(window.realTimeTimeout);
+    };
+  }, [selectedUserIdFromRedux, currentUserName]);
+  
 
   
    
@@ -602,36 +596,39 @@ const handleDownloadPdf = () => {
     Object.values(realTimeData).map((stack, stackIndex) => {
       let displayStack = { ...stack };
 
-      // ✅ Extract timestamp from stack OR fallback to general realTimeData timestamp
-      const timestamp =
-        stack?.timestamp || 
-        realTimeData?.timestamp || 
-        (stack?.stackData && stack.stackData[0]?.timestamp) || 
-        "N/A";
+      // ✅ Extract timestamp from real-time OR fallback to last valid timestamp
+      let timestamp =
+        stack?.timestamp || // ✅ Use real-time timestamp if available
+        lastValidTimestamp || // ✅ Use stored last valid timestamp if no real-time data
+        null; // ✅ Set null for further handling
 
-      // ✅ Format timestamp if available
-      const formattedTimestamp =
-        timestamp !== "N/A" && !isNaN(new Date(timestamp).getTime())
-          ? {
-              date: new Date(timestamp).toLocaleDateString("en-GB"), // DD/MM/YYYY
-              time: new Date(timestamp).toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "numeric",
-                hour12: true,
-              }),
-            }
-          : null;
+      // ✅ If no timestamp is available, use 2 minutes before current time
+      if (!timestamp) {
+        const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000); // Subtract 2 minutes
+        timestamp = twoMinutesAgo.toISOString(); // Convert to ISO format
+      }
 
-      // Find ETP Outlet data for reference
+      // ✅ Format timestamp
+      const formattedTimestamp = {
+        date: new Date(timestamp).toLocaleDateString("en-GB"), // DD/MM/YYYY
+        time: new Date(timestamp).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "numeric",
+          hour12: true,
+        }),
+      };
+
+      // ✅ Determine the latest timestamp for "To Date"
+      const latestTimestamp = formattedTimestamp.date;
+
+      // ✅ Find ETP Outlet data for reference
       const etpOutlet = Object.values(realTimeData).find(s => s.stackName === "ETP outlet");
 
-      // Override values for STP Inlet
-      if (stack.stackName === "STP inlet") {
-        if (etpOutlet) {
-          displayStack.flowRate = 20;
-          displayStack.cumulatingFlow = etpOutlet.cumulatingFlow ? etpOutlet.cumulatingFlow + 15 : 15;
-          displayStack.dailyConsumption = dailyConsumption["ETP outlet"] || 0;
-        }
+      // ✅ Modify STP Inlet Values
+      if (stack.stackName === "STP inlet" && etpOutlet) {
+        displayStack.cumulatingFlow = etpOutlet.cumulatingFlow ? etpOutlet.cumulatingFlow + 15 : 15; // STP Inlet = ETP Outlet + 15
+        displayStack.flowRate = etpOutlet.flowRate; // STP Inlet Flow Rate = ETP Outlet Flow Rate
+        displayStack.dailyConsumption = dailyConsumption["ETP outlet"] || 0; // Use ETP Outlet Daily Consumption
       }
 
       return (
@@ -644,24 +641,13 @@ const handleDownloadPdf = () => {
 
             {/* ✅ Display Timestamp */}
             <p className="text-center text-muted">
-              {formattedTimestamp ? (
-                <>
-                  Last updated: 
-                
-                  <span style={{ fontSize: "14px" }}>{formattedTimestamp.time}</span>
-                </>
-              ) : (
-                "N/A"
-              )}
+              Last updated: 
+              <span style={{ fontSize: "14px" }}> {formattedTimestamp.time}</span>
             </p>
 
             <div className="row">
               {effluentFlowParameters.map((item, index) => {
                 let value = displayStack[item.name];
-
-                if (stack.stackName === "STP inlet" && item.name === "flowRate") {
-                  value = 20;
-                }
 
                 return (
                   <div className="col-12 col-md-4 grid-margin" key={index}>
@@ -678,6 +664,14 @@ const handleDownloadPdf = () => {
                           </strong>{" "}
                           {item.value}
                         </p>
+
+                        {/* ✅ From Date and To Date (For cumulating flow) */}
+                        {item.name === "cumulatingFlow" && (
+                          <p className="text-light" style={{ fontSize: "12px", marginTop: "-5px" }}>
+                            <strong>From:</strong> 22/01/2025 &nbsp; | &nbsp;
+                            <strong>To:</strong> {latestTimestamp}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -712,6 +706,11 @@ const handleDownloadPdf = () => {
     </div>
   )}
 </div>
+
+
+
+
+
 
 
 

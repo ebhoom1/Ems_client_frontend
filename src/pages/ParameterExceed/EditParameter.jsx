@@ -477,7 +477,7 @@ const EditParameter = () => {
                     
                     
                     <div className="mt-4 mb-5 p-2">
-                    <button type="submit" className="btn btn-primary mb-2" onClick={handleSaveCalibration}>Update Calibration</button>                      <button type="button" className="btn btn-danger mb-2" onClick={handleCancel}>Cancel</button>
+                    <button type="submit" className="btn btn-primary mb-2" onClick={handleSaveCalibration}>Update limit</button>                      <button type="button" className="btn btn-danger mb-2" onClick={handleCancel}>Cancel</button>
                     </div>
                   </div>
                   </div>
