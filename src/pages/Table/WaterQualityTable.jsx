@@ -84,18 +84,28 @@ const WaterQualityTable = () => {
   }, [userType, userData]);
   
   
-
-  const fetchUsers = async () => {
-    const token = localStorage.getItem("userdatatoken");
-    try {
-      const response = await axios.get(`${API_URL}/api/getallusers`, {
-        headers: { Authorization: token },
-      });
-      setUsers(response.data.users.filter((user) => user.userType === "user"));
-    } catch (error) {
-      console.error("Error fetching users:", error);
+ 
+    const fetchUsers = async () => {
+      try {
+        if (userData?.validUserOne) {
+          let response;
+          if (userData.validUserOne.adminType) {
+            response = await axios.get(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`);
+          } else {
+            response = await axios.get(`${API_URL}/api/getallusers`);
+          }
+          const filteredUsers = response.data.users.filter((user) => user.userType === 'user');
+          setUsers(filteredUsers);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    
+    if (userData?.validUserOne) {
+      fetchUsers();
     }
-  };
+  
 
   const fetchStackNames = async (username) => {
     try {
@@ -120,129 +130,115 @@ const WaterQualityTable = () => {
 
   const fetchAvgData = async (username, stack, start, end) => {
     try {
-      const formattedStartDate = start.split("-").reverse().join("-");
-      const formattedEndDate = end.split("-").reverse().join("-");
+        // Formatting date to match API requirements (DD-MM-YYYY)
+        const formattedStartDate = start.split("-").reverse().join("-");
+        const formattedEndDate = end.split("-").reverse().join("-");
 
-      const response = await axios.get(
-        `${API_URL}/api/last-entry/user/${username}/stack/${stack}/interval/hour`,
-        {
-          params: {
-            startTime: formattedStartDate,
-            endTime: formattedEndDate,
-          },
-        }
-      );
-
-      if (response.data.success) {
-        const data = response.data.data;
-
-        // Calculate average values for each parameter
-        const avgParameters = data.reduce((acc, entry) => {
-          Object.entries(entry.stackData[0]?.parameters || {}).forEach(([key, value]) => {
-            if (key !== "_id") {
-              if (!acc[key]) {
-                acc[key] = { sum: 0, count: 0 };
-              }
-              acc[key].sum += parseFloat(value);
-              acc[key].count += 1;
+        // API Call to the correct endpoint
+        const response = await axios.get(
+            `${API_URL}/api/average/user/${username}/stack/${stack}/time-range/average`,
+            {
+                params: {
+                    startDate: formattedStartDate,
+                    endDate: formattedEndDate,
+                },
             }
-          });
-          return acc;
-        }, {});
-
-        const avgValues = Object.fromEntries(
-          Object.entries(avgParameters).map(([key, { sum, count }]) => [
-            key,
-            (sum / count).toFixed(2),
-          ])
         );
 
-        setTablesData([{ date: `${start} to ${end}`, parameters: avgValues }]);
-      }
-    } catch (error) {
-      console.error("Error fetching average data:", error);
-    }
-  };
+        // If API call is successful
+        if (response.data.success) {
+            const data = response.data.data;
 
-  const fetchEnergyAndFlowData = async (username, start, end) => {
-    try {
+            // Filter out the `_id` parameter
+            const filteredData = Object.fromEntries(
+                Object.entries(data)
+                    .filter(([key]) => key !== "_id") // Exclude _id
+                    .map(([key, value]) => [key, value.toFixed(2)]) // Format values
+            );
+
+            // Updating state with new data
+            setTablesData([{ date: `${start} to ${end}`, parameters: filteredData }]);
+        }
+    } catch (error) {
+        console.error("Error fetching average data:", error);
+    }
+};
+
+
+const fetchEnergyAndFlowData = async (username, start, end) => {
+  try {
       // Format dates as `dd-MM-yyyy` to match the API endpoint
       const formattedStartDate = start.split("-").reverse().join("-"); // Convert `yyyy-MM-dd` to `dd-MM-yyyy`
       const formattedEndDate = end.split("-").reverse().join("-"); // Convert `yyyy-MM-dd` to `dd-MM-yyyy`
 
       const response = await axios.get(
-        `${API_URL}/api/energyAndFlowData/${username}/${formattedStartDate}/${formattedEndDate}`
+          `${API_URL}/api/energyAndFlowData/${username}/${formattedStartDate}/${formattedEndDate}`
       );
 
       if (response.data.success) {
-        const data = response.data.data;
+          const data = response.data.data;
 
-        // Debug: Log the entire API response
-        console.log("API Response:", data);
+          // Debug: Log the entire API response
+          console.log("API Response:", data);
 
-        // Filter data for the start and end dates
-        const startDateData = data.filter((entry) => entry.date === formattedStartDate.split("-").join("/")); // Convert `dd-MM-yyyy` to `dd/MM/yyyy`
-        const endDateData = data.filter((entry) => entry.date === formattedEndDate.split("-").join("/")); // Convert `dd-MM-yyyy` to `dd/MM/yyyy`
+          // Filter data for the start and end dates
+          const startDateData = data.filter((entry) => entry.date === formattedStartDate.split("-").join("/")); // Convert `dd-MM-yyyy` to `dd/MM/yyyy`
+          const endDateData = data.filter((entry) => entry.date === formattedEndDate.split("-").join("/")); // Convert `dd-MM-yyyy` to `dd/MM/yyyy`
 
-        console.log("Start Date Data:", startDateData);
-        console.log("End Date Data:", endDateData);
+          console.log("Start Date Data:", startDateData);
+          console.log("End Date Data:", endDateData);
 
-        // Prepare energy data
-        const energyData = stackOptions
-          .filter((stack) => stack.stationType === "energy")
-          .map((stack) => {
-            const startEnergy = startDateData.find(
-              (entry) => entry.stackName === stack.name && entry.stationType === "energy"
-            );
-            const endEnergy = endDateData.find(
-              (entry) => entry.stackName === stack.name && entry.stationType === "energy"
-            );
+          // ** Prepare energy data **
+          const energyData = stackOptions
+              .filter((stack) => stack.stationType === "energy")
+              .map((stack) => {
+                  const startEnergy = startDateData.find((entry) => entry.stackName === stack.name);
+                  const endEnergy = endDateData.find((entry) => entry.stackName === stack.name);
 
-            const initialEnergy = parseFloat(startEnergy?.initialEnergy || 0).toFixed(2);
-            const lastEnergy = parseFloat(endEnergy?.lastEnergy || 0).toFixed(2);
-            const energyDifference = (parseFloat(lastEnergy) - parseFloat(initialEnergy)).toFixed(2);
+                  const initialEnergy = parseFloat(startEnergy?.initialEnergy || 0).toFixed(2);
+                  const lastEnergy = parseFloat(endEnergy?.lastEnergy || 0).toFixed(2);
+                  const energyDifference = (parseFloat(lastEnergy) - parseFloat(initialEnergy)).toFixed(2);
 
-            return {
-              stackName: stack.name,
-              initialEnergy,
-              lastEnergy,
-              energyDifference,
-            };
-          });
+                  return { stackName: stack.name, initialEnergy, lastEnergy, energyDifference };
+              });
 
-        console.log("Energy Data:", energyData);
-        setEnergyData(energyData);
+          console.log("Energy Data:", energyData);
+          setEnergyData(energyData);
 
-        // Prepare quantity data
-        const quantityData = stackOptions
-          .filter((stack) => stack.stationType === "effluent_flow")
-          .map((stack) => {
-            const startFlow = startDateData.find(
-              (entry) => entry.stackName === stack.name && entry.stationType === "effluent_flow"
-            );
-            const endFlow = endDateData.find(
-              (entry) => entry.stackName === stack.name && entry.stationType === "effluent_flow"
-            );
+          // ** Prepare quantity data (Flow) **
+          const quantityData = stackOptions
+              .filter((stack) => stack.stationType === "effluent_flow")
+              .map((stack) => {
+                  const startFlow = startDateData.find((entry) => entry.stackName === stack.name);
+                  const endFlow = endDateData.find((entry) => entry.stackName === stack.name);
 
-            const initialCumulatingFlow = parseFloat(startFlow?.initialCumulatingFlow || 0).toFixed(2);
-            const lastCumulatingFlow = parseFloat(endFlow?.lastCumulatingFlow || 0).toFixed(2);
-            const cumulatingFlowDifference = (parseFloat(lastCumulatingFlow) - parseFloat(initialCumulatingFlow)).toFixed(2);
+                  let initialFlow = parseFloat(startFlow?.initialCumulatingFlow || 0);
+                  let finalFlow = parseFloat(endFlow?.lastCumulatingFlow || 0);
+                  let flowDifference = Math.abs(finalFlow - initialFlow).toFixed(2); // Absolute value to prevent negatives
 
-            return {
-              stackName: stack.name,
-              initialCumulatingFlow,
-              lastCumulatingFlow,
-              cumulatingFlowDifference,
-            };
-          });
+                  // ✅ Special handling for STP inlet (Derived from ETP outlet + 15)
+                  if (stack.name === "STP inlet") {
+                      const etpOutletStart = startDateData.find((entry) => entry.stackName === "ETP outlet");
+                      const etpOutletEnd = endDateData.find((entry) => entry.stackName === "ETP outlet");
 
-        console.log("Quantity Data:", quantityData);
-        setQuantityData(quantityData);
+                      if (etpOutletStart && etpOutletEnd) {
+                          initialFlow = parseFloat(etpOutletStart.initialCumulatingFlow || 0) + 15;
+                          finalFlow = parseFloat(etpOutletEnd.lastCumulatingFlow || 0) + 15;
+                          flowDifference = Math.abs(finalFlow - initialFlow).toFixed(2);
+                      }
+                  }
+
+                  return { stackName: stack.name, initialFlow, finalFlow, flowDifference };
+              });
+
+          console.log("Quantity Data:", quantityData);
+          setQuantityData(quantityData);
       }
-    } catch (error) {
+  } catch (error) {
       console.error("Error fetching energy and flow data:", error);
-    }
-  };
+  }
+};
+
 
   const fetchMinMaxData = async (username, stack, fromDate, toDate) => {
     try {
@@ -448,7 +444,7 @@ const WaterQualityTable = () => {
       </option>
     ))}
 </select>
-
+ 
 
                   </div>
                 </div>
@@ -532,7 +528,7 @@ const WaterQualityTable = () => {
                           <th>Parameter</th>
                           <th>Average Value</th>
                           <th>Min Value</th>
-                          <th>Max Value</th>
+                          <th>Max Value</th> 
                           <th>Exceedence Limits</th>
                         </tr>
                       </thead>
@@ -592,65 +588,48 @@ const WaterQualityTable = () => {
 )}
 
 
-<h4 className="text-center">Quantity Report </h4>
+<h4 className="text-center">Quantity Report</h4>
 {stackOptions.length > 0 ? (
   <table className="report-table">
     <thead>
       <tr>
         <th>Stack Name</th>
-        <th>Initial Reading</th>
-        <th>Last Reading</th>
-        <th>Total m3</th>
+        <th>Initial Reading (m³)</th>
+        <th>Final Reading (m³)</th>
+        <th>Total m³</th>
       </tr>
     </thead>
     <tbody>
-  {quantityData
-    .sort((a, b) => {
-      const order = [
-        "ETP outlet",
-        "STP inlet",
-        "STP acf outlet",
-        "STP uf outlet",
-        "STP softener outlet",
-        "STP garden outlet 1",
-        "STP garden outlet 2",
-      ];
+      {quantityData
+        .sort((a, b) => {
+          const order = [
+            "ETP outlet",
+            "STP inlet",
+            "STP acf outlet",
+            "STP uf outlet",
+            "STP softener outlet",
+            "STP garden outlet 1",
+            "STP garden outlet 2",
+          ];
 
-      // Ensure that items not in the order array are pushed to the end
-      const indexA = order.indexOf(a.stackName);
-      const indexB = order.indexOf(b.stackName);
-
-      return (indexA === -1 ? order.length : indexA) - (indexB === -1 ? order.length : indexB);
-    })
-    .map((quantity, idx, arr) => {
-      let initialFlow = parseFloat(quantity.initialCumulatingFlow) || 0;
-      let finalFlow = parseFloat(quantity.lastCumulatingFlow) || 0;
-
-      // Find the ETP outlet values
-      if (quantity.stackName === "STP inlet") {
-        const etpOutlet = arr.find((item) => item.stackName === "ETP outlet");
-        if (etpOutlet) {
-          initialFlow = parseFloat(etpOutlet.initialCumulatingFlow || 0) + 15;
-          finalFlow = parseFloat(etpOutlet.lastCumulatingFlow || 0) + 15;
-        }
-      }
-
-      return (
-        <tr key={idx}>
-          <td>{quantity.stackName}</td>
-          <td>{initialFlow.toFixed(2)}</td>
-          <td>{finalFlow.toFixed(2)}</td>
-          <td>{Math.abs(finalFlow - initialFlow).toFixed(2)}</td> {/* Removes negative sign */}
-        </tr>
-      );
-    })}
-</tbody>
-
-
+          const indexA = order.indexOf(a.stackName);
+          const indexB = order.indexOf(b.stackName);
+          return (indexA === -1 ? order.length : indexA) - (indexB === -1 ? order.length : indexB);
+        })
+        .map((quantity, idx) => (
+          <tr key={idx}>
+            <td>{quantity.stackName}</td>
+            <td>{quantity.initialFlow.toFixed(2)}</td>
+            <td>{quantity.finalFlow.toFixed(2)}</td>
+            <td>{quantity.flowDifference}</td>
+          </tr>
+        ))}
+    </tbody>
   </table>
 ) : (
   <p className="text-center">No quantity report available.</p>
 )}
+
 
                   </div>
                 ))}

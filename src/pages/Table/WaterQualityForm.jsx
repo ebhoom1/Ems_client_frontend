@@ -89,7 +89,7 @@ const WaterQualityForm = () => {
             <Maindashboard />
           </div>
           <div style={{ borderRadius: '10px' }} className="border border-solid shadow m-3 p-5">
-            <h3>Customisable Report</h3>
+            <h3>Customisable Report for  user</h3>
             <form onSubmit={handleSubmit} className="custom-report-form">
               <div className="form-group">
                 <label htmlFor="userName">User Name:</label>
