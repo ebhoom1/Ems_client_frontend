@@ -57,7 +57,7 @@ function Maindashboard() {
 
   // Define all possible navigation links
   const allLinks = [
-    { name: "Effluent/Sewage", path: "/water", key: "effluent" },
+    { name: "Effluent", path: "/water", key: "effluent" },
     { name: "Stack Emission", path: "/ambient", key: "emission" },
     { name: "Noise", path: "/noise", key: "noise" },
     { name: "Effluent Flow", path: "/quantity", key: "effluent_flow" },

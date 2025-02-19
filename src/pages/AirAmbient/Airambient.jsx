@@ -10,13 +10,14 @@ import Hedaer from "../Header/Hedaer";
 import { API_URL } from "../../utils/apiConfig";
 import DailyHistoryModal from "../Water/DailyHIstoryModal";
 import { io } from 'socket.io-client';
-import { fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
+import { fetchUserByUserName, fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
 import WaterGraphPopup from "../Water/WaterGraphPopup";
 import air from '../../assests/images/air.svg';
 import '../Water/water.css';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import DownloadaverageDataModal from "../Water/DownloadaverageDataModal";
+import axios from "axios";
 const socket = io(API_URL, { 
   transports: ['websocket'], 
   reconnectionAttempts: 5,
@@ -30,7 +31,7 @@ const Airambient = () => {
   const dispatch = useDispatch();
   const selectedUserIdFromRedux = useSelector((state) => state.selectedUser.userId);
   const storedUserId = sessionStorage.getItem('selectedUserId'); // Retrieve userId from session storage
-  const { userId } = useSelector((state) => state.selectedUser); 
+const [userId, setUserId] = useState(null);
 
   const { userData, userType } = useSelector((state) => state.user);
   const { latestData, error } = useSelector((state) => state.iotData);
@@ -49,6 +50,25 @@ const Airambient = () => {
   // Remove spinners and set default colors for indicators
   const [exceedanceColor, setExceedanceColor] = useState("green"); // Default to 'gray'
   const [timeIntervalColor, setTimeIntervalColor] = useState("green"); // Default to 'gray'
+  const [address, setAddress] = useState("No address available");
+  const [district, setDistrict] = useState("Unknown District");
+
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const response = await axios.get("http://localhost:5555/api/getauser/66a8d42efc617ad8c939d2cd");
+        if (response.data.status === 200) {
+          const user = response.data.user;
+          setAddress(user.address || "No address available");
+          setDistrict(user.district || "Unknown District");
+        }
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+      }
+    };
+
+    fetchUserDetails();
+  }, []);
    // Function to reset colors and trigger loading state
  const resetColors = () => {
   setExceedanceColor("loading");
@@ -109,15 +129,55 @@ const Airambient = () => {
   useEffect(() => {
     const storedUserId = sessionStorage.getItem('selectedUserId');
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-    console.log(`username : ${userName}`);
     
+    console.log(`Username: ${userName}`);
+
+    // Fetch user details by username
+    dispatch(fetchUserByUserName(userName))
+      .unwrap()
+      .then((user) => {
+        console.log("Fetched User Object:", user); // ✅ Log full user details
+        console.log("Fetched User ID (_id):", user?._id || "No user ID found"); // ✅ Log _id
+
+        if (user?._id) {
+          setUserId(user._id); // ✅ Save the fetched userId in state
+        }
+      })
+      .catch((error) => console.error("Error fetching user:", error));
+
     fetchData(userName);
     fetchEmissionStacks(userName); // Fetch emission stacks
-    if (storedUserId) {
-      setCurrentUserName(storedUserId);
-    }
-  }, [selectedUserIdFromRedux, currentUserName, dispatch]);
 
+    if (storedUserId) {
+        setCurrentUserName(storedUserId);
+    }
+}, [selectedUserIdFromRedux, currentUserName, dispatch]);
+
+// ✅ New useEffect: Fetch address when userId is available
+useEffect(() => {
+    if (!userId) {
+      console.log("No userId found. Skipping API call.");
+      return; 
+    }
+
+    console.log("Fetching user details for userId:", userId); // Debugging
+
+    const fetchUserDetails = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/getauser/${userId}`);
+        console.log("API Response:", response.data); // Debug API response
+        if (response.data.status === 200) {
+          const user = response.data.user;
+          setAddress(user.address || "No address available");
+          setDistrict(user.district || "Unknown District");
+        }
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+      }
+    };
+
+    fetchUserDetails();
+}, [userId]); // ✅ Now, it only runs when `userId` is available
 
   useEffect(() => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
@@ -321,7 +381,7 @@ const airParameters = [
             
             <div className="col-lg-12 col-12">
             <h1 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
-      Stack Emmission Dashboard
+      Stack Emission Dashboard
     </h1>
     {emissionStacks.length === 0 && (
         <div className="text-center mt-3">
@@ -425,7 +485,28 @@ const airParameters = [
                 </div>
               )} */}
   <div className="col-12  justify-content-center align-items-center">
-            <h3 className="text-center">{companyName}</h3>
+  <h3 className="text-center">
+  {storedUserId === "HH014" || currentUserName === "HH014"
+    ? "Hilton Manyata"
+    : ["KSPCB002", "KSPCB005", "KSPCB010", "KSPCB011"].includes(storedUserId) ||
+      ["KSPCB002", "KSPCB005", "KSPCB010", "KSPCB011"].includes(currentUserName)
+    ? companyName
+        .toLowerCase()
+        .split(" ")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+    : companyName}
+</h3>
+<div className=" justify-content-center">
+<h6 className="text-center text-secondary">
+  <b>Address:</b> {address ? address.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "Not Available"}
+</h6>
+
+
+<h6 className="text-center text-secondary"><b>Location:</b> {district}</h6>
+
+</div>
+
             <div className="color-indicators">
   <div className="d-flex justify-content-center mt-2">
     {/* Parameter Exceed Indicator */}

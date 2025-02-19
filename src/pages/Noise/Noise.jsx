@@ -2,6 +2,7 @@ import React, { useEffect, useState , useRef} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchIotDataByUserName } from "../../redux/features/iotData/iotDataSlice";
 import { fetchUserLatestByUserName } from '../../redux/features/userLog/userLogSlice';
+import { fetchUserByUserName } from "../../redux/features/userLog/userLogSlice";
 
 import NoiseGraphPopup from './NoiseGraphPopup';
 import CalibrationPopup from '../Calibration/CalibrationPopup';
@@ -18,6 +19,7 @@ import WaterGraphPopup from './NoiseGraphPopup';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import DownloadaverageDataModal from '../Water/DownloadaverageDataModal';
+import axios from 'axios';
 const socket = io(API_URL, { 
   transports: ['websocket'], 
   reconnectionAttempts: 5,
@@ -28,9 +30,12 @@ socket.on('connect', () => console.log('Connected to Socket.IO server'));
 socket.on('connect_error', (error) => console.error('Connection Error:', error));
 const Noise = () => {
   const outletContext = useOutletContext() || {};
-  const { userId } = useSelector((state) => state.selectedUser); 
   const { searchTerm = '', searchStatus = '', handleSearch = () => {}, isSearchTriggered = false } = outletContext;
+  const [userId, setUserId] = useState(null);
+  const [address, setAddress] = useState("No address available");
+  const [district, setDistrict] = useState("Unknown District");
 
+  
   const dispatch = useDispatch();
   const { userData,userType } = useSelector((state) => state.user);
   const selectedUserIdFromRedux = useSelector((state) => state.selectedUser.userId);
@@ -43,6 +48,8 @@ const Noise = () => {
   const [searchError, setSearchError] = useState("");
   const [currentUserName, setCurrentUserName] = useState(userType === 'admin' ? "KSPCB001" : userData?.validUserOne?.userName);
   const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [companyDistrict, setCompanyDistrict] = useState("");
   const [loading, setLoading] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedStack, setSelectedStack] = useState("all");
@@ -89,6 +96,8 @@ const fetchData = async (userName) => {
     if (result) {
       setSearchResult(result);
       setCompanyName(result.companyName || "Unknown Company");
+      setCompanyAddress(result.address || "Not Available");
+      setCompanyDistrict(result.district || "Not Available");
       console.log('fetchData of Latest:', result); // Check if the result is logged correctly
 
       setRealTimeData(result.stackData || []); // Display the latest data initially
@@ -131,14 +140,55 @@ useEffect(() => {
 useEffect(() => {
   const storedUserId = sessionStorage.getItem('selectedUserId');
   const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-  console.log(`username : ${userName}`);
   
+  console.log(`Username: ${userName}`);
+
+  // Fetch user details by username
+  dispatch(fetchUserByUserName(userName))
+    .unwrap()
+    .then((user) => {
+      console.log("Fetched User Object:", user); // ✅ Log full user details
+      console.log("Fetched User ID (_id):", user?._id || "No user ID found"); // ✅ Log _id
+
+      if (user?._id) {
+        setUserId(user._id); // ✅ Save the fetched userId in state
+      }
+    })
+    .catch((error) => console.error("Error fetching user:", error));
+
   fetchData(userName);
   fetchNoiseStacks(userName); // Fetch emission stacks
+
   if (storedUserId) {
-    setCurrentUserName(storedUserId);
+      setCurrentUserName(storedUserId);
   }
 }, [selectedUserIdFromRedux, currentUserName, dispatch]);
+
+// ✅ New useEffect: Fetch address when userId is available
+useEffect(() => {
+  if (!userId) {
+    console.log("No userId found. Skipping API call.");
+    return; 
+  }
+
+  console.log("Fetching user details for userId:", userId); // Debugging
+
+  const fetchUserDetails = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/getauser/${userId}`);
+      console.log("API Response:", response.data); // Debug API response
+      if (response.data.status === 200) {
+        const user = response.data.user;
+        setAddress(user.address || "No address available");
+        setDistrict(user.district || "Unknown District");
+      }
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+    }
+  };
+
+  fetchUserDetails();
+}, [userId]); // ✅ Now, it only runs when `userId` is available
 
 /* useEffect(() => {
   const userName = storedUserId || currentUserName;
@@ -413,6 +463,8 @@ const noiseParameters = [
           )} */}
 <div className="col-12  justify-content-center align-items-center">
             <h3 className="text-center">{companyName}</h3>
+            <h5 className="text-center">{companyAddress}</h5>
+<h5 className="text-center">{companyDistrict}</h5>
             <div className="color-indicators">
   <div className="d-flex justify-content-center mt-2">
     {/* Parameter Exceed Indicator */}

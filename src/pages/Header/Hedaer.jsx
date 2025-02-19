@@ -220,7 +220,7 @@ function Header() {
         {userData?.validUserOne?.userType !== 'user' && (
   <div className="ms-0 mb-3" style={{ marginTop: '70px' }}>
     <Dropdown show={isDropdownOpen} onToggle={toggleDropdown}>
-      <Dropdown.Toggle id="dropdown-basic" style={{ backgroundColor: '#236a80' }}>
+      <Dropdown.Toggle id="dropdown-basic" style={{ backgroundColor: '#236a80' , border:'none' }}>
         {userName ? `Selected: ${userName}` : 'Select User'}
       </Dropdown.Toggle>
       <Dropdown.Menu

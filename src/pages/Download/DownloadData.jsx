@@ -122,21 +122,25 @@ function DownloadData() {
                         </select>
                       </div>
                       <div className="col-lg-6 col-md-6 mb-4">
-                        <label htmlFor="stackName" className="form-label">Stack Name</label>
-                        <select
-                          id="stackName"
-                          name="stackName"
-                          className="input-field"
-                          value={stackName}
-                          onChange={(e) => setStackName(e.target.value)}
-                          style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
-                        >
-                          <option value="">Select Stack Name</option>
-                          {stackOptions.map((option, index) => (
-                            <option key={index} value={option.name}>{option.name}</option>
-                          ))}
-                        </select>
-                      </div>
+    <label htmlFor="stackName" className="form-label">Stack Name</label>
+    <select
+        id="stackName"
+        name="stackName"
+        className="input-field"
+        value={stackName}
+        onChange={(e) => setStackName(e.target.value)}
+        style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+    >
+        <option value="">Select Stack Name</option>
+        {stackOptions
+            .filter(option => option.stationType === "effluent") // ✅ Filter effluent stacks only
+            .map((option, index) => (
+                <option key={index} value={option.name}>{option.name}</option>
+            ))
+        }
+    </select>
+</div>
+
                       <div className="col-lg-6 col-md-6 mb-4">
                         <label htmlFor="startDate" className="form-label">Start Date</label>
                         <input   style={{ width: '100%', padding: '15px', borderRadius: '10px' }} type="date" id="startDate" className="input-field" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />

@@ -218,6 +218,8 @@ const userLogSlice = createSlice({
     users: [],
     filteredUsers: [],
     selectedUser: null,
+    address: "", // Add address field here
+
     stackNames: [], 
     latestUser: null,
     last10MinData: null, // Add state for storing last 10 minutes data
@@ -250,28 +252,31 @@ const userLogSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(fetchUserById.pending, (state) => {
-        state.loading = false;
+        state.loading = true;
       })
       .addCase(fetchUserById.fulfilled, (state, action) => {
         state.loading = false;
         state.selectedUser = action.payload;
+        state.address = action.payload?.address || "No address available"; // ✅ Ensure address is stored
+        console.log("Updated selectedUser in Redux:", action.payload);
       })
       .addCase(fetchUserById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       })
       // Add cases for fetchUserLatestByUserName
-      .addCase(fetchUserLatestByUserName.pending, (state) => {
+      .addCase(fetchUserByUserName.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
-      .addCase(fetchUserLatestByUserName.fulfilled, (state, action) => {
+      .addCase(fetchUserByUserName.fulfilled, (state, action) => {
         state.loading = false;
-        state.latestUser = action.payload; // Store the latest user data
+        state.selectedUser = action.payload || null;
+        state.address = action.payload?.address || "No address available"; // ✅ Store address
+        console.log("Updated selectedUser by userName in Redux:", action.payload);
       })
-      .addCase(fetchUserLatestByUserName.rejected, (state, action) => {
+      .addCase(fetchUserByUserName.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to fetch the latest user data';
+        state.error = action.error.message;
       })
        // Add cases for fetchLast10MinDataByUserName
        .addCase(fetchLast10MinDataByUserName.pending, (state) => {
@@ -286,17 +291,7 @@ const userLogSlice = createSlice({
         state.loading = false;
         state.error = action.payload || 'Failed to fetch the last 10 minutes data';
       })
-      .addCase(fetchUserByUserName.pending,(state)=>{
-        state.loading = false;
-      })
-      .addCase(fetchUserByUserName.fulfilled,(state,action)=>{
-        state.loading = false;
-        state.users = action.payload ? [action.payload] : [];
-      })
-      .addCase(fetchUserByUserName.rejected,(state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
-      })
+     
       .addCase(fetchUserByCompanyName.pending,(state)=>{
         state.loading = false;
       })

@@ -2,6 +2,7 @@ import React, { useEffect, useState , useRef } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchIotDataByUserName,} from "../../redux/features/iotData/iotDataSlice";
 import { fetchLast10MinDataByUserName, fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
+import { fetchUserById } from "../../redux/features/userLog/userLogSlice"; // Import Redux action
 import WaterGraphPopup from './WaterGraphPopup';
 import CalibrationPopup from '../Calibration/CalibrationPopup';
 import CalibrationExceeded from '../Calibration/CalibrationExceeded';
@@ -18,6 +19,8 @@ import './water.css'
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import DownloadaverageDataModal from "./DownloadaverageDataModal";
+import { fetchUserByUserName } from "../../redux/features/userLog/userLogSlice";
+
 import axios from "axios";
 // Initialize Socket.IO
 const socket = io(API_URL, { 
@@ -31,12 +34,15 @@ socket.on('connect_error', (error) => console.error('Connection Error:', error))
 const Water = () => {
   // Use useOutletContext if available, otherwise set defaults
   const outletContext = useOutletContext() || {};
-  const { userId } = useSelector((state) => state.selectedUser); 
   const { searchTerm = '', searchStatus = '', handleSearch = () => {}, isSearchTriggered = false } = outletContext;
-
+  const { selectedUser } = useSelector((state) => state.userLog);
   const dispatch = useDispatch();
   const { userData,userType } = useSelector((state) => state.user);
   const selectedUserIdFromRedux = useSelector((state) => state.selectedUser.userId);
+  const selectedUserState = useSelector((state) => state.selectedUser);
+console.log("Full selectedUser state:", selectedUserState);
+const [userId, setUserId] = useState(null);
+
   const storedUserId = sessionStorage.getItem('selectedUserId'); // Retrieve userId from session storage
   const { latestData, error } = useSelector((state) => state.iotData);
   const [showPopup, setShowPopup] = useState(false);
@@ -46,6 +52,7 @@ const Water = () => {
   const [searchError, setSearchError] = useState("");
   const [currentUserName, setCurrentUserName] = useState(userType === 'admin' ? "KSPCB001" : userData?.validUserOne?.userName);
   const [companyName, setCompanyName] = useState("");
+ 
   const [loading, setLoading] = useState(true); // general loading
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedStack, setSelectedStack] = useState("all");
@@ -55,7 +62,14 @@ const Water = () => {
   const [exceedanceColor, setExceedanceColor] = useState("green"); // Default to 'gray'
   const [timeIntervalColor, setTimeIntervalColor] = useState("green"); // Default to 'gray'
   const [lastEffluentData, setLastEffluentData] = useState({}); // State to store last effluent data
+   // Extract user details
+   const [address, setAddress] = useState("No address available");
+  const [district, setDistrict] = useState("Unknown District");
+
   
+  
+
+
  // Function to reset colors and trigger loading state
  const resetColors = () => {
   setExceedanceColor("loading");
@@ -98,6 +112,19 @@ const Water = () => {
   ];
  // Fetch stack names and filter effluent stationType stacks
  // Fetch stack names and filter effluent stationType stacks
+ useEffect(() => {
+  console.log("Selected User ID:", userId); // Debugging line
+
+  if (userId) {
+    dispatch(fetchUserById(userId));
+  }
+}, [userId, dispatch]);
+
+useEffect(() => {
+  console.log("Redux state - selectedUser:", selectedUserState);
+  console.log("Redux state - userId:", userId);
+}, [selectedUserState, userId]);
+
  const fetchEffluentStacks = async (userName) => {
   try {
     const response = await fetch(`${API_URL}/api/get-stacknames-by-userName/${userName}`);
@@ -166,6 +193,7 @@ const Water = () => {
           console.log("searchResult.stackData:", result.stackData);
   
           setCompanyName(result.companyName || "Unknown Company");
+         
   
           // Extract stackNames from the stackData and update effluentStacks
           const stacks = result.stackData
@@ -193,7 +221,7 @@ const Water = () => {
   };
   
   
-  
+ 
   
   const fetchHistoryData = async (fromDate, toDate) => {
     // Logic to fetch history data based on the date range
@@ -222,14 +250,57 @@ const Water = () => {
   useEffect(() => {
     const storedUserId = sessionStorage.getItem('selectedUserId');
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-    console.log(`username : ${userName}`);
     
+    console.log(`Username: ${userName}`);
+
+    // Fetch user details by username
+    dispatch(fetchUserByUserName(userName))
+      .unwrap()
+      .then((user) => {
+        console.log("Fetched User Object:", user); // ✅ Log full user details
+        console.log("Fetched User ID (_id):", user?._id || "No user ID found"); // ✅ Log _id
+
+        if (user?._id) {
+          setUserId(user._id); // ✅ Save the fetched userId in state
+        }
+      })
+      .catch((error) => console.error("Error fetching user:", error));
+
     fetchData(userName);
     fetchEffluentStacks(userName); // Fetch emission stacks
+
     if (storedUserId) {
-      setCurrentUserName(storedUserId);
+        setCurrentUserName(storedUserId);
     }
-  }, [selectedUserIdFromRedux, currentUserName, dispatch]);
+}, [selectedUserIdFromRedux, currentUserName, dispatch]);
+
+// ✅ New useEffect: Fetch address when userId is available
+useEffect(() => {
+    if (!userId) {
+      console.log("No userId found. Skipping API call.");
+      return; 
+    }
+
+    console.log("Fetching user details for userId:", userId); // Debugging
+
+    const fetchUserDetails = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/getauser/${userId}`);
+        console.log("API Response:", response.data); // Debug API response
+        if (response.data.status === 200) {
+          const user = response.data.user;
+          setAddress(user.address || "No address available");
+          setDistrict(user.district || "Unknown District");
+        }
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+      }
+    };
+
+    fetchUserDetails();
+}, [userId]); // ✅ Now, it only runs when `userId` is available
+
+
 
   /* useEffect(() => {
     const userName = storedUserId || currentUserName;
@@ -455,7 +526,7 @@ const handleDownloadPdf = () => {
                 
                 <div className="col-lg-12 col-12">
                 <h1 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
-          Effluent/Sewage Dashboard
+          Effluent Dashboard
         </h1>
                   {/* Check if no data is available */}
                  {/* Check if no data is available for stationType == 'effluent' */}
@@ -567,8 +638,26 @@ const handleDownloadPdf = () => {
                 
         <div className="col-12  justify-content-center align-items-center">
         <h3 className="text-center">
-  {storedUserId === "HH014" || currentUserName === "HH014" ? "Hilton Manyata" : companyName}
+  {storedUserId === "HH014" || currentUserName === "HH014"
+    ? "Hilton Manyata"
+    : ["KSPCB002", "KSPCB005", "KSPCB010", "KSPCB011"].includes(storedUserId) ||
+      ["KSPCB002", "KSPCB005", "KSPCB010", "KSPCB011"].includes(currentUserName)
+    ? companyName
+        .toLowerCase()
+        .split(" ")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+    : companyName}
 </h3>
+<div className=" justify-content-center">
+<h6 className="text-center text-secondary">
+  <b>Address:</b> {address ? address.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "Not Available"}
+</h6>
+
+<h6 className="text-center text-secondary"><b>Location:</b> {district}</h6>
+
+</div>
+
 
                     <div className="color-indicators">
   <div className="d-flex justify-content-center mt-2">
