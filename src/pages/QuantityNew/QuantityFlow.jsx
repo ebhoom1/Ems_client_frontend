@@ -426,12 +426,12 @@ const handleDownloadPdf = () => {
     
    
   return (
-    <div className="main-panel">
-      <div className="content-wrapper">
+    <div className="main-panel " >
+      <div className="content-wrapper" style={{backgroundColor:"white"}}>
         <div className="row page-title-header">
           <div className="col-12">
-            <div className="page-header d-flex justify-content-between">
-              {userType === 'admin' ? (
+            <div className="page-header d-flex justify-content-between" >
+              {/* {userType === 'admin' ? (
                 <>
               <button onClick={handlePrevUser} disabled={loading} className='btn btn-outline-dark mb-2 '>
               <i className="fa-solid fa-arrow-left me-1 "></i>Prev
@@ -444,21 +444,14 @@ const handleDownloadPdf = () => {
                 <div className="mx-auto">
                   <h4 className="page-title"></h4>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>
        <div className="row">
-        <div className="col-lg-4"> {latestData && (
-                  
-                    <h5>Analyser Health: {searchResult?.validationStatus ? (
-                      <h5 style={{ color: "green" }}>Good</h5>
-                    ) : (
-                      <h5 style={{ color: "red" }}>Problem</h5>
-                    )} </h5> )}
-                    </div>
-        <div className="col-lg-4 text-center"><b><h3>WATER DASHBOARD</h3></b></div>
-        <div className="col-lg-4"></div>
+       
+        <div className=" text-center"><b><h2>WATER DASHBOARD</h2></b></div>
+        
        </div>
 
        <ul
@@ -589,7 +582,7 @@ const handleDownloadPdf = () => {
             )}
 <div className="row mb-5">
 <div
-  className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
+  className="col-md-12 col-lg-12 col-sm-12 border overflow-auto shadow mb-3"
   style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
 >
   {!loading && Object.values(realTimeData).length > 0 ? (
@@ -620,16 +613,6 @@ const handleDownloadPdf = () => {
 
       // ✅ Determine the latest timestamp for "To Date"
       const latestTimestamp = formattedTimestamp.date;
-
-      // ✅ Find ETP Outlet data for reference
-      const etpOutlet = Object.values(realTimeData).find(s => s.stackName === "ETP outlet");
-
-      // ✅ Modify STP Inlet Values
-      if (stack.stackName === "STP inlet" && etpOutlet) {
-        displayStack.cumulatingFlow = etpOutlet.cumulatingFlow ? etpOutlet.cumulatingFlow + 15 : 15; // STP Inlet = ETP Outlet + 15
-        displayStack.flowRate = etpOutlet.flowRate; // STP Inlet Flow Rate = ETP Outlet Flow Rate
-        displayStack.dailyConsumption = dailyConsumption["ETP outlet"] || 0; // Use ETP Outlet Daily Consumption
-      }
 
       return (
         <div key={stackIndex} className="col-12 mb-4">
@@ -685,9 +668,7 @@ const handleDownloadPdf = () => {
                     <h5 className="text-light">Daily Consumption</h5>
                     <p className="text-light">
                       <strong style={{ color: "#ffff", fontSize: "24px" }}>
-                        {stack.stackName === "STP inlet" && dailyConsumption["ETP outlet"]
-                          ? dailyConsumption["ETP outlet"].toFixed(2)
-                          : dailyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
+                        {dailyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
                       </strong>{" "}
                       m³
                     </p>
@@ -717,9 +698,10 @@ const handleDownloadPdf = () => {
 
 
 
+
   {/* Graph Container with reference */}
   <div
-      className="col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
+      className="col-md-12 col-lg-12 col-sm-12 mb-2 border shadow"
       style={{ height: '70vh', borderRadius: '15px', position: 'relative' }}
       ref={graphRef}
     >

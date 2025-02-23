@@ -71,6 +71,7 @@ import Pump from './pages/Pump/Pump';
 import WasteDashboard from './pages/Waste/WasteDashboard';
 import WasteDash from './pages/Waste/WasteDash';
 import ViewDifferenceFlow from './pages/QuantityNew/ViewDifferenceFlow';
+import MonthlyFlowData from './pages/QuantityNew/MonthlyFlowData';
 
 
 function App() {
@@ -172,6 +173,7 @@ function App() {
                   <Route path="/manage-user" element={<UsersLog />} />
                   <Route path="/edit/:userId" element={<Edit />} />
                   <Route path="/view/:userId" element={<ViewUser />} />
+                  <Route path="/monthly" element={<MonthlyFlowData />} />
 
                   <Route path="/view-notification" element={<Viewnotification />} />
                   <Route path="/edit-parameter/:userName" element={<EditParameter />} />
@@ -218,7 +220,7 @@ function App() {
                   <Route path="/energy" element={<EnergyDashboard />} />
                   <Route path="/support-analyser" element={<SupportAnalyser />} />
                   <Route path="/view-report/:userName" element={<ViewReportUser />} />
-                  <Route path="/waste" element={<WasteNew />} />
+                  <Route path="/waste" element={<WasteDash />} />
                   <Route path="/exceedence-report" element={<ExceedenceReport />} />
                   <Route path="/live-station" element={<LIveLayout />} />
                   <Route path="/view-data" element={<ViewComponent />} />

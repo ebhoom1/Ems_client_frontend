@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^6.4.5",
+    "@mui/system": "^6.4.3",
     "@reduxjs/toolkit": "^2.2.7",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -40,7 +44,7 @@
     "react-scripts": "5.0.1",
     "react-select": "^5.8.2",
     "react-toastify": "^10.0.5",
-    "recharts": "^2.12.7",
+    "recharts": "^2.15.1",
     "socket.io-client": "^4.8.0",
     "sweetalert2": "^11.15.10",
     "web-vitals": "^2.1.4"

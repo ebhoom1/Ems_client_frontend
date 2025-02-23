@@ -107,6 +107,20 @@ const CalibrationExceeded = () => {
       toast.error(`Failed to update ${commentField}`);
     }
   };
+  const handleDeleteEntry = async (id) => {
+    try {
+      await axios.delete(`${API_URL}/api/delete-exceed-entry/${id}`);
+      
+      // Update UI after successful deletion
+      setEntries(entries.filter(entry => entry._id !== id));
+      
+      toast.success("Entry deleted successfully");
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast.error("Failed to delete entry");
+    }
+  };
+  
 
   return (
     <>
@@ -119,63 +133,75 @@ const CalibrationExceeded = () => {
               <h2>Parameter Threshold Exceedance</h2>
               <div className="table-responsive">
                 <table className="table table-bordered">
-                  <thead>
-                    <tr>
-                      <th>SI.No</th>
-                      <th>User ID</th>
-                      <th>Station Name</th>
-                      <th>Exceeded Parameter</th>
-                      <th>Value</th>
-                      <th>Date</th>
-                      <th>Time</th>
-                      <th>User Remark Comment</th>
-                      <th>Admin Remark Comment</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entries.map((entry, index) => (
-                      <tr key={entry._id}>
-                        <td>{index + 1}</td>
-                        <td>{entry.userName}</td>
-                        <td>{entry.stackName}</td>
-                        <td>{entry.parameter}</td>
-                        <td>{entry.value}</td>
-                        <td>{entry.formattedDate}</td>
-                        <td>{entry.formattedTime}</td>
-                        <td>{entry.commentByUser}</td>
-                        <td>{entry.commentByAdmin}</td>
-                        <td>
-                          {userType === 'admin' && (
-                            <button
-                              type="button"
-                              className="btn btn-primary m-2"
-                              onClick={() => {
-                                setCurrentEntryId(entry._id);
-                                setCurrentComment(entry.commentByAdmin || '');
-                                setIsEditingAdminComment(true);
-                              }}
-                            >
-                              {entry.commentByAdmin ? 'Edit Admin Comment' : 'Add Admin Comment'}
-                            </button>
-                          )}
-                          {userType === 'user' && (
-                            <button
-                              type="button"
-                              className="btn btn-primary m-2"
-                              onClick={() => {
-                                setCurrentEntryId(entry._id);
-                                setCurrentComment(entry.commentByUser || '');
-                                setIsEditingAdminComment(false);
-                              }}
-                            >
-                              {entry.commentByUser ? 'Edit User Comment' : 'Add User Comment'}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
+                <thead>
+  <tr>
+    <th>SI.No</th>
+    <th>User ID</th>
+    <th>Station Name</th>
+    <th>Exceeded Parameter</th>
+    <th>Value</th>
+    <th>Date</th>
+    <th>Time</th>
+    <th>User Remark Comment</th>
+    <th>Admin Remark Comment</th>
+    <th>Actions</th>
+    <th>Delete</th> {/* ✅ Added Delete Column */}
+  </tr>
+</thead>
+<tbody>
+  {entries.map((entry, index) => (
+    <tr key={entry._id}>
+      <td>{index + 1}</td>
+      <td>{entry.userName}</td>
+      <td>{entry.stackName}</td>
+      <td>{entry.parameter}</td>
+      <td>{entry.value}</td>
+      <td>{entry.formattedDate}</td>
+      <td>{entry.formattedTime}</td>
+      <td>{entry.commentByUser}</td>
+      <td>{entry.commentByAdmin}</td>
+      <td>
+        {userType === 'admin' && (
+          <button
+            type="button"
+            className="btn btn-primary m-2"
+            onClick={() => {
+              setCurrentEntryId(entry._id);
+              setCurrentComment(entry.commentByAdmin || '');
+              setIsEditingAdminComment(true);
+            }}
+          >
+            {entry.commentByAdmin ? 'Edit Admin Comment' : 'Add Admin Comment'}
+          </button>
+        )}
+        {userType === 'user' && (
+          <button
+            type="button"
+            className="btn btn-primary m-2"
+            onClick={() => {
+              setCurrentEntryId(entry._id);
+              setCurrentComment(entry.commentByUser || '');
+              setIsEditingAdminComment(false);
+            }}
+          >
+            {entry.commentByUser ? 'Edit User Comment' : 'Add User Comment'}
+          </button>
+        )}
+      </td>
+
+      {/* ✅ Delete Button */}
+      <td>
+        <button
+          className="btn btn-danger"
+          onClick={() => handleDeleteEntry(entry._id)}
+        >
+          Delete
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
                 </table>
               </div>
               {currentEntryId !== null && (

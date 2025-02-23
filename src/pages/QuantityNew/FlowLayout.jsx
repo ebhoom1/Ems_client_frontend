@@ -7,6 +7,7 @@ import EffluentFlowOverview from "./EffluentFlowOverview";
 import Quantity from "./Quantity";
 import QuantityFlow from "./QuantityFlow";
 import FlowConsuptionCards from "./FlowConsuptionCards";
+import MonthlyFlowData from "./MonthlyFlowData";
 
 const FlowLayout = () => {
   const { userData,userType } = useSelector((state) => state.user);
@@ -76,6 +77,9 @@ const FlowLayout = () => {
         />        </div> */}
          <div className="row">
           <QuantityFlow primaryStation={primaryStation} setPrimaryStation={setPrimaryStation} searchTerm={storedUserId} />
+        </div>
+        <div className="row">
+          <MonthlyFlowData/>
         </div>
         <div className="row">
           <EffluentFlowOverview/>

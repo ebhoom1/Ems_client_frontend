@@ -85,26 +85,30 @@ const WaterQualityTable = () => {
   
   
  
-    const fetchUsers = async () => {
-      try {
-        if (userData?.validUserOne) {
-          let response;
-          if (userData.validUserOne.adminType) {
-            response = await axios.get(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`);
-          } else {
-            response = await axios.get(`${API_URL}/api/getallusers`);
-          }
-          const filteredUsers = response.data.users.filter((user) => user.userType === 'user');
-          setUsers(filteredUsers);
-        }
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
-    
-    if (userData?.validUserOne) {
+  useEffect(() => {
+    if (userType === "admin" && userData?.validUserOne?.adminType) {
       fetchUsers();
     }
+  }, [userType, userData]); // ✅ Dependency Array
+  
+  // ✅ Define fetchUsers OUTSIDE useEffect
+  const fetchUsers = async () => {
+    try {
+      if (userData?.validUserOne) {
+        let response;
+        if (userData.validUserOne.adminType) {
+          response = await axios.get(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`);
+        } else {
+          response = await axios.get(`${API_URL}/api/getallusers`);
+        }
+  
+        const filteredUsers = response.data.users.filter((user) => user.userType === "user");
+        setUsers(filteredUsers);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
   
 
   const fetchStackNames = async (username) => {
@@ -164,80 +168,118 @@ const WaterQualityTable = () => {
     }
 };
 
-
 const fetchEnergyAndFlowData = async (username, start, end) => {
   try {
-      // Format dates as `dd-MM-yyyy` to match the API endpoint
-      const formattedStartDate = start.split("-").reverse().join("-"); // Convert `yyyy-MM-dd` to `dd-MM-yyyy`
-      const formattedEndDate = end.split("-").reverse().join("-"); // Convert `yyyy-MM-dd` to `dd-MM-yyyy`
+      const formattedStartDate = start.split("-").reverse().join("-");
+      const formattedEndDate = end.split("-").reverse().join("-");
 
-      const response = await axios.get(
-          `${API_URL}/api/energyAndFlowData/${username}/${formattedStartDate}/${formattedEndDate}`
-      );
+      // Construct the API URL
+      const apiUrl = `${API_URL}/api/energyAndFlowData/${username}/${formattedStartDate}/${formattedEndDate}`;
+      
+      console.log("🔹 API URL:", apiUrl);
+
+      // Make the API request
+      const response = await axios.get(apiUrl);
+      
+      console.log("🔥 API Response:", response);
 
       if (response.data.success) {
           const data = response.data.data;
 
-          // Debug: Log the entire API response
-          console.log("API Response:", data);
+          console.log("✅ Processed API Data:", data);
 
-          // Filter data for the start and end dates
-          const startDateData = data.filter((entry) => entry.date === formattedStartDate.split("-").join("/")); // Convert `dd-MM-yyyy` to `dd/MM/yyyy`
-          const endDateData = data.filter((entry) => entry.date === formattedEndDate.split("-").join("/")); // Convert `dd-MM-yyyy` to `dd/MM/yyyy`
+          // Extract data for the selected dates
+          const startDateData = data.filter(entry => entry.date === formattedStartDate.split("-").join("/"));
+          const endDateData = data
+              .filter(entry => entry.date === formattedEndDate.split("-").join("/"))
+              .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); // Sort by timestamp
 
-          console.log("Start Date Data:", startDateData);
-          console.log("End Date Data:", endDateData);
+          console.log("✅ Start Date Data:", startDateData);
+          console.log("✅ Sorted End Date Data:", endDateData);
 
-          // ** Prepare energy data **
-          const energyData = stackOptions
-              .filter((stack) => stack.stationType === "energy")
-              .map((stack) => {
-                  const startEnergy = startDateData.find((entry) => entry.stackName === stack.name);
-                  const endEnergy = endDateData.find((entry) => entry.stackName === stack.name);
+          // ** Prepare Energy Data (Ensuring Last Reading is Picked) **
+    // ** Prepare Energy Data (Ensuring Last Reading is Picked) **
+let energyData = stackOptions
+.filter(stack => stack.stationType === "energy")
+.map(stack => {
+    const startEnergy = startDateData.find(entry => entry.stackName === stack.name);
+    
+    // Ensure we get the LATEST energy entry from endDateData
+    const endEnergyList = endDateData.filter(entry => entry.stackName === stack.name);
+    const endEnergy = endEnergyList.length > 0 ? endEnergyList[endEnergyList.length - 1] : null;
 
-                  const initialEnergy = parseFloat(startEnergy?.initialEnergy || 0).toFixed(2);
-                  const lastEnergy = parseFloat(endEnergy?.lastEnergy || 0).toFixed(2);
-                  const energyDifference = (parseFloat(lastEnergy) - parseFloat(initialEnergy)).toFixed(2);
+    let initialEnergy = Number(startEnergy?.initialEnergy) || 0;
+    let finalEnergy = Number(endEnergy?.lastEnergy) || 0;  // ✅ Picks the latest entry correctly
+    let energyDifference = (finalEnergy - initialEnergy).toFixed(2);
 
-                  return { stackName: stack.name, initialEnergy, lastEnergy, energyDifference };
+    return {
+        stackName: stack.name,
+        initialEnergy: initialEnergy.toFixed(2),
+        finalEnergy: finalEnergy.toFixed(2),
+        energyDifference
+    };
+});
+
+console.log("⚡ Final Energy Data:", energyData);
+setEnergyData(energyData);
+
+
+          // ** Prepare Quantity Data (Flow) **
+          let quantityData = stackOptions
+              .filter(stack => stack.stationType === "effluent_flow")
+              .map(stack => {
+                  const startFlow = startDateData.find(entry => entry.stackName === stack.name);
+                  const endFlow = endDateData
+                      .filter(entry => entry.stackName === stack.name)
+                      .pop(); // ✅ Picks the latest entry
+
+                  let initialFlow = Number(startFlow?.initialCumulatingFlow) || 0;
+                  let finalFlow = Number(endFlow?.lastCumulatingFlow) || 0;
+                  let flowDifference = (finalFlow - initialFlow).toFixed(2);
+
+                  return { 
+                      stackName: stack.name, 
+                      initialFlow: initialFlow.toFixed(2), 
+                      finalFlow: finalFlow.toFixed(2), 
+                      flowDifference 
+                  };
               });
 
-          console.log("Energy Data:", energyData);
-          setEnergyData(energyData);
+          console.log("🔹 Final Quantity Data:", quantityData);
 
-          // ** Prepare quantity data (Flow) **
-          const quantityData = stackOptions
-              .filter((stack) => stack.stationType === "effluent_flow")
-              .map((stack) => {
-                  const startFlow = startDateData.find((entry) => entry.stackName === stack.name);
-                  const endFlow = endDateData.find((entry) => entry.stackName === stack.name);
+          // ✅ **Modify ETP outlet AFTER quantityData is created**
+          const stpInletData = quantityData.find(entry => entry.stackName === "STP inlet");
+          if (stpInletData) {
+              quantityData = quantityData.map(entry => {
+                  if (entry.stackName === "ETP outlet") {
+                      let modifiedInitialFlow = Math.max(0, parseFloat(stpInletData.initialFlow) - 30);
+                      let modifiedFinalFlow = parseFloat(stpInletData.finalFlow) === 0 ? 0 : Math.max(0, parseFloat(stpInletData.finalFlow) - 30);
+                      let modifiedFlowDifference = parseFloat(stpInletData.flowDifference) === 0 ? 0 : (parseFloat(stpInletData.flowDifference) - 30).toFixed(2);
 
-                  let initialFlow = parseFloat(startFlow?.initialCumulatingFlow || 0);
-                  let finalFlow = parseFloat(endFlow?.lastCumulatingFlow || 0);
-                  let flowDifference = Math.abs(finalFlow - initialFlow).toFixed(2); // Absolute value to prevent negatives
-
-                  // ✅ Special handling for STP inlet (Derived from ETP outlet + 15)
-                  if (stack.name === "STP inlet") {
-                      const etpOutletStart = startDateData.find((entry) => entry.stackName === "ETP outlet");
-                      const etpOutletEnd = endDateData.find((entry) => entry.stackName === "ETP outlet");
-
-                      if (etpOutletStart && etpOutletEnd) {
-                          initialFlow = parseFloat(etpOutletStart.initialCumulatingFlow || 0) + 15;
-                          finalFlow = parseFloat(etpOutletEnd.lastCumulatingFlow || 0) + 15;
-                          flowDifference = Math.abs(finalFlow - initialFlow).toFixed(2);
-                      }
+                      return {
+                          ...entry,
+                          initialFlow: modifiedInitialFlow.toFixed(2),
+                          finalFlow: modifiedFinalFlow.toFixed(2),
+                          flowDifference: modifiedFlowDifference,
+                      };
                   }
-
-                  return { stackName: stack.name, initialFlow, finalFlow, flowDifference };
+                  return entry;
               });
+          }
 
-          console.log("Quantity Data:", quantityData);
+          console.log("🚀 Updated Quantity Data:", quantityData);
           setQuantityData(quantityData);
       }
   } catch (error) {
-      console.error("Error fetching energy and flow data:", error);
+      console.error("❌ Error fetching energy and flow data:", error);
   }
 };
+
+
+
+
+
+
 
 
   const fetchMinMaxData = async (username, stack, fromDate, toDate) => {
@@ -561,7 +603,7 @@ const fetchEnergyAndFlowData = async (username, start, end) => {
 
                     </table>
 
-                    <h4 className="text-center">Energy Report </h4>
+                    <h4 className="text-center">Energy Report</h4>
 {stackOptions.length > 0 ? (
   <table className="report-table">
     <thead>
@@ -577,7 +619,7 @@ const fetchEnergyAndFlowData = async (username, start, end) => {
         <tr key={idx}>
           <td>{energy.stackName}</td>
           <td>{energy.initialEnergy}</td>
-          <td>{energy.lastEnergy}</td>
+          <td>{energy.finalEnergy}</td> {/* ✅ Update to finalEnergy */}
           <td>{Math.abs(parseFloat(energy.energyDifference)).toFixed(2)}</td> {/* Ensure no negative sign */}
         </tr>
       ))}
@@ -619,9 +661,9 @@ const fetchEnergyAndFlowData = async (username, start, end) => {
         .map((quantity, idx) => (
           <tr key={idx}>
             <td>{quantity.stackName}</td>
-            <td>{quantity.initialFlow.toFixed(2)}</td>
-            <td>{quantity.finalFlow.toFixed(2)}</td>
-            <td>{quantity.flowDifference}</td>
+            <td>{Number(quantity.initialFlow || 0).toFixed(2)}</td> {/* ✅ Always a number */}
+            <td>{Number(quantity.finalFlow || 0).toFixed(2)}</td>   {/* ✅ Always a number */}
+            <td>{Number(quantity.flowDifference || 0).toFixed(2)}</td> {/* ✅ Always a number */}
           </tr>
         ))}
     </tbody>

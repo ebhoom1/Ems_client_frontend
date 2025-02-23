@@ -380,16 +380,16 @@ const airParameters = [
           <div className="row">
             
             <div className="col-lg-12 col-12">
-            <h1 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
-      Stack Emission Dashboard
-    </h1>
+            <h2 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
+      STACK EMISSION DASHBOARD
+    </h2>
     {emissionStacks.length === 0 && (
         <div className="text-center mt-3">
           <h5 className='text-danger'><b>No data available for Stack Emission . Please check other available dashboard .</b></h5>
         </div>
       )}
               
-            {userData?.validUserOne?.userType === 'admin' && (
+            {/* {userData?.validUserOne?.userType === 'admin' && (
       <div className='d-flex justify-content-between prevnext '>
         <div>
           <button onClick={handlePrevUser} disabled={loading} className='btn btn-outline-dark mb-2 '>
@@ -404,7 +404,7 @@ const airParameters = [
           </button>
         </div>
       </div>
-    )}
+    )} */}
             <div className="d-flex justify-content-between">
     
                   {/* <ul className="quick-links ml-auto ">
@@ -412,11 +412,7 @@ const airParameters = [
                       Daily History
                     </button>
                   </ul> */}
-                  <ul className="quick-links ml-auto">
-                  <h5 className='d-flex justify-content-end  '>
-           <b>Analyser Health:</b><span className={searchResult?.validationStatus ? 'text-success' : 'text-danger'}>{searchResult?.validationStatus ? 'Good' : 'Problem'}</span></h5>
-          
-                  </ul>
+               
     
                   {/* stac */}
     
@@ -436,7 +432,7 @@ const airParameters = [
                   </ul>
             </div>
             <div>
-          <div className="row align-items-center">
+          <div className="row align-items-center mt-2 mb-2">
           <div className="col-md-4">
           {searchResult?.stackData && searchResult.stackData.length > 0 && (
               <div className="stack-dropdown">

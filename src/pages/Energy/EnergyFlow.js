@@ -24,6 +24,7 @@ import PrimaryStationSelector from "./PrimaryStationSelector";
 import BillCalculator from "./BillCalculator";
 import DownloadaverageDataModal from "../Water/DownloadaverageDataModal";
 import { Dropdown } from "react-bootstrap";
+import MonthlyEnergyData from "./MonthlyEnergyData";
 
 // Initialize Socket.IO
 const socket = io(API_URL, { 
@@ -458,11 +459,11 @@ useEffect(() => {
    
   return (
     <div className="main-panel">
-      <div className="content-wrapper">
+      <div className="content-wrapper" style={{backgroundColor:"white"}}>
         <div className="row page-title-header">
           <div className="col-12">
             <div className="page-header d-flex justify-content-between">
-              {userType === 'admin' ? (
+             {/*  {userType === 'admin' ? (
                 <>
               <button onClick={handlePrevUser} disabled={loading} className='btn btn-outline-dark mb-2 '>
               <i className="fa-solid fa-arrow-left me-1 "></i>Prev
@@ -475,12 +476,12 @@ useEffect(() => {
                 <div className="mx-auto">
                   <h4 className="page-title"></h4>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>
         <div className="row">
-  <div className="col-lg-4">
+ {/*  <div className="col-lg-4">
     {latestData && (
       <h5>
         Analyser Health: {searchResult?.validationStatus ? (
@@ -490,11 +491,11 @@ useEffect(() => {
         )}
       </h5>
     )}
-  </div>
-  <div className="col-lg-4 text-center">
+  </div> */}
+  <div className=" text-center">
     <b><h3>ENERGY DASHBOARD</h3></b>
   </div>
-  <div className="col-lg-4"></div>
+  
 </div>
 
 <ul
@@ -768,9 +769,12 @@ useEffect(() => {
         <PieChartEnergy primaryStation={primaryStation} userName={currentUserName} />
 
         </div> */}
-        <div className="col-lg-12 col-sm-12">
+        <div className="col-lg-6 col-sm-12">
         <BillCalculator searchTerm={storedUserId} userData={userData} userType={userType} />
 
+          </div>
+          <div className="col-lg-6 col-sm-12">
+<MonthlyEnergyData/>
           </div>
 
       </div>

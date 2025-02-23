@@ -116,7 +116,68 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
     
         return { labels, values };
     };
-    
+    /*   const processData = () => {
+    if (!Array.isArray(graphData) || graphData.length === 0) {
+        console.warn("⚠️ No valid data found in graphData!");
+        return { labels: [], values: [] };
+    }
+
+    let labels = [];
+    let values = [];
+    let dateMap = new Map(); // Store values by date to avoid duplicates
+
+    // Sort data in descending order (latest first)
+    const sortedData = [...graphData].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    // Get the first and last available timestamps
+    const latestDate = moment().startOf('day'); // Use today's date as the latest
+    const oldestDate = moment(sortedData[sortedData.length - 1].timestamp).startOf('day'); // Oldest date
+
+    // Generate all dates from latestDate to oldestDate in descending order
+    let currentDate = latestDate.clone();
+    while (currentDate.isSameOrAfter(oldestDate, 'day')) {
+        dateMap.set(currentDate.format("DD/MM/YYYY"), null); // Placeholder for missing values
+        currentDate.subtract(1, 'days'); // Move to previous day
+    }
+
+    // Populate dateMap with actual values from data
+    sortedData.forEach((entry, index) => {
+        console.log(`📌 Processing Entry ${index + 1}:`, entry);
+
+        if (!entry.stackData || !Array.isArray(entry.stackData) || entry.stackData.length === 0) {
+            console.warn(`⚠️ No stackData found in entry ${index + 1}`);
+            return;
+        }
+
+        const stack = entry.stackData.find((s) => s.stackName === stackName);
+        if (!stack) return;
+
+        if (!stack.parameters || typeof stack.parameters !== "object") return;
+
+        const paramKey = Object.keys(stack.parameters).find(
+            (key) => key.toLowerCase() === parameter.toLowerCase()
+        );
+
+        if (!paramKey) return;
+
+        const paramValue = stack.parameters[paramKey] || 0;
+        const formattedDate = moment(entry.timestamp).format("DD/MM/YYYY"); // Extract only the date
+
+        if (dateMap.has(formattedDate)) {
+            dateMap.set(formattedDate, parseFloat(paramValue)); // Replace null with value
+        }
+    });
+
+    // Extract keys and values for graph
+    labels = Array.from(dateMap.keys());
+    values = Array.from(dateMap.values()).map(value => value ?? null); // Ensure missing values are null
+
+    console.log("✅ Final Labels:", labels);
+    console.log("✅ Final Values:", values);
+
+    return { labels, values };
+};
+ */
     
     
     const { labels, values } = processData();

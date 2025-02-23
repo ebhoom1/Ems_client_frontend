@@ -353,8 +353,18 @@ function WasteDash() {
                   >
                     <option value="">Select Waste Type</option>
                     <option value="General Waste">General Waste</option>
-                    <option value="Industrial Waste">Industrial Waste</option>
-                    <option value="Hazardous Waste">Hazardous Waste</option>
+    <option value="Industrial Waste">Industrial Waste</option>
+    <option value="Hazardous Waste">Hazardous Waste</option>
+    <option value="Construction and Demolition Waste">Construction and Demolition Waste</option>
+    <option value="Organic Waste">Organic Waste</option>
+    <option value="Plastic Waste">Plastic Waste</option>
+    <option value="Electronic and IT Waste">Electronic and IT Waste</option>
+    <option value="Textile Waste">Textile Waste</option>
+    <option value="Energy Waste">Energy Waste</option>
+    <option value="Liquid Waste">Liquid Waste</option>
+    <option value="Packaging Waste">Packaging Waste</option>
+    <option value="Emissions and Gaseous Waste">Emissions and Gaseous Waste</option>
+    <option value="Recyclable Waste">Recyclable Waste</option>
                   </select>
                 </div>
                 <div className="form-group mt-3">

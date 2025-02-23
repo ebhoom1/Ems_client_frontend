@@ -63,7 +63,7 @@ const [userId, setUserId] = useState(null);
   const [timeIntervalColor, setTimeIntervalColor] = useState("green"); // Default to 'gray'
   const [lastEffluentData, setLastEffluentData] = useState({}); // State to store last effluent data
    // Extract user details
-   const [address, setAddress] = useState("No address available");
+  const [address, setAddress] = useState("No address available");
   const [district, setDistrict] = useState("Unknown District");
 
   
@@ -524,10 +524,10 @@ const handleDownloadPdf = () => {
          <div className="container-fluid water">
               <div className="row">
                 
-                <div className="col-lg-12 col-12">
-                <h1 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
-          Effluent Dashboard
-        </h1>
+                <div className="col-lg-12 col-12 mt-2">
+                <h2 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
+         EFFLUENT DASHBOARD
+        </h2>
                   {/* Check if no data is available */}
                  {/* Check if no data is available for stationType == 'effluent' */}
                 {/* Check if effluentStacks are empty */}
@@ -540,22 +540,7 @@ const handleDownloadPdf = () => {
 
 
                   
-                {userData?.validUserOne?.userType === 'admin' && (
-          <div className='d-flex justify-content-between prevnext '>
-            <div>
-              <button onClick={handlePrevUser} disabled={loading} className='btn btn-outline-dark mb-2 '>
-                <i className="fa-solid fa-arrow-left me-1 "></i>Prev
-              </button>
-            </div>
-          
-        
-            <div>
-              <button onClick={handleNextUser} disabled={loading} className='btn btn-outline-dark '>
-                Next <i className="fa-solid fa-arrow-right"></i>
-              </button>
-            </div>
-          </div>
-        )}
+               
                 <div className="d-flex justify-content-between">
         
                       {/* <ul className="quick-links ml-auto ">
@@ -563,11 +548,7 @@ const handleDownloadPdf = () => {
                           Daily History
                         </button>
                       </ul> */}
-                      <ul className="quick-links ml-auto">
-                      <h5 className='d-flex justify-content-end  '>
-               <b>Analyser Health:</b><span className={searchResult?.validationStatus ? 'text-success' : 'text-danger'}>{searchResult?.validationStatus ? 'Good' : 'Problem'}</span></h5>
-              
-                      </ul>
+                     
         
                       {/* stac */}
         
