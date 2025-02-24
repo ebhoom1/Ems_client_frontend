@@ -1,0 +1,103 @@
+/* Container styling (optional) */
+.fuel-main {
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    margin-top: 50px;
+  }
+  
+  /* The switch container */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 220px; /* Increase if you need even more space */
+    height: 50px; /* Increase for a taller switch */
+    margin-bottom: 20px;
+  }
+  
+  /* Hide the default checkbox */
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  /* The slider background */
+  .slider {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Put text at the ends */
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #3698ac;
+    transition: 0.4s;
+    border-radius: 50px; /* Fully rounded */
+    padding: 0 20px;     /* Spacing for text */
+    box-sizing: border-box;
+    font-size: 16px;     /* Larger text */
+    color: #ffff;
+  }
+  
+  /* Make the slider fully rounded */
+  .slider.round {
+    border-radius: 50px;
+  
+  }
+  
+  /* Text on each side of the toggle */
+  .text-left {
+    opacity: 1;
+    transition: opacity 0.4s;
+  }
+  .text-right {
+    opacity: 0;
+    transition: opacity 0.4s;
+    margin-left: -30px;
+   
+  }
+  
+  /* The circular handle */
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 42px;   /* Slightly smaller than the container height */
+    width: 42px;
+    left: 4px;      /* Gap on the left side */
+    top: 4px;       /* Gap on the top */
+    background-color: #ffffff;
+    transition: 0.4s;
+    border-radius: 50%;
+    color: #ffff;
+  }
+  
+  /* When checkbox is checked */
+  input:checked + .slider {
+    background-color: #2e667a;
+  }
+  
+  /* Fade out the left text, fade in the right text */
+  input:checked + .slider .text-left {
+    opacity: 0;
+  }
+  input:checked + .slider .text-right {
+    opacity: 1;
+  }
+  
+  /* Move the handle to the right when checked.
+     Calculation for translateX:
+     (slider width) - (left margin + right margin) - (handle width)
+     220 - (4 + 4) - 42 = ~170
+  */
+  input:checked + .slider:before {
+    transform: translateX(170px);
+  }
+  
+  /* Optional content styling */
+  .content {
+    text-align: center;
+  }
+  

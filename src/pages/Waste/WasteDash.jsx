@@ -13,6 +13,8 @@ import moment from 'moment';
 import Dropdown from 'react-bootstrap/Dropdown';
 import { IoFilter } from "react-icons/io5";
 import './Waste.css'
+import { useNavigate } from 'react-router-dom';
+import TotalWaste from './TotalWaste';
 function WasteDash() {
   const [showModal, setShowModal] = useState(false);
   const [users, setUsers] = useState([]);
@@ -37,7 +39,7 @@ function WasteDash() {
   const [selectedUserId, setSelectedUserId] = useState(
     sessionStorage.getItem('selectedUserId') || ''
   );
-
+  const navigate = useNavigate();
   const fetchUsers = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/getallusers`);
@@ -99,6 +101,10 @@ function WasteDash() {
     } finally {
       setLoading(false);
     }
+  };
+  const handleEdit = (waste) => {
+    setEditFormData(waste);
+    setEditModal(true);
   };
 
   const handleEditSubmit = async (e) => {
@@ -187,7 +193,7 @@ function WasteDash() {
       <div
         className={`filter-container ${filterDropdown ? 'show' : ''}`}
       >
-        <div className="bg-light p-3 rounded shadow-sm">
+        <div className=" p-3 rounded shadow-sm">
           <div className="row">
             <div className="col-md-6">
               <label htmlFor="filterDate">Filter by Date:</label>
@@ -213,8 +219,18 @@ function WasteDash() {
               >
                 <option value="">Select Waste Type</option>
                 <option value="General Waste">General Waste</option>
-                <option value="Industrial Waste">Industrial Waste</option>
-                <option value="Hazardous Waste">Hazardous Waste</option>
+    <option value="Industrial Waste">Industrial Waste</option>
+    <option value="Hazardous Waste">Hazardous Waste</option>
+    <option value="Construction and Demolition Waste">Construction and Demolition Waste</option>
+    <option value="Organic Waste">Organic Waste</option>
+    <option value="Plastic Waste">Plastic Waste</option>
+    <option value="Electronic and IT Waste">Electronic and IT Waste</option>
+    <option value="Textile Waste">Textile Waste</option>
+    <option value="Energy Waste">Energy Waste</option>
+    <option value="Liquid Waste">Liquid Waste</option>
+    <option value="Packaging Waste">Packaging Waste</option>
+    <option value="Emissions and Gaseous Waste">Emissions and Gaseous Waste</option>
+    <option value="Recyclable Waste">Recyclable Waste</option>
               </select>
             </div>
           </div>
@@ -222,67 +238,82 @@ function WasteDash() {
       </div>
 
           <div className="container-fluid">
-            <div className="row">
-              {Object.entries(
-                filteredWasteData.reduce((stations, waste) => {
-                  if (!stations[waste.stationName]) {
-                    stations[waste.stationName] = [];
-                  }
-                  stations[waste.stationName].push(waste);
-                  return stations;
-                }, {})
-              ).map(([stationName, wastes], index) => (
-                <div
-                  key={index}
-                  className="col-md-12 col-lg-12 col-sm-12 bg-light shadow mb-4 p-3 border-none"
-                  style={{ borderRadius: '15px' }}
-                >
-                  <h3 className="text-center mb-3" style={{ color: '#236a80' , border:'none'}}>
-                    {stationName} <img src={waste} alt="waste" width="150px" />
-                  </h3>
-                  <div className="row">
-                    {wastes.map((waste, idx) => (
-                      <div key={idx} className="col-md-3 col-lg-3 col-sm-6 mb-3">
-                      <div
-  className="card"
-  style={{
-    backgroundColor: '#236a80',
-    color: '#fff',
-    borderRadius: '10px',
-    padding: '15px',
-    textAlign: 'center',
-    border: 'none',
-    boxShadow: '0 24px 18px rgba(2, 20, 28, 0.1), 0 16px 20px rgba(14, 1, 1, 0.1)',
-  }}
->
-                          <h5>{waste.stationType}</h5>
-                          <p>
-                            <strong>Weight:</strong> {waste.weight} kg
-                          </p>
-                          <p>
-                            <strong>Date:</strong> {moment(waste.date).format('DD-MM-YYYY')}
-                          </p>
-                          <div className="d-flex justify-content-end mt-3 ">
-                            <FaEdit
-                            className='me-2'
-                              style={{ cursor: 'pointer', color: 'orange' }}
-                              onClick={() => {
-                                setEditFormData(waste);
-                                setEditModal(true);
-                              }}
-                            />
-                            <FaTrash
-                              style={{ cursor: 'pointer', color: 'red' }}
-                              onClick={() => handleDelete(waste._id)}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+          <div className="row">
+  {Object.entries(
+    filteredWasteData
+      .filter((waste) => {
+        const wasteDate = moment(waste.date);
+        const today = moment();
+        const yesterday = moment().subtract(1, "days");
+
+        // Show only today's and yesterday's waste data
+        return wasteDate.isSame(today, "day") || wasteDate.isSame(yesterday, "day");
+      })
+      .reduce((stations, waste) => {
+        if (!stations[waste.stationName]) {
+          stations[waste.stationName] = [];
+        }
+        stations[waste.stationName].push(waste);
+        return stations;
+      }, {})
+  ).map(([stationName, wastes], index) => (
+    <div
+      key={index}
+      className="col-md-12 col-lg-12 col-sm-12 bg-light shadow mb-4 p-3 border-none"
+      style={{ borderRadius: "15px" }}
+    >
+      <h3 className="text-center mb-3" style={{ color: "#236a80", border: "none" }}>
+        {stationName} <img src={waste} alt="waste" width="150px" />
+      </h3>
+      <div className="row">
+        {wastes.map((waste, idx) => (
+          <div key={idx} className="col-md-3 col-lg-3 col-sm-6 mb-3">
+            <div
+              className="card"
+              style={{
+                backgroundColor: "#236a80",
+                color: "#fff",
+                borderRadius: "10px",
+                padding: "15px",
+                textAlign: "center",
+                border: "none",
+                boxShadow: "0 24px 18px rgba(2, 20, 28, 0.1), 0 16px 20px rgba(14, 1, 1, 0.1)",
+              }}
+            >
+              <h5>{waste.stationType}</h5>
+              <p>
+                <strong>Weight:</strong> {waste.weight} kg
+              </p>
+              <p>
+                <strong>Date:</strong> {moment(waste.date).format("DD-MM-YYYY")}
+              </p>
+              <div className="d-flex justify-content-end mt-3 ">
+                <FaEdit
+                  className="me-2"
+                  style={{ cursor: "pointer", color: "orange" }}
+                  onClick={() => {
+                    setEditFormData(waste);
+                    setEditModal(true);
+                  }}
+                />
+                <FaTrash
+                  style={{ cursor: "pointer", color: "red" }}
+                  onClick={() => handleDelete(waste._id)}
+                />
+              </div>
             </div>
+          </div>
+        ))}
+      </div>
+      <div className="d-flex align-items-end justify-content-end">
+        <button className="btn btn-outline-success" onClick={() => navigate(`/waste-history/${selectedUserId}`)}>
+          Show Prev Data <i className="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
+
           </div>
 
           <Modal
@@ -413,8 +444,13 @@ function WasteDash() {
               </form>
             </Modal.Body>
           </Modal>
+
+          <div className='mb-5'>
+            <TotalWaste/>
+          </div>
         </div>
       </div>
+    
     </div>
   );
 }

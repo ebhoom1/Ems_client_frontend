@@ -72,6 +72,9 @@ import WasteDashboard from './pages/Waste/WasteDashboard';
 import WasteDash from './pages/Waste/WasteDash';
 import ViewDifferenceFlow from './pages/QuantityNew/ViewDifferenceFlow';
 import MonthlyFlowData from './pages/QuantityNew/MonthlyFlowData';
+import WasteHistory from './pages/Waste/WasteHistory';
+import TotalWaste from './pages/Waste/TotalWaste';
+import FuelMain from './pages/Fuel/FuelMain';
 
 
 function App() {
@@ -174,19 +177,19 @@ function App() {
                   <Route path="/edit/:userId" element={<Edit />} />
                   <Route path="/view/:userId" element={<ViewUser />} />
                   <Route path="/monthly" element={<MonthlyFlowData />} />
-
+                  <Route path="/totalwaste" element={<TotalWaste />} />
                   <Route path="/view-notification" element={<Viewnotification />} />
                   <Route path="/edit-parameter/:userName" element={<EditParameter />} />
                   <Route path="/sample" element={<Mainsam />} />
                   <Route path="/live-station" element={<LIveLayout />} />
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/view-data" element={<ViewComponent />} />
-                  <Route path="/waste" element={<WasteNew />} />
+                  <Route path="/waste" element={<WasteDash />} />
                   <Route path="/waste-dashboard" element={<WasteDashboard />} />
                   <Route path="/waste-dash" element={<WasteDash />} />
                   <Route path="/viewdifference" element={<ViewDifference />} />
                   <Route path="/view-difference" element={<ViewDifferenceFlow />} />
-
+                  <Route path="/waste-history/:userId" element={<WasteHistory />} />
                   <Route path="/table" element={<WaterQualityTable />} />
                   <Route path="/how-to-use" element={ <UserManual />} />
                   <Route path="/customisable-report" element={<CustomisableReport />} />
@@ -197,6 +200,7 @@ function App() {
                   <Route path="/view-calibration-report" element={<ViewCalibrationReport />} />
                   <Route path="/generator" element={<Generator />} />
                   <Route path="/pump" element={<Pump />} />
+                  <Route path="/fuel" element={<FuelMain />} />
 
                 </Route>
               )}
@@ -228,7 +232,7 @@ function App() {
                   <Route path="/view-calibration-report" element={<ViewCalibrationReport />} />
                   <Route path="/generator" element={<Generator />} />
                   <Route path="/live-emmision" element={<LiveEmmission />} />
-
+                  <Route path="/waste-history/:userId" element={<WasteHistory />} />
                 </Route>
               )}
             </Routes>

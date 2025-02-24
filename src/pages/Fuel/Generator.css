@@ -1,0 +1,69 @@
+/* Center the "This is generator page" content (optional) */
+h2 {
+    text-align: center;
+  }
+  
+  /* Modal overlay covers the entire screen */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* semi-transparent dark background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Modal content box */
+  .modal-content {
+    background-color: #fff;
+    padding: 20px 30px;
+    border-radius: 8px;
+    width: 400px; /* adjust as needed */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Form fields styling */
+  .form-field {
+    margin-bottom: 15px;
+  }
+  
+  .form-field label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .form-field input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+  }
+  
+  /* Button group */
+  .button-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  
+  .button-group button {
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+  
+  .button-group button[type='submit'] {
+    background-color: #2196F3;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+  }
+  
+  .button-group button[type='button'] {
+    background-color: #ccc;
+    border: none;
+    border-radius: 4px;
+  }
+  

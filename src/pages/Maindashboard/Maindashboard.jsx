@@ -63,14 +63,14 @@ function Maindashboard() {
     { name: "Effluent Flow", path: "/quantity", key: "effluent_flow" },
     { name: "Energy", path: "/energy", key: "energy" },
     { name: "Waste", path: "/waste", key: "waste" },
-    { name: "Generator", path: "/generator", key: "generator" },
+    { name: "Fuel", path: "/fuel", key: "fuel" },
   ];
 
   // Filter links based on available station types
   // Filter links based on available station types, but always include "Waste" and "Generator"
   const visibleLinks = allLinks.filter(
     (link) =>
-      availableStationTypes.includes(link.key) || link.key === "waste" || link.key === "generator"
+      availableStationTypes.includes(link.key) || link.key === "waste" || link.key === "fuel"
   );
 
   console.log("Visible Links:", visibleLinks);

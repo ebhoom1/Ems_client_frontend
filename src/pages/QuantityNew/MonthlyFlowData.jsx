@@ -65,7 +65,7 @@ const MonthlyFlowData = () => {
   const fetchLastCumulatingFlow = async (userName, stackName) => {
     if (!userName || !stackName) return;
     try {
-      const response = await axios.get(`http://localhost:5555/api/lastMonthFlow/${userName}/${stackName}`);
+      const response = await axios.get(`${API_URL}/api/lastMonthFlow/${userName}/${stackName}`);
       if (response.data.success) {
         const flowValue = response.data.data.lastCumulatingFlow || 0;
         setLastCumulatingFlow(flowValue);
@@ -86,7 +86,7 @@ const MonthlyFlowData = () => {
   const fetchUserMonthlyFlowData = async (userName) => {
     if (!userName) return;
     try {
-      const response = await axios.get(`http://localhost:5555/api/lastMonthFlow/${userName}`);
+      const response = await axios.get(`${API_URL}/api/lastMonthFlow/${userName}`);
       if (response.data.success) {
         const data = response.data.data || [];
 
