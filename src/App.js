@@ -75,6 +75,7 @@ import MonthlyFlowData from './pages/QuantityNew/MonthlyFlowData';
 import WasteHistory from './pages/Waste/WasteHistory';
 import TotalWaste from './pages/Waste/TotalWaste';
 import FuelMain from './pages/Fuel/FuelMain';
+import VehicleHistory from './pages/Fuel/VehicleHistory';
 
 
 function App() {
@@ -201,7 +202,7 @@ function App() {
                   <Route path="/generator" element={<Generator />} />
                   <Route path="/pump" element={<Pump />} />
                   <Route path="/fuel" element={<FuelMain />} />
-
+                  <Route path="/vehicle-history" element={<VehicleHistory />} />
                 </Route>
               )}
               {/* User Routes */}

@@ -14,6 +14,8 @@ import FlowGraph from "./FlowGraph";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Dropdown } from "react-bootstrap";
+import moment from 'moment';
+
 // Initialize Socket.IO
 const socket = io(API_URL, { 
   transports: ['websocket'], 
@@ -173,26 +175,40 @@ const QuantityFlow = () => {
     }
 };
 
+const saveDailyConsumptionToDB = async (userName, stackName, consumption) => {
+  try {
+    const date = moment().format('DD/MM/YYYY');
+    const payload = { userName, stackName, date, consumption };
+    const response = await axios.post(`${API_URL}/api/save-daily-consumption`, payload);
+    console.log("Daily consumption saved:", response.data);
+  } catch (error) {
+    console.error("Error saving daily consumption:", error);
+  }
+};
 useEffect(() => {
   if (lastFlows && initialFlows) {
-      const consumptionData = {};
+    const consumptionData = {};
 
-      console.log("📊 Last Cumulating Flow Data:", lastFlows);
-      console.log("📌 Initial Flow Data:", initialFlows);
+    console.log("📊 Last Cumulating Flow Data:", lastFlows);
+    console.log("📌 Initial Flow Data:", initialFlows);
 
-      Object.keys(lastFlows).forEach(stackName => {
-          const lastFlow = lastFlows[stackName] || 0;
-          const initialFlow = initialFlows[stackName] || 0;
-          const difference = Math.max(0, lastFlow - initialFlow); // Ensure non-negative values
+    Object.keys(lastFlows).forEach(stackName => {
+      const lastFlow = lastFlows[stackName] || 0;
+      const initialFlow = initialFlows[stackName] || 0;
+      const difference = Math.max(0, lastFlow - initialFlow); // Ensure non-negative values
 
-          console.log(`🔹 Stack: ${stackName} | Initial Flow: ${initialFlow} | Last Flow: ${lastFlow} | Daily Consumption: ${difference}`);
+      console.log(`🔹 Stack: ${stackName} | Initial Flow: ${initialFlow} | Last Flow: ${lastFlow} | Daily Consumption: ${difference}`);
 
-          consumptionData[stackName] = difference;
-      });
+      consumptionData[stackName] = difference;
 
-      setDailyConsumption(consumptionData);
+      // Save daily consumption value to the database
+      saveDailyConsumptionToDB(currentUserName, stackName, difference);
+    });
+
+    setDailyConsumption(consumptionData);
   }
 }, [lastFlows, initialFlows]);
+
 
 
 
@@ -662,19 +678,29 @@ const handleDownloadPdf = () => {
               })}
 
               {/* Daily Consumption Card */}
-              <div className="col-md-4 grid-margin">
-                <div className="card mb-3" style={{ border: "none" }}>
-                  <div className="card-body">
-                    <h5 className="text-light">Daily Consumption</h5>
-                    <p className="text-light">
-                      <strong style={{ color: "#ffff", fontSize: "24px" }}>
-                        {dailyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
-                      </strong>{" "}
-                      m³
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <div 
+  className="col-md-4 grid-margin"
+  onClick={() =>
+    setSelectedCard({
+      stackName: stack.stackName,
+      title: "Daily Consumption",
+      name: "dailyConsumption"
+    })
+  }
+  style={{ cursor: 'pointer' }}
+>
+  <div className="card mb-3" style={{ border: "none" }}>
+    <div className="card-body">
+      <h5 className="text-light">Daily Consumption</h5>
+      <p className="text-light">
+        <strong style={{ color: "#ffff", fontSize: "24px" }}>
+          {dailyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
+        </strong>{" "}
+        m³
+      </p>
+    </div>
+  </div>
+</div>
 
             </div>
           </div>
@@ -707,11 +733,13 @@ const handleDownloadPdf = () => {
     >
       {selectedCard ? (
         <div>
-          <FlowGraph
-            parameter={selectedCard.name}
-            userName={currentUserName}
-            stackName={selectedCard.stackName}
-          />
+         <FlowGraph
+  parameter={selectedCard.name}
+  userName={currentUserName}
+  stackName={selectedCard.stackName}
+  dailyConsumptionData={dailyConsumption}
+/>
+
         </div>
       ) : (
         <h5 className="text-center mt-5">Select a parameter to view its graph</h5>

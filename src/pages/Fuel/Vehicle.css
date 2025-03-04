@@ -1,0 +1,30 @@
+.filter-container {
+    opacity: 1 !important;
+    display: block !important;
+    visibility: visible !important;
+ }
+ .parent-container {
+    overflow: visible !important;
+ }
+ .filter-container {
+   
+   
+  
+    padding: 20px;
+    width: 100%;
+    max-height: 0px; /* Initially Hidden */
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out;
+  }
+  
+  .filter-container.show {
+    max-height: 250px; /* Expands smoothly */
+    opacity: 1;
+  }
+  
+  .filter-container.hide {
+    max-height: 0px;
+    opacity: 0;
+  }
+  

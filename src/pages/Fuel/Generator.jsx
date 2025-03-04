@@ -1,18 +1,36 @@
-import React, { useState } from 'react';
-import { Modal, Button } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Modal, Button, Form } from 'react-bootstrap';
 import './Generator.css'; // Optional: for additional styling
+import axios from 'axios';
+import { API_URL } from '../../utils/apiConfig';
+import Swal from 'sweetalert2';
 
 function Generator() {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     userName: '',
-    type: '',
+    entryType: '',
     generatorName: '',
     fuelType: '',
+    litresUsed: '',
+    date: '',
   });
+  const [users, setUsers] = useState([]);
 
-  // Open the modal
+  // Fetch users when modal is opened
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/getallusers`);
+      setUsers(response.data.users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      Swal.fire('Error', 'Failed to fetch users.', 'error');
+    }
+  };
+
+  // Open the modal and fetch users
   const openModal = () => {
+    fetchUsers();
     setShowModal(true);
   };
 
@@ -21,9 +39,11 @@ function Generator() {
     setShowModal(false);
     setFormData({
       userName: '',
-      type: '',
+      entryType: '',
       generatorName: '',
       fuelType: '',
+      litresUsed: '',
+      date: '',
     });
   };
 
@@ -34,11 +54,18 @@ function Generator() {
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Generator Data:', formData);
-    // You can send this data to your backend or store it in state as needed
-    closeModal();
+
+    try {
+      await axios.post(`${API_URL}/api/addGenerator`, formData);
+      Swal.fire('Success', 'Generator details added successfully!', 'success');
+      closeModal();
+    } catch (error) {
+      console.error('Error saving generator details:', error);
+      Swal.fire('Error', 'Failed to save generator details.', 'error');
+    }
   };
 
   return (
@@ -57,65 +84,85 @@ function Generator() {
           <Modal.Title>Add Generator Details</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <form id="generatorForm" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>User Name:</label>
-              <input
-                type="text"
-                className="form-control"
+          <Form id="generatorForm" onSubmit={handleSubmit}>
+            <Form.Group className="mb-3">
+              <Form.Label>User Name:</Form.Label>
+              <Form.Select
                 name="userName"
                 value={formData.userName}
                 onChange={handleChange}
                 required
-              />
-            </div>
+              >
+                <option value="">Select User</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user.userName}>
+                    {user.userName}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
 
-            <div className="form-group mt-3">
-              <label>Type:</label>
-              <input
-                type="text"
-                className="form-control"
-                name="type"
-                value={formData.type}
+            <Form.Group className="mb-3">
+              <Form.Label>Entry Type:</Form.Label>
+              <Form.Select
+                name="entryType"
+                value={formData.entryType}
                 onChange={handleChange}
                 required
-              />
-            </div>
+              >
+                <option value="">Select Entry Type</option>
+                <option value="Generator">Generator</option>
+                <option value="Fuel">Fuel</option>
+              </Form.Select>
+            </Form.Group>
 
-            <div className="form-group mt-3">
-              <label>Generator Name:</label>
-              <input
+            <Form.Group className="mb-3">
+              <Form.Label>Generator Name:</Form.Label>
+              <Form.Control
                 type="text"
-                className="form-control"
                 name="generatorName"
                 value={formData.generatorName}
                 onChange={handleChange}
                 required
               />
-            </div>
-            <div className="form-group mt-3">
-              <label>Litre:</label>
-              <input
-                type="text"
-                className="form-control"
-                name="litre"
-                value={formData.litre}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="form-group mt-3">
-              <label>Fuel Type:</label>
-              <input
-                type="text"
-                className="form-control"
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Fuel Type:</Form.Label>
+              <Form.Select
                 name="fuelType"
                 value={formData.fuelType}
                 onChange={handleChange}
                 required
+              >
+                <option value="">Select Fuel Type</option>
+                <option value="Petrol">Petrol</option>
+                <option value="Diesel">Diesel</option>
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Litres Used:</Form.Label>
+              <Form.Control
+                type="number"
+                name="litresUsed"
+                value={formData.litresUsed}
+                onChange={handleChange}
+                required
               />
-            </div>
-          </form>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Date:</Form.Label>
+              <Form.Control
+                type="date"
+                name="date"
+                value={formData.date}
+                onChange={handleChange}
+                required
+              />
+            </Form.Group>
+          </Form>
         </Modal.Body>
         <Modal.Footer>
           {/* Tie the submit button to the form via form="generatorForm" */}

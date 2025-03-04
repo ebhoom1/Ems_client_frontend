@@ -170,108 +170,125 @@ const WaterQualityTable = () => {
 
 const fetchEnergyAndFlowData = async (username, start, end) => {
   try {
-      const formattedStartDate = start.split("-").reverse().join("-");
-      const formattedEndDate = end.split("-").reverse().join("-");
+    const formattedStartDate = start.split("-").reverse().join("-");
+    const formattedEndDate = end.split("-").reverse().join("-");
 
-      // Construct the API URL
-      const apiUrl = `${API_URL}/api/energyAndFlowData/${username}/${formattedStartDate}/${formattedEndDate}`;
-      
-      console.log("🔹 API URL:", apiUrl);
-
-      // Make the API request
-      const response = await axios.get(apiUrl);
-      
-      console.log("🔥 API Response:", response);
-
-      if (response.data.success) {
-          const data = response.data.data;
-
-          console.log("✅ Processed API Data:", data);
-
-          // Extract data for the selected dates
-          const startDateData = data.filter(entry => entry.date === formattedStartDate.split("-").join("/"));
-          const endDateData = data
-              .filter(entry => entry.date === formattedEndDate.split("-").join("/"))
-              .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); // Sort by timestamp
-
-          console.log("✅ Start Date Data:", startDateData);
-          console.log("✅ Sorted End Date Data:", endDateData);
-
-          // ** Prepare Energy Data (Ensuring Last Reading is Picked) **
-    // ** Prepare Energy Data (Ensuring Last Reading is Picked) **
-let energyData = stackOptions
-.filter(stack => stack.stationType === "energy")
-.map(stack => {
-    const startEnergy = startDateData.find(entry => entry.stackName === stack.name);
+    // Construct the API URL
+    const apiUrl = `${API_URL}/api/energyAndFlowData/${username}/${formattedStartDate}/${formattedEndDate}`;
     
-    // Ensure we get the LATEST energy entry from endDateData
-    const endEnergyList = endDateData.filter(entry => entry.stackName === stack.name);
-    const endEnergy = endEnergyList.length > 0 ? endEnergyList[endEnergyList.length - 1] : null;
+    console.log("🔹 API URL:", apiUrl);
 
-    let initialEnergy = Number(startEnergy?.initialEnergy) || 0;
-    let finalEnergy = Number(endEnergy?.lastEnergy) || 0;  // ✅ Picks the latest entry correctly
-    let energyDifference = (finalEnergy - initialEnergy).toFixed(2);
+    // Make the API request
+    const response = await axios.get(apiUrl);
+    
+    console.log("🔥 API Response:", response);
 
-    return {
-        stackName: stack.name,
-        initialEnergy: initialEnergy.toFixed(2),
-        finalEnergy: finalEnergy.toFixed(2),
-        energyDifference
-    };
-});
+    if (response.data.success) {
+      const data = response.data.data;
 
-console.log("⚡ Final Energy Data:", energyData);
-setEnergyData(energyData);
+      console.log("✅ Processed API Data:", data);
 
+      // Extract data for the selected dates
+      const startDateData = data.filter(
+        (entry) => entry.date === formattedStartDate.split("-").join("/")
+      );
+      const endDateData = data
+        .filter(
+          (entry) => entry.date === formattedEndDate.split("-").join("/")
+        )
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); // Sort by timestamp
 
-          // ** Prepare Quantity Data (Flow) **
-          let quantityData = stackOptions
-              .filter(stack => stack.stationType === "effluent_flow")
-              .map(stack => {
-                  const startFlow = startDateData.find(entry => entry.stackName === stack.name);
-                  const endFlow = endDateData
-                      .filter(entry => entry.stackName === stack.name)
-                      .pop(); // ✅ Picks the latest entry
+      console.log("✅ Start Date Data:", startDateData);
+      console.log("✅ Sorted End Date Data:", endDateData);
 
-                  let initialFlow = Number(startFlow?.initialCumulatingFlow) || 0;
-                  let finalFlow = Number(endFlow?.lastCumulatingFlow) || 0;
-                  let flowDifference = (finalFlow - initialFlow).toFixed(2);
+      // ** Prepare Energy Data (Ensuring Last Reading is Picked) **
+      let energyData = stackOptions
+        .filter((stack) => stack.stationType === "energy")
+        .map((stack) => {
+          const startEnergy = startDateData.find(
+            (entry) => entry.stackName === stack.name
+          );
+          // Ensure we get the LATEST energy entry from endDateData
+          const endEnergyList = endDateData.filter(
+            (entry) => entry.stackName === stack.name
+          );
+          const endEnergy = endEnergyList.length > 0 ? endEnergyList[endEnergyList.length - 1] : null;
 
-                  return { 
-                      stackName: stack.name, 
-                      initialFlow: initialFlow.toFixed(2), 
-                      finalFlow: finalFlow.toFixed(2), 
-                      flowDifference 
-                  };
-              });
+          let initialEnergy = Number(startEnergy?.initialEnergy) || 0;
+          let finalEnergy = Number(endEnergy?.lastEnergy) || 0; // ✅ Picks the latest entry correctly
+          let energyDifference = (finalEnergy - initialEnergy).toFixed(2);
 
-          console.log("🔹 Final Quantity Data:", quantityData);
+          return {
+            stackName: stack.name,
+            initialEnergy: initialEnergy.toFixed(2),
+            finalEnergy: finalEnergy.toFixed(2),
+            energyDifference,
+          };
+        });
 
-          // ✅ **Modify ETP outlet AFTER quantityData is created**
-          const stpInletData = quantityData.find(entry => entry.stackName === "STP inlet");
-          if (stpInletData) {
-              quantityData = quantityData.map(entry => {
-                  if (entry.stackName === "ETP outlet") {
-                      let modifiedInitialFlow = Math.max(0, parseFloat(stpInletData.initialFlow) - 30);
-                      let modifiedFinalFlow = parseFloat(stpInletData.finalFlow) === 0 ? 0 : Math.max(0, parseFloat(stpInletData.finalFlow) - 30);
-                      let modifiedFlowDifference = parseFloat(stpInletData.flowDifference) === 0 ? 0 : (parseFloat(stpInletData.flowDifference) - 30).toFixed(2);
+      console.log("⚡ Final Energy Data:", energyData);
+      setEnergyData(energyData);
 
-                      return {
-                          ...entry,
-                          initialFlow: modifiedInitialFlow.toFixed(2),
-                          finalFlow: modifiedFinalFlow.toFixed(2),
-                          flowDifference: modifiedFlowDifference,
-                      };
-                  }
-                  return entry;
-              });
+      // ** Prepare Quantity Data (Flow) **
+      let quantityData = stackOptions
+        .filter((stack) => stack.stationType === "effluent_flow")
+        .map((stack) => {
+          const startFlow = startDateData.find(
+            (entry) => entry.stackName === stack.name
+          );
+          const endFlow = endDateData.filter(
+            (entry) => entry.stackName === stack.name
+          ).pop(); // ✅ Picks the latest entry
+
+          let initialFlow = Number(startFlow?.initialCumulatingFlow) || 0;
+          let finalFlow = Number(endFlow?.lastCumulatingFlow) || 0;
+          // If finalFlow is 0 then set difference to "0.00", otherwise compute the non-negative difference.
+          let flowDifference =
+            finalFlow === 0 ? "0.00" : Math.max(0, finalFlow - initialFlow).toFixed(2);
+
+          return {
+            stackName: stack.name,
+            initialFlow: initialFlow.toFixed(2),
+            finalFlow: finalFlow.toFixed(2),
+            flowDifference,
+          };
+        });
+
+      console.log("🔹 Final Quantity Data:", quantityData);
+
+      // ✅ **Modify ETP outlet AFTER quantityData is created**
+      const stpInletData = quantityData.find(
+        (entry) => entry.stackName === "STP inlet"
+      );
+      if (stpInletData) {
+        quantityData = quantityData.map((entry) => {
+          if (entry.stackName === "ETP outlet") {
+            let modifiedInitialFlow = Math.max(0, parseFloat(stpInletData.initialFlow) - 30);
+            let modifiedFinalFlow =
+              parseFloat(stpInletData.finalFlow) === 0
+                ? 0
+                : Math.max(0, parseFloat(stpInletData.finalFlow) - 30);
+            let modifiedFlowDifference =
+              parseFloat(stpInletData.finalFlow) === 0
+                ? "0.00"
+                : Math.max(0, parseFloat(stpInletData.flowDifference) - 30).toFixed(2);
+
+            return {
+              ...entry,
+              initialFlow: modifiedInitialFlow.toFixed(2),
+              finalFlow: modifiedFinalFlow.toFixed(2),
+              flowDifference: modifiedFlowDifference,
+            };
           }
-
-          console.log("🚀 Updated Quantity Data:", quantityData);
-          setQuantityData(quantityData);
+          return entry;
+        });
       }
+
+      console.log("🚀 Updated Quantity Data:", quantityData);
+      setQuantityData(quantityData);
+    } // End of if (response.data.success)
   } catch (error) {
-      console.error("❌ Error fetching energy and flow data:", error);
+    console.error("❌ Error fetching energy and flow data:", error);
   }
 };
 
@@ -582,19 +599,28 @@ setEnergyData(energyData);
 
     return (
       <tr key={idx}>
-        <td>{key}</td>
-        <td
-          style={{
-            color: isExceeded ? "red" : "black",
-            fontWeight: isExceeded ? "bold" : "normal",
-          }}
-        >
-          {value}
-        </td>
-        <td>{minMaxData.minValues[key] !== undefined ? minMaxData.minValues[key] : "N/A"}</td>
-        <td>{minMaxData.maxValues[key] !== undefined ? minMaxData.maxValues[key] : "N/A"}</td>
-        <td>{exceedenceValue !== null ? exceedenceValue : "N/A"}</td>
-      </tr>
+      <td>{key}</td>
+      <td
+        style={{
+          color: isExceeded ? "red" : "black",
+          fontWeight: isExceeded ? "bold" : "normal",
+        }}
+      >
+        {value}
+      </td>
+      <td>
+        {minMaxData.minValues[key] !== undefined 
+          ? parseFloat(minMaxData.minValues[key]).toFixed(2) 
+          : "N/A"}
+      </td>
+      <td>
+        {minMaxData.maxValues[key] !== undefined 
+          ? parseFloat(minMaxData.maxValues[key]).toFixed(2) 
+          : "N/A"}
+      </td>
+      <td>{exceedenceValue !== null ? exceedenceValue : "N/A"}</td>
+    </tr>
+    
     );
   })}
 </tbody>
