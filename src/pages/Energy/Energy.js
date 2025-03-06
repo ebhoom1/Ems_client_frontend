@@ -254,9 +254,9 @@ const Energy = () => {
         </div>
 
         <div className="col-md-12 col-lg-12 mb-3">
-        <div className="card" style={{ height: '100%' }}>
+       {/*  <div className="card" style={{ height: '100%' }}>
           <ConsumptionGraphEnergy />
-        </div>
+        </div> */}
          {/*  <div className="card full-height-card shadow" style={{ border: 'none' }}>
             <div className="col-md-12">
               <h2 className="text-center mb-4 mt-2 text-light">Carbon Emission <img src={carbon} alt="carbon" width={'100px'}></img></h2>

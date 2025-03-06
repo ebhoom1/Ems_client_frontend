@@ -4,10 +4,25 @@ import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import { useSelector } from "react-redux";
+import moment from "moment";
 
 const ViewDifferenceFlow = () => {
   const location = useLocation();
-  const { userName, fromDate, toDate, interval } = location.state || {};
+  const { userType, userData } = useSelector((state) => state.user);
+  const { userName: stateUserName, fromDate, toDate, interval } = location.state || {};
+
+  // For non-admin users, fallback to the logged-in user's username if not provided in location state.
+  const userName =
+    stateUserName ||
+    (userType === "user" && userData?.validUserOne?.userName
+      ? userData.validUserOne.userName
+      : "");
+
+  // If fromDate or toDate are missing, use today's date as default.
+  const defaultDate = moment().format("DD-MM-YYYY");
+  const effectiveFromDate = fromDate || defaultDate;
+  const effectiveToDate = toDate || defaultDate;
 
   const [flowData, setFlowData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,13 +32,16 @@ const ViewDifferenceFlow = () => {
     num !== undefined && num !== null ? Number(num).toFixed(2) : "0.00";
 
   useEffect(() => {
-    if (!userName || !fromDate || !toDate) return;
+    if (!userName) return; // Wait until userName is available
+
+    // Build the API URL using effective dates.
+    const apiUrl = `${API_URL}/api/differenceData/${userName}/${interval}/${effectiveFromDate}/${effectiveToDate}`;
+    console.log("Fetching API:", apiUrl);
 
     const fetchData = async () => {
       try {
-        const response = await axios.get(
-          `${API_URL}/api/differenceData/${userName}/${interval}/${fromDate}/${toDate}`
-        );
+        const response = await axios.get(apiUrl);
+        console.log("API response:", response);
 
         if (response.data.success) {
           // Filter only effluent_flow stationType
@@ -31,6 +49,8 @@ const ViewDifferenceFlow = () => {
             (item) => item.stationType === "effluent_flow"
           );
           setFlowData(filteredData);
+        } else {
+          console.error("API returned unsuccessful response:", response.data);
         }
       } catch (error) {
         console.error("Error fetching flow data:", error);
@@ -40,7 +60,7 @@ const ViewDifferenceFlow = () => {
     };
 
     fetchData();
-  }, [userName, fromDate, toDate, interval]);
+  }, [userName, effectiveFromDate, effectiveToDate, interval]);
 
   // Convert Data to CSV and Download
   const handleDownloadCSV = () => {
@@ -59,7 +79,7 @@ const ViewDifferenceFlow = () => {
     const blob = new Blob([csvContent], { type: "text/csv" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `Effluent_Flow_Data_${userName}_${fromDate}_to_${toDate}.csv`;
+    link.download = `Effluent_Flow_Data_${userName}_${effectiveFromDate}_to_${effectiveToDate}.csv`;
     link.click();
   };
 
@@ -68,7 +88,11 @@ const ViewDifferenceFlow = () => {
     if (flowData.length === 0) return;
 
     const doc = new jsPDF();
-    doc.text(`Effluent Flow Data (${fromDate} to ${toDate})`, 14, 10);
+    doc.text(
+      `Effluent Flow Data (${effectiveFromDate} to ${effectiveToDate})`,
+      14,
+      10
+    );
 
     const tableColumn = [
       "Date",
@@ -100,14 +124,20 @@ const ViewDifferenceFlow = () => {
       styles: { fontSize: 10 },
     });
 
-    doc.save(`Effluent_Flow_Data_${userName}_${fromDate}_to_${toDate}.pdf`);
+    doc.save(
+      `Effluent_Flow_Data_${userName}_${effectiveFromDate}_to_${effectiveToDate}.pdf`
+    );
   };
+
+  // Determine if user data is still loading (for non-admin users)
+  const isUserLoading = userType === "user" && !userName;
 
   return (
     <div className="container">
       <h2 className="text-center mt-3">Effluent Flow Data</h2>
-
-      {loading ? (
+      {isUserLoading ? (
+        <p>Loading user data...</p>
+      ) : loading ? (
         <p className="text-center">Loading...</p>
       ) : flowData.length > 0 ? (
         <>
@@ -118,14 +148,10 @@ const ViewDifferenceFlow = () => {
             >
               Download CSV
             </button>
-            <button
-              className="btn btn-outline-danger"
-              onClick={handleDownloadPDF}
-            >
+            <button className="btn btn-outline-danger" onClick={handleDownloadPDF}>
               Download PDF
             </button>
           </div>
-
           <div className="table-responsive mt-3">
             <table className="table table-bordered">
               <thead className="thead-dark">

@@ -301,11 +301,16 @@ const [lastValidTimestamp, setLastValidTimestamp] = useState(null);
 
 
   const handleCardClick = (stack, parameter) => {
-    // Set the selected card with the stack name and parameter
+    // Only allow graph display for the "energy" parameter
+    if (parameter.name !== "energy") {
+      // Optionally clear any previously selected card
+      setSelectedCard(null);
+      return;
+    }
     setSelectedCard({
       stackName: stack.stackName,
-      title: parameter.parameter, // Set the title for the graph
-      name: parameter.name, // Parameter key for fetching data
+      title: parameter.parameter, // This sets the title for the graph
+      name: parameter.name, // This is used to fetch the data for the graph
     });
   };
   

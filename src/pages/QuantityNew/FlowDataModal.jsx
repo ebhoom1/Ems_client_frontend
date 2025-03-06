@@ -41,7 +41,8 @@ const FlowDataModal = ({ isOpen, onRequestClose }) => {
 
   useEffect(() => {
     if (userType === 'admin') {
-      axios.get(`${API_URL}/api/getallusers`)
+      axios
+        .get(`${API_URL}/api/getallusers`)
         .then(response => setUsers(response.data.users))
         .catch(error => console.error('Error fetching users:', error));
     } else if (userType === 'user' && userData?.validUserOne?.userName) {
@@ -68,42 +69,74 @@ const FlowDataModal = ({ isOpen, onRequestClose }) => {
       </div>
       
       <div className="modal-body">
-        {userType === 'admin' && (
+        {userType === 'admin' ? (
           <div className="form-group">
             <label className="form-label">User Name</label>
-            <select className="form-control form-select" onChange={(e) => setUserName(e.target.value)}>
+            <select
+              className="form-control form-select"
+              onChange={(e) => setUserName(e.target.value)}
+              value={userName}
+            >
               <option value="">Select User</option>
-              {users.map(user => (
+              {users.map((user) => (
                 <option key={user.userName} value={user.userName}>
                   {user.userName}
                 </option>
               ))}
             </select>
           </div>
+        ) : (
+          <div className="form-group">
+            <label className="form-label">User Name</label>
+            <select
+              className="form-control form-select"
+              onChange={(e) => setUserName(e.target.value)}
+              value={userName}
+            >
+              <option value={userName}>{userName}</option>
+            </select>
+          </div>
         )}
 
         <div className="form-group">
           <label className="form-label">Interval</label>
-          <select className="form-control form-select" onChange={(e) => setInterval(e.target.value)}>
+          <select
+            className="form-control form-select"
+            onChange={(e) => setInterval(e.target.value)}
+            value={interval}
+          >
             <option value="daily">Daily</option>
-          
           </select>
         </div>
 
         <div className="form-group">
           <label className="form-label">From Date</label>
-          <input type="date" className="form-control" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+          <input
+            type="date"
+            className="form-control"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
         </div>
 
         <div className="form-group">
           <label className="form-label">To Date</label>
-          <input type="date" className="form-control" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          <input
+            type="date"
+            className="form-control"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
         </div>
       </div>
 
       <div className="modal-footer d-flex justify-content-between">
-        <button className="btn btn-outline-secondary" onClick={onRequestClose}>Close</button>
-        <button className="btn btn-primary" onClick={handleViewClick}>View Data</button>
+        <button className="btn btn-outline-secondary" onClick={onRequestClose}>
+          Close
+        </button>
+        <button className="btn btn-primary" onClick={handleViewClick}>
+          View Data
+        </button>
       </div>
     </Modal>
   );

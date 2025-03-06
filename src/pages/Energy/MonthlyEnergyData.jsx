@@ -33,8 +33,17 @@ const MonthlyEnergyData = () => {
   useEffect(() => {
     if (userType === "admin" && userData?.validUserOne?.adminType) {
       fetchUsers();
+    } else if (userType === "user" && userData?.validUserOne?.userName) {
+      // Automatically set the logged-in user's username
+      setSelectedUser(userData.validUserOne.userName);
+      fetchStackOptions(userData.validUserOne.userName);
+      // Optionally auto-fetch data if month and stack are already selected
+      if (selectedMonth && selectedStack) {
+        fetchLastEnergyConsumption(userData.validUserOne.userName, selectedStack, selectedMonth);
+      }
     }
   }, [userType, userData]);
+  
 
   const fetchUsers = async () => {
     try {
@@ -111,21 +120,31 @@ const MonthlyEnergyData = () => {
       <div className="row mb-3">
         {/* User Selection */}
         <div className="col-md-4">
-          <select
-            className="form-select"
-            onChange={(e) => {
-              setSelectedUser(e.target.value);
-              fetchStackOptions(e.target.value);
-            }}
-            value={selectedUser}
-          >
-            <option value="">Select User</option>
-            {users.map((user) => (
-              <option key={user._id} value={user.userName}>
-                {user.userName}
-              </option>
-            ))}
-          </select>
+        <select
+  className="form-select"
+  onChange={(e) => {
+    setSelectedUser(e.target.value);
+    fetchStackOptions(e.target.value);
+  }}
+  value={selectedUser}
+  disabled={userType !== "admin"}
+>
+  {userType === "admin" ? (
+    <>
+      <option value="">Select User</option>
+      {users.map((user) => (
+        <option key={user._id} value={user.userName}>
+          {user.userName}
+        </option>
+      ))}
+    </>
+  ) : (
+    <option value={userData?.validUserOne?.userName}>
+      {userData?.validUserOne?.userName}
+    </option>
+  )}
+</select>
+
         </div>
         {/* Stack Selection */}
         <div className="col-md-4">

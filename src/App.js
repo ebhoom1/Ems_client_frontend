@@ -203,6 +203,8 @@ function App() {
                   <Route path="/pump" element={<Pump />} />
                   <Route path="/fuel" element={<FuelMain />} />
                   <Route path="/vehicle-history" element={<VehicleHistory />} />
+                  <Route path="/view-energy" element={<ViewDifference />} />
+
                 </Route>
               )}
               {/* User Routes */}
@@ -234,6 +236,9 @@ function App() {
                   <Route path="/generator" element={<Generator />} />
                   <Route path="/live-emmision" element={<LiveEmmission />} />
                   <Route path="/waste-history/:userId" element={<WasteHistory />} />
+                  <Route path="/view-difference" element={<ViewDifferenceFlow />} />
+                  <Route path="/view-energy" element={<ViewDifference />} />
+
                 </Route>
               )}
             </Routes>
