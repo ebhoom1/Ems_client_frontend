@@ -328,9 +328,9 @@ const groupedData = groupDataByStackName(differenceData, effluentFlowStacks);
               </div>
             </div>
           </div> */}
-            <div className="card" style={{ height: '100%' }}>
+          {/*   <div className="card" style={{ height: '100%' }}>
                       <ConsuptionPredictionGraphQuantity />
-                    </div>
+                    </div> */}
         </div>
       </div>
     </div>

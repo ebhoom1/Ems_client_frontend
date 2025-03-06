@@ -12,6 +12,10 @@ const ViewDifferenceFlow = () => {
   const [flowData, setFlowData] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Helper function to format numbers safely.
+  const formatNumber = (num) =>
+    num !== undefined && num !== null ? Number(num).toFixed(2) : "0.00";
+
   useEffect(() => {
     if (!userName || !fromDate || !toDate) return;
 
@@ -45,10 +49,10 @@ const ViewDifferenceFlow = () => {
     let csvContent =
       "Date,Time,Stack Name,Initial Flow,Final Flow,Flow Difference\n";
     flowData.forEach((item) => {
-      csvContent += `${item.date},${item.time},${item.stackName},${item.initialCumulatingFlow.toFixed(
-        2
-      )},${item.lastCumulatingFlow.toFixed(2)},${item.cumulatingFlowDifference.toFixed(
-        2
+      csvContent += `${item.date},${item.time},${item.stackName},${formatNumber(
+        item.initialCumulatingFlow
+      )},${formatNumber(item.lastCumulatingFlow)},${formatNumber(
+        item.cumulatingFlowDifference
       )}\n`;
     });
 
@@ -81,9 +85,9 @@ const ViewDifferenceFlow = () => {
         item.date,
         item.time,
         item.stackName,
-        item.initialCumulatingFlow.toFixed(2),
-        item.lastCumulatingFlow.toFixed(2),
-        item.cumulatingFlowDifference.toFixed(2),
+        formatNumber(item.initialCumulatingFlow),
+        formatNumber(item.lastCumulatingFlow),
+        formatNumber(item.cumulatingFlowDifference),
       ];
       tableRows.push(rowData);
     });
@@ -108,10 +112,16 @@ const ViewDifferenceFlow = () => {
       ) : flowData.length > 0 ? (
         <>
           <div className="d-flex justify-content-end mt-3">
-            <button className="btn btn-outline-success mx-2" onClick={handleDownloadCSV}>
+            <button
+              className="btn btn-outline-success mx-2"
+              onClick={handleDownloadCSV}
+            >
               Download CSV
             </button>
-            <button className="btn btn-outline-danger" onClick={handleDownloadPDF}>
+            <button
+              className="btn btn-outline-danger"
+              onClick={handleDownloadPDF}
+            >
               Download PDF
             </button>
           </div>
@@ -134,9 +144,9 @@ const ViewDifferenceFlow = () => {
                     <td>{item.date}</td>
                     <td>{item.time}</td>
                     <td>{item.stackName}</td>
-                    <td>{item.initialCumulatingFlow.toFixed(2)}</td>
-                    <td>{item.lastCumulatingFlow.toFixed(2)}</td>
-                    <td>{item.cumulatingFlowDifference.toFixed(2)}</td>
+                    <td>{formatNumber(item.initialCumulatingFlow)}</td>
+                    <td>{formatNumber(item.lastCumulatingFlow)}</td>
+                    <td>{formatNumber(item.cumulatingFlowDifference)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -144,7 +154,9 @@ const ViewDifferenceFlow = () => {
           </div>
         </>
       ) : (
-        <p className="text-center">No data found for the selected dates.</p>
+        <p className="text-center">
+          No data found for the selected dates.
+        </p>
       )}
     </div>
   );

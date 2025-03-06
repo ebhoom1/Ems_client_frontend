@@ -575,9 +575,9 @@ useEffect(() => {
        {/*  <h3 className="text-center">
   {storedUserId === "HH014" ? " Hilton Manyata" : companyName}
 </h3> */}
-   <div className="color-indicators">
+   {/* <div className="color-indicators">
   <div className="d-flex justify-content-center mt-2">
-    {/* Parameter Exceed Indicator */}
+    
     <div className="color-indicator">
       <div
         className="color-circle"
@@ -586,7 +586,7 @@ useEffect(() => {
       <span className="color-label me-2">Parameter Exceed</span>
     </div>
 
-    {/* Data Interval Indicator */}
+   
     <div className="color-indicator ml-4">
       <div
         className="color-circle"
@@ -595,7 +595,7 @@ useEffect(() => {
       <span className="color-label">Data Interval</span>
     </div>
   </div>
-</div> 
+</div>  */}
           </div>            
           </div>
 

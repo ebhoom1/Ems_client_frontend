@@ -42,9 +42,15 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
     const fetchData = async () => {
         setLoading(true);
         try {
-            const response = await fetch(
-                `${API_URL}/api/average/user/${userName}/stack/${stackName}/interval/${timeInterval}`
-            );
+            let url = '';
+            if (timeInterval === 'hour') {
+                // Fetch hourly data for today
+                url = `${API_URL}/api/average/user/${userName}/stack/${stackName}/interval/hour`;
+            } else {
+                // For daily and monthly, fetch all data and then process/group it
+                url = `${API_URL}/api/average/user/${userName}/stack/${stackName}`;
+            }
+            const response = await fetch(url);
             const responseData = await response.json();
             if (responseData.success && Array.isArray(responseData.data)) {
                 setGraphData(responseData.data);
@@ -59,145 +65,120 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             setLoading(false);
         }
     };
-    
+
     const processData = () => {
         if (!Array.isArray(graphData) || graphData.length === 0) {
             console.warn("⚠️ No valid data found in graphData!");
             return { labels: [], values: [] };
         }
-    
-        const labels = [];
-        const values = [];
-    
-        graphData.forEach((entry, index) => {
-            console.log(`📌 Processing Entry ${index + 1}:`, entry);
-    
-            if (!entry.stackData || !Array.isArray(entry.stackData) || entry.stackData.length === 0) {
-                console.warn(`⚠️ No stackData found in entry ${index + 1}`);
-                return;
-            }
-    
-            // ✅ Find the stack that matches the selected stackName
-            const stack = entry.stackData.find((s) => s.stackName === stackName);
-            
-            if (!stack) {
-                console.warn(`⚠️ No matching stack found for stackName: ${stackName}`);
-                return;
-            }
-    
-            console.log("✅ Filtered Stack:", stack);
-    
-            if (!stack.parameters || typeof stack.parameters !== "object") {
-                console.warn(`⚠️ No parameters found in stack ${stackName}`);
-                return;
-            }
-    
-            console.log("📌 Stack Parameters:", stack.parameters);
-    
-            // ✅ Handle Case Sensitivity for `ph`
-            const paramKey = Object.keys(stack.parameters).find(
-                (key) => key.toLowerCase() === parameter.toLowerCase()
+
+        let filteredData = [];
+
+        if (timeInterval === 'hour') {
+            // Filter only today's entries
+            filteredData = graphData.filter(entry =>
+                moment(entry.timestamp).isSame(moment(), 'day')
             );
-    
-            if (!paramKey) {
-                console.warn(`⚠️ Parameter '${parameter}' not found in stack parameters!`);
-                return;
-            }
-    
-            const paramValue = stack.parameters[paramKey] || 0;
-    
-            // ✅ Add processed label and value
-            labels.push(moment(entry.timestamp).format("DD/MM/YYYY HH:mm"));
-            values.push(parseFloat(paramValue)); // Ensure value is a valid number
-        });
-    
-        console.log("✅ Processed Labels:", labels);
-        console.log("✅ Processed Values:", values);
-    
+        } else {
+            // For day and month, work with all available data
+            filteredData = graphData;
+        }
+
+        let labels = [];
+        let values = [];
+
+        if (timeInterval === 'hour') {
+            filteredData.forEach(entry => {
+                const stack = entry.stackData.find(s => s.stackName === stackName);
+                if (!stack) return;
+                const paramKey = Object.keys(stack.parameters).find(
+                    key => key.toLowerCase() === parameter.toLowerCase()
+                );
+                if (!paramKey) return;
+                const paramValue = stack.parameters[paramKey] || 0;
+                // Format label as hour:minute
+                labels.push(moment(entry.timestamp).format("HH:mm"));
+                values.push(parseFloat(paramValue));
+            });
+        } else if (timeInterval === 'day') {
+            // Group data by date (DD/MM/YYYY) and take the latest entry of each day
+            const groupedByDate = {};
+            filteredData.forEach(entry => {
+                const dateLabel = moment(entry.timestamp).format("DD/MM/YYYY");
+                if (!groupedByDate[dateLabel]) {
+                    groupedByDate[dateLabel] = [];
+                }
+                groupedByDate[dateLabel].push(entry);
+            });
+
+            // Sort dates in descending order so the latest date comes first
+            Object.keys(groupedByDate)
+                .sort((a, b) => moment(b, "DD/MM/YYYY") - moment(a, "DD/MM/YYYY"))
+                .forEach(dateLabel => {
+                    const entries = groupedByDate[dateLabel];
+                    // Get the latest entry for that date
+                    const latestEntry = entries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[entries.length - 1];
+                    const stack = latestEntry.stackData.find(s => s.stackName === stackName);
+                    if (!stack) return;
+                    const paramKey = Object.keys(stack.parameters).find(
+                        key => key.toLowerCase() === parameter.toLowerCase()
+                    );
+                    if (!paramKey) return;
+                    const paramValue = stack.parameters[paramKey] || 0;
+                    labels.push(dateLabel);
+                    values.push(parseFloat(paramValue));
+                });
+        } else if (timeInterval === 'month') {
+            // Group data by month (e.g., "MMMM YYYY") and take the latest entry for each month
+            const groupedByMonth = {};
+            filteredData.forEach(entry => {
+                const monthLabel = moment(entry.timestamp).format("MMMM YYYY");
+                if (!groupedByMonth[monthLabel]) {
+                    groupedByMonth[monthLabel] = [];
+                }
+                groupedByMonth[monthLabel].push(entry);
+            });
+
+            // Sort months in descending order so the latest month comes first
+            Object.keys(groupedByMonth)
+                .sort((a, b) => moment(b, "MMMM YYYY") - moment(a, "MMMM YYYY"))
+                .forEach(monthLabel => {
+                    const entries = groupedByMonth[monthLabel];
+                    const latestEntry = entries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[entries.length - 1];
+                    const stack = latestEntry.stackData.find(s => s.stackName === stackName);
+                    if (!stack) return;
+                    const paramKey = Object.keys(stack.parameters).find(
+                        key => key.toLowerCase() === parameter.toLowerCase()
+                    );
+                    if (!paramKey) return;
+                    const paramValue = stack.parameters[paramKey] || 0;
+                    labels.push(monthLabel);
+                    values.push(parseFloat(paramValue));
+                });
+        }
+
         return { labels, values };
     };
-    /*   const processData = () => {
-    if (!Array.isArray(graphData) || graphData.length === 0) {
-        console.warn("⚠️ No valid data found in graphData!");
-        return { labels: [], values: [] };
-    }
 
-    let labels = [];
-    let values = [];
-    let dateMap = new Map(); // Store values by date to avoid duplicates
-
-    // Sort data in descending order (latest first)
-    const sortedData = [...graphData].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-    // Get the first and last available timestamps
-    const latestDate = moment().startOf('day'); // Use today's date as the latest
-    const oldestDate = moment(sortedData[sortedData.length - 1].timestamp).startOf('day'); // Oldest date
-
-    // Generate all dates from latestDate to oldestDate in descending order
-    let currentDate = latestDate.clone();
-    while (currentDate.isSameOrAfter(oldestDate, 'day')) {
-        dateMap.set(currentDate.format("DD/MM/YYYY"), null); // Placeholder for missing values
-        currentDate.subtract(1, 'days'); // Move to previous day
-    }
-
-    // Populate dateMap with actual values from data
-    sortedData.forEach((entry, index) => {
-        console.log(`📌 Processing Entry ${index + 1}:`, entry);
-
-        if (!entry.stackData || !Array.isArray(entry.stackData) || entry.stackData.length === 0) {
-            console.warn(`⚠️ No stackData found in entry ${index + 1}`);
-            return;
-        }
-
-        const stack = entry.stackData.find((s) => s.stackName === stackName);
-        if (!stack) return;
-
-        if (!stack.parameters || typeof stack.parameters !== "object") return;
-
-        const paramKey = Object.keys(stack.parameters).find(
-            (key) => key.toLowerCase() === parameter.toLowerCase()
-        );
-
-        if (!paramKey) return;
-
-        const paramValue = stack.parameters[paramKey] || 0;
-        const formattedDate = moment(entry.timestamp).format("DD/MM/YYYY"); // Extract only the date
-
-        if (dateMap.has(formattedDate)) {
-            dateMap.set(formattedDate, parseFloat(paramValue)); // Replace null with value
-        }
-    });
-
-    // Extract keys and values for graph
-    labels = Array.from(dateMap.keys());
-    values = Array.from(dateMap.values()).map(value => value ?? null); // Ensure missing values are null
-
-    console.log("✅ Final Labels:", labels);
-    console.log("✅ Final Values:", values);
-
-    return { labels, values };
-};
- */
-    
-    
     const { labels, values } = processData();
+
     const chartData = {
         labels,
         datasets: [
             {
-                label:` ${parameter} - ${stackName}`,
+                label: `${parameter} - ${stackName}`,
                 data: values,
                 fill: false,
                 backgroundColor: '#236a80',
                 borderColor: '#236A80',
                 tension: 0.1,
-                pointRadius: 5, // Default size of the dots
-                pointHoverRadius: 10, // Size of the dots on hover
-                pointHoverBorderWidth: 3, // Border width on hover
+                pointRadius: 5,
+                pointHoverRadius: 10,
+                pointHoverBorderWidth: 3,
             },
         ],
     };
-    
+
     const chartOptions = {
         responsive: true,
         plugins: {
@@ -207,14 +188,18 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             },
             title: {
                 display: true,
-                text: `${parameter} Values Over Time`,
+                text: `${parameter} Values Over Time (${timeInterval})`,
             },
         },
         scales: {
             x: {
                 title: {
                     display: true,
-                    text: 'Interval',
+                    text: timeInterval === 'hour'
+                        ? 'Time (HH:mm)'
+                        : timeInterval === 'day'
+                        ? 'Date (DD/MM/YYYY)'
+                        : 'Month',
                 },
                 ticks: {
                     autoSkip: true,
@@ -231,13 +216,12 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             },
         },
     };
-    
+
     useEffect(() => {
         console.log('Graph Data:', graphData);
         console.log('Processed Labels:', labels);
         console.log('Processed Values:', values);
     }, [graphData, labels, values]);
-    
 
     const customStyles = {
         content: {
@@ -260,61 +244,61 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
 
     return (
         <div>
-        <h5 style={{ marginTop: '20px' }} className="popup-title text-center">
-            {parameter} - {stackName}
-        </h5>
-    
-        <div 
-            className="col interval-buttons d-flex align-items-center justify-content-center mt-3 flex-wrap"
-            style={{ gap: '10px' }}
-        >
-            {['hour', 'day', 'week', 'month', 'sixmonths', 'year'].map((interval) => (
-                <button
-                    key={interval}
-                    className={`interval-btn ${timeInterval === interval ? 'active' : ''}`}
-                    onClick={() => setTimeInterval(interval)}
-                    style={{
-                        backgroundColor: '#236a80',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '7px 15px',
-                        borderRadius: '5px',
-                        textAlign: 'center',
-                        minWidth: '80px',
-                    }}
-                >
-                    {interval.charAt(0).toUpperCase() + interval.slice(1)}
-                </button>
-            ))}
-        </div>
-    
-        {loading ? (
-            <div className="loading-container d-flex align-items-center justify-content-center ">
-                <Oval
-                    height={60}
-                    width={60}
-                    color="#236A80"
-                    ariaLabel="Fetching details"
-                    secondaryColor="#e0e0e0"
-                    strokeWidth={2}
-                    strokeWidthSecondary={2}
-                />
-                <p className="mt-3">Loading data, please wait...</p>
-            </div>
-        ) : graphData.length === 0 ? (
-            <div className="no-data-container mt-3">
-                <h5>No data available for {parameter} ({timeInterval})</h5>
-                <p>Please try a different interval or check back later.</p>
-            </div>
-        ) : (
-            <div
-                className="chart-container mt-3 d-flex align-items-center justify-content-center"
-                style={{ height: '300px' }}
+            <h5 style={{ marginTop: '20px' }} className="popup-title text-center">
+                {parameter} - {stackName}
+            </h5>
+        
+            <div 
+                className="col interval-buttons d-flex align-items-center justify-content-center mt-3 flex-wrap"
+                style={{ gap: '10px' }}
             >
-                <Line data={chartData} options={chartOptions} />
+                {['hour', 'day', 'month'].map((interval) => (
+                    <button
+                        key={interval}
+                        className={`interval-btn ${timeInterval === interval ? 'active' : ''}`}
+                        onClick={() => setTimeInterval(interval)}
+                        style={{
+                            backgroundColor: '#236a80',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '7px 15px',
+                            borderRadius: '5px',
+                            textAlign: 'center',
+                            minWidth: '80px',
+                        }}
+                    >
+                        {interval.charAt(0).toUpperCase() + interval.slice(1)}
+                    </button>
+                ))}
             </div>
-        )}
-    </div>
+        
+            {loading ? (
+                <div className="loading-container d-flex align-items-center justify-content-center">
+                    <Oval
+                        height={60}
+                        width={60}
+                        color="#236A80"
+                        ariaLabel="Fetching details"
+                        secondaryColor="#e0e0e0"
+                        strokeWidth={2}
+                        strokeWidthSecondary={2}
+                    />
+                    <p className="mt-3">Loading data, please wait...</p>
+                </div>
+            ) : labels.length === 0 ? (
+                <div className="no-data-container mt-3">
+                    <h5>No data available for {parameter} ({timeInterval})</h5>
+                    <p>Please try a different interval or check back later.</p>
+                </div>
+            ) : (
+                <div
+                    className="chart-container mt-3 d-flex align-items-center justify-content-center"
+                    style={{ height: '300px' }}
+                >
+                    <Line data={chartData} options={chartOptions} />
+                </div>
+            )}
+        </div>
     );
 };
 
