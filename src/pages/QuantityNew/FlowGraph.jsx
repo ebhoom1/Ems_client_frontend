@@ -67,7 +67,8 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
         );
 
         // Take only the latest 5 records
-        const latestFive = filteredData.slice(0, 5);
+        const latestFive = filteredData.slice(0, 5).reverse();
+        setGraphData(latestFive);
 
         // Note: We keep the descending order so that today's data is first
         setGraphData(latestFive);

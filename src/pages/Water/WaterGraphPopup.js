@@ -71,9 +71,9 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             console.warn("⚠️ No valid data found in graphData!");
             return { labels: [], values: [] };
         }
-
+    
         let filteredData = [];
-
+    
         if (timeInterval === 'hour') {
             // Filter only today's entries
             filteredData = graphData.filter(entry =>
@@ -83,10 +83,10 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             // For day and month, work with all available data
             filteredData = graphData;
         }
-
+    
         let labels = [];
         let values = [];
-
+    
         if (timeInterval === 'hour') {
             filteredData.forEach(entry => {
                 const stack = entry.stackData.find(s => s.stackName === stackName);
@@ -95,25 +95,33 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                     key => key.toLowerCase() === parameter.toLowerCase()
                 );
                 if (!paramKey) return;
-                const paramValue = stack.parameters[paramKey] || 0;
+                const paramValue = parseFloat(stack.parameters[paramKey] || 0);
+                // If the value is negative, skip this entry
+                if (paramValue < 0) return;
                 // Format label as hour:minute
                 labels.push(moment(entry.timestamp).format("HH:mm"));
-                values.push(parseFloat(paramValue));
+                values.push(paramValue);
             });
         } else if (timeInterval === 'day') {
+            // Filter data to only include entries from the last 20 days
+            const last20Days = moment().subtract(20, 'days');
+            const filteredLast20Days = filteredData.filter(entry =>
+                moment(entry.timestamp).isAfter(last20Days)
+            );
+    
             // Group data by date (DD/MM/YYYY) and take the latest entry of each day
             const groupedByDate = {};
-            filteredData.forEach(entry => {
+            filteredLast20Days.forEach(entry => {
                 const dateLabel = moment(entry.timestamp).format("DD/MM/YYYY");
                 if (!groupedByDate[dateLabel]) {
                     groupedByDate[dateLabel] = [];
                 }
                 groupedByDate[dateLabel].push(entry);
             });
-
-            // Sort dates in descending order so the latest date comes first
+    
+            // Sort dates in ascending order so that the earliest date comes first and the latest at the end
             Object.keys(groupedByDate)
-                .sort((a, b) => moment(b, "DD/MM/YYYY") - moment(a, "DD/MM/YYYY"))
+                .sort((a, b) => moment(a, "DD/MM/YYYY") - moment(b, "DD/MM/YYYY"))
                 .forEach(dateLabel => {
                     const entries = groupedByDate[dateLabel];
                     // Get the latest entry for that date
@@ -124,9 +132,12 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                         key => key.toLowerCase() === parameter.toLowerCase()
                     );
                     if (!paramKey) return;
-                    const paramValue = stack.parameters[paramKey] || 0;
+                    const paramValue = parseFloat(stack.parameters[paramKey] || 0);
+                    // If the value is negative, skip this entry
+                    if (paramValue < 0) return;
+    
                     labels.push(dateLabel);
-                    values.push(parseFloat(paramValue));
+                    values.push(paramValue);
                 });
         } else if (timeInterval === 'month') {
             // Group data by month (e.g., "MMMM YYYY") and take the latest entry for each month
@@ -138,7 +149,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                 }
                 groupedByMonth[monthLabel].push(entry);
             });
-
+    
             // Sort months in descending order so the latest month comes first
             Object.keys(groupedByMonth)
                 .sort((a, b) => moment(b, "MMMM YYYY") - moment(a, "MMMM YYYY"))
@@ -151,17 +162,20 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                         key => key.toLowerCase() === parameter.toLowerCase()
                     );
                     if (!paramKey) return;
-                    const paramValue = stack.parameters[paramKey] || 0;
+                    const paramValue = parseFloat(stack.parameters[paramKey] || 0);
+                    // If the value is negative, skip this entry
+                    if (paramValue < 0) return;
+    
                     labels.push(monthLabel);
-                    values.push(parseFloat(paramValue));
+                    values.push(paramValue);
                 });
         }
-
+    
         return { labels, values };
     };
-
+    
     const { labels, values } = processData();
-
+    
     const chartData = {
         labels,
         datasets: [
@@ -178,7 +192,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             },
         ],
     };
-
+    
     const chartOptions = {
         responsive: true,
         plugins: {
@@ -216,13 +230,13 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             },
         },
     };
-
+    
     useEffect(() => {
         console.log('Graph Data:', graphData);
         console.log('Processed Labels:', labels);
         console.log('Processed Values:', values);
     }, [graphData, labels, values]);
-
+    
     const customStyles = {
         content: {
             top: '50%',
@@ -241,7 +255,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             overflow: 'auto',
         },
     };
-
+    
     return (
         <div>
             <h5 style={{ marginTop: '20px' }} className="popup-title text-center">
