@@ -161,7 +161,7 @@ const MonthlyFlowData = () => {
   return (
     <div className="container-fluid shadow">
       <h4 className="text-center mt-3 mb-4">
-        <b>Last Month Consumption</b>
+        <b> Monthly Consumption</b>
       </h4>
 
       <div className="row mb-3">
@@ -295,7 +295,7 @@ const MonthlyFlowData = () => {
       /* Show commas in large numbers */
       tickFormatter={(value) => value.toLocaleString()}
     />
-    <Tooltip />
+   {stackFlowData.length > 0 && <Tooltip />}
     <Bar dataKey="lastCumulatingFlow" fill="url(#progressGradient)">
       <LabelList
         dataKey="lastCumulatingFlow"

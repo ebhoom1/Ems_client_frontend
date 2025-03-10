@@ -220,7 +220,7 @@ const Quantity = () => {
 
   // Fetch difference data (comment out if you just want mock data)
  // Modify your fetchDifferenceData function as follows:
- const fetchDifferenceData = async (userName, page = 1, limit = 30) => {
+ const fetchDifferenceData = async (userName, page = 1, limit = 100) => {
   try {
     setLoading(true);
     let finalData = [];
@@ -283,7 +283,7 @@ const Quantity = () => {
 
     if (effluentFlowStacks.length > 0) {
       const userName = storedUserId || currentUserName;
-      fetchDifferenceData(userName, currentPage, 50);
+      fetchDifferenceData(userName, currentPage, 100);
     }
   }, [effluentFlowStacks, storedUserId, currentUserName, currentPage]);
 
@@ -300,41 +300,20 @@ const Quantity = () => {
     if (differenceData.length) {
       let filtered = filterHeaders(differenceData, viewType);
   
-      // -- Your existing insertion logic (if any) --
-      const targetDate = new Date("2025-03-04T00:00:00Z").toLocaleDateString();
-      const date5 = "05/03/2025";
+      const targetDate = new Date("2025-03-04T00:00:00Z").toLocaleDateString(); // "04/03/2025"
       const date3 = "03/03/2025";
   
-      const indexDate5 = filtered.indexOf(date5);
+      // ... (existing insertion logic for date5, etc.) ...
+  
+      // Now force "04/03/2025" to appear before "03/03/2025":
+      const indexDate4 = filtered.indexOf(targetDate);
       const indexDate3 = filtered.indexOf(date3);
   
-      if (indexDate5 !== -1 && indexDate3 !== -1) {
-        // Remove targetDate if it was already added
-        filtered = filtered.filter((header) => header !== targetDate);
-        // Insert targetDate right after 5/03/2025
-        filtered.splice(indexDate5 + 1, 0, targetDate);
+      if (indexDate4 !== -1 && indexDate3 !== -1 && indexDate4 > indexDate3) {
+        filtered.splice(indexDate4, 1);              // remove 04/03/2025
+        const newIndex3 = filtered.indexOf(date3);   // re-check index of 03/03/2025
+        filtered.splice(newIndex3, 0, targetDate);   // insert 04/03/2025 before 03/03/2025
       }
-  
-      // ------------------------------------------------
-      // Forcefully remove 05/03/2025 if it has NO data or if it's page 1
-      // ------------------------------------------------
-      filtered = filtered.filter((header) => {
-        // If it's not 05/03/2025, keep it
-        if (header !== "05/03/2025") return true;
-  
-        // If it is 05/03/2025, check if there's actual data and it's not page 1
-        const hasAnyData = differenceData.some((item) => {
-          return (
-            item.date === "05/03/2025" &&
-            (item.initialCumulatingFlow != null ||
-             item.lastCumulatingFlow != null ||
-             item.cumulatingFlowDifference != null)
-          );
-        });
-  
-        // Keep 05/03/2025 only if there's real data and it's not page 1
-        return hasAnyData && currentPage !== 1;
-      });
   
       setHeaders(filtered);
     } else {

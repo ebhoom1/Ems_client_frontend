@@ -108,85 +108,102 @@ const Energy = () => {
   };
 
   // 2) Fetch difference data and then apply forced overrides
-  const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        `${API_URL}/api/difference/${userName}?interval=daily`
+// 2) Fetch difference data and then apply forced overrides
+const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
+  setLoading(true);
+  try {
+    const response = await axios.get(
+      `${API_URL}/api/difference/${userName}?interval=daily`
+    );
+    const { data } = response;
+
+    if (data && data.success) {
+      // Map and format date/time from timestamp
+      let mappedData = data.data.map((item) => ({
+        ...item,
+        date: new Date(item.timestamp).toLocaleDateString(),   // "DD/MM/YYYY"
+        time: new Date(item.timestamp).toLocaleTimeString(),   // "HH:mm:ss"
+      }));
+
+      // Filter out only the "energy" stacks
+      mappedData = mappedData.filter((item) =>
+        energyStacks.includes(item.stackName)
       );
-      const { data } = response;
 
-      if (data && data.success) {
-        // Map and format date/time from timestamp
-        let mappedData = data.data.map((item) => ({
-          ...item,
-          date: new Date(item.timestamp).toLocaleDateString(),   // "DD/MM/YYYY"
-          time: new Date(item.timestamp).toLocaleTimeString(),   // "HH:mm:ss"
-        }));
+      // -------------- Apply Forced Overrides --------------
+      forcedOverrides.forEach((override) => {
+        const {
+          date,
+          stackName,
+          initialEnergy,
+          lastEnergy,
+          energyDifference,
+        } = override;
 
-        // Filter out only the "energy" stacks
-        mappedData = mappedData.filter((item) =>
-          energyStacks.includes(item.stackName)
+        // Find existing record for the date + stackName
+        const idx = mappedData.findIndex(
+          (record) => record.date === date && record.stackName === stackName
         );
 
-        // -------------- Apply Forced Overrides --------------
-        forcedOverrides.forEach((override) => {
-          const {
-            date,
+        if (idx >= 0) {
+          // Override existing record
+          mappedData[idx].initialEnergy = initialEnergy;
+          mappedData[idx].lastEnergy = lastEnergy;
+          mappedData[idx].energyDifference = energyDifference;
+        } else {
+          // Insert a new record if not found
+          mappedData.push({
+            userName,
             stackName,
+            date,
+            time: "00:00:00",
+            // We convert the forced date to ISO so sorting by timestamp works well
+            timestamp: toISODate(date),
             initialEnergy,
             lastEnergy,
             energyDifference,
-          } = override;
+          });
+        }
+      });
+      // ----------------------------------------------------
 
-          // Find existing record for the date + stackName
-          const idx = mappedData.findIndex(
-            (record) => record.date === date && record.stackName === stackName
-          );
+      // Sort by timestamp in descending order (most recent first)
+      let sortedData = mappedData.sort(
+        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+      );
 
-          if (idx >= 0) {
-            // Override existing record
-            mappedData[idx].initialEnergy = initialEnergy;
-            mappedData[idx].lastEnergy = lastEnergy;
-            mappedData[idx].energyDifference = energyDifference;
-          } else {
-            // Insert a new record if not found
-            mappedData.push({
-              userName,
-              stackName,
-              date,
-              time: "00:00:00",
-              // We convert the forced date to ISO so sorting by timestamp works well
-              timestamp: toISODate(date),
-              initialEnergy,
-              lastEnergy,
-              energyDifference,
-            });
-          }
-        });
-        // ----------------------------------------------------
-
-        // Sort by timestamp in descending order (most recent first)
-        const sortedData = mappedData.sort(
-          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-        );
-
-        // Paginate
-        const start = (page - 1) * limit;
-        const paginatedData = sortedData.slice(start, start + limit);
-
-        setDifferenceData(paginatedData);
-        setTotalPages(Math.ceil(sortedData.length / limit));
-      } else {
-        setDifferenceData([]);
+      // ============== DEDUPLICATE HERE ==============
+      // If you only want one record per (stackName + date), remove duplicates:
+      // Keep the *first* occurrence in sorted order (i.e. the newest).
+      const seen = new Set();
+      const dedupedData = [];
+      for (const item of sortedData) {
+        const key = item.stackName + "|" + item.date;
+        if (!seen.has(key)) {
+          seen.add(key);
+          dedupedData.push(item);
+        }
       }
-    } catch (error) {
-      console.error("Error fetching difference data:", error);
+
+      // Now dedupedData has no repeated (stackName + date).
+      // ============ END DEDUPLICATE SECTION ===========
+
+      // Paginate
+      const start = (page - 1) * limit;
+      const paginatedData = dedupedData.slice(start, start + limit);
+
+      setDifferenceData(paginatedData);
+      setTotalPages(Math.ceil(dedupedData.length / limit));
+    } else {
       setDifferenceData([]);
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error) {
+    console.error("Error fetching difference data:", error);
+    setDifferenceData([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // 3) On mount, fetch the user's energy stacks
   useEffect(() => {
