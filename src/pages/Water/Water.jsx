@@ -683,7 +683,8 @@ const handleDownloadPdf = () => {
                   <div
                     className="card mb-3"
                     style={{ border: "none", cursor: "pointer" }} // Added cursor pointer for better UX
-                    onClick={() => handleCardClick({ title: item.parameter }, stack.stackName)} // Trigger handleCardClick on click
+                    onClick={() => handleCardClick({ title: item.name }, stack.stackName)}
+                    // Trigger handleCardClick on click
                   >
                     <div className="card-body">
                       <h5 className="text-light">{item.parameter}</h5>
