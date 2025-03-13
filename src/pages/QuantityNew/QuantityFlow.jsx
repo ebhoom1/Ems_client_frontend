@@ -152,28 +152,26 @@ const QuantityFlow = () => {
   };
   const fetchDifferenceData = async (userName) => {
     try {
-        const response = await axios.get(`${API_URL}/api/difference/${userName}?interval=daily`);
-        const { data } = response;
-
-        if (data && data.success) {
-            const initialFlowData = {};
-            const lastFlowData = {}; // Store lastCumulatingFlow separately
-
-            data.data.forEach(item => {
-                initialFlowData[item.stackName] = item.initialCumulatingFlow; 
-                lastFlowData[item.stackName] = item.lastCumulatingFlow; // Store lastCumulatingFlow
-            });
-
-            console.log("✅ Initial Flows from API:", initialFlowData);
-            console.log("✅ Last Flows from API:", lastFlowData);
-
-            setInitialFlows(initialFlowData);
-            setLastFlows(lastFlowData); // Store last flows in state
-        }
+      const response = await axios.get(`${API_URL}/api/difference/${userName}?interval=daily`);
+      const { data } = response;
+      if (data && data.success) {
+        const initialFlowData = {};
+        const today = moment().format('DD/MM/YYYY');
+  
+        data.data.forEach(item => {
+          if (item.stationType === 'effluent_flow' && item.date === today) {
+            initialFlowData[item.stackName] = item.initialCumulatingFlow;
+          }
+        });
+  
+        console.log("✅ Initial Flows from API:", initialFlowData);
+        setInitialFlows(initialFlowData);
+      }
     } catch (error) {
-        console.error("❌ Error fetching difference data:", error);
+      console.error("❌ Error fetching difference data:", error);
     }
-};
+  };
+  
 
 const saveDailyConsumptionToDB = async (userName, stackName, consumption) => {
   try {
@@ -186,28 +184,25 @@ const saveDailyConsumptionToDB = async (userName, stackName, consumption) => {
   }
 };
 useEffect(() => {
-  if (lastFlows && initialFlows) {
+  if (initialFlows) {
     const consumptionData = {};
-
-    console.log("📊 Last Cumulating Flow Data:", lastFlows);
-    console.log("📌 Initial Flow Data:", initialFlows);
-
-    Object.keys(lastFlows).forEach(stackName => {
-      const lastFlow = lastFlows[stackName] || 0;
+    Object.keys(initialFlows).forEach(stackName => {
+      // Use the real-time value as currentFlow
+      const currentFlow = realTimeData[stackName]?.cumulatingFlow || 0;
       const initialFlow = initialFlows[stackName] || 0;
-      const difference = Math.max(0, lastFlow - initialFlow); // Ensure non-negative values
+      const difference = Math.max(0, currentFlow - initialFlow); // Ensure non-negative value
 
-      console.log(`🔹 Stack: ${stackName} | Initial Flow: ${initialFlow} | Last Flow: ${lastFlow} | Daily Consumption: ${difference}`);
+      console.log(`🔹 Stack: ${stackName} | Initial Flow: ${initialFlow} | Current Flow: ${currentFlow} | Daily Consumption: ${difference}`);
 
       consumptionData[stackName] = difference;
 
-      // Save daily consumption value to the database
+      // Save the calculated daily consumption to the database
       saveDailyConsumptionToDB(currentUserName, stackName, difference);
     });
-
     setDailyConsumption(consumptionData);
   }
-}, [lastFlows, initialFlows]);
+}, [realTimeData, initialFlows]);
+
 
 
 
