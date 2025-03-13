@@ -5,9 +5,11 @@ import "react-toastify/dist/ReactToastify.css";
 import { API_URL } from "../../utils/apiConfig";
 import EnergyDataModal from "./EnergyDataModal";
 import './index.css';
+
 // (Optional) import carbon from '../../assests/images/carbon.png';
 // (Optional) import ConsuptionPredictionGraphQuantity from "../QuantityNew/ConsuptionPredictionGraphQuantity";
 // (Optional) import ConsumptionGraphEnergy from "./ConsumptionPredictionGraphEnergy";
+
 const formatDateDDMMYYYY = (dateInput) => {
   const date = new Date(dateInput);
   const day = date.getDate().toString().padStart(2, "0");
@@ -15,6 +17,7 @@ const formatDateDDMMYYYY = (dateInput) => {
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
 };
+
 // Utility to consistently format date/time headers
 const extractHeaders = (data, viewType) => {
   const headers = new Set();
@@ -28,7 +31,6 @@ const extractHeaders = (data, viewType) => {
   });
   return Array.from(headers);
 };
-
 
 // Utility to group data by stackName
 const groupDataByStackName = (data) => {
@@ -57,7 +59,7 @@ const forcedOverrides = [
     stackName: "STP-energy",
     initialEnergy: 504844.84,
     lastEnergy: 505625.70,
-    energyDifference: 780.86,
+    energyDifference: 780.86, 
   },
   {
     date: "02/03/2025",
@@ -115,101 +117,99 @@ const Energy = () => {
   };
 
   // 2) Fetch difference data and then apply forced overrides
-// 2) Fetch difference data and then apply forced overrides
-const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
-  setLoading(true);
-  try {
-    const response = await axios.get(
-      `${API_URL}/api/difference/${userName}?interval=daily`
-    );
-    const { data } = response;
-
-    if (data && data.success) {
-      // Map and format date/time from timestamp
-      let mappedData = data.data.map((item) => ({
-        ...item,
-        date: formatDateDDMMYYYY(item.timestamp),
-        time: new Date(item.timestamp).toLocaleTimeString(),
-      }));
-      // Filter out only the "energy" stacks
-      mappedData = mappedData.filter((item) =>
-        energyStacks.includes(item.stackName)
+  const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
+    setLoading(true);
+    try {
+      // Updated API endpoint with fixed parameters
+      const response = await axios.get(
+        "https://api.ocems.ebhoom.com/api/difference/HH014?interval=daily&page=1&limit=200"
       );
+      const { data } = response;
 
-      // -------------- Apply Forced Overrides --------------
-      forcedOverrides.forEach((override) => {
-        const {
-          date,
-          stackName,
-          initialEnergy,
-          lastEnergy,
-          energyDifference,
-        } = override;
-
-        // Find existing record for the date + stackName
-        const idx = mappedData.findIndex(
-          (record) => record.date === date && record.stackName === stackName
+      if (data && data.success) {
+        // Map and format date/time from timestamp
+        let mappedData = data.data.map((item) => ({
+          ...item,
+          date: formatDateDDMMYYYY(item.timestamp),
+          time: new Date(item.timestamp).toLocaleTimeString(),
+        }));
+        // Filter out only the "energy" stacks
+        mappedData = mappedData.filter((item) =>
+          energyStacks.includes(item.stackName)
         );
 
-        if (idx >= 0) {
-          // Override existing record
-          mappedData[idx].initialEnergy = initialEnergy;
-          mappedData[idx].lastEnergy = lastEnergy;
-          mappedData[idx].energyDifference = energyDifference;
-        } else {
-          // Insert a new record if not found
-          mappedData.push({
-            userName,
-            stackName,
+        // -------------- Apply Forced Overrides --------------
+        forcedOverrides.forEach((override) => {
+          const {
             date,
-            time: "00:00:00",
-            // We convert the forced date to ISO so sorting by timestamp works well
-            timestamp: toISODate(date),
+            stackName,
             initialEnergy,
             lastEnergy,
             energyDifference,
-          });
-        }
-      });
-      // ----------------------------------------------------
+          } = override;
 
-      // Sort by timestamp in descending order (most recent first)
-      let sortedData = mappedData.sort(
-        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-      );
+          // Find existing record for the date + stackName
+          const idx = mappedData.findIndex(
+            (record) => record.date === date && record.stackName === stackName
+          );
 
-      // ============== DEDUPLICATE HERE ==============
-      // If you only want one record per (stackName + date), remove duplicates:
-      // Keep the *first* occurrence in sorted order (i.e. the newest).
-      const seen = new Set();
-      const dedupedData = [];
-      for (const item of sortedData) {
-        const key = item.stackName + "|" + item.date;
-        if (!seen.has(key)) {
-          seen.add(key);
-          dedupedData.push(item);
+          if (idx >= 0) {
+            // Override existing record
+            mappedData[idx].initialEnergy = initialEnergy;
+            mappedData[idx].lastEnergy = lastEnergy;
+            mappedData[idx].energyDifference = energyDifference;
+          } else {
+            // Insert a new record if not found
+            mappedData.push({
+              userName,
+              stackName,
+              date,
+              time: "00:00:00",
+              // We convert the forced date to ISO so sorting by timestamp works well
+              timestamp: toISODate(date),
+              initialEnergy,
+              lastEnergy,
+              energyDifference,
+            });
+          }
+        });
+        // ----------------------------------------------------
+
+        // Sort by timestamp in descending order (most recent first)
+        let sortedData = mappedData.sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+        );
+
+        // ============== DEDUPLICATE HERE ==============
+        // If you only want one record per (stackName + date), remove duplicates:
+        // Keep the *first* occurrence in sorted order (i.e. the newest).
+        const seen = new Set();
+        const dedupedData = [];
+        for (const item of sortedData) {
+          const key = item.stackName + "|" + item.date;
+          if (!seen.has(key)) {
+            seen.add(key);
+            dedupedData.push(item);
+          }
         }
+        // ============ END DEDUPLICATE SECTION ===========
+
+        // Paginate
+        const start = (page - 1) * limit;
+        const paginatedData = dedupedData.slice(start, start + limit);
+
+        setDifferenceData(paginatedData);
+        setTotalPages(Math.ceil(dedupedData.length / limit));
+      } else {
+        setDifferenceData([]);
       }
-
-      // Now dedupedData has no repeated (stackName + date).
-      // ============ END DEDUPLICATE SECTION ===========
-
-      // Paginate
-      const start = (page - 1) * limit;
-      const paginatedData = dedupedData.slice(start, start + limit);
-
-      setDifferenceData(paginatedData);
-      setTotalPages(Math.ceil(dedupedData.length / limit));
-    } else {
+    } catch (error) {
+      console.error("Error fetching difference data:", error);
       setDifferenceData([]);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error fetching difference data:", error);
-    setDifferenceData([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // 3) On mount, fetch the user's energy stacks
   useEffect(() => {
@@ -248,8 +248,6 @@ const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
   const handlePreviousPage = () => {
     if (currentPage > 1) setCurrentPage((prev) => prev - 1);
   };
- // Helper to format a date as "DD/MM/YYYY"
-
 
   return (
     <div className="container-fluid">

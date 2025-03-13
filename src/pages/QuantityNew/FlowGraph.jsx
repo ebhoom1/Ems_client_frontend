@@ -15,7 +15,6 @@ import { toast } from 'react-toastify';
 import { Oval } from 'react-loader-spinner';
 import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
-import { API_URL } from '../../utils/apiConfig';
 
 ChartJS.register(
   CategoryScale,
@@ -46,39 +45,63 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
     return () => window.removeEventListener('resize', updateChartHeight);
   }, []);
 
-  // Fetch all daily consumption data, then filter and display only the latest 5 days in descending order.
+  // Fetch the difference data, then for the most recent date (with cumulatingFlowDifference),
+  // filter and show data for that date and the previous 5 days.
   const fetchDailyConsumptionData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/daily-consumption`);
+      const response = await fetch(`https://api.ocems.ebhoom.com/api/difference/${userName}?interval=daily`);
       const result = await response.json();
-      console.log("Daily Consumption API Response:", result);
+      console.log("Difference API Response:", result);
       if (result.success && Array.isArray(result.data)) {
-        // Filter by userName and stackName
+        // Filter data by userName, stackName and ensure cumulatingFlowDifference exists
         let filteredData = result.data.filter(
-          item => item.userName === userName && item.stackName === stackName
+          item =>
+            item.userName === userName &&
+            item.stackName === stackName &&
+            (item.cumulatingFlowDifference !== undefined && item.cumulatingFlowDifference !== null)
         );
 
-        // Sort data descending (most recent first) using moment (today will be first)
+        if (filteredData.length === 0) {
+          toast.error('No difference data available');
+          setGraphData([]);
+          return;
+        }
+
+        // Sort data descending by date (most recent first)
         filteredData.sort(
           (a, b) =>
             moment(b.date, 'DD/MM/YYYY').valueOf() -
             moment(a.date, 'DD/MM/YYYY').valueOf()
         );
 
-        // Take only the latest 5 records
-        const latestFive = filteredData.slice(0, 5).reverse();
-        setGraphData(latestFive);
+        // Use the most recent date as the selected date.
+        const selectedDate = filteredData[0].date;
+        const selectedMoment = moment(selectedDate, 'DD/MM/YYYY');
+        // Determine the start date (5 days before the selected date)
+        const startDate = selectedMoment.clone().subtract(5, 'days');
 
-        // Note: We keep the descending order so that today's data is first
-        setGraphData(latestFive);
+        // Filter records with dates between startDate and selectedMoment (inclusive)
+        let rangeData = filteredData.filter(item => {
+          const itemDate = moment(item.date, 'DD/MM/YYYY');
+          return itemDate.isBetween(startDate, selectedMoment, null, '[]');
+        });
+
+        // Sort the range data in ascending order so the oldest appears first
+        rangeData.sort(
+          (a, b) =>
+            moment(a.date, 'DD/MM/YYYY').valueOf() -
+            moment(b.date, 'DD/MM/YYYY').valueOf()
+        );
+
+        setGraphData(rangeData);
       } else {
-        toast.error('No daily consumption data available');
+        toast.error('No difference data available');
         setGraphData([]);
       }
     } catch (error) {
-      toast.error('Failed to fetch daily consumption data');
-      console.error('Error fetching daily consumption data:', error);
+      toast.error('Failed to fetch difference data');
+      console.error('Error fetching difference data:', error);
       setGraphData([]);
     } finally {
       setLoading(false);
@@ -88,7 +111,7 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
   // Process data to create labels and values arrays for the chart.
   const processGraphData = () => {
     const labels = graphData.map(item => item.date);
-    const values = graphData.map(item => item.consumption);
+    const values = graphData.map(item => item.cumulatingFlowDifference);
     return { labels, values };
   };
 
@@ -98,7 +121,7 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
     labels,
     datasets: [
       {
-        label: `Daily Consumption - ${stackName}`,
+        label: `Cumulating Flow Difference - ${stackName}`,
         data: values.length > 0 ? values : [0],
         fill: false,
         backgroundColor: '#236a80',
@@ -121,14 +144,14 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
       },
       title: {
         display: true,
-        text: 'Daily Consumption Values Over Time',
+        text: 'Cumulating Flow Difference Over Selected 5 Days',
       },
       tooltip: {
         callbacks: {
           title: (tooltipItems) => `Date: ${tooltipItems[0].label}`,
           label: (tooltipItem) => {
             const value = tooltipItem.raw;
-            return `Consumption: ${parseFloat(value).toFixed(2)} m³`;
+            return `Cumulating Flow Difference: ${parseFloat(value).toFixed(2)} m³`;
           },
         },
       },
@@ -141,13 +164,13 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
         },
         ticks: {
           autoSkip: true,
-          maxTicksLimit: 5,
+          maxTicksLimit: 6,
         },
       },
       y: {
         title: {
           display: true,
-          text: 'Daily Consumption (m³)',
+          text: 'Cumulating Flow Difference (m³)',
         },
         beginAtZero: true,
         suggestedMax: Math.max(...values, 5),
@@ -158,7 +181,7 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
   return (
     <div className="graph-container">
       <h5 className="popup-title text-center mt-5">
-        Daily Consumption - {stackName}
+        Cumulating Flow Difference - {stackName}
       </h5>
       {loading ? (
         <div className="loading-container">
@@ -173,7 +196,7 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
         </div>
       ) : graphData.length === 0 ? (
         <div className="no-data-container">
-          <h5>No data available for daily consumption</h5>
+          <h5>No data available for cumulating flow difference</h5>
         </div>
       ) : (
         <div
