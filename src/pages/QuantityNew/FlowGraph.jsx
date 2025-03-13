@@ -59,7 +59,8 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
           item =>
             item.userName === userName &&
             item.stackName === stackName &&
-            (item.cumulatingFlowDifference !== undefined && item.cumulatingFlowDifference !== null)
+            item.cumulatingFlowDifference !== undefined &&
+            item.cumulatingFlowDifference !== null
         );
 
         if (filteredData.length === 0) {
@@ -94,7 +95,17 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
             moment(b.date, 'DD/MM/YYYY').valueOf()
         );
 
-        setGraphData(rangeData);
+        // Remove duplicate dates - keep only the first record for each unique date
+        const dedupedData = [];
+        const seenDates = new Set();
+        rangeData.forEach(item => {
+          if (!seenDates.has(item.date)) {
+            dedupedData.push(item);
+            seenDates.add(item.date);
+          }
+        });
+
+        setGraphData(dedupedData);
       } else {
         toast.error('No difference data available');
         setGraphData([]);
