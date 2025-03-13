@@ -102,6 +102,9 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                 labels.push(moment(entry.timestamp).format("HH:mm"));
                 values.push(paramValue);
             });
+            // Reverse the arrays so the last data appears first
+            labels.reverse();
+            values.reverse();
         } else if (timeInterval === 'day') {
             // Filter data to only include entries from the last 20 days
             const last20Days = moment().subtract(20, 'days');
@@ -139,6 +142,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                     labels.push(dateLabel);
                     values.push(paramValue);
                 });
+            // No reversal needed for day interval
         } else if (timeInterval === 'month') {
             // Group data by month (e.g., "MMMM YYYY") and take the latest entry for each month
             const groupedByMonth = {};
@@ -169,10 +173,14 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                     labels.push(monthLabel);
                     values.push(paramValue);
                 });
+            // Reverse the arrays so that the "last month" (from your data) appears first
+            labels.reverse();
+            values.reverse();
         }
     
         return { labels, values };
     };
+    
     
     const { labels, values } = processData();
     

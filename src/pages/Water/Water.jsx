@@ -93,7 +93,7 @@ const [userId, setUserId] = useState(null);
     { parameter: "pH", value: 'pH', name: 'ph' },
     { parameter: "TDS", value: 'mg/l', name: 'TDS' },
     { parameter: "Turbidity", value: 'NTU', name: 'turbidity' },
-    // { parameter: "Temperature", value: '℃', name: 'Temp' },
+  { parameter: "Temperature", value: '℃', name: 'Temp' },
  //ammonicalNitrogen
  { parameter: "Ammonical Nitrogen", value: 'mg/l', name: 'ammonicalNitrogen' },
 

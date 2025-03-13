@@ -8,7 +8,13 @@ import './index.css';
 // (Optional) import carbon from '../../assests/images/carbon.png';
 // (Optional) import ConsuptionPredictionGraphQuantity from "../QuantityNew/ConsuptionPredictionGraphQuantity";
 // (Optional) import ConsumptionGraphEnergy from "./ConsumptionPredictionGraphEnergy";
-
+const formatDateDDMMYYYY = (dateInput) => {
+  const date = new Date(dateInput);
+  const day = date.getDate().toString().padStart(2, "0");
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
 // Utility to consistently format date/time headers
 const extractHeaders = (data, viewType) => {
   const headers = new Set();
@@ -16,12 +22,13 @@ const extractHeaders = (data, viewType) => {
     const date = new Date(item.timestamp);
     const formatted =
       viewType === "daily"
-        ? date.toLocaleDateString()     // e.g. "03/03/2025"
-        : date.toLocaleTimeString();    // e.g. "1:05:00 AM"
+        ? formatDateDDMMYYYY(date)
+        : date.toLocaleTimeString(); // For time, you can keep the default
     headers.add(formatted);
   });
   return Array.from(headers);
 };
+
 
 // Utility to group data by stackName
 const groupDataByStackName = (data) => {
@@ -121,10 +128,9 @@ const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
       // Map and format date/time from timestamp
       let mappedData = data.data.map((item) => ({
         ...item,
-        date: new Date(item.timestamp).toLocaleDateString(),   // "DD/MM/YYYY"
-        time: new Date(item.timestamp).toLocaleTimeString(),   // "HH:mm:ss"
+        date: formatDateDDMMYYYY(item.timestamp),
+        time: new Date(item.timestamp).toLocaleTimeString(),
       }));
-
       // Filter out only the "energy" stacks
       mappedData = mappedData.filter((item) =>
         energyStacks.includes(item.stackName)
@@ -242,6 +248,8 @@ const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
   const handlePreviousPage = () => {
     if (currentPage > 1) setCurrentPage((prev) => prev - 1);
   };
+ // Helper to format a date as "DD/MM/YYYY"
+
 
   return (
     <div className="container-fluid">

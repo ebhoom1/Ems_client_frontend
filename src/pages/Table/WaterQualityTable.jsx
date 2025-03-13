@@ -159,7 +159,7 @@ const WaterQualityTable = () => {
                     .filter(([key]) => key !== "_id") // Exclude _id
                     .map(([key, value]) => [key, value.toFixed(2)]) // Format values
             );
-
+            console.log("Average response:", filteredData);
             // Updating state with new data
             setTablesData([{ date: `${start} to ${end}`, parameters: filteredData }]);
         }
