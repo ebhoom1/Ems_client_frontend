@@ -173,7 +173,7 @@ const QuantityFlow = () => {
   };
   
 
-const saveDailyConsumptionToDB = async (userName, stackName, consumption) => {
+/* const saveDailyConsumptionToDB = async (userName, stackName, consumption) => {
   try {
     const date = moment().format('DD/MM/YYYY');
     const payload = { userName, stackName, date, consumption };
@@ -182,7 +182,7 @@ const saveDailyConsumptionToDB = async (userName, stackName, consumption) => {
   } catch (error) {
     console.error("Error saving daily consumption:", error);
   }
-};
+}; */
 useEffect(() => {
   if (initialFlows) {
     const consumptionData = {};
@@ -197,7 +197,7 @@ useEffect(() => {
       consumptionData[stackName] = difference;
 
       // Save the calculated daily consumption to the database
-      saveDailyConsumptionToDB(currentUserName, stackName, difference);
+     /*  saveDailyConsumptionToDB(currentUserName, stackName, difference); */
     });
     setDailyConsumption(consumptionData);
   }

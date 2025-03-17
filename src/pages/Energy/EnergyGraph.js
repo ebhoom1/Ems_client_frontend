@@ -13,9 +13,8 @@ import { Line } from 'react-chartjs-2';
 import moment from 'moment';
 import { toast } from 'react-toastify';
 import { Oval } from 'react-loader-spinner';
-import 'react-toastify/dist/ReactToastify.css';
-import './index.css';
 import { API_URL } from '../../utils/apiConfig';
+import './index.css';
 
 ChartJS.register(
     CategoryScale,
@@ -28,50 +27,49 @@ ChartJS.register(
 );
 
 const EnergyGraph = ({ parameter, userName, stackName }) => {
-    const [timeInterval, setTimeInterval] = useState('day');
     const [graphData, setGraphData] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [chartHeight, setChartHeight] = useState(window.innerHeight * 0.4); // 40% of screen height
-
-    useEffect(() => {
-        if (userName && stackName && parameter) {
-            fetchData();
-        }
-    }, [timeInterval, userName, stackName, parameter]);
-
-    useEffect(() => {
-        const updateChartHeight = () => {
-            setChartHeight(window.innerHeight * 0.4); // Adjust height dynamically
-        };
-        window.addEventListener('resize', updateChartHeight);
-        return () => window.removeEventListener('resize', updateChartHeight);
-    }, []);
-
-    const getFormattedDate = () => {
-        switch (timeInterval) {
-            case 'day':
-                return moment().format('DD/MM/YYYY');
-            case 'month':
-                return moment().format('MM/YYYY');
-            case 'year':
-                return moment().format('YYYY');
-            default:
-                return '';
-        }
-    };
+    const [chartHeight, setChartHeight] = useState(window.innerHeight * 0.4);
 
     const fetchData = async () => {
-        const formattedDate = getFormattedDate();
         setLoading(true);
         try {
             const response = await fetch(
-                `${API_URL}/api/hourly-data?userName=${userName}&stackName=${stackName}&date=${formattedDate}`
+                `${API_URL}/api/difference/${userName}?interval=daily`
             );
             const result = await response.json();
-            console.log("API Response:", result);
-
-            if (result.success && Array.isArray(result.data) && result.data.length > 0) {
-                setGraphData(result.data);
+            console.log("Difference API Response:", result);
+            if (result.success && Array.isArray(result.data)) {
+                // Filter records for energy station and matching stackName
+                const filtered = result.data.filter(
+                    record => record.stationType === "energy" && record.stackName === stackName
+                );
+                // Group by date (using the "date" field) to remove duplicates.
+                const uniqueDataMap = {};
+                filtered.forEach(record => {
+                    const dateKey = record.date;
+                    if (!uniqueDataMap[dateKey]) {
+                        uniqueDataMap[dateKey] = record;
+                    } else {
+                        // If duplicate exists, pick the one with the later timestamp.
+                        if (new Date(record.timestamp) > new Date(uniqueDataMap[dateKey].timestamp)) {
+                            uniqueDataMap[dateKey] = record;
+                        }
+                    }
+                });
+                let uniqueData = Object.values(uniqueDataMap);
+                // Remove today's record from the graph.
+                const today = moment().format('DD/MM/YYYY');
+                uniqueData = uniqueData.filter(record => record.date !== today);
+                // Sort unique data by date in ascending order.
+                uniqueData.sort(
+                    (a, b) => moment(a.date, "DD/MM/YYYY") - moment(b.date, "DD/MM/YYYY")
+                );
+                // Keep only the previous 5 days (most recent 5 unique dates).
+                if (uniqueData.length > 5) {
+                    uniqueData = uniqueData.slice(-5);
+                }
+                setGraphData(uniqueData);
             } else {
                 toast.error('No data available');
                 setGraphData([]);
@@ -84,32 +82,51 @@ const EnergyGraph = ({ parameter, userName, stackName }) => {
         }
     };
 
+    useEffect(() => {
+        if (userName && stackName) {
+            fetchData();
+        }
+    }, [userName, stackName]);
+
+    useEffect(() => {
+        const updateChartHeight = () => {
+            setChartHeight(window.innerHeight * 0.4);
+        };
+        window.addEventListener('resize', updateChartHeight);
+        return () => window.removeEventListener('resize', updateChartHeight);
+    }, []);
+
     const processData = () => {
         if (!graphData || graphData.length === 0) {
             return { labels: [], values: [] };
         }
-
         const labels = [];
         const values = [];
-
-        graphData.forEach(entry => {
-            const matchingStack = entry.stacks.find(stack => stack.stackName === stackName);
-            if (matchingStack) {
-                labels.push(moment(`${entry.date} ${entry.hour}`, 'DD/MM/YYYY HH').format('DD/MM/YYYY HH:mm'));
-                values.push(matchingStack.energy || 0);
+        // Use the energyDifference if available; otherwise compute difference.
+        graphData.forEach(record => {
+            labels.push(record.date);
+            let diff = 0;
+            if (record.energyDifference !== undefined && record.energyDifference !== null) {
+                diff = record.energyDifference;
+            } else if (
+                record.lastEnergy !== undefined &&
+                record.initialEnergy !== undefined
+            ) {
+                diff = record.lastEnergy - record.initialEnergy;
             }
+            values.push(diff);
         });
-
         return { labels, values };
     };
 
     const { labels, values } = processData();
+
     const chartData = {
         labels,
         datasets: [
             {
-                label: `${parameter} - ${stackName}`,
-                data: values.length > 0 ? values : [0],
+                label: `Energy Difference - ${stackName}`,
+                data: values,
                 fill: false,
                 backgroundColor: '#236a80',
                 borderColor: '#236A80',
@@ -123,7 +140,7 @@ const EnergyGraph = ({ parameter, userName, stackName }) => {
 
     const chartOptions = {
         responsive: true,
-        maintainAspectRatio: false, // ✅ Allow chart to adjust to container size
+        maintainAspectRatio: false,
         plugins: {
             legend: {
                 display: true,
@@ -131,14 +148,14 @@ const EnergyGraph = ({ parameter, userName, stackName }) => {
             },
             title: {
                 display: true,
-                text: `${parameter} Values Over Time`,
+                text: `Daily Energy Difference for ${stackName}`,
             },
             tooltip: {
                 callbacks: {
-                    title: (tooltipItems) => `Time: ${tooltipItems[0].label}`,
+                    title: (tooltipItems) => `Date: ${tooltipItems[0].label}`,
                     label: (tooltipItem) => {
                         const value = tooltipItem.raw;
-                        return `Value: ${parseFloat(value).toFixed(2)}`; // ✅ Format value to 2 decimal places
+                        return `Difference: ${parseFloat(value).toFixed(2)} kW/hr`;
                     },
                 },
             },
@@ -147,17 +164,17 @@ const EnergyGraph = ({ parameter, userName, stackName }) => {
             x: {
                 title: {
                     display: true,
-                    text: 'Time Interval',
+                    text: 'Date',
                 },
                 ticks: {
                     autoSkip: true,
-                    maxTicksLimit: 10,
+                    maxTicksLimit: 5,
                 },
             },
             y: {
                 title: {
                     display: true,
-                    text: `${parameter} Value`,
+                    text: 'Energy Difference (kW/hr)',
                 },
                 beginAtZero: true,
                 suggestedMax: Math.max(...values, 5),
@@ -168,34 +185,20 @@ const EnergyGraph = ({ parameter, userName, stackName }) => {
     return (
         <div className="graph-container">
             <h5 className="popup-title text-center">{parameter} - {stackName}</h5>
-            <div className="interval-buttons align-items-center justify-content-center mt-3">
-                {['day'].map((interval) => (
-                    <button
-                        key={interval}
-                        style={{
-                            backgroundColor: '#236a80',
-                            margin: '5px',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '7px',
-                            borderRadius: '5px',
-                            marginLeft: '10px'
-                        }}
-                        className={`interval-btn ${timeInterval === interval ? 'active' : ''}`}
-                        onClick={() => setTimeInterval(interval)}
-                    >
-                        {interval.charAt(0).toUpperCase() + interval.slice(1)}
-                    </button>
-                ))}
-            </div>
             {loading ? (
                 <div className="loading-container">
-                    <Oval height={60} width={60} color="#236A80" ariaLabel="Fetching details" strokeWidth={2} />
+                    <Oval
+                        height={60}
+                        width={60}
+                        color="#236A80"
+                        ariaLabel="Fetching details"
+                        strokeWidth={2}
+                    />
                     <p>Loading data, please wait...</p>
                 </div>
             ) : graphData.length === 0 ? (
                 <div className="no-data-container">
-                    <h5>No data available for {parameter} ({timeInterval})</h5>
+                    <h5>No data available for {parameter}</h5>
                 </div>
             ) : (
                 <div className="chart-wrapper" style={{ height: chartHeight, minHeight: "300px", maxHeight: "80vh" }}>
