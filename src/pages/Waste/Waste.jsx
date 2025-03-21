@@ -493,7 +493,7 @@ const handleDownloadPdf = () => {
         stackName={selectedCard.stackName}
       />
     ) : (
-      <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+      <h5 className="text-center mt-5">Select to view its graph</h5>
     )}
 
     {/* Download Buttons */}
