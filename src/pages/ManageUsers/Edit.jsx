@@ -23,6 +23,7 @@ function Edit() {
     modelName: '',
     fname: '',
     email: '',
+    additionalEmail: '',
     mobileNumber: '',
     password: '',
     cpassword: '',
@@ -199,6 +200,20 @@ function Edit() {
                               name="email"
                               type="email"
                               value={userData.email || ''}
+                              onChange={handleChange}
+                              className="form-control"
+                              style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+                            />
+                          </div>
+                        </div>
+                        <div className="col-lg-6 col-md-6 mb-4">
+                          <div className="form-group">
+                            <label htmlFor="additionalEmail" className="form-label"> Additional Email</label>
+                            <input
+                              id="additionalEmail"
+                              name="additionalEmail"
+                              type="email"
+                              value={userData.additionalEmail || ''}
                               onChange={handleChange}
                               className="form-control"
                               style={{ width: '100%', padding: '15px', borderRadius: '10px' }}

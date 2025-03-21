@@ -6,6 +6,7 @@ import Canvas from './Canvas';
 import DashboardSam from '../Dashboard/DashboardSam';
 import Hedaer from '../Header/Hedaer';
 import { useNavigate } from 'react-router-dom';
+import RunningTime from './RunningTime';
 
 function LIveLayout() {
 
@@ -60,7 +61,13 @@ function LIveLayout() {
                         {/* Canvas Area */}
                         <div className="col-md-9 shadow" >
                           <Canvas />
+                         <button className='btn btn-success mb-2 mt-2 d-flex justify-content-end align-items-center'>Add another station +</button>
                         </div>
+                        <div className="row">
+                            <div className="col-md-12">
+                              <RunningTime/>
+                            </div>
+                          </div>
                       </div>
                     </div>
                   </div>

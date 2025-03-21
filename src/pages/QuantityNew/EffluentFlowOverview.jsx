@@ -1,22 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useOutletContext } from 'react-router-dom'; // Shared search context
-import { Oval } from 'react-loader-spinner'; // Import Oval spinner
+import { useOutletContext } from 'react-router-dom'; 
+import { Oval } from 'react-loader-spinner'; 
 import { API_URL } from '../../utils/apiConfig';
-import { useSelector } from 'react-redux'; // Redux for userType check
+import { useSelector } from 'react-redux'; 
 import ConsuptionPredictionGraphQuantity from './ConsuptionPredictionGraphQuantity';
 
 const EffluentFlowOverview = () => {
-  const { userType, userData } = useSelector((state) => state.user); // Fetch userType and userData from Redux
+  const { userType, userData } = useSelector((state) => state.user); 
   const [summaryData, setSummaryData] = useState({ totalInflow: 0, totalFinalflow: 0 });
   const [predictionData, setPredictionData] = useState({ predictedInflow: 0, predictedFinalflow: 0 });
   const [loading, setLoading] = useState(true);
   const [predictionLoading, setPredictionLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState('');
-  const { searchTerm } = useOutletContext(); // Get search term from context
+  const { searchTerm } = useOutletContext(); 
   const [currentUserName, setCurrentUserName] = useState('');
   const selectedUserIdFromRedux = useSelector((state) => state.selectedUser?.userId);
-  const storedUserId = sessionStorage.getItem('selectedUserId'); // Retrieve userId from session storage
+  const storedUserId = sessionStorage.getItem('selectedUserId');
 
   useEffect(() => {
     const userName =
@@ -47,15 +47,14 @@ const EffluentFlowOverview = () => {
   
       if (response.data && response.data.length > 0) {
         const currentDateData = response.data.find((entry) => {
-          // Reformat date from DD/MM/YYYY HH:mm:ss to YYYY-MM-DDTHH:mm:ss
-          const [datePart, timePart] = entry.interval.split(' '); // Split date and time
+          const [datePart, timePart] = entry.interval.split(' ');
           const [day, month, year] = datePart.split('/'); // Extract DD, MM, YYYY
           const formattedDateStr = `${year}-${month}-${day}T${timePart}`; // Reformat to ISO string
   
           const entryDate = new Date(formattedDateStr); // Convert to Date object
           if (isNaN(entryDate)) {
-            console.error(`Invalid date after formatting: ${formattedDateStr}`);
-            return false; // Skip invalid dates
+/*             console.error(`Invalid date after formatting: ${formattedDateStr}`);
+ */            return false; // Skip invalid dates
           }
           return entryDate.toISOString().split('T')[0] === today;
         });
@@ -73,8 +72,8 @@ const EffluentFlowOverview = () => {
         });
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
-      setSummaryData({
+/*       console.error('Error fetching data:', error);
+ */      setSummaryData({
         totalInflow: 0,
         totalFinalflow: 0,
         initialCumulatingFlow: 0,
@@ -96,7 +95,6 @@ const EffluentFlowOverview = () => {
 
       setPredictionData(prediction || { predictedInflow: 0, predictedFinalflow: 0 });
     } catch (error) {
-      console.error('Error fetching prediction data:', error);
       setPredictionData({ predictedInflow: 0, predictedFinalflow: 0 });
     } finally {
       setPredictionLoading(false);

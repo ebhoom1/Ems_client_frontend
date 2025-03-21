@@ -92,10 +92,13 @@ const [userId, setUserId] = useState(null);
   const waterParameters = [
     { parameter: "pH", value: 'pH', name: 'ph' },
     { parameter: "TDS", value: 'mg/l', name: 'TDS' },
-    { parameter: "Turbidity", value: 'NTU', name: 'turbidity' },
+    { parameter: "Turbidity", value: 'NTU', name: 'TURB' },
   { parameter: "Temperature", value: '℃', name: 'Temp' },
+  { parameter: "Temperature", value: '℃', name: 'TEMP' },
+
  //ammonicalNitrogen
  { parameter: "Ammonical Nitrogen", value: 'mg/l', name: 'ammonicalNitrogen' },
+ { parameter: "TOC", value: 'mg/L', name: "TOC" },
 
     { parameter: "BOD", value: 'mg/l', name: 'BOD' },
     { parameter: "COD", value: 'mg/l', name: 'COD' },

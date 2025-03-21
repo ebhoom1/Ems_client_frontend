@@ -30,6 +30,7 @@ const UsersLog = () => {
     modelName: "",
     fname: "",
     email: "",
+    additionalEmail: "",
     mobileNumber: "",
     password: "",
     cpassword: "",
@@ -667,6 +668,8 @@ const handleLogoDelete = async () => {
                                         <option value="select">Select</option>
                                         <option value="KSPCB">KSPCB</option>
                                         <option value="Genex">Genex</option>
+                                        <option value="Banka_bio">Banka Bio</option>
+
 
                                             {/* Add options for companies */}
                                         </select>

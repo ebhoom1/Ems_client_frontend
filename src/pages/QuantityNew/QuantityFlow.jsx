@@ -665,11 +665,18 @@ const handleDownloadPdf = () => {
 
                           {/* From Date and To Date (For cumulating flow) */}
                           {item.name === "cumulatingFlow" && (
-                            <p className="text-light" style={{ fontSize: "12px", marginTop: "-5px" }}>
-                              <strong>From:</strong> 22/01/2025 &nbsp; | &nbsp;
-                              <strong>To:</strong> {latestTimestamp}
-                            </p>
-                          )}
+  <p className="text-light" style={{ fontSize: "12px", marginTop: "-5px" }}>
+    <strong>From:</strong>{" "}
+    {storedUserId === "HH014"
+      ? "22/01/2025"
+      : storedUserId === "MY_HOME017"
+      ? "20/03/2025"
+      : "Fallback Date"}{" "}
+    &nbsp; | &nbsp;
+    <strong>To:</strong> {latestTimestamp}
+  </p>
+)}
+
                         </div>
                       </div>
                     </div>
@@ -713,17 +720,6 @@ const handleDownloadPdf = () => {
     </div>
   )}
 </div>
-
-
-
-
-
-
-
-
-
-
-
 
   {/* Graph Container with reference */}
   <div

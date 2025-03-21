@@ -68,10 +68,16 @@ function Maindashboard() {
 
   // Filter links based on available station types
   // Filter links based on available station types, but always include "Waste" and "Generator"
-  const visibleLinks = allLinks.filter(
-    (link) =>
-      availableStationTypes.includes(link.key) || link.key === "waste" || link.key === "fuel"
-  );
+  // Filter links based on available station types, but always include "Waste" and "Fuel".
+// Also, exclude "Effluent" for specific userNames.
+const visibleLinks = allLinks.filter((link) => {
+  // Check if the current userName is one of the restricted ones and the link is "Effluent"
+  if (link.key === "effluent" && (userName === "BANKA_BIO_ADMIN" || userName === "MY_HOME017")) {
+    return false;
+  }
+  // Otherwise, use the existing condition
+  return availableStationTypes.includes(link.key) || link.key === "waste" || link.key === "fuel";
+});
 
   console.log("Visible Links:", visibleLinks);
 

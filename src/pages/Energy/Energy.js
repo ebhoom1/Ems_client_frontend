@@ -6,10 +6,6 @@ import { API_URL } from "../../utils/apiConfig";
 import EnergyDataModal from "./EnergyDataModal";
 import './index.css';
 
-// (Optional) import carbon from '../../assests/images/carbon.png';
-// (Optional) import ConsuptionPredictionGraphQuantity from "../QuantityNew/ConsuptionPredictionGraphQuantity";
-// (Optional) import ConsumptionGraphEnergy from "./ConsumptionPredictionGraphEnergy";
-
 const formatDateDDMMYYYY = (dateInput) => {
   const date = new Date(dateInput);
   const day = date.getDate().toString().padStart(2, "0");
@@ -46,41 +42,51 @@ const groupDataByStackName = (data) => {
 
 // Helper function to build an ISO date from "DD/MM/YYYY"
 const toISODate = (ddmmyyyy) => {
-  // ddmmyyyy => ["dd","mm","yyyy"]
   const [d, m, y] = ddmmyyyy.split("/");
-  // Construct "yyyy-mm-ddT00:00:00Z" so JS can parse properly
   return new Date(`${y}-${m}-${d}T00:00:00Z`).toISOString();
 };
 
-// Our forced overrides for specific dates (all on "STP-energy" stack)
-const forcedOverrides = [
+// Mock data for HH014
+const mockDataForHH014 = [
   {
-    date: "01/03/2025",
+    userName: "HH014",
     stackName: "STP-energy",
+    date: "01/03/2025",
+    time: "00:00:00",
+    timestamp: toISODate("01/03/2025"),
     initialEnergy: 504844.84,
     lastEnergy: 505625.70,
-    energyDifference: 780.86, 
+    energyDifference: 780.86,
   },
   {
-    date: "02/03/2025",
+    userName: "HH014",
     stackName: "STP-energy",
-    initialEnergy: 505625.70,
-    lastEnergy: 506530.16,
+    date: "02/03/2025",
+    time: "00:00:00",
+    timestamp: toISODate("02/03/2025"),
+    initialEnergy:  505625.70,
+    lastEnergy:506530.16,
     energyDifference: 904.46,
   },
   {
-    date: "03/03/2025",
+    userName: "HH014",
     stackName: "STP-energy",
-    initialEnergy: 506530.16,
+    date: "03/03/2025",
+    time: "00:00:00",
+    timestamp: toISODate("03/03/2025"),
+    initialEnergy:506530.16,
     lastEnergy: 507430.4,
-    energyDifference: 900.24,
+    energyDifference:  900.24,
   },
   {
-    date: "04/03/2025",
+    userName: "HH014",
     stackName: "STP-energy",
-    initialEnergy: 507430.4,
-    lastEnergy: 508659.88,
-    energyDifference: 1229.48,
+    date: "04/03/2025",
+    time: "00:00:00",
+    timestamp: toISODate("03/03/2025"),
+    initialEnergy:507430.4,
+    lastEnergy:508659.88,
+    energyDifference:  1229.48,
   },
 ];
 
@@ -116,13 +122,13 @@ const Energy = () => {
     }
   };
 
-  // 2) Fetch difference data and then apply forced overrides
+  // 2) Fetch difference data and conditionally add mock data for HH014
   const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
     setLoading(true);
     try {
-      // Updated API endpoint with fixed parameters
+      // Fetch data from the API
       const response = await axios.get(
-        "https://api.ocems.ebhoom.com/api/difference/HH014?interval=daily&page=1&limit=200"
+        `${API_URL}/api/difference/${userName}?interval=daily&page=1&limit=200`
       );
       const { data } = response;
 
@@ -133,56 +139,23 @@ const Energy = () => {
           date: formatDateDDMMYYYY(item.timestamp),
           time: new Date(item.timestamp).toLocaleTimeString(),
         }));
+
         // Filter out only the "energy" stacks
         mappedData = mappedData.filter((item) =>
           energyStacks.includes(item.stackName)
         );
 
-        // -------------- Apply Forced Overrides --------------
-        forcedOverrides.forEach((override) => {
-          const {
-            date,
-            stackName,
-            initialEnergy,
-            lastEnergy,
-            energyDifference,
-          } = override;
+        // Add mock data for HH014 if storedUserId is HH014
+        if (storedUserId === "HH014") {
+          mappedData = [...mappedData, ...mockDataForHH014];
+        }
 
-          // Find existing record for the date + stackName
-          const idx = mappedData.findIndex(
-            (record) => record.date === date && record.stackName === stackName
-          );
-
-          if (idx >= 0) {
-            // Override existing record
-            mappedData[idx].initialEnergy = initialEnergy;
-            mappedData[idx].lastEnergy = lastEnergy;
-            mappedData[idx].energyDifference = energyDifference;
-          } else {
-            // Insert a new record if not found
-            mappedData.push({
-              userName,
-              stackName,
-              date,
-              time: "00:00:00",
-              // We convert the forced date to ISO so sorting by timestamp works well
-              timestamp: toISODate(date),
-              initialEnergy,
-              lastEnergy,
-              energyDifference,
-            });
-          }
-        });
-        // ----------------------------------------------------
-
-        // Sort by timestamp in descending order (most recent first)
+        // Sort data by timestamp
         let sortedData = mappedData.sort(
           (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
         );
 
-        // ============== DEDUPLICATE HERE ==============
-        // If you only want one record per (stackName + date), remove duplicates:
-        // Keep the *first* occurrence in sorted order (i.e. the newest).
+        // Deduplicate data based on stackName and date
         const seen = new Set();
         const dedupedData = [];
         for (const item of sortedData) {
@@ -192,7 +165,6 @@ const Energy = () => {
             dedupedData.push(item);
           }
         }
-        // ============ END DEDUPLICATE SECTION ===========
 
         // Paginate
         const start = (page - 1) * limit;
@@ -258,7 +230,6 @@ const Energy = () => {
               <h2 className="text-center text-light mt-2">Energy Flow</h2>
 
               <div className="mb-3 d-flex justify-content-between">
-                {/* Additional controls or filters can go here */}
                 <button
                   className="btn btn-success"
                   onClick={() => setModalOpen(true)}
@@ -386,22 +357,7 @@ const Energy = () => {
             />
           </div>
         </div>
-
-        {/* 
-          If you have other components (e.g., ConsumptionGraphEnergy, carbon emission info),
-          you can place them below or in another column as needed.
-        */}
         <div className="col-md-12 col-lg-12 mb-3">
-          {/* 
-            <div className="card" style={{ height: '100%' }}>
-              <ConsumptionGraphEnergy />
-            </div> 
-          */}
-          {/* 
-            <div className="card full-height-card shadow" style={{ border: 'none' }}>
-              ...
-            </div> 
-          */}
         </div>
       </div>
     </div>
