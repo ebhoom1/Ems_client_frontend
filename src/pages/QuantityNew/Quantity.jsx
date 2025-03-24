@@ -5,49 +5,61 @@ import { API_URL } from "../../utils/apiConfig";
 import FlowDataModal from "./FlowDataModal";
 import "./index.css";
 
-// 1) Extract daily/hourly headers as before
+// Helper function to format a timestamp into "DD/MM/YYYY" using UTC
+const formatTimestampToCustomDate = (timestamp) => {
+  const date = new Date(timestamp);
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const year = date.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+// Helper function to get the proper date string from an item.
+// If the API already provided a date, we use it; otherwise, we format the timestamp.
+const getCustomDate = (item) => {
+  return item.date ? item.date : formatTimestampToCustomDate(item.timestamp);
+};
+
+// 1) Extract daily/hourly headers using our custom date formatting
 const extractHeaders = (data, viewType) => {
   const headers = new Set();
   data.forEach((item) => {
-    const date = new Date(item.timestamp);
     const formatted =
       viewType === "daily"
-        ? date.toLocaleDateString()
-        : date.toLocaleTimeString();
+        ? getCustomDate(item)
+        : new Date(item.timestamp).toLocaleTimeString();
     headers.add(formatted);
   });
   return Array.from(headers);
 };
 
-// 2) Filter out columns that have no data for initial/final/difference
+// 2) Updated filterHeaders function: For past dates, keep if at least one record has any one of the fields
 const filterHeaders = (data, viewType) => {
   const allHeaders = extractHeaders(data, viewType);
-  const todayStr = new Date().toLocaleDateString();
+  const todayStr = formatTimestampToCustomDate(new Date());
 
   return allHeaders.filter((header) => {
-    // Always keep today's date (even if missing data)
+    // Always keep today's date even if some data is missing
     if (header === todayStr) return true;
 
-    // For past dates, only keep if at least one record has all 3 fields
-    const hasAllValues = data.some((item) => {
+    // For past dates, keep if at least one record has any one of the fields (not necessarily all)
+    const hasAnyValue = data.some((item) => {
       const dateStr =
         viewType === "daily"
-          ? new Date(item.timestamp).toLocaleDateString()
+          ? getCustomDate(item)
           : new Date(item.timestamp).toLocaleTimeString();
-
       return (
         dateStr === header &&
-        item.initialCumulatingFlow != null &&
-        item.lastCumulatingFlow != null &&
-        item.cumulatingFlowDifference != null
+        (item.initialCumulatingFlow != null ||
+         item.lastCumulatingFlow != null ||
+         item.cumulatingFlowDifference != null)
       );
     });
-    return hasAllValues;
+    return hasAnyValue;
   });
 };
 
-// ------------------ YOUR MOCK DATA ------------------
-// Updated mock data array to display 4/02/2025 instead of 4/03/2025
+// ------------------ MOCK DATA (unchanged) ------------------
 const mockData = [
   // --- 4/02/2025 entries ---
   {
@@ -170,6 +182,7 @@ const mockData = [
   },
 ];
 
+
 const Quantity = () => {
   const { userData, userType } = useSelector((state) => state.user);
   const [differenceData, setDifferenceData] = useState([]);
@@ -185,7 +198,7 @@ const Quantity = () => {
   const currentUserName =
     userType === "admin" ? "KSPCB001" : userData?.validUserOne?.userName;
 
-  // Group data by stackName and filter "effluent_flow"
+  // Group data by stackName for those stacks that match effluent_flow
   const groupDataByStackName = (data, effluentFlowStacks) => {
     const groupedData = {};
     data.forEach((item) => {
@@ -199,7 +212,7 @@ const Quantity = () => {
     return groupedData;
   };
 
-  // Fetch effluent flow stacks
+  // Fetch effluent flow stacks from the API
   const fetchEffluentFlowStacks = async (userName) => {
     try {
       const response = await fetch(
@@ -208,89 +221,79 @@ const Quantity = () => {
       const data = await response.json();
 
       if (data.stackNames) {
-        const effluentFlowStacks = data.stackNames
+        const effluentStacks = data.stackNames
           .filter((stack) => stack.stationType === "effluent_flow")
           .map((stack) => stack.name);
-        setEffluentFlowStacks(effluentFlowStacks);
+        setEffluentFlowStacks(effluentStacks);
       }
     } catch (error) {
       console.error("Error fetching effluentFlow stacks:", error);
     }
   };
 
-  // Fetch difference data (comment out if you just want mock data)
- // Modify your fetchDifferenceData function as follows:
- const fetchDifferenceData = async (userName, page = 1, limit = 100) => {
-  try {
-    setLoading(true);
-    let finalData = [];
+  // Fetch difference data and update the date using our custom formatting
+  const fetchDifferenceData = async (userName, page = 1, limit = 100) => {
+    try {
+      setLoading(true);
+      let finalData = [];
 
-    const response = await axios.get(
-      `${API_URL}/api/difference/${userName}?interval=daily&page=${page}&limit=${limit}`
-    );
-    const { data } = response;
-    console.log("differencedata", data);
+      const response = await axios.get(
+        `${API_URL}/api/difference/${userName}?interval=daily&page=${page}&limit=${limit}`
+      );
+      const { data } = response;
+      console.log("differencedata", data);
 
-    if (data && data.success) {
-      let sortedData = data.data
-        .map((item) => {
-          const dateObj = new Date(item.timestamp);
-          const day = String(dateObj.getDate()).padStart(2, "0");
-          const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-          const year = dateObj.getFullYear();
-          // e.g. "21/03/2025"
-          const customDate = `${day}/${month}/${year}`;
+      if (data && data.success) {
+        let sortedData = data.data
+          .map((item) => {
+            // Use the API provided date if available; otherwise, format the timestamp
+            const customDate = item.date
+              ? item.date
+              : formatTimestampToCustomDate(item.timestamp);
 
-          return {
-            ...item,
-            date: customDate, // Use custom DD/MM/YYYY
-            time: dateObj.toLocaleTimeString(), // Keep time local
-          };
-        })
-        .sort((b, a) => new Date(a.timestamp) - new Date(b.timestamp));
+            return {
+              ...item,
+              date: customDate,
+              time: new Date(item.timestamp).toLocaleTimeString(),
+            };
+          })
+          .sort((b, a) => new Date(a.timestamp) - new Date(b.timestamp));
 
-      // Example merging logic with mockData
-      const targetDate = "04/03/2025"; // Manually matching your custom date format
-      const date5 = "05/03/2025";
-      const date3 = "03/03/2025";
+        // Example merging logic with mockData (adjust as needed)
+        const targetDate = "04/03/2025";
+        const date5 = "05/03/2025";
+        const date3 = "03/03/2025";
 
-      const hasDate5 = sortedData.some((item) => item.date === date5);
-      const hasDate3 = sortedData.some((item) => item.date === date3);
+        const hasDate5 = sortedData.some((item) => item.date === date5);
+        const hasDate3 = sortedData.some((item) => item.date === date3);
 
-      if (hasDate5 && hasDate3) {
-        // Remove any record with the target date (if present)
-        sortedData = sortedData.filter((item) => item.date !== targetDate);
-        // Get the target records from your mock data
-        const targetMockData = mockData.filter(
-          (item) => item.date === targetDate
-        );
-        // Merge the target mock data into the sorted API data
-        sortedData = [...sortedData, ...targetMockData];
+        if (hasDate5 && hasDate3) {
+          sortedData = sortedData.filter((item) => item.date !== targetDate);
+          const targetMockData = mockData.filter(
+            (item) => item.date === targetDate
+          );
+          sortedData = [...sortedData, ...targetMockData];
+        }
+
+        finalData = sortedData;
+        setDifferenceData(finalData);
+        setTotalPages(Math.ceil(data.total / limit));
+      } else {
+        setDifferenceData([]);
       }
-
-      finalData = sortedData;
-      setDifferenceData(finalData);
-      setTotalPages(Math.ceil(data.total / limit));
-    } else {
-      setDifferenceData([]);
+    } catch (error) {
+      console.error("Error fetching difference data:", error);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error fetching difference data:", error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     const userName = storedUserId || currentUserName;
     fetchEffluentFlowStacks(userName);
   }, [storedUserId, currentUserName]);
 
-  // 2) After stacks are known, either fetch real data or set mock data
   useEffect(() => {
-    // If you want to see only mock data, comment out the entire block below
-    // and just do setDifferenceData(mockData).
-
     if (effluentFlowStacks.length > 0) {
       const userName = storedUserId || currentUserName;
       fetchDifferenceData(userName, currentPage, 100);
@@ -300,57 +303,53 @@ const Quantity = () => {
   useEffect(() => {
     if (differenceData.length) {
       let filtered = filterHeaders(differenceData, viewType);
-  
-      const targetDate = new Date("2025-03-04T00:00:00Z").toLocaleDateString(); // "04/03/2025"
+
+      // Ensure "04/03/2025" appears before "03/03/2025" (as per your merging logic)
+      const targetDate = "04/03/2025";
       const date3 = "03/03/2025";
-  
-      // ... (existing insertion logic for date5, etc.) ...
-  
-      // Now force "04/03/2025" to appear before "03/03/2025":
-      const indexDate4 = filtered.indexOf(targetDate);
+
+      const indexTarget = filtered.indexOf(targetDate);
       const indexDate3 = filtered.indexOf(date3);
-  
-      if (indexDate4 !== -1 && indexDate3 !== -1 && indexDate4 > indexDate3) {
-        filtered.splice(indexDate4, 1);              // remove 04/03/2025
-        const newIndex3 = filtered.indexOf(date3);   // re-check index of 03/03/2025
-        filtered.splice(newIndex3, 0, targetDate);   // insert 04/03/2025 before 03/03/2025
+
+      if (indexTarget !== -1 && indexDate3 !== -1 && indexTarget > indexDate3) {
+        filtered.splice(indexTarget, 1);
+        const newIndexDate3 = filtered.indexOf(date3);
+        filtered.splice(newIndexDate3, 0, targetDate);
       }
-  
+
       setHeaders(filtered);
     } else {
       setHeaders([]);
     }
   }, [differenceData, viewType, currentPage]);
-  const groupedData = groupDataByStackName(differenceData, effluentFlowStacks);
-// Define the fixed order for stacks
-const fixedStackOrder = [
-  "ETP outlet",
-  "STP inlet",
-  "STP acf outlet",
-  "STP uf outlet",
-  "STP softener outlet",
-  "STP garden outlet 1",
-  "STP garden outlet 2"
-];
 
-// Create a sorted array using the fixed order; only include stacks with records
-// Decide whether to use fixedStackOrder or data order
-let finalGroupData;
-if (storedUserId === "HH014") {
-  // Use the fixedStackOrder only if userName is HH014
-  finalGroupData = fixedStackOrder
-    .map((stackName) => ({
+  const groupedData = groupDataByStackName(differenceData, effluentFlowStacks);
+
+  // Define a fixed order for stacks (for HH014)
+  const fixedStackOrder = [
+    "ETP outlet",
+    "STP inlet",
+    "STP acf outlet",
+    "STP uf outlet",
+    "STP softener outlet",
+    "STP garden outlet 1",
+    "STP garden outlet 2"
+  ];
+
+  let finalGroupData;
+  if (storedUserId === "HH014") {
+    finalGroupData = fixedStackOrder
+      .map((stackName) => ({
+        stackName,
+        records: groupedData[stackName] || [],
+      }))
+      .filter((item) => item.records.length > 0);
+  } else {
+    finalGroupData = Object.entries(groupedData).map(([stackName, records]) => ({
       stackName,
-      records: groupedData[stackName] || [],
-    }))
-    .filter((item) => item.records.length > 0);
-} else {
-  // For all other users, display stacks in the order they appear in data
-  finalGroupData = Object.entries(groupedData).map(([stackName, records]) => ({
-    stackName,
-    records,
-  }));
-}
+      records,
+    }));
+  }
 
   const handleNextPage = () => {
     if (currentPage < totalPages) setCurrentPage((prev) => prev + 1);
@@ -362,135 +361,126 @@ if (storedUserId === "HH014") {
 
   return (
     <div className="container-fluid">
-    <div className="row mt-5">
-      <div className="col-md-12 col-lg-12 mb-2">
-        <div className="card" style={{ height: "100%" }}>
-          <div className="card-body">
-            <h2 className="text-center text-light mt-2">Water Flow</h2>
-            <div className="mb-3 d-flex justify-content-between">
-              <button
-                className="btn btn-success"
-                onClick={() => setModalOpen(true)}
-              >
-                View
-              </button>
-            </div>
+      <div className="row mt-5">
+        <div className="col-md-12 col-lg-12 mb-2">
+          <div className="card" style={{ height: "100%" }}>
+            <div className="card-body">
+              <h2 className="text-center text-light mt-2">Water Flow</h2>
+              <div className="mb-3 d-flex justify-content-between">
+                <button className="btn btn-success" onClick={() => setModalOpen(true)}>
+                  View
+                </button>
+              </div>
 
-            <div
-              className="table-responsive mt-3"
-              style={{ maxHeight: "400px", overflowY: "auto" }}
-            >
-              {loading ? (
-                <div className="text-center">Loading...</div>
-              ) : (
-                <table className="table table-bordered">
-                  <thead>
-                    <tr>
-                      <th>SL. NO</th>
-                      <th>Stack Name</th>
-                      <th>Acceptables</th>
-                      {headers.map((header, index) => (
-                        <th key={index}>{header}</th>
+              <div
+                className="table-responsive mt-3"
+                style={{ maxHeight: "400px", overflowY: "auto" }}
+              >
+                {loading ? (
+                  <div className="text-center">Loading...</div>
+                ) : (
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>SL. NO</th>
+                        <th>Stack Name</th>
+                        <th>Acceptables</th>
+                        {headers.map((header, index) => (
+                          <th key={index}>{header}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {finalGroupData.map(({ stackName, records }, stackIndex) => (
+                        <React.Fragment key={stackIndex}>
+                          <tr>
+                            <td rowSpan={3}>{stackIndex + 1}</td>
+                            <td rowSpan={3}>{stackName}</td>
+                            <td>Initial Flow</td>
+                            {headers.map((header, index) => {
+                              const matchingRecord = records.find(
+                                (item) =>
+                                  item.date === header || item.time === header
+                              );
+                              return (
+                                <td key={index}>
+                                  {matchingRecord?.initialCumulatingFlow != null
+                                    ? parseFloat(matchingRecord.initialCumulatingFlow).toFixed(2)
+                                    : "N/A"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          <tr>
+                            <td>Final Flow</td>
+                            {headers.map((header, index) => {
+                              const matchingRecord = records.find(
+                                (item) =>
+                                  item.date === header || item.time === header
+                              );
+                              return (
+                                <td key={index}>
+                                  {matchingRecord?.lastCumulatingFlow != null
+                                    ? parseFloat(matchingRecord.lastCumulatingFlow).toFixed(2)
+                                    : "N/A"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          <tr>
+                            <td>Flow Difference</td>
+                            {headers.map((header, index) => {
+                              const matchingRecord = records.find(
+                                (item) =>
+                                  item.date === header || item.time === header
+                              );
+                              return (
+                                <td key={index}>
+                                  {matchingRecord?.cumulatingFlowDifference != null
+                                    ? parseFloat(matchingRecord.cumulatingFlowDifference).toFixed(2)
+                                    : "N/A"}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        </React.Fragment>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {finalGroupData.map(({ stackName, records }, stackIndex) => (
-                      <React.Fragment key={stackIndex}>
-                        <tr>
-                          <td rowSpan={3}>{stackIndex + 1}</td>
-                          <td rowSpan={3}>{stackName}</td>
-                          <td>Initial Flow</td>
-                          {headers.map((header, index) => {
-                            const matchingRecord = records.find(
-                              (item) =>
-                                item.date === header || item.time === header
-                            );
-                            return (
-                              <td key={index}>
-                                {matchingRecord?.initialCumulatingFlow != null
-                                  ? parseFloat(
-                                      matchingRecord.initialCumulatingFlow
-                                    ).toFixed(2)
-                                  : "N/A"}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                        <tr>
-                          <td>Final Flow</td>
-                          {headers.map((header, index) => {
-                            const matchingRecord = records.find(
-                              (item) =>
-                                item.date === header || item.time === header
-                            );
-                            return (
-                              <td key={index}>
-                                {matchingRecord?.lastCumulatingFlow != null
-                                  ? parseFloat(
-                                      matchingRecord.lastCumulatingFlow
-                                    ).toFixed(2)
-                                  : "N/A"}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                        <tr>
-                          <td>Flow Difference</td>
-                          {headers.map((header, index) => {
-                            const matchingRecord = records.find(
-                              (item) =>
-                                item.date === header || item.time === header
-                            );
-                            return (
-                              <td key={index}>
-                                {matchingRecord?.cumulatingFlowDifference != null
-                                  ? parseFloat(
-                                      matchingRecord.cumulatingFlowDifference
-                                    ).toFixed(2)
-                                  : "N/A"}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Pagination */}
+              <div className="pagination-controls d-flex justify-content-between mt-3">
+                <button
+                  className="btn btn-secondary"
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </div>
             </div>
 
-            {/* Pagination */}
-            <div className="pagination-controls d-flex justify-content-between mt-3">
-              <button
-                className="btn btn-secondary"
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </button>
-              <span>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                className="btn btn-secondary"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
-            </div>
+            {/* Modal */}
+            <FlowDataModal
+              isOpen={isModalOpen}
+              onRequestClose={() => setModalOpen(false)}
+            />
           </div>
-
-          {/* Modal */}
-          <FlowDataModal
-            isOpen={isModalOpen}
-            onRequestClose={() => setModalOpen(false)}
-          />
         </div>
       </div>
     </div>
-  </div>
   );
 };
 

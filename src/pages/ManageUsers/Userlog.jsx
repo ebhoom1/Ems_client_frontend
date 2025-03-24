@@ -30,7 +30,7 @@ const UsersLog = () => {
     modelName: "",
     fname: "",
     email: "",
-    additionalEmail: "",
+    additionalEmails: [""], // start with one empty email input
     mobileNumber: "",
     password: "",
     cpassword: "",
@@ -46,6 +46,7 @@ const UsersLog = () => {
     productID: "",
     adminType: "",
   });
+  
   const [userName, setUserName] = useState("");
 
   const industryType = [
@@ -164,8 +165,7 @@ useEffect(() => {
         modelName: "",
         fname: "",
         email: "",
-        additionalEmail:"",
-        mobileNumber: "",
+        additionalEmails: [""], 
         password: "",
         cpassword: "",
         subscriptionDate: "",
@@ -199,7 +199,16 @@ useEffect(() => {
       toast.error("Failed to delete user: " + (error.message || error.toString()));
     }
   };
-
+  const handleAdditionalEmailChange = (index, value) => {
+    const emails = [...formData.additionalEmails];
+    emails[index] = value;
+    setformData({ ...formData, additionalEmails: emails });
+  };
+  
+  const handleAddAdditionalEmail = () => {
+    setformData({ ...formData, additionalEmails: [...formData.additionalEmails, ""] });
+  };
+  
   const handleCompanyChange = async (event) => {
     const companyName = event.target.value;
     setSelectedCompany(companyName);
@@ -467,7 +476,8 @@ const handleLogoDelete = async () => {
   <div>Loading ...</div>
   
 </div>}
-            {error && <p>Error fetching users: {error}</p>}
+{error && <p>Error fetching users: {error.message || JSON.stringify(error)}</p>}
+
             {!loading && !error && (
   <div className="user-list-container">
     <table className="userlog-table">
@@ -548,12 +558,40 @@ const handleLogoDelete = async () => {
                                 </div>
                                 {/* additioanl email */}
                                 <div className="col-lg-6 col-md-6 mb-4">
-                                    <div className="form-group">
-                                        <label htmlFor="additionalEmail" className="form-label  text-light">Additional Email  </label>
-                                        <input id="additionalEmail" value={formData.additionalEmail}   onChange={handleInputChange} type='email' name="additionalEmail" placeholder='Additional Email' className="form-control"  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
+  <div className="form-group">
+    <label htmlFor="additionalEmails" className="form-label text-light">
+      Additional Emails
+    </label>
+    {formData.additionalEmails.map((email, index) => (
+      <div
+        key={index}
+        style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}
+      >
+        <input
+          id={`additionalEmail-${index}`}
+          type="email"
+          value={email}
+          onChange={(e) => handleAdditionalEmailChange(index, e.target.value)}
+          placeholder="Additional Email"
+          className="form-control"
+          style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+        />
+        {index === formData.additionalEmails.length - 1 && (
+          <button
+          style={{ color:"#236a80"}}
+            type="button"
+            onClick={handleAddAdditionalEmail}
+            className="btn bg-light  ms-2 "
+            
+          >
+            +
+          </button>
+        )}
+      </div>
+    ))}
+  </div>
+</div>
 
-                                    </div>
-                                </div>
                                 {/* mobile number */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
@@ -669,6 +707,8 @@ const handleLogoDelete = async () => {
                                         <option value="KSPCB">KSPCB</option>
                                         <option value="Genex">Genex</option>
                                         <option value="Banka_bio">Banka Bio</option>
+                                        <option value="IESS">IESS</option>
+
 
 
                                             {/* Add options for companies */}
