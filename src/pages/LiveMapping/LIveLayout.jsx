@@ -7,8 +7,11 @@ import DashboardSam from '../Dashboard/DashboardSam';
 import Hedaer from '../Header/Hedaer';
 import { useNavigate } from 'react-router-dom';
 import RunningTime from './RunningTime';
+import Chemicals from './Chemicals';
+import { useSelector } from 'react-redux';
 
 function LIveLayout() {
+  const { userData } = useSelector((state) => state.user);
 
   const navigate = useNavigate()
   const handleHowtoUse=()=>{
@@ -66,6 +69,11 @@ function LIveLayout() {
                         <div className="row">
                             <div className="col-md-12">
                               <RunningTime/>
+                            </div>
+                          </div>
+                          <div className="row">
+                            <div className="col-md-12">
+                              <Chemicals/>
                             </div>
                           </div>
                       </div>

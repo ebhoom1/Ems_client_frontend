@@ -77,6 +77,8 @@ import TotalWaste from './pages/Waste/TotalWaste';
 import FuelMain from './pages/Fuel/FuelMain';
 import VehicleHistory from './pages/Fuel/VehicleHistory';
 import PreviousData from './pages/LiveMapping/PreviousData';
+import Inventory from './pages/Inventory/Inventory';
+import Services from './pages/Inventory/Services';
 
 
 function App() {
@@ -206,6 +208,8 @@ function App() {
                   <Route path="/vehicle-history" element={<VehicleHistory />} />
                   <Route path="/view-energy" element={<ViewDifference />} />
                   <Route path="/previous-data" element={<PreviousData />} />
+                  <Route path="/inventory" element={<Inventory />} />
+                  <Route path="/services" element={<Services />} />
 
                 </Route>
               )}
@@ -241,6 +245,8 @@ function App() {
                   <Route path="/view-difference" element={<ViewDifferenceFlow />} />
                   <Route path="/view-energy" element={<ViewDifference />} />
                   <Route path="/previous-data" element={<PreviousData />} />
+                  <Route path="/inventory" element={<Inventory />} />
+                  <Route path="/services" element={<Services />} />
 
                 </Route>
               )}

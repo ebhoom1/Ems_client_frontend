@@ -156,6 +156,12 @@ function DashboardSam() {
                 </a>
               </li>
               <li className='list active text-center'>
+            <a href="/inventory" style={{ textDecoration: 'none', color: '#ffffff' }}>
+              <span className='title'>Inventory & Service</span>
+            </a>
+          </li>
+          
+              <li className='list active text-center'>
                 <a href="/live-station" style={{ textDecoration: 'none', color: '#ffffff' }}>
                   <span className='title'>Live Station</span>
                 </a>
@@ -177,6 +183,7 @@ function DashboardSam() {
               <span className='title'>Account</span>
             </a>
           </li>
+          
          
           {userType === 'user' && (
             <>
@@ -200,6 +207,11 @@ function DashboardSam() {
                   <span className='title'>Chat</span>
                 </a>
               </li>
+              <li className='list active text-center'>
+            <a href="/inventory" style={{ textDecoration: 'none', color: '#ffffff' }}>
+              <span className='title'>Inventory & Service</span>
+            </a>
+          </li>
               <li className='list active text-center'>
                 <a href="/transactions" style={{ textDecoration: 'none', color: '#ffffff' }}>
                   <span className='title'>Payment</span>
