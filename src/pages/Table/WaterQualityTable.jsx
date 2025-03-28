@@ -57,6 +57,7 @@ const WaterQualityTable = () => {
   const [endDate, setEndDate] = useState("");
   const navigate = useNavigate();
   const loggedUserName = userData?.validUserOne?.userName || "";
+  const normalizeString = (str) => str.replace(/\s+/g, ' ').trim();
 
   useEffect(() => {
     if (userType === "admin") {
@@ -206,12 +207,12 @@ const fetchEnergyAndFlowData = async (username, start, end) => {
         .filter((stack) => stack.stationType === "energy")
         .map((stack) => {
           const startEnergy = startDateData.find(
-            (entry) => entry.stackName === stack.name
+            (entry) => normalizeString(entry.stackName) === normalizeString(stack.name)
           );
-          // Ensure we get the LATEST energy entry from endDateData
           const endEnergyList = endDateData.filter(
-            (entry) => entry.stackName === stack.name
+            (entry) => normalizeString(entry.stackName) === normalizeString(stack.name)
           );
+          
           const endEnergy = endEnergyList.length > 0 ? endEnergyList[endEnergyList.length - 1] : null;
 
           let initialEnergy = Number(startEnergy?.initialEnergy) || 0;
@@ -234,11 +235,12 @@ const fetchEnergyAndFlowData = async (username, start, end) => {
         .filter((stack) => stack.stationType === "effluent_flow")
         .map((stack) => {
           const startFlow = startDateData.find(
-            (entry) => entry.stackName === stack.name
+            (entry) => normalizeString(entry.stackName) === normalizeString(stack.name)
           );
           const endFlow = endDateData.filter(
-            (entry) => entry.stackName === stack.name
-          ).pop(); // ✅ Picks the latest entry
+            (entry) => normalizeString(entry.stackName) === normalizeString(stack.name)
+          ).pop();
+          
 
           let initialFlow = Number(startFlow?.initialCumulatingFlow) || 0;
           let finalFlow = Number(endFlow?.lastCumulatingFlow) || 0;
@@ -677,7 +679,7 @@ const fetchEnergyAndFlowData = async (username, start, end) => {
             "STP uf outlet",
             "STP softener outlet",
             "STP garden outlet 1",
-            "STP garden outlet 2",
+            "STP garden outlet 2",
           ];
 
           const indexA = order.indexOf(a.stackName);
