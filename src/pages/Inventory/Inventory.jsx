@@ -1,15 +1,108 @@
+// Inventory.jsx
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import Maindashboard from "../Maindashboard/Maindashboard";
 import Header from "../Header/Hedaer";
 import DashboardSam from "../Dashboard/DashboardSam";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { API_URL } from "../../utils/apiConfig";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import AdminDashboard from "./AdminDashboard";
+
+// RequestHistory component for non-admin users
+const RequestHistory = () => {
+    const { userData } = useSelector((state) => state.user);
+  
+  const [requestLogs, setRequestLogs] = useState([]);
+  const [loadingReq, setLoadingReq] = useState(false);
+  const [errorReq, setErrorReq] = useState(null);
+
+  React.useEffect(() => {
+    const fetchRequests = async () => {
+      setLoadingReq(true);
+      try {
+        let url;
+        
+        if (userData?.validUserOne?.userType === "admin") {
+          // For admin users - fetch all requests (or filter by adminType if needed)
+          url = `${API_URL}/api/getrequest`;
+        } else {
+          // For regular users - fetch only their requests using username from userData
+          url = `${API_URL}/api/user-request/${userData?.validUserOne?.userName}`;
+        }
+  
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Handle both response formats
+          setRequestLogs(data.requests || data.requestLogs || []);
+        } else {
+          setErrorReq(data.message || "Failed to fetch requests");
+        }
+      } catch (err) {
+        setErrorReq(err.message || "Error fetching requests");
+      } finally {
+        setLoadingReq(false);
+      }
+    };
+  
+    fetchRequests();
+  }, [userData]); // Add userData to dependency array
+  return (
+    <div className="col-12">
+      <h1 className="text-center mt-3">Request History</h1>
+      {loadingReq ? (
+        <p>Loading...</p>
+      ) : errorReq ? (
+        <p>Error: {errorReq}</p>
+      ) : (
+        <table className="table table-bordered" style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+          <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
+            <tr>
+              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>SKU</th>
+              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Username</th>
+              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Requested Quantity</th>
+              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Status</th>
+              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Request Date</th>
+              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+  {requestLogs.map((req, index) => (
+    <tr key={index}>
+      <td>{req.skuName}</td>
+      <td>{req.userName}</td>
+      <td>{req.quantityRequested}</td>
+      <td>
+        {req.status === "Approved" ? (
+          <span style={{ color: "green" }}>
+            &#x2714; Approved
+          </span>
+        ) : req.status === "Denied" ? (
+          <span style={{ color: "red" }}>
+            &#x2716; Denied
+          </span>
+        ) : (
+          req.status
+        )}
+      </td>
+      <td>{new Date(req.requestDate).toLocaleDateString()}</td>
+      <td>{req.reason}</td>
+    </tr>
+  ))}
+</tbody>
+
+        </table>
+      )}
+    </div>
+  );
+};
 
 const Inventory = () => {
   const { userData } = useSelector((state) => state.user);
-  // Determine user type from stored user data
   const userType = userData?.validUserOne?.userType;
-  // Use "add" as default tab for plant operators, and "admin" for admin users
   const [activeTab, setActiveTab] = useState(userType === "admin" ? "admin" : "add");
   const navigate = useNavigate();
 
@@ -17,99 +110,106 @@ const Inventory = () => {
   const renderTabs = () => {
     if (userType === "admin") {
       return (
-       <div> <div className="d-flex align-items-center justify-content-center">
-       <button onClick={() => navigate('/inventory')} className="w-25 btn btn-outline-success me-2">Inventory</button> 
-       <button onClick={() => navigate('/services')} className="w-25 btn btn-outline-success">
-   Services
- </button>
-       </div>
-         <ul className="nav nav-tabs mb-3">
-           <li className="nav-item">
-             <button
-               className={`nav-link ${activeTab === "admin" ? "active" : ""}`}
-               onClick={() => setActiveTab("admin")}
-             >
-               Admin Dashboard
-             </button>
-           </li>
-         </ul></div>
+        <div>
+          <div className="d-flex align-items-center justify-content-center">
+            <button onClick={() => navigate("/inventory")} className="w-25 btn btn-outline-success me-2">
+              Inventory
+            </button>
+            <button onClick={() => navigate("/services")} className="w-25 btn btn-outline-success">
+              Services
+            </button>
+          </div>
+        </div>
       );
     } else {
       return (
-        
-       <div>
-      <div className="d-flex align-items-center justify-content-center">
-      <button onClick={() => navigate('/inventory')} className="w-25 btn btn-outline-success me-2">Inventory</button> 
-      <button onClick={() => navigate('/services')} className="w-25 btn btn-outline-success">
-  Services
-</button>
-      </div>
-        <ul className="nav nav-tabs mb-3 mt-3">
-       <li className="nav-item">
-  <button
-    style={
-      activeTab === "add"
-        ? { color: "#236a80", fontWeight: "bold" }
-        : { color: "black" }
-    }
-    className={`nav-link ${activeTab === "add" ? "active" : ""}`}
-    onClick={() => setActiveTab("add")}
-  >
-    Add Inventory
-  </button>
-</li>
-
-<li className="nav-item">
-  <button
-    style={
-      activeTab === "use"
-        ? { color: "#236a80", fontWeight: "bold" }
-        : { color: "black" }
-    }
-    className={`nav-link ${activeTab === "use" ? "active" : ""}`}
-    onClick={() => setActiveTab("use")}
-  >
-    Use Inventory
-  </button>
-</li>
-<li className="nav-item">
-  <button
-    style={
-      activeTab === "request"
-        ? { color: "#236a80", fontWeight: "bold" }
-        : { color: "black" }
-    }
-    className={`nav-link ${activeTab === "request" ? "active" : ""}`}
-    onClick={() => setActiveTab("request")}
-  >
-    Request Inventory
-  </button>
-</li>
-
-        </ul></div>
+        <div>
+          <div className="d-flex align-items-center justify-content-center">
+            <button onClick={() => navigate("/inventory")} className="w-25 btn btn-outline-success me-2">
+              Inventory
+            </button>
+            <button onClick={() => navigate("/services")} className="w-25 btn btn-outline-success">
+              Services
+            </button>
+          </div>
+          <ul className="nav nav-tabs mb-3 mt-3">
+            <li className="nav-item">
+              <button
+                style={activeTab === "add" ? { color: "#236a80", fontWeight: "bold" } : { color: "black" }}
+                className={`nav-link ${activeTab === "add" ? "active" : ""}`}
+                onClick={() => setActiveTab("add")}
+              >
+                Add Inventory
+              </button>
+            </li>
+            <li className="nav-item">
+              <button
+                style={activeTab === "use" ? { color: "#236a80", fontWeight: "bold" } : { color: "black" }}
+                className={`nav-link ${activeTab === "use" ? "active" : ""}`}
+                onClick={() => setActiveTab("use")}
+              >
+                Use Inventory
+              </button>
+            </li>
+            <li className="nav-item">
+              <button
+                style={activeTab === "request" ? { color: "#236a80", fontWeight: "bold" } : { color: "black" }}
+                className={`nav-link ${activeTab === "request" ? "active" : ""}`}
+                onClick={() => setActiveTab("request")}
+              >
+                Request Inventory
+              </button>
+            </li>
+            <li className="nav-item">
+              <button
+                style={activeTab === "requestHistory" ? { color: "#236a80", fontWeight: "bold" } : { color: "black" }}
+                className={`nav-link ${activeTab === "requestHistory" ? "active" : ""}`}
+                onClick={() => setActiveTab("requestHistory")}
+              >
+                Request History
+              </button>
+            </li>
+          </ul>
+        </div>
       );
     }
   };
 
-  // Render the content based on active tab and user type
+  // Render content based on active tab and user type
   const renderContent = () => {
     if (userType === "admin") {
-      return renderAdminDashboard();
+      return <AdminDashboard />;
     } else {
       if (activeTab === "add") return renderAddInventory();
       if (activeTab === "use") return renderUseInventory();
       if (activeTab === "request") return renderRequestInventory();
+      if (activeTab === "requestHistory") return <RequestHistory />;
     }
   };
 
-  // Form to add inventory items (SKU Name & Quantity)
+  // Form to add inventory items
   const renderAddInventory = () => (
     <div className="col-12">
       <h1 className="text-center mt-3">Add Inventory</h1>
       <div className="card">
         <div className="card-body">
-          <form className="m-2 p-5">
+          <form className="m-2 p-5" onSubmit={handleAddInventory}>
             <div className="row">
+              <div className="col-lg-6 col-md-6 mb-4">
+                <div className="form-group">
+                  <label htmlFor="userName" className="form-label text-light">
+                    User Name
+                  </label>
+                  <input
+                    id="userName"
+                    type="text"
+                    placeholder="User Name"
+                    className="form-control"
+                    name="userName"
+                    style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+                  />
+                </div>
+              </div>
               <div className="col-lg-6 col-md-6 mb-4">
                 <div className="form-group">
                   <label htmlFor="SKUname" className="form-label text-light">
@@ -141,6 +241,20 @@ const Inventory = () => {
                   />
                 </div>
               </div>
+              <div className="col-lg-6 col-md-6 mb-4">
+                <div className="form-group">
+                  <label htmlFor="date" className="form-label text-light">
+                    Date
+                  </label>
+                  <input
+                    id="date"
+                    type="date"
+                    className="form-control"
+                    name="date"
+                    style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+                  />
+                </div>
+              </div>
             </div>
             <button type="submit" className="btn" style={{ backgroundColor: "#236a80", color: "white" }}>
               Add
@@ -148,95 +262,174 @@ const Inventory = () => {
           </form>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 
-  // Form to log usage of inventory items (SKU, Quantity Used, Date, Optional Notes)
-  const renderUseInventory = () => (
-    <div className="col-12">
-      <h1 className="text-center mt-3">Use Inventory</h1>
-      <div className="card">
-        <div className="card-body">
-          <form className="m-2 p-5">
-            <div className="row">
-              <div className="col-lg-6 col-md-6 mb-4">
-                <div className="form-group">
-                  <label htmlFor="SKU" className="form-label text-light">
-                    SKU
-                  </label>
-                  <input
-                    id="SKU"
-                    type="text"
-                    placeholder="SKU"
-                    className="form-control"
-                    name="SKU"
-                    style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
-                  />
+  // Submit handler for adding inventory
+  const handleAddInventory = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+      userName: formData.get("userName"),
+      skuName: formData.get("SKUname"),
+      quantity: formData.get("quantity"),
+      date: formData.get("date"),
+    };
+
+    fetch(`${API_URL}/api/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Error adding inventory");
+        }
+        return res.json();
+      })
+      .then((response) => {
+        toast.success("Inventory successfully added!");
+      })
+      .catch((error) => {
+        toast.error(`Error adding inventory: ${error.message}`);
+      });
+  };
+
+  // Form to log usage of inventory items
+  const renderUseInventory = () => {
+    const handleUseInventory = (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = {
+        sku: formData.get("SKU"),
+        quantityUsed: parseInt(formData.get("quantityUsed"), 10),
+        userName: formData.get("username"),
+        usageDate: formData.get("usageDate"),
+        notes: formData.get("notes"),
+      };
+
+      fetch(`${API_URL}/api/use`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error("Error logging usage");
+          }
+          return res.json();
+        })
+        .then((response) => {
+          toast.success("Usage log added successfully");
+        })
+        .catch((error) => {
+          toast.error(`Error: ${error.message}`);
+        });
+    };
+
+    return (
+      <div className="col-12">
+        <h1 className="text-center mt-3">Use Inventory</h1>
+        <div className="card">
+          <div className="card-body">
+            <form className="m-2 p-5" onSubmit={handleUseInventory}>
+              <div className="row">
+                <div className="col-lg-6 col-md-6 mb-4">
+                  <div className="form-group">
+                    <label htmlFor="SKU" className="form-label text-light">
+                      SKU
+                    </label>
+                    <input
+                      id="SKU"
+                      type="text"
+                      placeholder="SKU"
+                      className="form-control"
+                      name="SKU"
+                      style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+                    />
+                  </div>
+                </div>
+                <div className="col-lg-6 col-md-6 mb-4">
+                  <div className="form-group">
+                    <label htmlFor="username" className="form-label text-light">
+                      Username
+                    </label>
+                    <input
+                      id="username"
+                      type="text"
+                      placeholder="username"
+                      className="form-control"
+                      name="username"
+                      style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="col-lg-6 col-md-6 mb-4">
-                <div className="form-group">
-                  <label htmlFor="quantityUsed" className="form-label text-light">
-                    Quantity Used
-                  </label>
-                  <input
-                    id="quantityUsed"
-                    type="number"
-                    placeholder="Quantity Used"
-                    className="form-control"
-                    name="quantityUsed"
-                    style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
-                    min="0"
-                  />
+              <div className="row">
+                <div className="col-lg-6 col-md-6 mb-4">
+                  <div className="form-group">
+                    <label htmlFor="quantityUsed" className="form-label text-light">
+                      Quantity Used
+                    </label>
+                    <input
+                      id="quantityUsed"
+                      type="number"
+                      placeholder="Quantity Used"
+                      className="form-control"
+                      name="quantityUsed"
+                      style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+                      min="0"
+                    />
+                  </div>
+                </div>
+                <div className="col-lg-6 col-md-6 mb-4">
+                  <div className="form-group">
+                    <label htmlFor="usageDate" className="form-label text-light">
+                      Date
+                    </label>
+                    <input
+                      id="usageDate"
+                      type="date"
+                      className="form-control"
+                      name="usageDate"
+                      style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+                    />
+                  </div>
+                </div>
+                <div className="col-lg-6 col-md-6 mb-4">
+                  <div className="form-group">
+                    <label htmlFor="notes" className="form-label text-light">
+                      Optional Notes
+                    </label>
+                    <textarea
+                      id="notes"
+                      placeholder="Notes"
+                      className="form-control"
+                      name="notes"
+                      style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+                    ></textarea>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="row">
-              <div className="col-lg-6 col-md-6 mb-4">
-                <div className="form-group">
-                  <label htmlFor="usageDate" className="form-label text-light">
-                    Date
-                  </label>
-                  <input
-                    id="usageDate"
-                    type="date"
-                    className="form-control"
-                    name="usageDate"
-                    style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
-                  />
-                </div>
-              </div>
-              <div className="col-lg-6 col-md-6 mb-4">
-                <div className="form-group">
-                  <label htmlFor="notes" className="form-label text-light">
-                    Optional Notes
-                  </label>
-                  <textarea
-                    id="notes"
-                    placeholder="Notes"
-                    className="form-control"
-                    name="notes"
-                    style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
-                  ></textarea>
-                </div>
-              </div>
-            </div>
-            <button type="submit" className="btn" style={{ backgroundColor: "#236a80", color: "white" }}>
-              Log Usage
-            </button>
-          </form>
+              <button type="submit" className="btn" style={{ backgroundColor: "#236a80", color: "white" }}>
+                Log Usage
+              </button>
+            </form>
+          </div>
         </div>
+        <ToastContainer />
       </div>
-    </div>
-  );
+    );
+  };
 
-  // Form for users to request more inventory (SKU, Required Quantity, Optional Reason)
+  // Form for users to request more inventory
   const renderRequestInventory = () => (
     <div className="col-12">
       <h1 className="text-center mt-3">Request Inventory</h1>
       <div className="card">
         <div className="card-body">
-          <form className="m-2 p-5">
+          <form className="m-2 p-5" onSubmit={handleRequestInventory}>
             <div className="row">
               <div className="col-lg-6 col-md-6 mb-4">
                 <div className="form-group">
@@ -271,7 +464,22 @@ const Inventory = () => {
               </div>
             </div>
             <div className="row">
-              <div className="col-12 mb-4">
+              <div className="col-lg-6 col-md-6 mb-4">
+                <div className="form-group">
+                  <label htmlFor="username" className="form-label text-light">
+                    Username
+                  </label>
+                  <input
+                    id="username"
+                    type="text"
+                    placeholder="username"
+                    className="form-control"
+                    name="username"
+                    style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+                  />
+                </div>
+              </div>
+              <div className="col-lg-6 col-md-6 mb-4">
                 <div className="form-group">
                   <label htmlFor="reason" className="form-label text-light">
                     Optional Reason
@@ -295,141 +503,39 @@ const Inventory = () => {
     </div>
   );
 
-  // Admin dashboard for viewing all inventories, approving/rejecting requests,
-  // updating delivered quantities, and tracking history per SKU.
-  const renderAdminDashboard = () => (
-    <div className="col-12">
-      <h1 className="text-center mt-3">Admin Inventory Dashboard</h1>
-      
-      {/* Table 1: Current Inventory and Pending Requests */}
-      <div className="card mb-4">
-        <div className="card-header text-light">
-          Current Inventory and Requests
-        </div>
-        <div className="card-body">
-          <table className="table table-striped">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Quantity</th>
-                <th>Requests</th>
-                <th>Delivered Quantity</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Dummy rows for demonstration */}
-              <tr>
-                <td>SKU001</td>
-                <td>100</td>
-                <td>
-                  <p>Request Pending: 50</p>
-                </td>
-                <td>0</td>
-                <td>
-                  <button className="btn btn-success btn-sm mr-2 me-2">Approve</button>
-                  <button className="btn btn-danger btn-sm">Reject</button>
-                </td>
-              </tr>
-              <tr>
-                <td>SKU002</td>
-                <td>200</td>
-                <td>
-                  <p>Request Pending: 30</p>
-                </td>
-                <td>0</td>
-                <td>
-                  <button className="btn btn-success btn-sm mr-2 me-2">Approve</button>
-                  <button className="btn btn-danger btn-sm">Reject</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-      {/* Table 2: Update Delivered Quantity */}
-      <div className="card mb-4">
-        <div className="card-header  text-light">
-          Update Delivered Quantity
-        </div>
-        <div className="card-body">
-          <table className="table ">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Delivered Quantity</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <input
-                    id="updateSKU"
-                    type="text"
-                    placeholder="SKU"
-                    className="form-control"
-                    name="updateSKU"
-                  />
-                </td>
-                <td>
-                  <input
-                    id="deliveredQuantity"
-                    type="number"
-                    placeholder="Delivered Quantity"
-                    className="form-control"
-                    name="deliveredQuantity"
-                    min="0"
-                  />
-                </td>
-                <td>
-                  <button type="submit" style={{backgroundColor:'#236a80' , color:'#fff'}} className="btn">
-                    Update
-                  </button>
-                </td>
-              </tr>
-              {/* Additional rows can be added here as needed */}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-      {/* Table 3: Inventory History */}
-      <div className="card">
-        <div className="card-header  text-light">
-          Inventory History
-        </div>
-        <div className="card-body">
-          <table className="table table-bordered">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Action</th>
-                <th>Quantity</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>SKU001</td>
-                <td>Added</td>
-                <td>100</td>
-                <td>2025-03-25</td>
-              </tr>
-              <tr>
-                <td>SKU001</td>
-                <td>Usage</td>
-                <td>-50</td>
-                <td>2025-03-26</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-    </div>
-  );
+  // Submit handler for request inventory
+// Submit handler for request inventory
+// Updated submit handler for request inventory
+const handleRequestInventory = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+      userName: formData.get("username"),
+      skuName: formData.get("SKURequest"),
+      quantityRequested: parseInt(formData.get("requiredQuantity"), 10), // convert string to number
+      reason: formData.get("reason"),
+    };
+  
+    fetch(`${API_URL}/api/addrequest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Error requesting inventory");
+        }
+        return res.json();
+      })
+      .then((response) => {
+        toast.success("Inventory request submitted successfully!");
+        // Optionally clear the form after successful submission
+        e.target.reset();
+      })
+      .catch((error) => {
+        toast.error(`Error: ${error.message}`);
+      });
+  };
   
 
   return (
@@ -451,6 +557,7 @@ const Inventory = () => {
           </div>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };

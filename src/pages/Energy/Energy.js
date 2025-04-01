@@ -5,6 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { API_URL } from "../../utils/apiConfig";
 import EnergyDataModal from "./EnergyDataModal";
 import './index.css';
+import Log from "../Login/Log";
 
 const formatDateDDMMYYYY = (dateInput) => {
   const date = new Date(dateInput);
@@ -30,15 +31,37 @@ const extractHeaders = (data, viewType) => {
 
 // Utility to group data by stackName
 const groupDataByStackName = (data) => {
-  const groupedData = {};
+  const grouped = {};
+
   data.forEach((item) => {
-    if (!groupedData[item.stackName]) {
-      groupedData[item.stackName] = [];
+    const { stackName, initialEnergy, lastEnergy, energyDifference } = item;
+
+    const hasRealData =
+      initialEnergy !== undefined ||
+      lastEnergy !== undefined ||
+      energyDifference !== undefined;
+
+    if (!grouped[stackName]) {
+      grouped[stackName] = [item];
+    } else {
+      const existingHasRealData = grouped[stackName].some(
+        (record) =>
+          record.initialEnergy !== undefined ||
+          record.lastEnergy !== undefined ||
+          record.energyDifference !== undefined
+      );
+
+      if (!existingHasRealData && hasRealData) {
+        grouped[stackName] = [item];
+      } else if (existingHasRealData && hasRealData) {
+        grouped[stackName].push(item);
+      }
     }
-    groupedData[item.stackName].push(item);
   });
-  return groupedData;
+
+  return grouped;
 };
+
 
 // Helper function to build an ISO date from "DD/MM/YYYY"
 const toISODate = (ddmmyyyy) => {
@@ -123,55 +146,65 @@ const Energy = () => {
   };
 
   // 2) Fetch difference data and conditionally add mock data for HH014
-  const fetchDifferenceData = async (userName, page = 1, limit = 10) => {
+  const fetchDifferenceData = async (userName, page = 1, limit = 500) => {
     setLoading(true);
     try {
       // Fetch data from the API
       const response = await axios.get(
-        `${API_URL}/api/difference/${userName}?interval=daily&page=1&limit=200`
+             `${API_URL}/api/difference/${userName}?interval=daily&page=${page}&limit=${limit}`
+        
+      
       );
       const { data } = response;
+console.log('energy differencedata',data);
 
       if (data && data.success) {
         // Map and format date/time from timestamp
-        let mappedData = data.data.map((item) => ({
-          ...item,
-          date: formatDateDDMMYYYY(item.timestamp),
-          time: new Date(item.timestamp).toLocaleTimeString(),
-        }));
 
-        // Filter out only the "energy" stacks
-        mappedData = mappedData.filter((item) =>
-          energyStacks.includes(item.stackName)
-        );
+// 1) Filter out only stationType = "energy"
+// 1) Filter out only stationType = "energy"
+let filteredData = data.data.filter(
+  (item) => item.stationType === "energy"
+);
 
-        // Add mock data for HH014 if storedUserId is HH014
-        if (storedUserId === "HH014") {
-          mappedData = [...mappedData, ...mockDataForHH014];
-        }
+// 2.1) Remove accidental typo stackName for MY_HOME017
+if (userName === "MY_HOME017") {
+  filteredData = filteredData.filter(
+    (item) => item.stackName.trim() !== "Enery_meter_1"
+  );
+}
 
-        // Sort data by timestamp
-        let sortedData = mappedData.sort(
-          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-        );
+// 2.2) Normalize the stackName
+filteredData = filteredData.map((item) => ({
+  ...item,
+  stackName: item.stackName.trim(),
+}));
 
-        // Deduplicate data based on stackName and date
-        const seen = new Set();
-        const dedupedData = [];
-        for (const item of sortedData) {
-          const key = item.stackName + "|" + item.date;
-          if (!seen.has(key)) {
-            seen.add(key);
-            dedupedData.push(item);
-          }
-        }
+// 2.3) Map and format date/time from timestamp
+let mappedData = filteredData.map((item) => ({
+  ...item,
+  date: formatDateDDMMYYYY(item.timestamp),
+  time: new Date(item.timestamp).toLocaleTimeString(),
+}));
 
-        // Paginate
-        const start = (page - 1) * limit;
-        const paginatedData = dedupedData.slice(start, start + limit);
+// 2.4) (Optional) Add mock data for HH014 if needed
+if (storedUserId === "HH014") {
+  mappedData = [...mappedData, ...mockDataForHH014];
+}
 
-        setDifferenceData(paginatedData);
-        setTotalPages(Math.ceil(dedupedData.length / limit));
+// 2.5) Sort by timestamp
+mappedData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+// 2.6) Paginate
+const start = (page - 1) * limit;
+const paginatedData = mappedData.slice(start, start + limit);
+
+
+setDifferenceData(paginatedData);
+setTotalPages(Math.ceil(mappedData.length / limit));
+
+
+        /*  */
       } else {
         setDifferenceData([]);
       }

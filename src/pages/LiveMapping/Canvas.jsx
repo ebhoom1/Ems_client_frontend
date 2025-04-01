@@ -10,7 +10,7 @@ import SVGNode from './SVGnode';
 import TextNode from './TextNode';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
-
+import { API_URL } from '../../utils/apiConfig';
 const nodeTypes = {
   svgNode: SVGNode,
   textNode: ({ data }) => (
@@ -29,7 +29,7 @@ const nodeTypes = {
   ),
 };
 
-function Canvas() {
+function Canvas({ selectedStation }) {
   const { userId } = useSelector((state) => state.selectedUser);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -38,7 +38,8 @@ function Canvas() {
   const [currentUserName, setCurrentUserName] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [noLiveStation, setNoLiveStation] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false); // New state for edit mode
+  const [isEditMode, setIsEditMode] = useState(false); // New state for enabling edit mode
+  const [stationName, setStationName] = useState('');
 
   const { userData } = useSelector((state) => state.user);
   const userType = userData?.validUserOne?.userType || '';
@@ -93,24 +94,43 @@ function Canvas() {
   };
 
   const handleSave = async () => {
+    if (!stationName) {
+      alert('Please enter a station name.');
+      return;
+    }
     try {
       const apiUrl = isEditing
-        ? `https://api.ocems.ebhoom.com/api/edit-live-station/${currentUserName || loggedUserName}`
-        : 'https://api.ocems.ebhoom.com/api/build-live-station';
+        ? `${API_URL}/api/edit-live-station/${currentUserName || loggedUserName}/${stationName}`
+        : `${API_URL}/api/build-live-station`;
       const method = isEditing ? 'patch' : 'post';
+      const payload = isEditing
+        ? {
+            userName: currentUserName || loggedUserName,
+            stationName,
+            newStationName: stationName,
+            nodes: nodes.map((node) => ({
+              ...node,
+              rotation: node.data.rotation,
+              width: node.width,
+              height: node.height,
+            })),
+            edges,
+          }
+        : {
+            userName: loggedUserName,
+            stationName,
+            nodes: nodes.map((node) => ({
+              ...node,
+              rotation: node.data.rotation,
+              width: node.width,
+              height: node.height,
+            })),
+            edges,
+          };
       const response = await axios({
         method,
         url: apiUrl,
-        data: {
-          userName: currentUserName || loggedUserName,
-          nodes: nodes.map((node) => ({
-            ...node,
-            rotation: node.data.rotation,
-            width: node.width,
-            height: node.height,
-          })),
-          edges,
-        },
+        data: payload,
       });
       console.log('Saved successfully:', response.data);
       alert('Map saved successfully!');
@@ -124,7 +144,9 @@ function Canvas() {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`https://api.ocems.ebhoom.com/api/delete-live-station/${currentUserName || loggedUserName}`);
+      await axios.delete(
+        `${API_URL}/api/delete-live-station/${currentUserName || loggedUserName}/${stationName}`
+      );
       alert('Live station deleted successfully!');
       setNodes([]);
       setEdges([]);
@@ -136,17 +158,19 @@ function Canvas() {
     }
   };
 
-  const fetchLiveStation = async (name) => {
+  const fetchLiveStation = async (user, station) => {
     setNodes([]);
     setEdges([]);
 
     try {
-      const response = await axios.get(`https://api.ocems.ebhoom.com/api/find-live-station/${name}`);
+      const response = await axios.get(
+        `${API_URL}/api/find-live-station/${user}/${station}`
+      );
       const { data } = response.data;
       if (data) {
         setNodes(data.nodes || []);
         setEdges(data.edges || []);
-        setCurrentUserName(name);
+        setCurrentUserName(user);
         setIsEditing(true);
         setNoLiveStation(false);
       } else {
@@ -160,31 +184,69 @@ function Canvas() {
     }
   };
 
+  // When the selectedStation prop changes, load that station
   useEffect(() => {
-    if (userType === 'admin') {
-      const selectedUserFromStorage = storedUserId;
-      if (selectedUserFromStorage) {
-        fetchLiveStation(selectedUserFromStorage);
-      }
-    } else if (userType === 'user') {
-      fetchLiveStation(loggedUserName);
+    if (selectedStation && selectedStation.stationName) {
+      fetchLiveStation(selectedStation.userName, selectedStation.stationName);
+      setStationName(selectedStation.stationName);
+    } else {
+      // Clear canvas for new station creation
+      setNodes([]);
+      setEdges([]);
+      setStationName('');
+      setIsEditing(false);
     }
-  }, [userType, loggedUserName, storedUserId]);
+  }, [selectedStation]);
+
+  // Optionally, if no station is selected, clear the canvas (new station mode)
+  useEffect(() => {
+    if (!selectedStation) {
+      setNodes([]);
+      setEdges([]);
+      setStationName('');
+      setIsEditing(false);
+    }
+  }, [selectedStation]);
 
   return (
     <div className="react-flow-container">
       <div className="react-flow-scrollable">
         {noLiveStation && (
           <div className="text-center text-danger mt-3">
-            <h5>{userType === 'admin' ? 'No live station available for this user.' : 'No live station available. Please create a new one.'}</h5>
+            <h5>
+              {userType === 'admin'
+                ? 'No live station available for this user.'
+                : 'No live station available. Please create a new one.'}
+            </h5>
           </div>
         )}
-        <div className="reactflow-wrapper" style={{ width: '100%', height: '600px' }}>
-          <div className="d-flex justify-content-end">
-            <button className="btn btn-warning me-3" onClick={() => setIsEditMode((prev) => !prev)}>
+        {/* Station Name Input */}
+        <div className="d-flex align-items-center justify-content-between mb-2">
+          <div>
+            <label htmlFor="stationName" className="form-label">
+              Station Name:
+            </label>
+            <input
+              id="stationName"
+              type="text"
+              className="form-control"
+              value={stationName}
+              onChange={(e) => setStationName(e.target.value)}
+              // Allow editing station name regardless of new or existing station
+            />
+          </div>
+          <div className="d-flex">
+            <button
+              className="btn btn-warning me-3"
+              onClick={() => setIsEditMode((prev) => !prev)}
+            >
               {isEditMode ? ' Edit' : ' Edit'}
             </button>
-            <button className="btn btn-success me-3" onClick={handleSave} disabled={!isEditMode}>
+            <button
+              className="btn btn-success me-3"
+              onClick={handleSave}
+              disabled={!isEditMode}
+            >
               {isEditing ? 'Update' : 'Save'}
             </button>
             {isEditing && userType === 'admin' && (
@@ -193,6 +255,8 @@ function Canvas() {
               </button>
             )}
           </div>
+        </div>
+        <div className="reactflow-wrapper" style={{ width: '100%', height: '600px' }}>
           <ReactFlow
             nodes={nodes}
             edges={edges}

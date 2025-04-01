@@ -38,14 +38,17 @@ import linearrow from '../../assests/images/arrowline.svg'
 import aorangeline from '../../assests/images/aorangeline.svg'
 import ablackline from '../../assests/images/ablackline.svg'
 import agreenline from '../../assests/images/agreenline.svg'
+import settlingnew from '../../assests/images/settlingnew.svg'
 
-
-
+import watertanknew from '../../assests/images/watertanknew.svg'
 
 import './livemapping.css';
 
 // Default shapes
 const defaultShapes = [
+  { id: 'settlingnew', label: 'settlingnew', isSVG: true, svgPath: settlingnew },
+  { id: 'watertanknew', label: 'watertanknew', isSVG: true, svgPath: watertanknew },
+
   { id: 'stank', label: 'Stank', isSVG: true, svgPath: stank },
   { id: 'filtertank', label: 'Filter Tank', isSVG: true, svgPath: filtertank },
   { id: 'connector', label: 'Connector', isSVG: true, svgPath: connector },

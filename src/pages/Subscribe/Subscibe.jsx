@@ -1,41 +1,76 @@
 import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
 import Modal from 'react-modal';
-import { fetchUsers, fetchUserByUserName } from '../../redux/features/userLog/userLogSlice';
 import axios from 'axios';
 import { API_URL } from '../../utils/apiConfig';
 import 'react-toastify/dist/ReactToastify.css';
 import { Link } from 'react-router-dom';
 import DashboardSam from '../Dashboard/DashboardSam';
-import Hedaer from '../Header/Hedaer';
 import HeaderSim from '../Header/HeaderSim';
 
 Modal.setAppElement('#root'); // Bind modal to your appElement for accessibility
 
 const Subscibe = () => {
-  const dispatch = useDispatch();
-  const { users, loading, error } = useSelector((state) => state.userLog);
+  // Local state for users, loading and error
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // State for search and modal handling
   const [searchQuery, setSearchQuery] = useState('');
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const userData = useSelector((state) => state.user.userData); // Fixed userData reference
-  useEffect(() => {
-    dispatch(fetchUsers());
-  }, [dispatch]);
 
-  const handleSearch = (e) => {
+  // Get userData from Redux (for admin details)
+  const userData = useSelector((state) => state.user.userData);
+  const userType = userData?.validUserOne?.userType;
+
+  // Define fetchUsers function outside useEffect
+  const fetchUsers = async () => {
+    try {
+      if (userData?.validUserOne) {
+        setLoading(true);
+        let response;
+        if (userData.validUserOne.adminType) {
+          response = await axios.get(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`);
+        } else {
+          response = await axios.get(`${API_URL}/api/getallusers`);
+        }
+
+        // Only show users with userType === "user"
+        const filteredUsers = response.data.users.filter((user) => user.userType === "user");
+        setUsers(filteredUsers);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setError("Error fetching users");
+      setLoading(false);
+    }
+  };
+
+  // Only fetch users if the logged-in user is an admin with an adminType
+  useEffect(() => {
+    if (userType === "admin" && userData?.validUserOne?.adminType) {
+      fetchUsers();
+    }
+  }, [userType, userData]);
+
+  // Update search to use the admin-based filtering
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      dispatch(fetchUserByUserName(searchQuery.trim()))
-        .then((response) => {
-          console.log("Search response:", response);
-        })
-        .catch((err) => {
-          console.error("Error fetching user by username:", err);
-        });
+      try {
+        const response = await axios.get(`${API_URL}/api/get-user-by-username/${searchQuery.trim()}`);
+        // Filter to only include users with userType "user"
+        const filteredUsers = response.data.users.filter((user) => user.userType === "user");
+        setUsers(filteredUsers);
+      } catch (err) {
+        console.error("Error fetching user by username:", err);
+      }
     } else {
-      dispatch(fetchUsers());
+      fetchUsers();
     }
   };
 
@@ -116,29 +151,7 @@ const Subscibe = () => {
       console.error("Error creating order:", error);
     }
   };
-  useEffect(() => {
-    const fetchFilteredUsers = async () => {
-      try {
-        if (userData?.validUserOne) {
-          let response;
-          if (userData.validUserOne.adminType) {
-            response = await axios.get(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`);
-          } else {
-            response = await axios.get(`${API_URL}/api/getallusers`);
-          }
-          dispatch(fetchUsers(response.data.users));
-        }
-      } catch (error) {
-        console.error('Error fetching users:', error);
-        toast.error('Failed to fetch users.');
-      }
-    };
-  
-    if (userData?.validUserOne) {
-      fetchFilteredUsers();
-    }
-  }, [dispatch, userData]);
-  
+
   return (
     <div className="container-fluid mb-5">
       <div className="row">

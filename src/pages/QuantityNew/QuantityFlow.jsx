@@ -55,6 +55,9 @@ const QuantityFlow = () => {
   const [lastFlows, setLastFlows] = useState({});  // New state for last recorded flows
   const [isDownloading, setIsDownloading] = useState(false);
   const [lastValidTimestamp, setLastValidTimestamp] = useState(null);
+  const [initialDailyFlows, setInitialDailyFlows] = useState({});
+const [realTimeDailyData, setRealTimeDailyData] = useState({});
+
    // Function to reset colors and trigger loading state
  const resetColors = () => {
   setExceedanceColor("loading");
@@ -432,10 +435,67 @@ const handleDownloadPdf = () => {
   }
 };
 
-    
-  
-    
-   
+// Calculate Daily values for HH014
+const consumptionValue =
+  currentUserName === "HH014" ? (dailyConsumption["STP inlet"] || 0) : 0;
+const reuseValue =
+  currentUserName === "HH014"
+    ? ((dailyConsumption["ETP outlet"] || 0) +
+       (dailyConsumption["STP garden outlet 1"] || 0) +
+       (dailyConsumption["STP garden outlet 2"] || 0))
+    : 0;
+const processValue =
+  currentUserName === "HH014"
+    ? ((dailyConsumption["STP softener outlet"] || 0) +
+       (dailyConsumption["STP uf outlet"] || 0) +
+       (dailyConsumption["STP acf outlet"] || 0))
+    : 0;
+
+// Calculate Monthly values for HH014
+// Here we assume "initialFlows" holds the first-day-of-month cumulatingFlow for each stack
+// Process monthly flows
+const monthlyConsumptionData = {};
+
+if (initialFlows) {
+  console.log("=== Monthly Data ===");
+  Object.keys(initialFlows).forEach((stackName) => {
+    const firstDayFlow = initialFlows[stackName] || 0;
+    const previousDayFlow = realTimeData[stackName]?.cumulatingFlow || 0;
+    // Calculate monthly difference as the difference between previous day's reading and first day reading.
+    // Math.max is used to ensure a non-negative value.
+    const monthlyDiff = Math.max(0, previousDayFlow - firstDayFlow);
+    monthlyConsumptionData[stackName] = monthlyDiff;
+    console.log(`${stackName} -> First Day: ${firstDayFlow}, Previous Day: ${previousDayFlow}, Monthly Difference: ${monthlyDiff}`);
+  });
+  console.log("Monthly Consumption Data:", monthlyConsumptionData);
+}
+
+// Group monthly differences by type:
+// Consumption: STP inlet  
+// Reuse: ETP outlet, STP garden outlet 1, STP garden outlet 2  
+// Process: STP softener outlet, STP uf outlet, STP acf outlet
+
+const monthlyConsumptionValue =
+  currentUserName === "HH014" ? (monthlyConsumptionData["STP inlet"] || 0) : 0;
+
+const monthlyReuseValue =
+  currentUserName === "HH014"
+    ? (
+        (monthlyConsumptionData["ETP outlet"] || 0) +
+        (monthlyConsumptionData["STP garden outlet 1"] || 0) +
+        (monthlyConsumptionData["STP garden outlet 2"] || 0)
+      )
+    : 0;
+
+const monthlyProcessValue =
+  currentUserName === "HH014"
+    ? (
+        (monthlyConsumptionData["STP softener outlet"] || 0) +
+        (monthlyConsumptionData["STP uf outlet"] || 0) +
+        (monthlyConsumptionData["STP acf outlet"] || 0)
+      )
+    : 0;
+
   return (
     <div className="main-panel " >
       <div className="content-wrapper" style={{backgroundColor:"white"}}>
@@ -566,17 +626,117 @@ const handleDownloadPdf = () => {
           </div>            
           </div>
 
-          {/* <div className="col-md-4 d-flex justify-content-end " style={{marginTop:'100px'}}>
-            <button className="btn btn-primary" onClick={() => setShowHistoryModal(true)}>
-              Daily History
-            </button>
-            {userData?.validUserOne && userData.validUserOne.userType === 'user' && (
-              <button type="submit" onClick={handleOpenCalibrationPopup} className="btn btn-primary ml-2">
-                Calibration
-              </button>
-            )}
-          </div> */}
+       
         </div>
+{/* Monthly balancing */}
+<div>
+  <div>
+    <h3 className="text-center">Water Balancing</h3>
+  </div>
+  <div className="row mb-4 mt-4 gap-4 d-flex align-items-center justify-content-center">
+    <div
+      className="col-md-3 p-4 text-center shadow"
+      style={{
+        borderRadius: "10px",
+        backgroundImage:
+          "url('https://images.unsplash.com/photo-1616763880410-744958efc093?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8dGVhbCUyMGJhY2tncm91bmR8ZW58MHx8MHx8fDA%3D')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        color: "#fff",
+      }}
+    >
+      <h5>Consumption</h5>
+      <div className="d-flex justify-content-around">
+        <div>
+          <small>Daily</small>
+          <p>
+            {currentUserName === "HH014"
+              ? consumptionValue.toFixed(2)
+              : "N/A"}{" "}
+            m³
+          </p>
+        </div>
+        <div>
+          <small>Monthly</small>
+          <p>
+            {currentUserName === "HH014"
+              ? monthlyConsumptionValue.toFixed(2)
+              : "N/A"}{" "}
+            m³
+          </p>
+        </div>
+      </div>
+    </div>
+    <div
+      className="col-md-3 p-4 text-center shadow"
+      style={{
+        borderRadius: "10px",
+        backgroundImage:
+          "url('https://images.unsplash.com/photo-1616763880410-744958efc093?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8dGVhbCUyMGJhY2tncm91bmR8ZW58MHx8MHx8fDA%3D')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        color: "#fff",
+      }}
+    >
+      <h5>Reuse</h5>
+      <div className="d-flex justify-content-around">
+        <div>
+          <small>Daily</small>
+          <p>
+            {currentUserName === "HH014"
+              ? reuseValue.toFixed(2)
+              : "N/A"}{" "}
+            m³
+          </p>
+        </div>
+        <div>
+          <small>Monthly</small>
+          <p>
+            {currentUserName === "HH014"
+              ? monthlyReuseValue.toFixed(2)
+              : "N/A"}{" "}
+            m³
+          </p>
+        </div>
+      </div>
+    </div>
+    <div
+      className="col-md-3 p-4 text-center shadow"
+      style={{
+        borderRadius: "10px",
+        backgroundImage:
+          "url('https://images.unsplash.com/photo-1616763880410-744958efc093?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8dGVhbCUyMGJhY2tncm91bmR8ZW58MHx8MHx8fDA%3D')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        color: "#fff",
+      }}
+    >
+      <h5>Process</h5>
+      <div className="d-flex justify-content-around">
+        <div>
+          <small>Daily</small>
+          <p>
+            {currentUserName === "HH014"
+              ? processValue.toFixed(2)
+              : "N/A"}{" "}
+            m³
+          </p>
+        </div>
+        <div>
+          <small>Monthly</small>
+          <p>
+            {currentUserName === "HH014"
+              ? monthlyProcessValue.toFixed(2)
+              : "N/A"}{" "}
+            m³
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
         {loading && (
                 <div className="spinner-container">
