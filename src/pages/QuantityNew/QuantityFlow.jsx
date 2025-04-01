@@ -629,7 +629,7 @@ const monthlyProcessValue =
        
         </div>
 {/* Monthly balancing */}
-<div>
+{/* <div>
   <div>
     <h3 className="text-center">Water Balancing</h3>
   </div>
@@ -734,7 +734,7 @@ const monthlyProcessValue =
       </div>
     </div>
   </div>
-</div>
+</div> */}
 
 
 
