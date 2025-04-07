@@ -20,7 +20,6 @@ function LIveLayout() {
   const [selectedUser, setSelectedUser] = useState("");
   const navigate = useNavigate();
 
-  // Function to fetch users based on adminType (or all users)
   const fetchUsers = async () => {
     try {
       if (userData?.validUserOne) {
@@ -36,7 +35,6 @@ function LIveLayout() {
           (user) => user.userType === "user"
         );
         setUsers(filteredUsers);
-        // Set default selected user as the first one from the list, if available
         if (filteredUsers.length > 0) {
           setSelectedUser(filteredUsers[0].userName);
         }
@@ -46,18 +44,15 @@ function LIveLayout() {
     }
   };
 
-  // Function to fetch live stations for the given userName
   const fetchStationsList = async () => {
     try {
       let currentUser = "";
       if (userData?.validUserOne?.userType === "admin") {
-        // For admin, use the selected user from the dropdown (or fallback to sessionStorage)
         currentUser =
           selectedUser || sessionStorage.getItem("selectedUserId") || "";
       } else {
         currentUser = userData?.validUserOne?.userName;
       }
-      // GET /api/live-stations/:userName returns an array of live stations
       const response = await axios.get(
         `${API_URL}/api/live-stations/${selectedUser}`
       );
@@ -67,7 +62,6 @@ function LIveLayout() {
     }
   };
 
-  // For admin users, fetch users on mount; otherwise, set selectedUser as their own userName.
   useEffect(() => {
     if (userData?.validUserOne?.userType === "admin") {
       fetchUsers();
@@ -76,7 +70,6 @@ function LIveLayout() {
     }
   }, [userData]);
 
-  // Fetch stations list whenever userData or selectedUser changes
   useEffect(() => {
     fetchStationsList();
   }, [userData, selectedUser]);
@@ -86,16 +79,13 @@ function LIveLayout() {
   };
 
   const handleAddStation = () => {
-    // Clear the selected station to create a new station (and clear the Canvas)
     setSelectedStation(null);
   };
 
-  // Handle change of user selection from dropdown (for admin)
   const handleUserChange = (e) => {
     setSelectedUser(e.target.value);
   };
 
-  // Optional: navigate to "how-to-use" page if needed
   const handleHowtoUse = () => {
     navigate("/how-to-use");
   };
@@ -143,31 +133,33 @@ function LIveLayout() {
                   <div className="mb-3">
                     {stationsList && stationsList.length > 0 ? (
                       <div className="box">
-                        <table className="table table-bordered">
-                          <thead>
-                            <tr>
-                              <th>User Name</th>
-                              <th>Station Name</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {stationsList.map((station) => (
-                              <tr
-                                key={station._id}
-                                style={{ cursor: "pointer" }}
-                                onClick={() =>
-                                  handleStationClick({
-                                    userName: station.userName,
-                                    stationName: station.stationName,
-                                  })
-                                }
-                              >
-                                <td>{station.userName}</td>
-                                <td>{station.stationName}</td>
+                        <div className="table-responsive">
+                          <table className="table table-bordered">
+                            <thead>
+                              <tr>
+                                <th>User Name</th>
+                                <th>Station Name</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody>
+                              {stationsList.map((station) => (
+                                <tr
+                                  key={station._id}
+                                  style={{ cursor: "pointer" }}
+                                  onClick={() =>
+                                    handleStationClick({
+                                      userName: station.userName,
+                                      stationName: station.stationName,
+                                    })
+                                  }
+                                >
+                                  <td>{station.userName}</td>
+                                  <td>{station.stationName}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     ) : (
                       <div className="text-center text-danger">
@@ -178,20 +170,36 @@ function LIveLayout() {
                   <div className="cardn m-">
                     <div className="card-body">
                       <div className="row">
-                        {/* Sidebar for drag-and-drop */}
-                        <div className="col-md-3">
+                        {/* Sidebar for drag-and-drop (hidden on mobile) */}
+                        <div className="col-md-3 d-none d-md-block">
                           <Sidebar />
                         </div>
-                        {/* Canvas Area */}
-                        <div className="col-md-9 shadow">
-                          <Canvas
-                            key={
-                              selectedStation
-                                ? selectedStation.stationName
-                                : "new"
-                            }
-                            selectedStation={selectedStation}
-                          />
+                        {/* Canvas Area with horizontal scroll on mobile */}
+                        <div className="col-md-9">
+                          <div 
+                            className="shadow" 
+                            style={{
+                              overflowX: "auto",
+                              WebkitOverflowScrolling: "touch",
+                              width: "100%",
+                              minHeight: "500px"
+                            }}
+                          >
+                            <div style={{ 
+                              minWidth: "800px", 
+                              width: "100%",
+                              padding: "10px"
+                            }}>
+                              <Canvas
+                                key={
+                                  selectedStation
+                                    ? selectedStation.stationName
+                                    : "new"
+                                }
+                                selectedStation={selectedStation}
+                              />
+                            </div>
+                          </div>
                           <button
                             className="btn btn-success mb-2 mt-2 d-flex justify-content-end align-items-center"
                             onClick={handleAddStation}

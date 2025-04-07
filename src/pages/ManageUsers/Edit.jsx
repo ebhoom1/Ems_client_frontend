@@ -26,6 +26,7 @@ function Edit() {
     password: '',
     cpassword: '',
     subscriptionDate: '',
+    subscriptionPlan: '', // <-- New subscription field
     userType: '',
     industryType: '',
     dataInteval: '',
@@ -77,14 +78,16 @@ function Edit() {
       setUserData((prevData) => ({
         ...prevData,
         ...selectedUser,
-        additionalEmails: selectedUser.additionalEmails
-          ? selectedUser.additionalEmails
-          : selectedUser.additionalEmail
-          ? [selectedUser.additionalEmail]
-          : ['']
+        additionalEmails:
+          selectedUser.additionalEmails && selectedUser.additionalEmails.length > 0
+            ? selectedUser.additionalEmails
+            : selectedUser.additionalEmail
+            ? [selectedUser.additionalEmail]
+            : [''] // Ensure at least one input is rendered
       }));
     }
   }, [selectedUser]);
+  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -344,7 +347,24 @@ function Edit() {
                             />
                           </div>
                         </div>
-                        
+                        <div className="col-lg-6 col-md-6 mb-4">
+  <div className="form-group">
+    <label htmlFor="subscriptionPlan" className="form-label text-light">Subscription Plan</label>
+    <select
+      id="subscriptionPlan"
+      name="subscriptionPlan"
+      value={userData.subscriptionPlan || ''}
+      onChange={handleChange}
+      className="form-control"
+      style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+    >
+      <option value="">Select Subscription Plan</option>
+      <option value="Business Basic">Business Basic</option>
+      <option value="Business Standard">Business Standard</option>
+      <option value="Business Premioum">Business Premioum</option>
+    </select>
+  </div>
+</div>
                         <div className="col-lg-6 col-md-6 mb-4">
                           <div className="form-group">
                             <label htmlFor="user" className="form-label">User Type</label>

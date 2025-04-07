@@ -1,0 +1,31 @@
+.pricing-card {
+    border: 1px solid #236a80;
+    border-radius: 6px;
+    transition: box-shadow 0.3s ease;
+    background-color: #fff;
+    padding: 10px;
+    
+  }
+  
+  .pricing-card:hover {
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .price-text {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #236a80;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .subtext {
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  .features-list li {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+  

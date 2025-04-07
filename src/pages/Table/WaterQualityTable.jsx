@@ -270,11 +270,12 @@ const fetchEnergyAndFlowData = async (username, start, end) => {
               parseFloat(stpInletData.finalFlow) === 0
                 ? 0
                 : Math.max(0, parseFloat(stpInletData.finalFlow) - 30);
+            // Instead of subtracting 30, show the same difference value from STP inlet
             let modifiedFlowDifference =
               parseFloat(stpInletData.finalFlow) === 0
                 ? "0.00"
-                : Math.max(0, parseFloat(stpInletData.flowDifference) - 30).toFixed(2);
-
+                : parseFloat(stpInletData.flowDifference).toFixed(2);
+      
             return {
               ...entry,
               initialFlow: modifiedInitialFlow.toFixed(2),
@@ -285,6 +286,7 @@ const fetchEnergyAndFlowData = async (username, start, end) => {
           return entry;
         });
       }
+      
 
       console.log("🚀 Updated Quantity Data:", quantityData);
       setQuantityData(quantityData);

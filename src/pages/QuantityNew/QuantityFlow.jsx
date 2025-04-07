@@ -57,7 +57,9 @@ const QuantityFlow = () => {
   const [lastValidTimestamp, setLastValidTimestamp] = useState(null);
   const [initialDailyFlows, setInitialDailyFlows] = useState({});
 const [realTimeDailyData, setRealTimeDailyData] = useState({});
-
+const [monthlyflows, setmonthlyflows] = useState({}); // For monthly first-day flows
+  const [yesterday, setyesterday] = useState({});   // For yesterday’s flows (monthly balancing)
+  const [dailyConsumptionData, setDailyConsumptionData] = useState({}); // For daily balancing
    // Function to reset colors and trigger loading state
  const resetColors = () => {
   setExceedanceColor("loading");
@@ -436,6 +438,7 @@ const handleDownloadPdf = () => {
 };
 
 // Calculate Daily values for HH014
+// Calculate Daily values for HH014
 const consumptionValue =
   currentUserName === "HH014" ? (dailyConsumption["STP inlet"] || 0) : 0;
 const reuseValue =
@@ -451,50 +454,113 @@ const processValue =
        (dailyConsumption["STP acf outlet"] || 0))
     : 0;
 
-// Calculate Monthly values for HH014
-// Here we assume "initialFlows" holds the first-day-of-month cumulatingFlow for each stack
-// Process monthly flows
-const monthlyConsumptionData = {};
+// Fetch first day of month data for monthly balancing
+useEffect(() => {
+  async function fetchMonthlyAndYesterdayData() {
+    try {
+      // Fetch first-day-of-month monthly difference data (current month data)
+      const monthlyRes = await fetch(
+        `${API_URL}/api/first-day-monthly-difference?userName=HH014&year=2025`
+      );
+      const monthlyJson = await monthlyRes.json();
+      console.log("monthlyJson:", monthlyJson);
 
-if (initialFlows) {
-  console.log("=== Monthly Data ===");
-  Object.keys(initialFlows).forEach((stackName) => {
-    const firstDayFlow = initialFlows[stackName] || 0;
-    const previousDayFlow = realTimeData[stackName]?.cumulatingFlow || 0;
-    // Calculate monthly difference as the difference between previous day's reading and first day reading.
-    // Math.max is used to ensure a non-negative value.
-    const monthlyDiff = Math.max(0, previousDayFlow - firstDayFlow);
-    monthlyConsumptionData[stackName] = monthlyDiff;
-    console.log(`${stackName} -> First Day: ${firstDayFlow}, Previous Day: ${previousDayFlow}, Monthly Difference: ${monthlyDiff}`);
-  });
-  console.log("Monthly Consumption Data:", monthlyConsumptionData);
-}
+      let monthlyFlows = {};
+      // (Assuming you want to use only the current month's records, e.g., those with date "01/04/2025")
+      monthlyJson.data.forEach((item) => {
+        if (item.date === "01/04/2025") {  // filter for current month data
+          monthlyFlows[item.stackName] = item.cumulatingFlowDifference || 0;
+        }
+      });
+      console.log("monthlyFlows:", monthlyFlows);
+      setmonthlyflows(monthlyFlows);
 
-// Group monthly differences by type:
+      // Fetch yesterday's difference data for monthly balancing
+      const yesterdayRes = await fetch(
+        `${API_URL}/api/differenceData/yesterday/HH014`
+      );
+      const yesterdayJson = await yesterdayRes.json();
+      console.log("yesterdayJson:", yesterdayJson);
+
+      let yesterdayFlows = {};
+      yesterdayJson.data.forEach((item) => {
+        // Assuming yesterday's records belong to the current month or are applicable
+        yesterdayFlows[item.stackName] = item.cumulatingFlowDifference || 0;
+      });
+      console.log("yesterdayFlows:", yesterdayFlows);
+      setyesterday(yesterdayFlows);
+    } catch (error) {
+      console.error("Error fetching monthly data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+  fetchMonthlyAndYesterdayData();
+}, []);
+
+// Fetch daily difference data for daily balancing (unchanged)
+useEffect(() => {
+  async function fetchDailyData() {
+    try {
+      const response = await fetch(`${API_URL}/api/difference/HH014?interval=daily`);
+      const dailyJson = await response.json();
+      let dailyData = {};
+      const today = moment().format("DD/MM/YYYY");
+      dailyJson.data.forEach(item => {
+        // Only consider data for today and for effluent_flow stations
+        if (item.stationType === "effluent_flow" && item.date === today) {
+          // Use the API provided daily cumulatingFlowDifference as the daily consumption value
+          dailyData[item.stackName] = item.cumulatingFlowDifference || 0;
+        }
+      });
+      setDailyConsumptionData(dailyData);
+      console.log("dailyConsumptionData:", dailyData);
+    } catch (error) {
+      console.error("Error fetching daily difference data:", error);
+    }
+  }
+  fetchDailyData();
+}, []);
+
+// Calculate monthly balancing for each stack
+// Here, we subtract yesterday's cumulatingFlowDifference from the current month's (first-day) value
+const monthlyBalancingData = {};
+Object.keys(monthlyflows).forEach((stackName) => {
+  const monthlyCumDiff = monthlyflows[stackName] || 0;
+  const yesterdayCumDiff = yesterday[stackName] || 0;
+  // Use: current month value - yesterday value
+  monthlyBalancingData[stackName] = Math.max(0, monthlyCumDiff - yesterdayCumDiff);
+  console.log(
+    `Stack: ${stackName} | Current Month: ${monthlyCumDiff} | Yesterday: ${yesterdayCumDiff} | Difference: ${monthlyBalancingData[stackName]}`
+  );
+});
+
+// Group monthly values by type:
 // Consumption: STP inlet  
 // Reuse: ETP outlet, STP garden outlet 1, STP garden outlet 2  
 // Process: STP softener outlet, STP uf outlet, STP acf outlet
-
 const monthlyConsumptionValue =
-  currentUserName === "HH014" ? (monthlyConsumptionData["STP inlet"] || 0) : 0;
+  currentUserName === "HH014" ? (monthlyBalancingData["STP inlet"] || 0) : 0;
 
 const monthlyReuseValue =
   currentUserName === "HH014"
-    ? (
-        (monthlyConsumptionData["ETP outlet"] || 0) +
-        (monthlyConsumptionData["STP garden outlet 1"] || 0) +
-        (monthlyConsumptionData["STP garden outlet 2"] || 0)
-      )
+    ? (monthlyBalancingData["ETP outlet"] || 0) +
+      (monthlyBalancingData["STP garden outlet 1"] || 0) +
+      (monthlyBalancingData["STP garden outlet 2"] || 0)
     : 0;
 
 const monthlyProcessValue =
   currentUserName === "HH014"
-    ? (
-        (monthlyConsumptionData["STP softener outlet"] || 0) +
-        (monthlyConsumptionData["STP uf outlet"] || 0) +
-        (monthlyConsumptionData["STP acf outlet"] || 0)
-      )
+    ? (monthlyBalancingData["STP softener outlet"] || 0) +
+      (monthlyBalancingData["STP uf outlet"] || 0) +
+      (monthlyBalancingData["STP acf outlet"] || 0)
     : 0;
+
+console.log("Monthly Consumption Value (STP inlet):", monthlyConsumptionValue);
+console.log("Monthly Reuse Value (ETP outlet + STP garden outlet 1 + STP garden outlet 2):", monthlyReuseValue);
+console.log("Monthly Process Value (STP softener outlet + STP uf outlet + STP acf outlet):", monthlyProcessValue);
+
+
 
   return (
     <div className="main-panel " >
@@ -629,7 +695,7 @@ const monthlyProcessValue =
        
         </div>
 {/* Monthly balancing */}
-{/* <div>
+<div>
   <div>
     <h3 className="text-center">Water Balancing</h3>
   </div>
@@ -657,14 +723,9 @@ const monthlyProcessValue =
           </p>
         </div>
         <div>
-          <small>Monthly</small>
-          <p>
-            {currentUserName === "HH014"
-              ? monthlyConsumptionValue.toFixed(2)
-              : "N/A"}{" "}
-            m³
-          </p>
-        </div>
+              <small>Monthly</small>
+              <p>{currentUserName === "HH014" ? monthlyConsumptionValue.toFixed(2) : "N/A"} m³</p>
+            </div>
       </div>
     </div>
     <div
@@ -734,7 +795,9 @@ const monthlyProcessValue =
       </div>
     </div>
   </div>
-</div> */}
+</div> 
+
+
 
 
 

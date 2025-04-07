@@ -35,6 +35,7 @@ const UsersLog = () => {
     password: "",
     cpassword: "",
     subscriptionDate: "",
+    subscriptionPlan: "", // <-- New subscription field
     userType: "",
     industryType: "",
     dataInteval: "",
@@ -685,6 +686,24 @@ const handleLogoDelete = async () => {
                                         <input id="subscriptionDate"  value={formData.subscriptionDate}   onChange={handleInputChange} name="subscriptionDate" className="form-control" type="date" style={{ width: '100%', padding: '15px', borderRadius: '10px' }} />
                                     </div>
                                 </div>
+                                <div className="col-lg-6 col-md-6 mb-4">
+  <div className="form-group">
+    <label htmlFor="subscriptionPlan" className="form-label text-light">Subscription Plan</label>
+    <select
+      id="subscriptionPlan"
+      name="subscriptionPlan"
+      value={formData.subscriptionPlan}
+      onChange={handleInputChange}
+      className="form-control"
+      style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+    >
+      <option value="">Select Subscription Plan</option>
+      <option value="Business Basic">Business Basic</option>
+      <option value="Business Standard">Business Standard</option>
+      <option value="Business Premium">Business Premium</option>
+    </select>
+  </div>
+</div>
                                 {/* User Type */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
@@ -1085,24 +1104,12 @@ const handleLogoDelete = async () => {
     </li>
   ))}
 </ul>
-
-                    </div>
+                 </div>
                 </div>
-            </div>
-
-           
+            </div>  
         </div>
-
-
-
-
-
-
-
           <ToastContainer />
         </div>
-
-        
       </div>
     </div>
   );

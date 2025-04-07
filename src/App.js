@@ -79,6 +79,8 @@ import VehicleHistory from './pages/Fuel/VehicleHistory';
 import PreviousData from './pages/LiveMapping/PreviousData';
 import Inventory from './pages/Inventory/Inventory';
 import Services from './pages/Inventory/Services';
+import SubscriptionPlans from './pages/Subscribe/SubscriptionPlans';
+import PaymentPage from './pages/Subscribe/PaymentPage';
 
 
 function App() {
@@ -210,7 +212,8 @@ function App() {
                   <Route path="/previous-data" element={<PreviousData />} />
                   <Route path="/inventory" element={<Inventory />} />
                   <Route path="/services" element={<Services />} />
-
+                  <Route path="/subscription-plans/:userName" element={<SubscriptionPlans />} />
+        <Route path="/payment/:userName" element={<PaymentPage />} />
                 </Route>
               )}
               {/* User Routes */}
@@ -247,7 +250,8 @@ function App() {
                   <Route path="/previous-data" element={<PreviousData />} />
                   <Route path="/inventory" element={<Inventory />} />
                   <Route path="/services" element={<Services />} />
-
+                  <Route path="/subscription-plans/:userName" element={<SubscriptionPlans />} />
+                  <Route path="/payment/:userName" element={<PaymentPage />} />
                 </Route>
               )}
             </Routes>

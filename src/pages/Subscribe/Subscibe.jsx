@@ -1,32 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { ToastContainer, toast } from 'react-toastify';
-import Modal from 'react-modal';
+import { ToastContainer } from 'react-toastify';
 import axios from 'axios';
 import { API_URL } from '../../utils/apiConfig';
 import 'react-toastify/dist/ReactToastify.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import DashboardSam from '../Dashboard/DashboardSam';
 import HeaderSim from '../Header/HeaderSim';
 
-Modal.setAppElement('#root'); // Bind modal to your appElement for accessibility
-
 const Subscibe = () => {
-  // Local state for users, loading and error
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // State for search and modal handling
   const [searchQuery, setSearchQuery] = useState('');
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
 
   // Get userData from Redux (for admin details)
   const userData = useSelector((state) => state.user.userData);
   const userType = userData?.validUserOne?.userType;
 
-  // Define fetchUsers function outside useEffect
+  // For navigation
+  const navigate = useNavigate();
+
+  // Helper function to format dates as DD/MM/YYYY
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const fetchUsers = async () => {
     try {
       if (userData?.validUserOne) {
@@ -37,7 +41,6 @@ const Subscibe = () => {
         } else {
           response = await axios.get(`${API_URL}/api/getallusers`);
         }
-
         // Only show users with userType === "user"
         const filteredUsers = response.data.users.filter((user) => user.userType === "user");
         setUsers(filteredUsers);
@@ -50,106 +53,39 @@ const Subscibe = () => {
     }
   };
 
-  // Only fetch users if the logged-in user is an admin with an adminType
   useEffect(() => {
     if (userType === "admin" && userData?.validUserOne?.adminType) {
       fetchUsers();
     }
   }, [userType, userData]);
 
-  // Update search to use the admin-based filtering
+  // Adjust the endpoint and response shape if yours differs
   const handleSearch = async (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       try {
-        const response = await axios.get(`${API_URL}/api/get-user-by-username/${searchQuery.trim()}`);
-        // Filter to only include users with userType "user"
-        const filteredUsers = response.data.users.filter((user) => user.userType === "user");
-        setUsers(filteredUsers);
+        // Example: If your route is /api/get-user-by-username, update accordingly
+        const response = await axios.get(`${API_URL}/api/get-user-by-userName/${searchQuery.trim()}`);
+        
+        // If the endpoint returns { status: 200, user: { ... } }, do:
+        if (response.data && response.data.user) {
+          // Convert the single user object into an array
+          setUsers([response.data.user]);
+        } else {
+          setUsers([]);
+        }
       } catch (err) {
         console.error("Error fetching user by username:", err);
+        setUsers([]);
       }
     } else {
       fetchUsers();
     }
   };
 
-  const calculatePrice = (user) => {
-    if (!user) return 0;
-    let fee = 0;
-    if (user.modelName === 'venus') {
-      fee = 15000;
-    } else if (user.modelName === 'mars') {
-      fee = 25000;
-    }
-    return fee;
-  };
-
-  const openModal = (user) => {
-    setSelectedUser(user);
-    setModalIsOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalIsOpen(false);
-    setSelectedUser(null);
-  };
-
-  const handlePayment = async () => {
-    if (!selectedUser) return;
-
-    try {
-      const response = await axios.post(`${API_URL}/api/create-order`, {
-        userName: selectedUser.userName,
-        amount: calculatePrice(selectedUser),
-      });
-
-      const { order } = response.data;
-      const options = {
-        key: "rzp_test_b2b3Y59oVOxWMb",
-        amount: order.amount,
-        currency: order.currency,
-        name: "AquaBox Control and Monitor System",
-        description: "Subscription Payment",
-        order_id: order.id,
-        handler: async (response) => {
-          try {
-            const verifyResponse = await axios.post(`${API_URL}/api/verify-payment`, {
-              order_id: response.razorpay_order_id,
-              payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              userName: selectedUser.userName,
-              modelName: selectedUser.modelName,
-              amount: order.amount,
-            });
-
-            if (verifyResponse.data.success) {
-              toast.success("Payment Successful and Subscription Updated!");
-              closeModal();
-            } else {
-              toast.error("Payment Verification Failed!");
-            }
-          } catch (error) {
-            toast.error("Error verifying payment!");
-            console.error("Error verifying payment:", error);
-          }
-        },
-        prefill: {
-          name: selectedUser.fname,
-          email: selectedUser.email,
-          contact: selectedUser.mobileNumber,
-        },
-        theme: {
-          color: "#3399cc",
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (error) {
-      toast.error("Error creating order!");
-      console.error("Error creating order:", error);
-    }
+  // Navigate to the subscription plans page using userName
+  const handlePayClick = (user) => {
+    navigate(`/subscription-plans/${user.userName}`);
   };
 
   return (
@@ -159,7 +95,7 @@ const Subscibe = () => {
         <div className="col-lg-3 d-none d-lg-block">
           <DashboardSam />
         </div>
-        
+
         {/* Main content */}
         <div className="col-lg-9 col-12">
           <div className="row">
@@ -168,65 +104,94 @@ const Subscibe = () => {
             </div>
           </div>
 
-          <div className='d-flex align-items-between justify-content-between m-3 mt-5' style={{fontSize:'20px'}}>
-            <div><b>SUBSCRIPTION DATA</b></div>
-            <div><Link to="/transactions"><b>TRANSACTIONS</b></Link></div>
-          </div>
-
           <div className="row">
             <div className="col-12 col-md-12 grid-margin">
-              <div className="col-12 d-flex justify-content-between align-items-center m-3">
-                <h3 className='text-center mt-3'>Subscription Details of Users</h3>
+              {/* Align search to the right */}
+              <div className="d-flex justify-content-end align-items-center m-3">
+                <input
+                  type="search"
+                  placeholder="username"
+                  className="p-2"
+                  style={{ borderRadius: '30px', border: '1px solid #ccc' , fontSize:'11px'}}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button onClick={handleSearch} className="btn btn-link text-dark">
+                  <i className="fa-solid fa-magnifying-glass"></i>
+                </button>
               </div>
 
-              <div className="card last-trips-card mt-2" style={{ overflowX: 'scroll' }}>
-                <div className="card-header p-3 pt-4 d-flex align-items-center search-container m-3">
-                  <form className="form-inline my-2 my-lg-0" onSubmit={handleSearch}>
-                    <input
-                      type="search"
-                      placeholder="username"
-                      className="p-2 search-input"
-                      style={{ borderRadius: '10px' }}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    <button className='btn btn-outline-primary ms-1 search-button'>Search</button>
-                  </form>
-                </div>
-
+              <div className="  mt-2" style={{ overflowX: 'auto' , backgroundColor:'#fafbf8' }}>
                 <div className="card-body">
-                  <table className="table table-borderless">
-                    <thead className="m-5">
-                      <tr>
+                  {/* Custom table styling */}
+                  <table
+                    className="table table-borderless"
+                    style={{
+                      borderCollapse: 'separate',
+                      borderSpacing: '0 15px', // space between rows
+                      width: '100%',
+                    }}
+                  >
+                    <thead>
+                      <tr style={{ backgroundColor: '#f5f5f5' }}>
                         <th>Sl No</th>
                         <th>User ID</th>
-                        <th>Name</th>
                         <th>Email</th>
-                        <th>Mobile Number</th>
-                        <th>Model Name</th>
+                        <th>Status</th>
+                        <th>Plan</th>
                         <th>Date</th>
                         <th>Subscription End Date</th>
                         <th>Pay</th>
                       </tr>
                     </thead>
-                    <tbody className="m-5">
+                    <tbody>
                       {loading ? (
-                        <tr><td colSpan="9">Loading...</td></tr>
+                        <tr>
+                          <td colSpan="8">Loading...</td>
+                        </tr>
                       ) : error ? (
-                        <tr><td colSpan="9">Error: {error}</td></tr>
+                        <tr>
+                          <td colSpan="8">Error: {error}</td>
+                        </tr>
+                      ) : users.length === 0 ? (
+                        <tr>
+                          <td colSpan="8">No users found.</td>
+                        </tr>
                       ) : (
                         users.map((user, index) => (
-                          <tr key={user._id}>
+                          <tr
+                            key={user._id}
+                            style={{
+                              backgroundColor: '#fff',
+                              border: '1px solid #ddd',
+                              borderRadius: '8px',
+                              transition: 'transform 0.2s, box-shadow 0.2s',
+                            }}
+                            // Hover effect
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = 'scale(1.01)';
+                              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = 'scale(1)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          >
                             <td>{index + 1}</td>
                             <td>{user.userName}</td>
-                            <td>{user.fname}</td>
                             <td>{user.email}</td>
-                            <td>{user.mobileNumber}</td>
-                            <td>{user.modelName}</td>
-                            <td>{user.subscriptionDate}</td>
-                            <td>{user.endSubscriptionDate}</td>
+                            <td className="text-success">Active</td>
+                            <td>{user.subscriptionPlan}</td>
+                            <td>{formatDate(user.subscriptionDate)}</td>
+                            <td>{formatDate(user.endSubscriptionDate)}</td>
                             <td>
-                              <button className="btn btn-info" onClick={() => openModal(user)}>Pay</button>
+                              <button
+                                style={{ backgroundColor: '#236a80', color: '#fff' }}
+                                className="btn"
+                                onClick={() => handlePayClick(user)}
+                              >
+                                Pay
+                              </button>
                             </td>
                           </tr>
                         ))
@@ -238,41 +203,7 @@ const Subscibe = () => {
             </div>
           </div>
         </div>
-      </div>
-
-      <Modal
-        isOpen={modalIsOpen}
-        onRequestClose={closeModal}
-        contentLabel="Payment Modal"
-        style={{
-          content: {
-            top: '50%',
-            left: '50%',
-            right: 'auto',
-            bottom: 'auto',
-            marginRight: '-50%',
-            transform: 'translate(-50%, -50%)',
-            textAlign: 'center',
-          },
-        }}
-      >
-        {selectedUser && (
-          <div>
-            <h2><i className="bi bi-currency-rupee"></i></h2>
-            <h4>User Name: {selectedUser.userName}</h4>
-            <h4>Model Name: {selectedUser.modelName}</h4>
-            <h5>Price: <i className="bi bi-currency-rupee"></i> {calculatePrice(selectedUser)}</h5>
-            <button
-              type="button"
-              className="btn btn-primary mt-2"
-              onClick={handlePayment}
-            >
-              Pay
-            </button>
-          </div>
-        )}
-      </Modal>
-
+      </div> 
       <ToastContainer />
     </div>
   );

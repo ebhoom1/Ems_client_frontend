@@ -59,7 +59,7 @@ const filterHeaders = (data, viewType) => {
   });
 };
 
-// ------------------ MOCK DATA (unchanged) ------------------
+// ------------------ MOCK DATA ------------------
 const mockData = [
   // --- 4/02/2025 entries ---
   {
@@ -76,8 +76,6 @@ const mockData = [
     "intervalType": "day",
     "stationType": "effluent_flow",
     "time": "01:05:00",
-    // Note the timestamp is set to 2025-02-04T01:05:00Z
-    // so that toLocaleDateString() will show 4/2/2025 in most locales
     "timestamp": "2025-03-04T01:05:00.527Z"
   },
   {
@@ -144,7 +142,6 @@ const mockData = [
     "time": "05:05:00",
     "timestamp": "2025-03-04T05:05:00.527Z"
   },
-
   // --- 1/03/2025 entry (example) ---
   {
     "_id": "mock6",
@@ -162,7 +159,6 @@ const mockData = [
     "time": "06:05:00",
     "timestamp": "2025-03-01T06:05:00.527Z"
   },
-
   // --- 2/03/2025 entry (example) ---
   {
     "_id": "mock7",
@@ -182,7 +178,6 @@ const mockData = [
   },
 ];
 
-
 const Quantity = () => {
   const { userData, userType } = useSelector((state) => state.user);
   const [differenceData, setDifferenceData] = useState([]);
@@ -193,25 +188,34 @@ const Quantity = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [uniqueDateGroups, setUniqueDateGroups] = useState([]);
 
   const storedUserId = sessionStorage.getItem("selectedUserId");
   const currentUserName =
     userType === "admin" ? "KSPCB001" : userData?.validUserOne?.userName;
 
   // Group data by stackName for those stacks that match effluent_flow
+  const normalizeString = (str) => str.replace(/\s+/g, " ").trim();
+
+  // Updated groupDataByStackName function using normalizeString
   const groupDataByStackName = (data, effluentFlowStacks) => {
+    const normalizedEffluentStacks = effluentFlowStacks.map((name) =>
+      normalizeString(name)
+    );
     const groupedData = {};
     data.forEach((item) => {
-      if (effluentFlowStacks.includes(item.stackName)) {
-        if (!groupedData[item.stackName]) {
-          groupedData[item.stackName] = [];
+      const normalizedName = normalizeString(item.stackName);
+      if (normalizedEffluentStacks.includes(normalizedName)) {
+        if (!groupedData[normalizedName]) {
+          groupedData[normalizedName] = [];
         }
-        groupedData[item.stackName].push(item);
+        groupedData[normalizedName].push(item);
       }
     });
     return groupedData;
   };
-
+  
+  
   // Fetch effluent flow stacks from the API
   const fetchEffluentFlowStacks = async (userName) => {
     try {
@@ -231,14 +235,14 @@ const Quantity = () => {
     }
   };
 
-  // Fetch difference data and update the date using our custom formatting
-  const fetchDifferenceData = async (userName, page = 1, limit = 100) => {
+  // Fetch all difference data at once
+  const fetchAllDifferenceData = async (userName) => {
     try {
       setLoading(true);
       let finalData = [];
 
       const response = await axios.get(
-        `${API_URL}/api/difference/${userName}?interval=daily&page=${page}&limit=${limit}`
+        `${API_URL}/api/difference/${userName}?interval=daily&limit=1000`
       );
       const { data } = response;
       console.log("differencedata", data);
@@ -246,7 +250,6 @@ const Quantity = () => {
       if (data && data.success) {
         let sortedData = data.data
           .map((item) => {
-            // Use the API provided date if available; otherwise, format the timestamp
             const customDate = item.date
               ? item.date
               : formatTimestampToCustomDate(item.timestamp);
@@ -277,9 +280,19 @@ const Quantity = () => {
 
         finalData = sortedData;
         setDifferenceData(finalData);
-        setTotalPages(Math.ceil(data.total / limit));
+
+        // Group data by unique dates
+        const uniqueDates = [...new Set(finalData.map(item => item.date))];
+        const dateGroups = uniqueDates.map(date => ({
+          date,
+          data: finalData.filter(item => item.date === date)
+        }));
+
+        setUniqueDateGroups(dateGroups);
+        setTotalPages(Math.ceil(dateGroups.length / 5)); // Show 5 dates per page
       } else {
         setDifferenceData([]);
+        setUniqueDateGroups([]);
       }
     } catch (error) {
       console.error("Error fetching difference data:", error);
@@ -296,13 +309,25 @@ const Quantity = () => {
   useEffect(() => {
     if (effluentFlowStacks.length > 0) {
       const userName = storedUserId || currentUserName;
-      fetchDifferenceData(userName, currentPage, 100);
+      fetchAllDifferenceData(userName);
     }
-  }, [effluentFlowStacks, storedUserId, currentUserName, currentPage]);
+  }, [effluentFlowStacks, storedUserId, currentUserName]);
 
   useEffect(() => {
     if (differenceData.length) {
-      let filtered = filterHeaders(differenceData, viewType);
+      // Get the dates for the current page
+      const startIdx = (currentPage - 1) * 5;
+      const endIdx = startIdx + 5;
+      const currentPageDates = uniqueDateGroups
+        .slice(startIdx, endIdx)
+        .map(group => group.date);
+
+      // Filter data to only include records from current page dates
+      const currentPageData = differenceData.filter(item => 
+        currentPageDates.includes(item.date)
+      );
+
+      let filtered = filterHeaders(currentPageData, viewType);
 
       // Ensure "04/03/2025" appears before "03/03/2025" (as per your merging logic)
       const targetDate = "04/03/2025";
@@ -321,7 +346,7 @@ const Quantity = () => {
     } else {
       setHeaders([]);
     }
-  }, [differenceData, viewType, currentPage]);
+  }, [differenceData, viewType, currentPage, uniqueDateGroups]);
 
   const groupedData = groupDataByStackName(differenceData, effluentFlowStacks);
 
@@ -333,15 +358,15 @@ const Quantity = () => {
     "STP uf outlet",
     "STP softener outlet",
     "STP garden outlet 1",
-    "STP garden outlet 2"
+    "STP garden outlet 2",
   ];
-
+  
   let finalGroupData;
   if (storedUserId === "HH014") {
     finalGroupData = fixedStackOrder
       .map((stackName) => ({
         stackName,
-        records: groupedData[stackName] || [],
+        records: groupedData[normalizeString(stackName)] || [],
       }))
       .filter((item) => item.records.length > 0);
   } else {
@@ -399,8 +424,7 @@ const Quantity = () => {
                             <td>Initial Flow</td>
                             {headers.map((header, index) => {
                               const matchingRecord = records.find(
-                                (item) =>
-                                  item.date === header || item.time === header
+                                (item) => item.date === header
                               );
                               return (
                                 <td key={index}>
@@ -415,8 +439,7 @@ const Quantity = () => {
                             <td>Final Flow</td>
                             {headers.map((header, index) => {
                               const matchingRecord = records.find(
-                                (item) =>
-                                  item.date === header || item.time === header
+                                (item) => item.date === header
                               );
                               return (
                                 <td key={index}>
@@ -431,8 +454,7 @@ const Quantity = () => {
                             <td>Flow Difference</td>
                             {headers.map((header, index) => {
                               const matchingRecord = records.find(
-                                (item) =>
-                                  item.date === header || item.time === header
+                                (item) => item.date === header
                               );
                               return (
                                 <td key={index}>

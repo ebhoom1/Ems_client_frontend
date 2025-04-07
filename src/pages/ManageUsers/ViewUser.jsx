@@ -30,6 +30,7 @@ function ViewUser() {
     modelName:'Model Name ',
     mobileNumber:'Mobile Number ',
     subscriptionDate:'Created Date ',
+    subscriptionPlan:'Plan',
     userType:'User Type ',
     industryType:'Industry Type ',
     industryPollutionCategory :'Industry Pollution Category ',
