@@ -17,162 +17,231 @@ const AdminDashboard = () => {
   const [errorRequests, setErrorRequests] = useState(null);
   const { userData } = useSelector((state) => state.user);
 
+  // New state for search filter and sort order
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateSortOrder, setDateSortOrder] = useState("asc");
+
+  // Function to toggle sort order between ascending and descending
+  const toggleSort = () => {
+    setDateSortOrder((prevOrder) => (prevOrder === "asc" ? "desc" : "asc"));
+  };
+
   // Fetch Inventory Added Data
-// Fetch Inventory Added Data
-useEffect(() => {
-  if (activeAdminTab === "inventoryAdded") {
-    setLoadingAdded(true);
-    let url = `${API_URL}/api/inventory/get`;
-    
-    // If user is admin, use admin-type endpoint
-    if (userData?.validUserOne?.userType === "admin") {
-      url = `${API_URL}/api/admin-type-inventory/${userData?.validUserOne?.adminType}`;
+  useEffect(() => {
+    if (activeAdminTab === "inventoryAdded") {
+      setLoadingAdded(true);
+      let url = `${API_URL}/api/inventory/get`;
+
+      // If user is admin, use admin-type endpoint
+      if (userData?.validUserOne?.userType === "admin") {
+        url = `${API_URL}/api/admin-type-inventory/${userData?.validUserOne?.adminType}`;
+      }
+
+      fetch(url)
+        .then((res) => res.json())
+        .then((data) => {
+          // Handle both response formats
+          setInventoryAddedData(data.inventoryItems || data.equipment || []);
+          setLoadingAdded(false);
+        })
+        .catch((err) => {
+          setErrorAdded(err.message);
+          setLoadingAdded(false);
+        });
     }
+  }, [activeAdminTab, userData]);
 
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        // Handle both response formats
-        setInventoryAddedData(data.inventoryItems || data.equipment || []);
-        setLoadingAdded(false);
-      })
-      .catch((err) => {
-        setErrorAdded(err.message);
-        setLoadingAdded(false);
-      });
-  }
-}, [activeAdminTab, userData]);
+  // Fetch Usage Logs
+  useEffect(() => {
+    if (activeAdminTab === "inventoryUsed") {
+      setLoadingUsed(true);
+      let url;
 
-// Fetch Usage Logs
-useEffect(() => {
-  if (activeAdminTab === "inventoryUsed") {
-    setLoadingUsed(true);
-    let url;
-    
-    if (userData?.validUserOne?.userType === "admin") {
-      // For admin users - fetch usage logs filtered by adminType
-      url = `${API_URL}/api/admin-type-usage/${userData?.validUserOne?.adminType}`;
-    } else if (userData?.validUserOne?.userType === "user") {
-      // For regular users - fetch only their usage logs
-      url = `${API_URL}/api/use?userName=${userData?.validUserOne?.userName}`;
-    } else {
-      // Fallback - fetch all usage logs (shouldn't normally happen)
-      url = `${API_URL}/api/use`;
+      if (userData?.validUserOne?.userType === "admin") {
+        // For admin users - fetch usage logs filtered by adminType
+        url = `${API_URL}/api/admin-type-usage/${userData?.validUserOne?.adminType}`;
+      } else if (userData?.validUserOne?.userType === "user") {
+        // For regular users - fetch only their usage logs
+        url = `${API_URL}/api/use?userName=${userData?.validUserOne?.userName}`;
+      } else {
+        // Fallback - fetch all usage logs (shouldn't normally happen)
+        url = `${API_URL}/api/use`;
+      }
+
+      fetch(url)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          // Handle the response format from admin-type-usage endpoint
+          const logs = data.usageLogs || [];
+          setUsageLogs(logs);
+          setLoadingUsed(false);
+        })
+        .catch((err) => {
+          console.error("Error fetching usage logs:", err);
+          setErrorUsed(err.message);
+          setLoadingUsed(false);
+        });
     }
+  }, [activeAdminTab, userData]);
 
-    fetch(url)
+  // Fetch Request Logs
+  useEffect(() => {
+    if (activeAdminTab === "requests") {
+      setLoadingRequests(true);
+      let url = `${API_URL}/api/getrequest`;
+
+      // If user is admin, use admin-type endpoint
+      if (userData?.validUserOne?.userType === "admin") {
+        url = `${API_URL}/api/admin-type-request/${userData?.validUserOne?.adminType}`;
+      }
+
+      fetch(url)
+        .then((res) => res.json())
+        .then((data) => {
+          // Handle both response formats
+          setRequestLogs(data.requestLogs || data.requests || []);
+          setLoadingRequests(false);
+        })
+        .catch((err) => {
+          setErrorRequests(err.message);
+          setLoadingRequests(false);
+        });
+    }
+  }, [activeAdminTab, userData]);
+
+  // Function to update a request's status (approve or deny)
+  const handleUpdateRequest = (id, status) => {
+    fetch(`${API_URL}/api/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    })
       .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error("Error updating status");
         return res.json();
       })
-      .then((data) => {
-        // Handle the response format from admin-type-usage endpoint
-        const logs = data.usageLogs || [];
-        setUsageLogs(logs);
-        setLoadingUsed(false);
+      .then(() => {
+        // Refresh the request logs after update
+        setRequestLogs((prev) =>
+          prev.map((req) =>
+            req._id === id ? { ...req, status } : req
+          )
+        );
       })
-      .catch((err) => {
-        console.error("Error fetching usage logs:", err);
-        setErrorUsed(err.message);
-        setLoadingUsed(false);
+      .catch((error) => {
+        console.error(error);
       });
-  }
-}, [activeAdminTab, userData]);
+  };
 
-// Fetch Request Logs
-useEffect(() => {
-  if (activeAdminTab === "requests") {
-    setLoadingRequests(true);
-    let url = `${API_URL}/api/getrequest`;
-    
-    // If user is admin, use admin-type endpoint
-    if (userData?.validUserOne?.userType === "admin") {
-      url = `${API_URL}/api/admin-type-request/${userData?.validUserOne?.adminType}`;
-    }
+  // Compute filtered and sorted data for each tab based on searchTerm and dateSortOrder
+  const filteredInventoryAddedData = inventoryAddedData
+    .filter((item) =>
+      item.userName.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) =>
+      dateSortOrder === "asc"
+        ? new Date(a.date) - new Date(b.date)
+        : new Date(b.date) - new Date(a.date)
+    );
 
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        // Handle both response formats
-        setRequestLogs(data.requestLogs || data.requests || []);
-        setLoadingRequests(false);
-      })
-      .catch((err) => {
-        setErrorRequests(err.message);
-        setLoadingRequests(false);
-      });
-  }
-}, [activeAdminTab, userData]);
+  const filteredUsageLogs = usageLogs
+    .filter((log) =>
+      log.userName.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) =>
+      dateSortOrder === "asc"
+        ? new Date(a.date) - new Date(b.date)
+        : new Date(b.date) - new Date(a.date)
+    );
 
-// Function to update a request's status (approve or deny)
-const handleUpdateRequest = (id, status) => {
-  fetch(`${API_URL}/api/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status }),
-  })
-    .then((res) => {
-      if (!res.ok) throw new Error("Error updating status");
-      return res.json();
-    })
-    .then(() => {
-      // Refresh the request logs after update
-      setRequestLogs((prev) =>
-        prev.map((req) =>
-          req._id === id ? { ...req, status } : req
-        )
-      );
-    })
-    .catch((error) => {
-      console.error(error);
-    });
-};
+  const filteredRequestLogs = requestLogs
+    .filter((req) =>
+      req.userName.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) =>
+      dateSortOrder === "asc"
+        ? new Date(a.requestDate) - new Date(b.requestDate)
+        : new Date(b.requestDate) - new Date(a.requestDate)
+    );
+
   return (
     <div className="col-12">
       <h1 className="text-center mt-3">Admin Inventory Dashboard</h1>
       {/* Tabs Navigation */}
       <div className="mb-4">
-  <ul className="nav nav-tabs">
-    <li className="nav-item">
-      <button
-        className="nav-link"
-        style={{
-          color: activeAdminTab === "inventoryAdded" ? "#236a80" : "black",
-          fontWeight: activeAdminTab === "inventoryAdded" ? "bold" : "normal",
-        }}
-        onClick={() => setActiveAdminTab("inventoryAdded")}
-      >
-        Inventory Added
-      </button>
-    </li>
-    <li className="nav-item">
-      <button
-        className="nav-link"
-        style={{
-          color: activeAdminTab === "inventoryUsed" ? "#236a80" : "black",
-          fontWeight: activeAdminTab === "inventoryUsed" ? "bold" : "normal",
-        }}
-        onClick={() => setActiveAdminTab("inventoryUsed")}
-      >
-        Inventory Used
-      </button>
-    </li>
-    <li className="nav-item">
-      <button
-        className="nav-link"
-        style={{
-          color: activeAdminTab === "requests" ? "#236a80" : "black",
-          fontWeight: activeAdminTab === "requests" ? "bold" : "normal",
-        }}
-        onClick={() => setActiveAdminTab("requests")}
-      >
-        Requests
-      </button>
-    </li>
-  </ul>
+        <ul className="nav nav-tabs">
+          <li className="nav-item">
+            <button
+              className="nav-link"
+              style={{
+                color: activeAdminTab === "inventoryAdded" ? "#236a80" : "black",
+                fontWeight:
+                  activeAdminTab === "inventoryAdded" ? "bold" : "normal",
+              }}
+              onClick={() => setActiveAdminTab("inventoryAdded")}
+            >
+              Inventory Added
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className="nav-link"
+              style={{
+                color: activeAdminTab === "inventoryUsed" ? "#236a80" : "black",
+                fontWeight:
+                  activeAdminTab === "inventoryUsed" ? "bold" : "normal",
+              }}
+              onClick={() => setActiveAdminTab("inventoryUsed")}
+            >
+              Inventory Used
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className="nav-link"
+              style={{
+                color: activeAdminTab === "requests" ? "#236a80" : "black",
+                fontWeight: activeAdminTab === "requests" ? "bold" : "normal",
+              }}
+              onClick={() => setActiveAdminTab("requests")}
+            >
+              Requests
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      {/* Global Search Bar */}
+      <div style={{ margin: "1rem 0", position: "relative", width: "20%" }}>
+  <i
+    className="fa-solid fa-magnifying-glass"
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "10px",
+      transform: "translateY(-50%)",
+      color: "#aaa"
+    }}
+  ></i>
+  <input
+    type="text"
+    placeholder="Search by username..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    style={{
+      padding: "0.5rem 0.5rem 0.5rem 2.5rem", // add left padding for the icon
+      width: "100%",
+      borderRadius: "20px",
+      border: "1px solid #ccc"
+    }}
+  />
 </div>
+
 
       {/* Inventory Added Tab */}
       {activeAdminTab === "inventoryAdded" && (
@@ -183,18 +252,26 @@ const handleUpdateRequest = (id, status) => {
           ) : errorAdded ? (
             <p>Error: {errorAdded}</p>
           ) : (
-            <table className="table table-bordered" style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+            <table
+              className="table table-bordered"
+              style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
+            >
               <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
                 <tr>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>SKU</th>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Username</th>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Action</th>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Quantity</th>
-                  <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Date</th>
+                  <th
+                    style={{ cursor: "pointer",backgroundColor: "#236a80", color: "#fff" }}
+                    onClick={toggleSort}
+                  >
+                    Date {dateSortOrder === "asc" ? "▲" : "▼"}
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {inventoryAddedData.map((item, index) => (
+                {filteredInventoryAddedData.map((item, index) => (
                   <tr key={index}>
                     <td>{item.skuName}</td>
                     <td>{item.userName}</td>
@@ -218,19 +295,27 @@ const handleUpdateRequest = (id, status) => {
           ) : errorUsed ? (
             <p>Error: {errorUsed}</p>
           ) : (
-            <table className="table table-bordered" style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+            <table
+              className="table table-bordered"
+              style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
+            >
               <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
                 <tr>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>SKU</th>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Username</th>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Quantity Used</th>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Left Quantity</th>
-                  <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Date</th>
+                  <th
+                    style={{ cursor: "pointer" , backgroundColor: "#236a80", color: "#fff"}}
+                    onClick={toggleSort}
+                  >
+                    Date {dateSortOrder === "asc" ? "▲" : "▼"}
+                  </th>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Notes</th>
                 </tr>
               </thead>
               <tbody>
-                {usageLogs.map((log, index) => (
+                {filteredUsageLogs.map((log, index) => (
                   <tr key={index}>
                     <td>{log.skuName}</td>
                     <td>{log.userName}</td>
@@ -257,57 +342,70 @@ const handleUpdateRequest = (id, status) => {
           ) : errorRequests ? (
             <p>Error: {errorRequests}</p>
           ) : (
-            <table className="table table-bordered" style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+            <table
+              className="table table-bordered"
+              style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
+            >
               <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
                 <tr>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>SKU</th>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Username</th>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Requested Quantity</th>
-                  <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Status</th>
-                  <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Request Date</th>
+                  <th  style={{ backgroundColor: "#236a80", color: "#fff" }} >Status</th>
+                  <th
+                    style={{ cursor: "pointer",backgroundColor: "#236a80", color: "#fff" }}
+                    onClick={toggleSort}
+                  >
+                    Request Date {dateSortOrder === "asc" ? "▲" : "▼"}
+                  </th>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Reason</th>
                   <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-  {requestLogs.map((req) => (
-    <tr key={req._id}>
-      <td>{req.skuName}</td>
-      <td>{req.userName}</td>
-      <td>{req.quantityRequested}</td>
-      <td
-        style={{
-          color:
-            req.status === "Approved"
-              ? "green"
-              : req.status === "Denied"
-              ? "red"
-              : "orange",
-          fontWeight: "bold",
-        }}
-      >
-        {req.status}
-      </td>
-      <td>{new Date(req.requestDate).toLocaleDateString()}</td>
-      <td>{req.reason}</td>
-      <td>
-        <button
-          onClick={() => handleUpdateRequest(req._id, "Approved")}
-          className="btn btn-success btn-sm me-2"
-        >
-          Approve
-        </button>
-        <button
-          onClick={() => handleUpdateRequest(req._id, "Denied")}
-          className="btn btn-danger btn-sm"
-        >
-          Deny
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
-
+                {filteredRequestLogs.map((req) => (
+                  <tr key={req._id}>
+                    <td>{req.skuName}</td>
+                    <td>{req.userName}</td>
+                    <td>{req.quantityRequested}</td>
+                    <td
+                      style={{
+                        color:
+                          req.status === "Approved"
+                            ? "green"
+                            : req.status === "Denied"
+                            ? "red"
+                            : "orange",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {req.status}
+                    </td>
+                    <td>
+                      {new Date(req.requestDate).toLocaleDateString()}
+                    </td>
+                    <td>{req.reason}</td>
+                    <td>
+                      <button
+                        onClick={() =>
+                          handleUpdateRequest(req._id, "Approved")
+                        }
+                        className="btn btn-success btn-sm me-2"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleUpdateRequest(req._id, "Denied")
+                        }
+                        className="btn btn-danger btn-sm"
+                      >
+                        Deny
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           )}
         </div>

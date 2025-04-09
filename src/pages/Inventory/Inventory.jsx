@@ -9,6 +9,7 @@ import { API_URL } from "../../utils/apiConfig";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AdminDashboard from "./AdminDashboard";
+import HeaderSim from "../Header/HeaderSim";
 
 // RequestHistory component for non-admin users
 const RequestHistory = () => {
@@ -547,7 +548,7 @@ const handleRequestInventory = (e) => {
         <div className="col-lg-9 col-12">
           <div className="row">
             <div className="col-12">
-              <Header />
+              <HeaderSim />
             </div>
             <div className={`col-12 ${userType === "user" ? "mt-5" : ""}`}>
               <Maindashboard />

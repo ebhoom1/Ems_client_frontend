@@ -163,7 +163,7 @@ function DashboardSam() {
           
               <li className='list active text-center'>
                 <a href="/live-station" style={{ textDecoration: 'none', color: '#ffffff' }}>
-                  <span className='title'>Live Station</span>
+                  <span className='title'>Digital Twin</span>
                 </a>
               </li>
               <li className='list active text-center'>
@@ -199,7 +199,7 @@ function DashboardSam() {
               </li>
               <li className='list active text-center'>
                 <a href="/live-station" style={{ textDecoration: 'none', color: '#ffffff' }}>
-                  <span className='title'>Live Station</span>
+                  <span className='title'>Digital Twin</span>
                 </a>
               </li>
               <li className='list active text-center'>

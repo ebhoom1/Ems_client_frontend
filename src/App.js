@@ -133,8 +133,8 @@ function App() {
           <NotificationProvider>
          
             <Routes>
-            <Route path="/" element={<LogTest />} />
-                <Route path="/login" element={<LoginNew />} />
+            <Route path="/" element={<LoginNew />} />
+                <Route path="/login" element={<LogTest />} />
                 <Route path="/reset-password" element={<Reset />} />
                 <Route path="/reset" element={<ResetEmail />} />
                 <Route path='/download-data' element={<Download/>}></Route>

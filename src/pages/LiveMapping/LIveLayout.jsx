@@ -127,7 +127,7 @@ function LIveLayout() {
               <div className="row" style={{ overflowX: "hidden" }}>
                 <div className="col-12 col-md-12 grid-margin">
                   <div className="col-12 d-flex align-items-center justify-content-center m-2">
-                    <h1 className="text-center mt-3">Live Station Mapping</h1>
+                    <h1 className="text-center mt-3">Digital Twin</h1>
                   </div>
                   {/* Stations List Table displayed in a box */}
                   <div className="mb-3">

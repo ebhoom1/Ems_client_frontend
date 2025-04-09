@@ -15,6 +15,8 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Dropdown } from "react-bootstrap";
 import moment from 'moment';
+import Carbon from "./Carbon";
+import ConsumptionEmissionDashboard from "./Carbon";
 
 // Initialize Socket.IO
 const socket = io(API_URL, { 
@@ -591,70 +593,14 @@ console.log("Monthly Process Value (STP softener outlet + STP uf outlet + STP ac
         
        </div>
 
-       <ul
-  className="d-flex align-items-center justify-content-between"
-  style={{ listStyleType: 'none', padding: 0, margin: 0 }}
->
-  <li>
-   <Dropdown>
-   {effluentFlowStacks.length > 0 ? (
-      <div className="stack-dropdown">
        
-        <div className="styled-select-wrapper">
-          <select
-            id="stackSelect"
-            className="form-select styled-select"
-            value={selectedStack}
-            onChange={handleStackChange}
-          >
-            <option value="all">All Stacks</option>
-            {effluentFlowStacks.map((stackName, index) => (
-              <option key={index} value={stackName || "Unknown"}>
-                {stackName || "Unknown Station"}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-    ) : (
-      <h5 className="text-center">No stations available</h5>
-    )}
-   </Dropdown>
-  </li>
-  <li>
-  {/*   <Dropdown>
-    {effluentFlowStacks.length > 0 && (
-      <div className="stack-dropdown">
-        <label htmlFor="primaryStationSelect" className="label-select">Set Primary Station:</label>
-        <div className="styled-select-wrapper">
-          <select
-            id="primaryStationSelect"
-            className="form-select styled-select"
-            value={primaryStation}
-            onChange={(e) => handleSetPrimaryStation(e.target.value)} // Call your handler function
-          >
-            <option value="" disabled>
-              Select Primary Station
-            </option>
-            {effluentFlowStacks.map((stackName, index) => (
-              <option key={index} value={stackName}>
-                {stackName}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-    )}
-    </Dropdown> */}
-  </li>
-</ul>
              
-        <div className="row align-items-center mb-5" style={{marginTop:'-100px'}}>
+        <div className="row align-items-center mb-2" style={{marginTop:'-100px'}}>
         <div className="col-md-4">
  {/*   */}
 </div>
           <div className="">
-     <div className="" style={{marginTop:'150px'}}>
+     <div className="" style={{marginTop:'110px'}}>
        {/*  <FlowConsuptionCards
           userName={currentUserName}
           primaryStation={primaryStation}
@@ -697,7 +643,7 @@ console.log("Monthly Process Value (STP softener outlet + STP uf outlet + STP ac
 {/* Monthly balancing */}
 <div>
   <div>
-    <h3 className="text-center">Water Balancing</h3>
+    <h5 className="text-center"><b>Water Balancing</b></h5>
   </div>
   <div className="row mb-4 mt-4 gap-4 d-flex align-items-center justify-content-center">
     <div
@@ -794,13 +740,71 @@ console.log("Monthly Process Value (STP softener outlet + STP uf outlet + STP ac
         </div>
       </div>
     </div>
+    
   </div>
 </div> 
+<ConsumptionEmissionDashboard  />
 
 
 
 
-
+<ul
+  className="d-flex align-items-center justify-content-end mb-4"
+  style={{ listStyleType: 'none', padding: 0, margin: 0 }}
+>
+  <li>
+   <Dropdown>
+   {effluentFlowStacks.length > 0 ? (
+      <div className="stack-dropdown">
+       
+        <div className="styled-select-wrapper">
+          <select
+            id="stackSelect"
+            className="form-select styled-select"
+            value={selectedStack}
+            onChange={handleStackChange}
+          >
+            <option value="all">All Stacks</option>
+            {effluentFlowStacks.map((stackName, index) => (
+              <option key={index} value={stackName || "Unknown"}>
+                {stackName || "Unknown Station"}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    ) : (
+      <h5 className="text-center">No stations available</h5>
+    )}
+   </Dropdown>
+  </li>
+  <li>
+  {/*   <Dropdown>
+    {effluentFlowStacks.length > 0 && (
+      <div className="stack-dropdown">
+        <label htmlFor="primaryStationSelect" className="label-select">Set Primary Station:</label>
+        <div className="styled-select-wrapper">
+          <select
+            id="primaryStationSelect"
+            className="form-select styled-select"
+            value={primaryStation}
+            onChange={(e) => handleSetPrimaryStation(e.target.value)} // Call your handler function
+          >
+            <option value="" disabled>
+              Select Primary Station
+            </option>
+            {effluentFlowStacks.map((stackName, index) => (
+              <option key={index} value={stackName}>
+                {stackName}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    )}
+    </Dropdown> */}
+  </li>
+</ul>
         {loading && (
                 <div className="spinner-container">
                     <Oval

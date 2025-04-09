@@ -6,7 +6,6 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import logo from '../../assests/images/ebhoom.png';
 import { useNavigate } from 'react-router-dom';
-import FooterM from '../FooterMain/FooterM';
 
 const Download = () => {
     const [dateFrom, setDateFrom] = useState("");
@@ -101,17 +100,16 @@ const Download = () => {
             <div className="row" style={{ overflowX: 'hidden' }}>
                 <div className="col-12 grid-margin">
                     <div className="col-12 d-flex justify-content-between align-items-center m-3 p-5">
-                        <img src={logo} alt="Ebhoom Logo" />
                         <button className="btn" onClick={handleHome} style={{ backgroundColor: 'white' }}>Home</button>
                     </div>
                     <h1 className="text-center mt-5">Download IoT Data</h1>
-                    <div className="card ms-2 me-2">
+                    <div className=" ms-2 me-2">
                         <div className="card-body">
                             <form className="p-5" onSubmit={handleDownload}>
                                 <div className="row">
                                     <div className="col-lg-6 mb-4">
                                         <label>Select Company</label>
-                                        <select className="input-field" onChange={handleUserChange} style={{ width: '100%', padding: '15px', borderRadius: '10px' }}>
+                                        <select className="input-field" onChange={handleUserChange} style={{ width: '100%', padding: '15px', borderRadius: '10px'  , borderColor:'#236a80', borderWidth:'2px' }}>
                                             <option value="">Select</option>
                                             {users.map(user => (
                                                 <option key={user.userName} value={user.userName}>
@@ -128,7 +126,7 @@ const Download = () => {
                                             value={stackName}
                                             onChange={(e) => setStackName(e.target.value)}
                                             disabled={!stackOptions.length}
-                                            style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+                                            style={{ width: '100%', padding: '15px', borderRadius: '10px' , borderColor:'#236a80', borderWidth:'2px'}}
                                         >
                                             <option value="">Select</option>
                                             {stackOptions.map(stack => (
@@ -148,7 +146,7 @@ const Download = () => {
                                             onChange={(e) => setDateFrom(e.target.value)}
                                             min={subscriptionDate}
                                             disabled={!subscriptionDate}
-                                            style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+                                            style={{ width: '100%', padding: '15px', borderRadius: '10px' , borderColor:'#236a80', borderWidth:'2px' }}
                                         />
                                         {subscriptionDate && (
                                             <small style={{ color: 'red' }}>Available from: {moment(subscriptionDate).format('DD-MM-YYYY')}</small>
@@ -162,7 +160,7 @@ const Download = () => {
                                             className="input-field"
                                             value={dateTo}
                                             onChange={(e) => setDateTo(e.target.value)}
-                                            style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+                                            style={{ width: '100%', padding: '15px', borderRadius: '10px'  , borderColor:'#236a80', borderWidth:'2px'}}
                                         />
                                     </div>
 
@@ -172,7 +170,7 @@ const Download = () => {
                                             className="input-field"
                                             value={format}
                                             onChange={(e) => setFormat(e.target.value)}
-                                            style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+                                            style={{ width: '100%', padding: '15px', borderRadius: '10px'  , borderColor:'#236a80', borderWidth:'2px'}}
                                         >
                                             <option value="csv">CSV</option>
                                             <option value="pdf">PDF</option>
@@ -191,7 +189,7 @@ const Download = () => {
                     </div>
                 </div>
             </div>
-            <FooterM />
+           
         </div>
     );
 };
