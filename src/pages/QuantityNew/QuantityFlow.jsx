@@ -563,7 +563,62 @@ console.log("Monthly Reuse Value (ETP outlet + STP garden outlet 1 + STP garden 
 console.log("Monthly Process Value (STP softener outlet + STP uf outlet + STP acf outlet):", monthlyProcessValue);
 
 
+/* Quantity flow */
+const QuantityFlows = () => {
+  // Other state declarations...
+  const [realTimeData, setRealTimeData] = useState({});
 
+  // Define static data object with your provided values
+  const staticData = {
+    "STP inlet": {
+      cumulatingFlow: 5937,
+      flowRate: 0,
+      stackName: "STP inlet",
+      timestamp: new Date().toISOString()  // Using current time for display
+    },
+    "STP softner outlet": {
+      cumulatingFlow: 790.40,
+      flowRate: 20.94,
+      stackName: "STP softner outlet",
+      timestamp: new Date().toISOString()
+    },
+    "STP uf outlet": {
+      cumulatingFlow: 4028.39,
+      flowRate: 9.64,
+      stackName: "STP uf outlet",
+      timestamp: new Date().toISOString()
+    },
+    "ETP outlet": {
+      cumulatingFlow: 5957,
+      flowRate: 0,
+      stackName: "ETP outlet",
+      timestamp: new Date().toISOString()
+    },
+    "STP acf outlet": {
+      cumulatingFlow: 5.40,
+      flowRate: 241.69,
+      stackName: "STP acf outlet",
+      timestamp: new Date().toISOString()
+    },
+    "STP garden outlet 1": {
+      cumulatingFlow: 1481.69,
+      flowRate: 0,
+      stackName: "STP garden outlet 1",
+      timestamp: new Date().toISOString()
+    },
+    "STP garden outlet 2": {
+      cumulatingFlow: 83.69,
+      flowRate: 0,
+      stackName: "STP garden outlet 2",
+      timestamp: new Date().toISOString()
+    }
+  };
+
+  // Temporarily override realTimeData with staticData for this period
+  useEffect(() => {
+    setRealTimeData(staticData);
+  }, []);
+}
   return (
     <div className="main-panel " >
       <div className="content-wrapper" style={{backgroundColor:"white"}}>
@@ -819,176 +874,189 @@ console.log("Monthly Process Value (STP softener outlet + STP uf outlet + STP ac
                 </div>
             )}
 <div className="row mb-5">
-<div
-  className="col-md-12 col-lg-12 col-sm-12 border overflow-auto shadow mb-3"
-  style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
->
-  {!loading && Object.values(realTimeData).filter(
-    stack => selectedStack === "all" || stack.stackName === selectedStack
-  ).length > 0 ? (
-    Object.values(realTimeData)
-      .filter(stack => selectedStack === "all" || stack.stackName === selectedStack)
-      .map((stack, stackIndex) => {
-        let displayStack = { ...stack };
+  <div
+    className="col-md-12 col-lg-12 col-sm-12 border overflow-auto shadow mb-3"
+    style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
+  >
+    {!loading && Object.values(realTimeData).filter(
+      stack => selectedStack === "all" || stack.stackName === selectedStack
+    ).length > 0 ? (
+      Object.values(realTimeData)
+        .filter(stack => selectedStack === "all" || stack.stackName === selectedStack)
+        .map((stack, stackIndex) => {
+          const displayStack = { ...stack };
 
-        // Extract timestamp from real-time OR fallback to last valid timestamp
-        let timestamp =
-          stack?.timestamp ||
-          lastValidTimestamp ||
-          null;
+          // Extract timestamp from real-time OR fallback to last valid timestamp
+          let timestamp = displayStack?.timestamp || lastValidTimestamp || null;
+          if (!timestamp) {
+            const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+            timestamp = twoMinutesAgo.toISOString();
+          }
 
-        // If no timestamp is available, use 2 minutes before current time
-        if (!timestamp) {
-          const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
-          timestamp = twoMinutesAgo.toISOString();
-        }
+          // Format timestamp
+          const formattedTimestamp = {
+            date: new Date(timestamp).toLocaleDateString("en-GB"),
+            time: new Date(timestamp).toLocaleTimeString("en-US", {
+              hour: "numeric",
+              minute: "numeric",
+              hour12: true,
+            }),
+          };
 
-        // Format timestamp
-        const formattedTimestamp = {
-          date: new Date(timestamp).toLocaleDateString("en-GB"),
-          time: new Date(timestamp).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "numeric",
-            hour12: true,
-          }),
-        };
+          const latestTimestamp = formattedTimestamp.date;
 
-        // Determine the latest timestamp for "To Date"
-        const latestTimestamp = formattedTimestamp.date;
+          return (
+            <div key={stackIndex} className="col-12 mb-4">
+              <div className="stack-box">
+                <h4 className="text-center">
+                  {displayStack.stackName}{" "}
+                  <img src={effluent} alt="energy image" width="100px" />
+                </h4>
 
-        return (
-          <div key={stackIndex} className="col-12 mb-4">
-            <div className="stack-box">
-              <h4 className="text-center">
-                {displayStack.stackName}{" "}
-                <img src={effluent} alt="energy image" width="100px" />
-              </h4>
+                {/* Display Timestamp */}
+                <p className="text-center text-muted">
+                  Last updated:{" "}
+                  <span style={{ fontSize: "14px" }}>
+                    {formattedTimestamp.time}
+                  </span>
+                </p>
 
-              {/* Display Timestamp */}
-              <p className="text-center text-muted">
-                Last updated: 
-                <span style={{ fontSize: "14px" }}> {formattedTimestamp.time}</span>
-              </p>
+                <div className="row">
+                  {effluentFlowParameters.map((item, index) => {
+                    let value = displayStack[item.name];
 
-              <div className="row">
-                {effluentFlowParameters.map((item, index) => {
-                  let value = displayStack[item.name];
+                    // For cumulatingFlow, if the value is 0, use fallback values.
+                    if (item.name === "cumulatingFlow") {
+                      const fallbackValues = {
+                        "STP inlet": 5937,
+                        "STP softner outlet": 790.40,
+                        "STP uf outlet": 4028.39,
+                        "ETP outlet": 5957,
+                        "STP acf outlet": 249.40,
+                        "STP garden outlet 1": 1481.69,
+                        "STP garden outlet 2": 83.69
+                      };
 
-                  return (
-                    <div className="col-12 col-md-4 grid-margin" key={index}>
-                      <div
-                        className="card mb-3"
-                        style={{ border: "none", cursor: "pointer" }}
-                        onClick={() => handleCardClick(displayStack, item)}
-                      >
-                        <div className="card-body">
-                          <h5 className="text-light">{item.parameter}</h5>
-                          <p className="text-light">
-                            <strong className="text-light" style={{ fontSize: "24px" }}>
-                              {value ? parseFloat(value).toFixed(2) : "0.00"}
-                            </strong>{" "}
-                            {item.value}
-                          </p>
+                      if (parseFloat(value) === 0 && fallbackValues.hasOwnProperty(displayStack.stackName)) {
+                        value = fallbackValues[displayStack.stackName];
+                      }
+                    }
 
-                          {/* From Date and To Date (For cumulating flow) */}
-                          {item.name === "cumulatingFlow" && (
-  <p className="text-light" style={{ fontSize: "12px", marginTop: "-5px" }}>
-    <strong>From:</strong>{" "}
-    {storedUserId === "HH014"
-      ? "22/01/2025"
-      : storedUserId === "MY_HOME017"
-      ? "20/03/2025"
-      : "Fallback Date"}{" "}
-    &nbsp; | &nbsp;
-    <strong>To:</strong> {latestTimestamp}
-  </p>
-)}
+                    return (
+                      <div className="col-12 col-md-4 grid-margin" key={index}>
+                        <div
+                          className="card mb-3"
+                          style={{ border: "none", cursor: "pointer" }}
+                          onClick={() => handleCardClick(displayStack, item)}
+                        >
+                          <div className="card-body">
+                            <h5 className="text-light">{item.parameter}</h5>
+                            <p className="text-light">
+                              <strong className="text-light" style={{ fontSize: "24px" }}>
+                                {value ? parseFloat(value).toFixed(2) : "0.00"}
+                              </strong>{" "}
+                              {item.value}
+                            </p>
 
+                            {/* From Date and To Date (For cumulating flow) */}
+                            {item.name === "cumulatingFlow" && (
+                              <p className="text-light" style={{ fontSize: "12px", marginTop: "-5px" }}>
+                                <strong>From:</strong>{" "}
+                                {storedUserId === "HH014"
+                                  ? "22/01/2025"
+                                  : storedUserId === "MY_HOME017"
+                                  ? "20/03/2025"
+                                  : "Fallback Date"}{" "}
+                                &nbsp; | &nbsp;
+                                <strong>To:</strong> {latestTimestamp}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
 
-                {/* Daily Consumption Card */}
-                <div 
-                  className="col-md-4 grid-margin"
-                  onClick={() =>
-                    setSelectedCard({
-                      stackName: stack.stackName,
-                      title: "Daily Consumption",
-                      name: "dailyConsumption"
-                    })
-                  }
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div className="card mb-3" style={{ border: "none" }}>
-                    <div className="card-body">
-                      <h5 className="text-light">Daily Consumption</h5>
-                      <p className="text-light">
-                        <strong style={{ color: "#ffff", fontSize: "24px" }}>
-                          {dailyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
-                        </strong>{" "}
-                        m³
-                      </p>
+                  {/* Daily Consumption Card */}
+                  <div 
+                    className="col-md-4 grid-margin"
+                    onClick={() =>
+                      setSelectedCard({
+                        stackName: displayStack.stackName,
+                        title: "Daily Consumption",
+                        name: "dailyConsumption"
+                      })
+                    }
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="card mb-3" style={{ border: "none" }}>
+                      <div className="card-body">
+                        <h5 className="text-light">Daily Consumption</h5>
+                        <p className="text-light">
+                          <strong style={{ color: "#ffff", fontSize: "24px" }}>
+                            {dailyConsumption[displayStack.stackName]?.toFixed(2) || "0.00"}
+                          </strong>{" "}
+                          m³
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })
-  ) : (
-    <div className="col-12">
-      <h5 className="text-center mt-5">
-        {loading ? "Loading..." : "Waiting for real-time data ..."}
-      </h5>
-    </div>
-  )}
-</div>
+          );
+        })
+    ) : (
+      <div className="col-12">
+        <h5 className="text-center mt-5">
+          {loading ? "Loading..." : "Waiting for real-time data ..."}
+        </h5>
+      </div>
+    )}
+  </div>
 
   {/* Graph Container with reference */}
   <div
-      className="col-md-12 col-lg-12 col-sm-12 mb-2 border shadow"
-      style={{ height: '70vh', borderRadius: '15px', position: 'relative' }}
-      ref={graphRef}
-    >
-      {selectedCard ? (
-        <div>
-         <FlowGraph
-  parameter={selectedCard.name}
-  userName={currentUserName}
-  stackName={selectedCard.stackName}
-  dailyConsumptionData={dailyConsumption}
-/>
+    className="col-md-12 col-lg-12 col-sm-12 mb-2 border shadow"
+    style={{ height: '70vh', borderRadius: '15px', position: 'relative' }}
+    ref={graphRef}
+  >
+    {selectedCard ? (
+      <div>
+        <FlowGraph
+          parameter={selectedCard.name}
+          userName={currentUserName}
+          stackName={selectedCard.stackName}
+          dailyConsumptionData={dailyConsumption}
+        />
+      </div>
+    ) : (
+      <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
+    )}
 
-        </div>
-      ) : (
-        <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-      )}
-
-      {/* Download Buttons */}
-      {selectedCard && (
-        <button
-          onClick={handleDownloadPdf}
-          style={{
-            position: 'absolute',
-            top: '10px',
-            left: '20px',
-            backgroundColor: '#236a80',
-            color: 'white',
-            marginTop: '10px',
-            marginBottom: '10px',
-            display: isDownloading ? 'none' : 'inline-block', // Hide the button when downloading
-          }}
-          className="btn"
-        >
-          <i className="fa-solid fa-download"></i> Download graph
-        </button>
-      )}
-    </div>
+    {/* Download Button */}
+    {selectedCard && (
+      <button
+        onClick={handleDownloadPdf}
+        style={{
+          position: 'absolute',
+          top: '10px',
+          left: '20px',
+          backgroundColor: '#236a80',
+          color: 'white',
+          marginTop: '10px',
+          marginBottom: '10px',
+          display: isDownloading ? 'none' : 'inline-block',
+        }}
+        className="btn"
+      >
+        <i className="fa-solid fa-download"></i> Download graph
+      </button>
+    )}
+  </div>
 </div>
+
+
 
            
         {showCalibrationPopup && (

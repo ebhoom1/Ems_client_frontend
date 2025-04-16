@@ -27,7 +27,7 @@ import MonthlyEnergyData from "./MonthlyEnergyData";
 const socket = io(API_URL, { 
   transports: ['websocket'], 
   reconnectionAttempts: 5,
-  reconnectionDelay: 1000, // Retry every second
+  reconnectionDelay: 1000,
 });
 
 socket.on('connect', () => console.log('Connected to Socket.IO server'));
@@ -76,6 +76,13 @@ const EnergyFlow = () => {
   const closeModal = () => {
     setIsModalOpen(false);
   };
+
+  // Calculate total carbon emission based on real-time energy values
+  // Formula: carbon emission = energy * 0.709
+  const totalCarbonEmission = Object.values(realTimeData).reduce((acc, stack) => {
+    const energyValue = parseFloat(stack?.energy) || 0;
+    return acc + energyValue * 0.709;
+  }, 0);
 
   // Fetch stack names and filter energy stationType stacks
   const fetchEnergyStacks = async (userName) => {
@@ -372,21 +379,6 @@ const EnergyFlow = () => {
     }
   };
 
-  /* const handleSetPrimaryStation = async (stationName) => {
-    try {
-      const postData = {
-        userName: currentUserName,
-        stationType: "energy",
-        stackName: stationName,
-      };
-      const response = await axios.post(`${API_URL}/api/set-primary-station`, postData);
-      console.log("Primary station set:", response.data);
-      setPrimaryStation(response.data?.data?.stackName || stationName);
-    } catch (error) {
-      console.error("Error setting primary station:", error);
-    }
-  }; */
-
   // UPDATED DAILY CONSUMPTION CALCULATION:
   // Calculate daily consumption as realTime energy (from socket/fetched data) minus today's initial energy from API.
   useEffect(() => {
@@ -427,6 +419,26 @@ const EnergyFlow = () => {
         <div className="row">
           <div className=" text-center">
             <b><h3>ENERGY DASHBOARD</h3></b>
+          </div>
+        </div>
+        {/* Carbon Emission Box */}
+        <div className="row" style={{ marginTop: '20px' }}>
+          <div className="col-12 d-flex justify-content-center">
+            <div
+            style={{
+              border: "2px dotted #236a80",
+              borderRadius: "8px",
+              padding: "10px 20px",
+              minWidth: "250px",
+              textAlign: "center"
+            }}
+            
+            >
+              <h5>Carbon Emission (kgCO2e)</h5>
+              <p style={{ fontSize: "24px", fontWeight: "bold", color: "#236a80" }}>
+                {totalCarbonEmission.toFixed(2)}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -546,21 +558,19 @@ const EnergyFlow = () => {
                           ) : null;
                         })}
                         {/* Daily Energy Consumption Card */}
-                      {/* Daily Energy Consumption Card */}
-<div className="col-md-4 grid-margin" onClick={() => handleDailyConsumptionClick(stack)}>
-  <div className="card mb-3" style={{ border: "none", cursor: "pointer" }}>
-    <div className="card-body">
-      <h5 className="text-light">Daily Energy Consumption</h5>
-      <p className="text-light">
-        <strong style={{ color: "#ffff", fontSize: "24px" }}>
-          {dailyEnergyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
-        </strong>{" "}
-        kW/hr
-      </p>
-    </div>
-  </div>
-</div>
-
+                        <div className="col-md-4 grid-margin" onClick={() => handleDailyConsumptionClick(stack)}>
+                          <div className="card mb-3" style={{ border: "none", cursor: "pointer" }}>
+                            <div className="card-body">
+                              <h5 className="text-light">Daily Energy Consumption</h5>
+                              <p className="text-light">
+                                <strong style={{ color: "#ffff", fontSize: "24px" }}>
+                                  {dailyEnergyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
+                                </strong>{" "}
+                                kW/hr
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -575,43 +585,42 @@ const EnergyFlow = () => {
 
           {/* Graph Container with reference */}
           <div
-  className="col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
-  style={{ height: '70vh', borderRadius: '15px', position: 'relative' }}
-  ref={graphRef}
->
-  {selectedCard && selectedCard.name === "dailyConsumption" ? (
-    <div>
-      <EnergyGraph
-        parameter={selectedCard.name}
-        userName={currentUserName}
-        stackName={selectedCard.stackName}
-      />
-    </div>
-  ) : (
-    <h5 className="text-center mt-5">
-      Click on the Daily Consumption to view its graph
-    </h5>
-  )}
-  {selectedCard && selectedCard.name === "dailyConsumption" && (
-    <button
-      onClick={handleDownloadPdf}
-      style={{
-        position: 'absolute',
-        top: '10px',
-        left: '20px',
-        backgroundColor: '#236a80',
-        color: 'white',
-        marginTop: '10px',
-        marginBottom: '10px',
-        display: isDownloading ? 'none' : 'inline-block',
-      }}
-      className="btn"
-    >
-      <i className="fa-solid fa-download"></i> Download graph
-    </button>
-  )}
-</div>
-
+            className="col-md-12 col-lg-12 col-sm-12 mb-2 border bg-light shadow"
+            style={{ height: '70vh', borderRadius: '15px', position: 'relative' }}
+            ref={graphRef}
+          >
+            {selectedCard && selectedCard.name === "dailyConsumption" ? (
+              <div>
+                <EnergyGraph
+                  parameter={selectedCard.name}
+                  userName={currentUserName}
+                  stackName={selectedCard.stackName}
+                />
+              </div>
+            ) : (
+              <h5 className="text-center mt-5">
+                Click on the Daily Consumption to view its graph
+              </h5>
+            )}
+            {selectedCard && selectedCard.name === "dailyConsumption" && (
+              <button
+                onClick={handleDownloadPdf}
+                style={{
+                  position: 'absolute',
+                  top: '10px',
+                  left: '20px',
+                  backgroundColor: '#236a80',
+                  color: 'white',
+                  marginTop: '10px',
+                  marginBottom: '10px',
+                  display: isDownloading ? 'none' : 'inline-block',
+                }}
+                className="btn"
+              >
+                <i className="fa-solid fa-download"></i> Download graph
+              </button>
+            )}
+          </div>
         </div>
 
         {showCalibrationPopup && (

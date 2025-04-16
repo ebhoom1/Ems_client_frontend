@@ -17,6 +17,7 @@
     "blob-polyfill": "^9.0.20240710",
     "bootstrap": "^5.3.3",
     "chart.js": "^4.4.4",
+    "date-fns": "^4.1.0",
     "html-to-image": "^1.11.11",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.2",

@@ -7,15 +7,24 @@ const ChatWindow = ({ currentChat, socket }) => {
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [loading, setLoading] = useState(false); // Loading state for fetching messages
+  const [loading, setLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  // Scroll to bottom whenever messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Fetch messages whenever a new chat is selected
   useEffect(() => {
     if (currentChat) {
-      setLoading(true); // Start loading when a new chat is selected
-      setMessages([]); // Clear messages to avoid showing previous user's messages
-      
+      setLoading(true);
+      setMessages([]);
+
+      // Optional room join, if your server uses rooms
       socket.emit('joinRoom', { userId: currentChat.userId });
 
       const fetchMessages = async () => {
@@ -27,23 +36,24 @@ const ChatWindow = ({ currentChat, socket }) => {
         } catch (error) {
           console.error('Error fetching messages:', error);
         } finally {
-          setLoading(false); // Stop loading after fetching messages
+          setLoading(false);
         }
       };
-
       fetchMessages();
     }
   }, [currentChat, socket]);
 
+  // Listen for new incoming messages on the active chat
   useEffect(() => {
     const handleNewMessage = (message) => {
+      // Only add if it belongs in this chat
       if (
         currentChat &&
         (message.from === currentChat.userId || message.to === currentChat.userId)
       ) {
         setMessages((prev) => {
+          // If we already have it (by _id), skip
           if (prev.find((msg) => msg._id === message._id)) {
-            console.log('Duplicate message ignored:', message);
             return prev;
           }
           return [...prev, message];
@@ -52,14 +62,18 @@ const ChatWindow = ({ currentChat, socket }) => {
     };
 
     socket.on('newChatMessage', handleNewMessage);
-
     return () => {
       socket.off('newChatMessage', handleNewMessage);
     };
   }, [currentChat, socket]);
 
   const sendMessage = async () => {
-    if (newMessage.trim() || selectedFiles.length > 0) {
+    if (!currentChat) return;
+    if (newMessage.trim() === "" && selectedFiles.length === 0) return;
+
+    setIsSending(true);
+
+    try {
       const formData = new FormData();
       formData.append('from', currentChat.userId);
       formData.append('to', currentChat.id);
@@ -69,35 +83,40 @@ const ChatWindow = ({ currentChat, socket }) => {
         formData.append('files', file);
       });
 
-      try {
-        const response = await axios.post(`${API_URL}/api/send`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+      const response = await axios.post(`${API_URL}/api/send`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
 
-        socket.emit('chatMessage', response.data);
-      } catch (error) {
-        console.error('Error sending message:', error);
+      // 1) Optimistically add the message so sender sees it instantly
+      //    Only if server response includes a unique _id or something we can use.
+      if (response.data._id) {
+        setMessages((prev) => [...prev, response.data]);
       }
+
+      // 2) No "socket.emit('chatMessage', ... )" to avoid duplicates — 
+      //    rely on the server's broadcast of 'newChatMessage' for the receiver.
 
       setNewMessage("");
       setSelectedFiles([]);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      setIsSending(false);
     }
   };
 
-  const handleFileShare = () => {
-    fileInputRef.current.click();
-  };
-
+  // Handle file attachments
+  const handleFileShare = () => fileInputRef.current.click();
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     setSelectedFiles((prevFiles) => [...prevFiles, ...files]);
     e.target.value = null;
   };
-
   const handleDeleteFile = (fileName) => {
     setSelectedFiles((prevFiles) => prevFiles.filter((file) => file.name !== fileName));
   };
 
+  // Render images or links for file attachments
   const renderMessageContent = (msg) => {
     if (msg.files && msg.files.length > 0) {
       return (
@@ -110,7 +129,12 @@ const ChatWindow = ({ currentChat, socket }) => {
                 src={fileUrl}
                 alt="chat-file"
                 className="chat-image"
-                style={{ maxWidth: "200px", maxHeight: "200px", margin: "5px", borderRadius: "8px" }}
+                style={{
+                  maxWidth: "200px",
+                  maxHeight: "200px",
+                  margin: "5px",
+                  borderRadius: "8px"
+                }}
               />
             ) : (
               <a
@@ -139,6 +163,7 @@ const ChatWindow = ({ currentChat, socket }) => {
           <div className="select-chat-message">Select a user to chat</div>
         )}
       </div>
+
       <div className="chat-messages">
         {loading ? (
           <div className="loading">Loading messages...</div>
@@ -146,11 +171,32 @@ const ChatWindow = ({ currentChat, socket }) => {
           messages.map((msg, index) => (
             <div
               key={index}
-              className={`message ${msg.from === currentChat.userId ? "you" : "them"}`}
+              className={`message ${
+                msg.from === currentChat.userId ? "you" : "them"
+              }`}
             >
-              <div className="content">
-                <strong>{msg.from === currentChat.userId ? "You" : currentChat.name}:</strong>
+              <div className="contentt">
+                <strong>
+                  {msg.from === currentChat.userId ? "You" : currentChat.name}:
+                </strong>{" "}
                 {renderMessageContent(msg)}
+
+                {msg.createdAt && (
+                  <div
+                    className="message-timestamp"
+                    style={{
+                      fontSize: "0.8em",
+                      marginTop: "5px",
+                      color: "#888",
+                      textAlign: "right"
+                    }}
+                  >
+                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           ))
@@ -160,12 +206,16 @@ const ChatWindow = ({ currentChat, socket }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="file-preview-section" >
-        {selectedFiles.length > 0 && (
+      {/* File preview UI */}
+      {selectedFiles.length > 0 && (
+        <div className="file-preview-section">
           <div className="file-preview">
             {selectedFiles.map((file, index) => (
               <div key={index} className="file-preview-item">
-                <FaTrash onClick={() => handleDeleteFile(file.name)} />
+                <FaTrash
+                  onClick={() => handleDeleteFile(file.name)}
+                  style={{ cursor: 'pointer' }}
+                />
                 {file.name}
               </div>
             ))}
@@ -173,9 +223,10 @@ const ChatWindow = ({ currentChat, socket }) => {
               <FaPaperPlane /> Send Message
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
+      {/* Message Input at the Bottom */}
       {currentChat && (
         <div className="chat-input-box">
           <input
@@ -185,8 +236,22 @@ const ChatWindow = ({ currentChat, socket }) => {
             onChange={(e) => setNewMessage(e.target.value)}
             className="chat-input"
           />
-          <FaPaperclip className="share-icon" onClick={handleFileShare} title="Share a file" />
-          <FaPaperPlane className="send-icon" onClick={sendMessage} title="Send message" />
+          <FaPaperclip
+            className="share-icon"
+            onClick={handleFileShare}
+            title="Share a file"
+          />
+          <FaPaperPlane
+            className="send-icon"
+            onClick={() => {
+              if (!isSending) sendMessage();
+            }}
+            title="Send message"
+            style={{
+              opacity: isSending ? 0.5 : 1,
+              cursor: isSending ? "not-allowed" : "pointer"
+            }}
+          />
           <input
             type="file"
             ref={fileInputRef}
