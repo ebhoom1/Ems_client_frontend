@@ -1,5 +1,5 @@
 // Inventory.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import Maindashboard from "../Maindashboard/Maindashboard";
 import Header from "../Header/Hedaer";
@@ -100,6 +100,115 @@ const RequestHistory = () => {
     </div>
   );
 };
+const InventoryList = () => {
+  const { userData } = useSelector((state) => state.user);
+  const [inventoryData, setInventoryData] = useState([]);
+  const [loadingInventory, setLoadingInventory] = useState(false);
+  const [errorInventory, setErrorInventory] = useState(null);
+  const [dateSortOrder, setDateSortOrder] = useState("asc");
+
+  useEffect(() => {
+    const fetchInventory = async () => {
+      setLoadingInventory(true);
+      try {
+        let url;
+        // For admin users, use the general inventory API.
+        // For regular users, use the user-specific endpoint.
+        if (userData?.validUserOne?.userType === "admin") {
+          url = `${API_URL}/api/inventory/get`;
+        } else {
+          url = `${API_URL}/api/user?userName=${userData?.validUserOne?.userName}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log("Inventory API response:", data); // For debugging
+
+        if (response.ok) {
+          let inventory = [];
+          // Assuming both endpoints return an object with key "inventoryItems" containing the array.
+          // If the response is an array directly, then use that instead.
+          if (data.inventoryItems && Array.isArray(data.inventoryItems)) {
+            inventory = data.inventoryItems;
+          } else if (Array.isArray(data)) {
+            inventory = data;
+          }
+          setInventoryData(inventory);
+        } else {
+          setErrorInventory(data.message || "Failed to fetch inventory");
+        }
+      } catch (err) {
+        setErrorInventory(err.message || "Error fetching inventory");
+      } finally {
+        setLoadingInventory(false);
+      }
+    };
+
+    // Only fetch if a username exists
+    if (userData?.validUserOne?.userName) {
+      fetchInventory();
+    }
+  }, [userData]);
+
+  // Toggle the sort order based on the date field
+  const toggleSort = () => {
+    const newOrder = dateSortOrder === "asc" ? "desc" : "asc";
+    setDateSortOrder(newOrder);
+    const sortedData = [...inventoryData].sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return newOrder === "asc" ? dateA - dateB : dateB - dateA;
+    });
+    setInventoryData(sortedData);
+  };
+
+  return (
+    <div className="col-12">
+      <h1 className="text-center mt-3">Inventory List</h1>
+      {loadingInventory ? (
+        <p>Loading...</p>
+      ) : errorInventory ? (
+        <p>Error: {errorInventory}</p>
+      ) : (
+        <table
+          className="table table-bordered"
+          style={{ boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
+        >
+          <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
+            <tr>
+              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>SKU</th>
+              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Username</th>
+              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Action</th>
+              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Quantity</th>
+              <th
+                style={{
+                  cursor: "pointer",
+                  backgroundColor: "#236a80",
+                  color: "#fff",
+                }}
+                onClick={toggleSort}
+              >
+                Date {dateSortOrder === "asc" ? "▲" : "▼"}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {inventoryData.map((item, index) => (
+              <tr key={index}>
+                <td>{item.skuName}</td>
+                <td>{item.userName}</td>
+                <td>Added</td>
+                <td>{item.quantity}</td>
+                <td>{new Date(item.date).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+};
+
 
 const Inventory = () => {
   const { userData } = useSelector((state) => state.user);
@@ -154,6 +263,15 @@ const Inventory = () => {
             </li>
             <li className="nav-item">
               <button
+                style={activeTab === "addedlist" ? { color: "#236a80", fontWeight: "bold" } : { color: "black" }}
+                className={`nav-link ${activeTab === "addedlist" ? "active" : ""}`}
+                onClick={() => setActiveTab("addedlist")}
+              >
+                Added Inventory List
+              </button>
+            </li>
+            <li className="nav-item">
+              <button
                 style={activeTab === "request" ? { color: "#236a80", fontWeight: "bold" } : { color: "black" }}
                 className={`nav-link ${activeTab === "request" ? "active" : ""}`}
                 onClick={() => setActiveTab("request")}
@@ -183,6 +301,7 @@ const Inventory = () => {
     } else {
       if (activeTab === "add") return renderAddInventory();
       if (activeTab === "use") return renderUseInventory();
+      if (activeTab === "addedlist") return <InventoryList />;
       if (activeTab === "request") return renderRequestInventory();
       if (activeTab === "requestHistory") return <RequestHistory />;
     }
