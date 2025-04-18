@@ -4,36 +4,41 @@ import { API_URL } from "../../utils/apiConfig";
 import { Html5QrcodeScanner } from "html5-qrcode";
 
 const ReportFault = ({ onFaultReported, defaultUsername }) => {
+  // Verify API_URL on component mount
+  useEffect(() => {
+    console.log('API_URL:', API_URL);
+  }, []);
+
   const [scanning, setScanning] = useState(false);
   const [equipmentId, setEquipmentId] = useState("");
   const [equipmentName, setEquipmentName] = useState("");
   const [userName, setUsername] = useState(defaultUsername);
   const [faultDescription, setFaultDescription] = useState("");
   const [reportedDate, setReportedDate] = useState("");
-  
-  // Photo capture state
+
+  // Multi-photo capture state
   const [capturingPhoto, setCapturingPhoto] = useState(false);
-  const [photoData, setPhotoData] = useState("");   // base64 image
+  const [photos, setPhotos] = useState([]);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  let streamRef = useRef(null);
+  const streamRef = useRef(null);
 
   // QR scan callback
   const handleScanResult = async (decodedText) => {
     setScanning(false);
     setEquipmentId(decodedText);
-
     try {
-      const res = await fetch(`${API_URL}/api/equipment/${decodedText}`);
+      const res = await fetch(`${API_URL}/api/equiment/${decodedText}`);
       const data = await res.json();
       if (res.ok && data.equipment) {
         setEquipmentName(data.equipment.equipmentName);
       } else {
-        throw new Error("Not found");
+        throw new Error();
       }
     } catch {
       toast.error("Equipment not found");
       setEquipmentId("");
+      setEquipmentName("");
     }
   };
 
@@ -48,46 +53,88 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
     return () => { scanner.clear().catch(() => {}); };
   }, [scanning]);
 
-  // Start camera for photo
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      streamRef.current = stream;
-      videoRef.current.srcObject = stream;
-      videoRef.current.play();
-      setCapturingPhoto(true);
-    } catch {
-      toast.error("Camera access denied");
-    }
+  // Open camera once <video> is rendered
+  useEffect(() => {
+    if (!capturingPhoto) return;
+    let mounted = true;
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        if (!mounted) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      })
+      .catch(err => {
+        console.error("getUserMedia error:", err);
+        toast.error(
+          err.name === "NotAllowedError"
+            ? "Camera permission denied."
+            : `Camera error: ${err.message}`
+        );
+        setCapturingPhoto(false);
+      });
+    return () => {
+      mounted = false;
+      streamRef.current?.getTracks().forEach(t => t.stop());
+    };
+  }, [capturingPhoto]);
+
+  const startCamera = () => {
+    setCapturingPhoto(true);
   };
 
-  // Take photo and stop camera
   const takePhoto = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext("2d").drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg");
-    setPhotoData(dataUrl);
-    // stop tracks
+    
+    // Add quality parameter (0.7) to reduce image size
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+    setPhotos(prev => [...prev, dataUrl]);
+    
     streamRef.current.getTracks().forEach(t => t.stop());
     setCapturingPhoto(false);
   };
 
+  const removePhoto = (index) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleReportFault = async (e) => {
     e.preventDefault();
-    if (!equipmentId) return toast.error("Please scan a QR code");
+    if (!equipmentId.trim()) {
+      return toast.error("Please scan a QR code first");
+    }
+
+    // Validate photos
+    const validatedPhotos = photos.map(photo => {
+      if (!photo.startsWith('data:image/')) {
+        console.warn('Invalid photo format:', photo);
+        return null;
+      }
+      return photo;
+    }).filter(Boolean);
+
+    if (validatedPhotos.length !== photos.length) {
+      toast.warn('Some photos were invalid and removed');
+    }
 
     const newFault = {
       equipmentId,
       equipmentName,
       faultDescription,
-      photo: photoData,           // include the captured photo
-      reportedDate: reportedDate || new Date().toISOString().slice(0, 10),
+      photos: validatedPhotos,
+      reportedDate: reportedDate || new Date().toISOString().split('T')[0],
       status: "Pending",
       userName,
     };
+
+    console.log("Submitting fault:", newFault);
 
     try {
       const res = await fetch(`${API_URL}/api/report-fault`, {
@@ -95,23 +142,34 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newFault),
       });
-      const data = await res.json();
 
-      if (res.ok) {
-        toast.success("Fault reported successfully");
-        onFaultReported?.(data.fault);
-        // reset
-        setEquipmentId("");
-        setEquipmentName("");
-        setFaultDescription("");
-        setReportedDate("");
-        setUsername(defaultUsername);
-        setPhotoData("");
+      const contentType = res.headers.get("content-type");
+      let data;
+      
+      if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
       } else {
-        toast.error(data.message || "Failed to report fault");
+        data = await res.text();
       }
-    } catch {
-      toast.error("Server error while reporting fault");
+
+      if (!res.ok) {
+        throw new Error(data.message || data || `Request failed with status ${res.status}`);
+      }
+
+      toast.success("Fault reported successfully");
+      onFaultReported?.(data.fault);
+      
+      // Reset form
+      setEquipmentId("");
+      setEquipmentName("");
+      setFaultDescription("");
+      setReportedDate("");
+      setUsername(defaultUsername);
+      setPhotos([]);
+
+    } catch (err) {
+      console.error("Error reporting fault:", err);
+      toast.error(err.message || "Server error while reporting fault");
     }
   };
 
@@ -120,37 +178,58 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
       <h1 className="text-center mt-3">Report Faulty Equipment</h1>
       <div className="card">
         <div className="card-body">
-          <form className="m-2 p-5" onSubmit={handleReportFault}>
-            {/* QR Scanner / Input */}
+          <form onSubmit={handleReportFault} className="m-2 p-5">
+
+            {/* Equipment ID (read-only) + QR Scanner */}
             <div className="mb-4">
-              {scanning ? (
-                <div>
-                  <p>Point your camera at the equipment’s QR code</p>
+              <label className="form-label">Equipment ID</label>
+              <div className="d-flex">
+                <input
+                  type="text"
+                  className="form-control"
+                  value={equipmentId}
+                  readOnly
+                  placeholder="Scan QR to fill"
+                  style={{ borderRadius: 10, padding: 15 }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-secondary ms-2"
+                  onClick={() => setScanning(true)}
+                >
+                  Scan QR
+                </button>
+              </div>
+              {scanning && (
+                <div className="mt-2">
+                  <p>Point your camera at the QR code</p>
                   <div id="qr-reader" style={{ width: "100%" }} />
-                  <button type="button" className="btn btn-link mt-2"
-                    onClick={() => setScanning(false)}>Cancel</button>
-                </div>
-              ) : (
-                <div className="d-flex">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Scan QR or enter ID"
-                    value={equipmentName || equipmentId}
-                    onChange={e => { setEquipmentId(e.target.value); setEquipmentName(""); }}
-                    style={{ borderRadius: 10, padding: 15 }}
-                    required
-                  />
-                  <button type="button" className="btn btn-secondary ms-2"
-                    onClick={() => setScanning(true)}>Scan QR</button>
+                  <button
+                    type="button"
+                    className="btn btn-link"
+                    onClick={() => setScanning(false)}
+                  >
+                    Cancel
+                  </button>
                 </div>
               )}
             </div>
 
-            {/* Live Photo Capture */}
-          
+            {/* Display equipment name if known */}
+            {equipmentName && (
+              <div className="mb-4">
+                <label className="form-label">Equipment Name</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={equipmentName}
+                  readOnly
+                  style={{ borderRadius: 10, padding: 15 }}
+                />
+              </div>
+            )}
 
-            {/* Username */}
+            {/* UserName */}
             <div className="mb-4">
               <label className="form-label">UserName</label>
               <input
@@ -158,7 +237,7 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
                 className="form-control"
                 value={userName}
                 onChange={e => setUsername(e.target.value)}
-                style={{ width: "100%", padding: 15, borderRadius: 10 }}
+                style={{ borderRadius: 10, padding: 15 }}
                 required
               />
             </div>
@@ -170,7 +249,7 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
                 className="form-control"
                 value={faultDescription}
                 onChange={e => setFaultDescription(e.target.value)}
-                style={{ width: "100%", padding: 15, borderRadius: 10 }}
+                style={{ borderRadius: 10, padding: 15 }}
                 required
               />
             </div>
@@ -183,39 +262,103 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
                 className="form-control"
                 value={reportedDate}
                 onChange={e => setReportedDate(e.target.value)}
-                style={{ width: "100%", padding: 15, borderRadius: 10 }}
+                style={{ borderRadius: 10, padding: 15 }}
               />
             </div>
-            <div className="mb-4">
-              {!capturingPhoto && !photoData ? (
-                <button type="button" className="btn btn-outline-dark text-light"
-                  onClick={startCamera}>
-                  Capture Photo
-                </button>
-              ) : null}
 
+            {/* Photo captures */}
+            <div className="mb-4">
+              <p>Add photos:</p>
+              <div className="d-flex flex-wrap gap-2 mb-2">
+                {photos.map((src, i) => (
+                  <div key={i} style={{ position: 'relative' }}>
+                    <img
+                      src={src}
+                      alt={`captured-${i}`}
+                      style={{ 
+                        width: 80, 
+                        height: 80, 
+                        objectFit: "cover", 
+                        borderRadius: 8 
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      style={{
+                        position: 'absolute',
+                        top: -5,
+                        right: -5,
+                        background: 'red',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: 20,
+                        height: 20,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                {!capturingPhoto && (
+                  <button
+                    type="button"
+                    className="btn btn-outline-dark"
+                    onClick={startCamera}
+                    style={{
+                      width: 80, 
+                      height: 80,
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "center",
+                      fontSize: 24
+                    }}
+                  >
+                    +
+                  </button>
+                )}
+              </div>
               {capturingPhoto && (
                 <div className="mt-2">
-                  <video ref={videoRef} style={{ width: "100%", maxHeight: 300 }} />
-                  <button type="button" className="btn btn-success mt-2"
-                    onClick={takePhoto}>
-                    Take Photo
-                  </button>
+                  <video
+                    ref={videoRef}
+                    style={{ width: "100%", maxHeight: 300 }}
+                    muted
+                  />
+                  <div className="d-flex gap-2 mt-2">
+                    <button
+                      type="button"
+                      className="btn btn-success"
+                      onClick={takePhoto}
+                    >
+                      Take Photo
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={() => {
+                        streamRef.current?.getTracks().forEach(t => t.stop());
+                        setCapturingPhoto(false);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               )}
-
-              {photoData && (
-                <div className="mt-2">
-                  <p>Preview:</p>
-                  <img src={photoData} alt="Captured" style={{ maxWidth: "100%", borderRadius: 10 }} />
-                </div>
-              )}
-              {/* hidden canvas */}
               <canvas ref={canvasRef} style={{ display: "none" }} />
             </div>
 
-            <button type="submit" className="btn"
-              style={{ backgroundColor: "#236a80", color: "white" }}>
+            <button
+              type="submit"
+              className="btn"
+              style={{ backgroundColor: "#236a80", color: "white" }}
+            >
               Report Fault
             </button>
           </form>

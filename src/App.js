@@ -81,6 +81,7 @@ import Inventory from './pages/Inventory/Inventory';
 import Services from './pages/Inventory/Services';
 import SubscriptionPlans from './pages/Subscribe/SubscriptionPlans';
 import PaymentPage from './pages/Subscribe/PaymentPage';
+import MaintenanceForm from './pages/Inventory/MaintenanceForm';
 
 
 function App() {
@@ -214,6 +215,7 @@ function App() {
                   <Route path="/services" element={<Services />} />
                   <Route path="/subscription-plans/:userName" element={<SubscriptionPlans />} />
         <Route path="/payment/:userName" element={<PaymentPage />} />
+        <Route path="/maintenance/:type/:equipmentId" element={<MaintenanceForm />} />
                 </Route>
               )}
               {/* User Routes */}
@@ -252,6 +254,8 @@ function App() {
                   <Route path="/services" element={<Services />} />
                   <Route path="/subscription-plans/:userName" element={<SubscriptionPlans />} />
                   <Route path="/payment/:userName" element={<PaymentPage />} />
+                  <Route path="/maintenance/:type/:equipmentId" element={<MaintenanceForm />} />
+
                 </Route>
               )}
             </Routes>
