@@ -63,7 +63,6 @@ export default function MaintenanceForm() {
 
   // Technician info
   const [tech, setTech] = useState(null);
-  // Start in editing mode so we never try to read tech.name when tech is null
   const [editingTech, setEditingTech] = useState(true);
   const [techForm, setTechForm] = useState({ name: "", designation: "", email: "" });
 
@@ -134,6 +133,14 @@ export default function MaintenanceForm() {
     navigate("/");
   };
 
+  // Scroll container style
+  const scrollStyle = {
+    maxHeight: "300px",
+    overflowY: "auto",
+    overflowX: "auto",
+    marginBottom: "1rem",
+  };
+
   return (
     <div className="container py-4">
       <h3 className="mb-4 text-capitalize">
@@ -145,7 +152,7 @@ export default function MaintenanceForm() {
         <div className="card-body">
           {editingTech ? (
             <>
-              <h5>Technician Info</h5>
+              <h5 >Technician Info</h5>
               <div className="row g-3">
                 <div className="col-md-4">
                   <label>Name</label>
@@ -193,7 +200,7 @@ export default function MaintenanceForm() {
                 <strong>Email:</strong> {tech.email}
               </p>
               <button
-                className="btn btn-link btn-light"
+                className="btn btn-link" style={{color:'#fff' , fontSize:'12px'}}
                 onClick={() => setEditingTech(true)}
               >
                 Change
@@ -215,73 +222,77 @@ export default function MaintenanceForm() {
                   ? "Maintenance Check"
                   : "Post Maintenance Check"}
               </h5>
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Checkpoint</th>
-                    <th>Standard Requirement</th>
-                    <th>Response</th>
-                    <th>Comments</th>
-                    <th>Before Img</th>
-                    <th>After Img</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {questionSets[type][sec].map((q, i) => (
-                    <tr key={q.id}>
-                      <td>{i + 1}</td>
-                      <td>{q.checkpoint}</td>
-                      <td>{q.requirement}</td>
-                      <td>
-                        <select
-                          required
-                          className="form-select"
-                          value={answers[q.id].response}
-                          onChange={(e) =>
-                            onAnswer(q.id, "response", e.target.value)
-                          }
-                        >
-                          <option value="">Select</option>
-                          <option value="Yes">Yes</option>
-                          <option value="No">No</option>
-                        </select>
-                      </td>
-                      <td>
-                        <input
-                          className="form-control"
-                          value={answers[q.id].comments}
-                          onChange={(e) =>
-                            onAnswer(q.id, "comments", e.target.value)
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="file"
-                          className="form-control"
-                          onChange={(e) =>
-                            onFile(q.id, "beforeImage", e.target.files[0])
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="file"
-                          className="form-control"
-                          onChange={(e) =>
-                            onFile(q.id, "afterImage", e.target.files[0])
-                          }
-                        />
-                      </td>
+
+              {/* scrollable wrapper */}
+              <div style={scrollStyle} className="table-responsive">
+                <table className="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th style={{ minWidth: "40px" }}>#</th>
+                      <th style={{ minWidth: "200px" }}>Checkpoint</th>
+                      <th style={{ minWidth: "200px" }}>Standard Requirement</th>
+                      <th style={{ minWidth: "100px" }}>Response</th>
+                      <th style={{ minWidth: "150px" }}>Comments</th>
+                      <th style={{ minWidth: "120px" }}>Before Img</th>
+                      <th style={{ minWidth: "120px" }}>After Img</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {questionSets[type][sec].map((q, i) => (
+                      <tr key={q.id}>
+                        <td>{i + 1}</td>
+                        <td>{q.checkpoint}</td>
+                        <td>{q.requirement}</td>
+                        <td>
+                          <select
+                            required
+                            className="form-select"
+                            value={answers[q.id].response}
+                            onChange={(e) =>
+                              onAnswer(q.id, "response", e.target.value)
+                            }
+                          >
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            className="form-control"
+                            value={answers[q.id].comments}
+                            onChange={(e) =>
+                              onAnswer(q.id, "comments", e.target.value)
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="file"
+                            className="form-control"
+                            onChange={(e) =>
+                              onFile(q.id, "beforeImage", e.target.files[0])
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="file"
+                            className="form-control"
+                            onChange={(e) =>
+                              onFile(q.id, "afterImage", e.target.files[0])
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ))}
 
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn" style={{backgroundColor:'#236a80' , color:'#fff'}}>
             Submit Report
           </button>
         </form>
