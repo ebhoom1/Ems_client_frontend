@@ -13,25 +13,22 @@ const AddEquipment = () => {
     equipmentName: "",
     userName: "",
     modelSerial: "",
+    capacity: "",     // ← new
+    ratedLoad: "",    // ← new
     installationDate: "",
     location: "",
     notes: ""
   });
   const [qrValue, setQrValue] = useState("");
 
-  // fetch user list on mount or when adminType changes
+  // Fetch users
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        let response;
-        if (userData?.validUserOne?.adminType) {
-          response = await axios.get(
-            `${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`
-          );
-        } else {
-          response = await axios.get(`${API_URL}/api/getallusers`);
-        }
-        // only keep users of type "user"
+        const url = userData?.validUserOne?.adminType
+          ? `${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`
+          : `${API_URL}/api/getallusers`;
+        const response = await axios.get(url);
         const filtered = response.data.users.filter((u) => u.userType === "user");
         setUsers(filtered);
       } catch (err) {
@@ -61,6 +58,8 @@ const AddEquipment = () => {
           equipmentName: "",
           userName: "",
           modelSerial: "",
+          capacity: "",   // reset
+          ratedLoad: "",  // reset
           installationDate: "",
           location: "",
           notes: ""
@@ -79,8 +78,8 @@ const AddEquipment = () => {
         <form className="m-1 p-1" onSubmit={handleSubmit}>
           <div className="row text-light">
             {/* Equipment Name */}
-            <div className="col-lg-6 col-md-6 mb-4 text-light">
-              <label htmlFor="equipmentName" className="form-label">
+            <div className="col-lg-6 col-md-6 mb-4">
+              <label htmlFor="equipmentName" className="form-label text-light">
                 Equipment Name
               </label>
               <input
@@ -95,9 +94,9 @@ const AddEquipment = () => {
               />
             </div>
 
-            {/* Username dropdown */}
+            {/* Username */}
             <div className="col-lg-6 col-md-6 mb-4">
-              <label htmlFor="userName" className="form-label">
+              <label htmlFor="userName" className="form-label text-light">
                 Username
               </label>
               <select
@@ -112,7 +111,7 @@ const AddEquipment = () => {
                 <option value="">Select User</option>
                 {users.map((u) => (
                   <option key={u._id} value={u.userName}>
-                    {`${u.userName} - ${u.companyName}`}
+                    {u.userName} – {u.companyName}
                   </option>
                 ))}
               </select>
@@ -120,7 +119,7 @@ const AddEquipment = () => {
 
             {/* Model Serial */}
             <div className="col-lg-6 col-md-6 mb-4">
-              <label htmlFor="modelSerial" className="form-label">
+              <label htmlFor="modelSerial" className="form-label text-light">
                 Model Serial
               </label>
               <input
@@ -135,9 +134,48 @@ const AddEquipment = () => {
               />
             </div>
 
+            {/* Model */}
+         
+
+            {/* Capacity */}
+            <div className="col-lg-6 col-md-6 mb-4">
+              <label htmlFor="capacity" className="form-label text-light">
+                Capacity
+              </label>
+              <input
+                id="capacity"
+                name="capacity"
+                type="text"
+                className="form-control"
+                placeholder="e.g. 10 HP"
+                value={form.capacity}
+                onChange={handleChange}
+                required
+                style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+              />
+            </div>
+
+            {/* Rated Load */}
+            <div className="col-lg-6 col-md-6 mb-4">
+              <label htmlFor="ratedLoad" className="form-label text-light">
+                Rated Load
+              </label>
+              <input
+                id="ratedLoad"
+                name="ratedLoad"
+                type="text"
+                className="form-control"
+                placeholder="e.g. 11.5 A"
+                value={form.ratedLoad}
+                onChange={handleChange}
+                required
+                style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+              />
+            </div>
+
             {/* Installation Date */}
             <div className="col-lg-6 col-md-6 mb-4">
-              <label htmlFor="installationDate" className="form-label">
+              <label htmlFor="installationDate" className="form-label text-light">
                 Installation Date
               </label>
               <input
@@ -154,7 +192,7 @@ const AddEquipment = () => {
 
             {/* Location */}
             <div className="col-lg-6 col-md-6 mb-4">
-              <label htmlFor="location" className="form-label">
+              <label htmlFor="location" className="form-label text-light">
                 Location
               </label>
               <input
@@ -170,8 +208,8 @@ const AddEquipment = () => {
             </div>
 
             {/* Optional Notes */}
-            <div className="col-lg-6 col-md-6 mb-4">
-              <label htmlFor="notes" className="form-label">
+            <div className="col-lg-12 mb-4">
+              <label htmlFor="notes" className="form-label text-light">
                 Optional Notes
               </label>
               <textarea
@@ -196,7 +234,11 @@ const AddEquipment = () => {
         </form>
 
         {/* QR Code */}
-       
+       {/*  {qrValue && (
+          <div className="mt-4 text-center">
+            <QRCode value={qrValue} size={128} />
+          </div>
+        )} */}
       </div>
     </div>
   );

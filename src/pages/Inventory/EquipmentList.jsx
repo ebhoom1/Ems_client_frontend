@@ -16,6 +16,7 @@ export default function EquipmentList() {
   // modal state
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedEquipmentName, setSelectedEquipmentName] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -62,8 +63,9 @@ export default function EquipmentList() {
     );
   });
 
-  const openModal = (id) => {
+  const openModal = (id, name) => {
     setSelectedId(id);
+    setSelectedEquipmentName(name);
     setShowModal(true);
   };
 
@@ -72,6 +74,7 @@ export default function EquipmentList() {
       {showModal && (
         <MaintenanceTypeModal
           equipmentId={selectedId}
+          equipmentName={selectedEquipmentName}
           onClose={() => setShowModal(false)}
         />
       )}
@@ -98,6 +101,8 @@ export default function EquipmentList() {
                 <th style={{ backgroundColor: "#236a80", color: "#fff" }}>User</th>
                 <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Model</th>
                 <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Date</th>
+                <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Capacity</th>     
+                <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Rated Load</th>  
                 <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Location</th>
                 <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Notes</th>
                 <th style={{ backgroundColor: "#236a80", color: "#fff" }}>QR</th>
@@ -111,6 +116,8 @@ export default function EquipmentList() {
                   <td>{e.equipmentName || "N/A"}</td>
                   <td>{e.userName || "N/A"}</td>
                   <td>{e.modelSerial || "N/A"}</td>
+                  <td>{e.capacity || "–"}</td>   
+                  <td>{e.ratedLoad || "–"}</td>    
                   <td>
                     {e.installationDate
                       ? new Date(e.installationDate).toLocaleDateString("en-GB")
@@ -132,7 +139,7 @@ export default function EquipmentList() {
                   <td>
                     <button
                       className="btn btn-sm btn-success"
-                      onClick={() => openModal(e._id)}
+                      onClick={() => openModal(e._id, e.equipmentName)}
                     >
                       Report
                     </button>

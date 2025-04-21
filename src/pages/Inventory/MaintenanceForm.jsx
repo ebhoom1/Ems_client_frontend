@@ -1,76 +1,208 @@
-// src/pages/MaintenanceForm.jsx
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
+import { API_URL } from "../../utils/apiConfig";
 
-// your mechanical questions from the screenshots:
-const questionSets = {
-  mechanical: {
-    pre: [
-      { id: "pre1", checkpoint: "Ensure the system is locked out.", requirement: "-" },
-      { id: "pre2", checkpoint: "Ensure the Valves are closed", requirement: "-" },
-      { id: "pre3", checkpoint: "Ensure having the necessary PPE", requirement: "-" },
-      { id: "pre4", checkpoint: "Ensure availability of required tools", requirement: "-" },
-    ],
-    main: [
-      {
-        id: "main1",
-        checkpoint: "Check the foot valve and NRV pipe",
-        requirement: "Foot valve and NRV should be in proper condition",
-      },
-      {
-        id: "main2",
-        checkpoint: "Check for the air lock of the pump",
-        requirement: "Should not be having airlock",
-      },
-      {
-        id: "main3",
-        checkpoint: "Check chemical level in the tank",
-        requirement: "Chemical quantity should be as required",
-      },
-      {
-        id: "main4",
-        checkpoint: "Check for filter blockage",
-        requirement: "Filters should not be having any blockage",
-      },
-      {
-        id: "main5",
-        checkpoint: "Check if Pump is running smoothly",
-        requirement: "Pump should be running smoothly",
-      },
-    ],
-    post: [
-      { id: "post1", checkpoint: "Ensure all tools are secured back", requirement: "-" },
-      {
-        id: "post2",
-        checkpoint: "Ensure the panel is free from dust & closed properly",
-        requirement: "-",
-      },
-      { id: "post3", checkpoint: "Ensure the lock out is removed", requirement: "-" },
-      { id: "post4", checkpoint: "Ensure the Valves are open", requirement: "-" },
-    ],
+// ——— Full mechanicalConfig ———
+const mechanicalConfig = {
+  "bar-screen": {
+    columns: [],
+    rows: [
+      { id: 1, category: "Material Type", description: "" },
+      { id: 2, category: "Check for any damages", description: "" },
+      { id: 3, category: "Fixed/Removable", description: "" },
+      { id: 4, category: "Other observations if any", description: "" },
+    ]
   },
-  electrical: {
-    pre: [],
-    main: [],
-    post: [],
+  "oil-skimmer": {
+    columns: [],
+    rows: [
+      { id: 1, category: "Check for safety Guards", description: "" },
+      { id: 2, category: "Direction of rotation", description: "" },
+      { id: 3, category: "Check for Gear box sound", description: "" },
+      { id: 4, category: "Check for Motor Condition", description: "" },
+      { id: 5, category: "Check belt quality", description: "" },
+      { id: 6, category: "Check for Star bush & coupling damage", description: "" },
+      { id: 7, category: "Check for Bearing sound & damage", description: "" },
+      { id: 8, category: "Check for Oil collection tray", description: "" },
+      { id: 9, category: "Check for pulley condition", description: "" },
+      { id: 10, category: "Check for base support", description: "" },
+      { id: 11, category: "Other observations if any", description: "" },
+    ]
   },
+  "raw-sewage-pump": {
+    columns: ["Pump 1", "Pump 2"],
+    rows: [
+      { id: 1, category: "Type of Pump", description: "Submersible / Centrifugal pump" },
+      { id: 2, category: "Check for safety Guards", description: "" },
+      { id: 3, category: "Direction of rotation", description: "" },
+      { id: 4, category: "Check for Impeller sound", description: "" },
+      { id: 5, category: "Check if the Pump is running smoothly", description: "" },
+      { id: 6, category: "Check for oil, Grease & water leakage", description: "" },
+      { id: 7, category: "Check for Star bush & coupling damage", description: "" },
+      { id: 8, category: "Check for Bearing sound & damage", description: "" },
+      { id: 9, category: "Check for Valve & pipe line blockage", description: "" },
+      { id: 10, category: "Check for Vibration", description: "" },
+      { id: 11, category: "Check for terminal loose connection", description: "" },
+      { id: 12, category: "Check for discharge pressure", description: "" },
+      { id: 13, category: "Check if the NRV is in working condition", description: "" },
+      { id: 14, category: "Other observations if any", description: "" },
+    ]
+  },
+  "mbr-air-blower-1-2": {
+    columns: ["Blower 1", "Blower 2"],
+    rows: [
+      { id: 1, category: "Check for safety Guards", description: "" },
+      { id: 2, category: "Noise level in dB", description: "" },
+      { id: 3, category: "Direction of rotation", description: "" },
+      { id: 4, category: "Check for Vibration", description: "" },
+      { id: 5, category: "Check if the blower is running smoothly", description: "" },
+      { id: 6, category: "Check if motor is running smoothly", description: "" },
+      { id: 7, category: "Check for oil & Grease leakage", description: "" },
+      { id: 8, category: "Check if greasing is done", description: "" },
+      { id: 9, category: "Check for blower Bearing sound & damage", description: "" },
+      { id: 10, category: "Check for motor Bearing sound & damage", description: "" },
+      { id: 11, category: "Check for Valve & pipe line & Damage", description: "" },
+      { id: 12, category: "Check the discharge pressures in Kg/cm2", description: "" },
+      { id: 13, category: "Check for pressure relief valves", description: "" },
+      { id: 14, category: "Check for Air filter cleaning", description: "" },
+      { id: 15, category: "Check for pulley alignment", description: "" },
+      { id: 16, category: "Check for V-belt condition", description: "" },
+      { id: 17, category: "Check for base support", description: "" },
+      { id: 18, category: "Check for motor cooling fan condition", description: "" },
+      { id: 19, category: "Other observations if any", description: "" }
+    ]
+  },
+  "mbr-air-blower-3-4": {
+    columns: ["Blower 3", "Blower 4"],
+    rows: [
+      { id: 1, category: "Check for safety Guards", description: "" },
+      { id: 2, category: "Noise level in dB", description: "" },
+      { id: 3, category: "Direction of rotation", description: "" },
+      { id: 4, category: "Check for Vibration", description: "" },
+      { id: 5, category: "Check if the blower is running smoothly", description: "" },
+      { id: 6, category: "Check if motor is running smoothly", description: "" },
+      { id: 7, category: "Check for oil & Grease leakage", description: "" },
+      { id: 8, category: "Check if greasing is done", description: "" },
+      { id: 9, category: "Check for blower Bearing sound & damage", description: "" },
+      { id: 10, category: "Check for motor Bearing sound & damage", description: "" },
+      { id: 11, category: "Check for Valve & pipe line & Damage", description: "" },
+      { id: 12, category: "Check the discharge pressures in Kg/cm2", description: "" },
+      { id: 13, category: "Check for pressure relief valves", description: "" },
+      { id: 14, category: "Check for Air filter cleaning", description: "" },
+      { id: 15, category: "Check for pulley alignment", description: "" },
+      { id: 16, category: "Check for V-belt condition", description: "" },
+      { id: 17, category: "Check for base support", description: "" },
+      { id: 18, category: "Check for motor cooling fan condition", description: "" },
+      { id: 19, category: "Other observations if any", description: "" }
+    ]
+  },
+  "ras-pump": {
+    columns: ["Pump 1", "Pump 2"],
+    rows: [
+      { id: 1, category: "Pump Type", description: "Coupled / Monoblock" },
+      { id: 2, category: "Check for safety Guards", description: "" },
+      { id: 3, category: "Check for alignment of the pump", description: "" },
+      { id: 4, category: "Direction of rotation", description: "" },
+      { id: 5, category: "Impeller sound", description: "" },
+      { id: 6, category: "Check if the Pump is running smoothly", description: "" },
+      { id: 7, category: "Check for oil, Grease & water leakage", description: "" },
+      { id: 8, category: "Check for Star bush & coupling damage", description: "" },
+      { id: 9, category: "Check for Bearing sound & damage", description: "" },
+      { id: 10, category: "Check for Valve & pipe line blockage", description: "" },
+      { id: 11, category: "Check for Vibration", description: "" },
+      { id: 12, category: "Check for terminal loose connection", description: "" },
+      { id: 13, category: "Check for discharge pressure", description: "" },
+      { id: 14, category: "Check for the NRV working condition", description: "" },
+      { id: 15, category: "Check for coupler safety guard", description: "" },
+      { id: 16, category: "Check for coupler condition", description: "" },
+      { id: 17, category: "Other observation if any", description: "" },
+    ]
+  },
+  ...[
+    "mbr-permeate-pump",
+    "cip-pump",
+    "treated-water-pump-c-block",
+    "treated-water-pump-m-block",
+    "dosing-pump",
+    "drain-pump"
+  ].reduce((acc, id) => {
+    acc[id] = {
+      columns: ["Pump 1", "Pump 2"],
+      rows: [
+        { id: 1, category: "Pump Type", description: "Coupled / Monoblock / Vertical multi-stage pumps" },
+        ...Array.from({ length: 16 }, (_, i) => ({
+          id: i + 2,
+          category: `Check item ${i + 2}`,
+          description: ""
+        })),
+        { id: 18, category: "Other observation if any", description: "" }
+      ]
+    };
+    return acc;
+  }, {}),
+  "filter-press-unit": {
+    columns: [],
+    rows: [
+      { id: 1, category: "Check for the filter press cloth condition", description: "" },
+      { id: 2, category: "Check for all connected valves", description: "" },
+      { id: 3, category: "Check for all the pressure gauges working condition", description: "" },
+      { id: 4, category: "Check for the hydraulic unit", description: "" },
+      { id: 5, category: "Other observation if any", description: "" }
+    ]
+  },
+  "agitator-mechanism": {
+    columns: [],
+    rows: [
+      { id: 1, category: "Type of the Mechanism", description: "Direct Coupled / Chain driven / Belt Driven" },
+      { id: 2, category: "Check for safety Guards", description: "" },
+      { id: 3, category: "Direction of rotation", description: "" },
+      { id: 4, category: "Check for Gear Box sound", description: "" },
+      { id: 5, category: "Check if the Motor is running smoothly or not", description: "" },
+      { id: 6, category: "Check the oil level", description: "" },
+      { id: 7, category: "Check for Star bush & coupling damage (Size)", description: "" },
+      { id: 8, category: "Check for Bearing sound & damage", description: "" },
+      { id: 9, category: "Check if Oil replacement is done", description: "" },
+      { id: 10, category: "Check for the Vibration", description: "" },
+      { id: 11, category: "Other observation if any", description: "" }
+    ]
+  }
 };
 
 export default function MaintenanceForm() {
-  const { type, equipmentId } = useParams();
+  const { type, equipmentId: dbId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Technician info
+  // slug = the config key you passed in via state
+  const slug = location.state?.equipmentName;
+  const cfg = mechanicalConfig[slug] || { columns: [], rows: [] };
+
+  // technician from backend
+  const [technician, setTechnician] = useState(null);
+  // locally saved tech info
   const [tech, setTech] = useState(null);
   const [editingTech, setEditingTech] = useState(true);
   const [techForm, setTechForm] = useState({ name: "", designation: "", email: "" });
-
-  // Answers state
   const [answers, setAnswers] = useState({});
 
+  // fetch technician record once
   useEffect(() => {
-    // Load saved tech info
+    (async () => {
+      try {
+        const { data } = await axios.get(`${API_URL}/api/technician`);
+        if (data.success && data.technician) {
+          setTechnician(data.technician);
+        }
+      } catch (err) {
+        console.error("Failed to fetch technician", err);
+      }
+    })();
+  }, []);
+
+  // load local techInfo + init answers when slug changes
+  useEffect(() => {
     const saved = localStorage.getItem("techInfo");
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -78,221 +210,212 @@ export default function MaintenanceForm() {
       setTechForm(parsed);
       setEditingTech(false);
     }
-
-    // Initialize answers for all questions in this type
-    const allQs = [
-      ...questionSets[type].pre,
-      ...questionSets[type].main,
-      ...questionSets[type].post,
-    ];
     const init = {};
-    allQs.forEach((q) => {
-      init[q.id] = { response: "", comments: "", beforeImage: null, afterImage: null };
+    cfg.rows.forEach(row => {
+      init[row.id] = { checks: Array(cfg.columns.length).fill(""), remarks: "" };
     });
     setAnswers(init);
-  }, [type]);
+  }, [slug]);
 
-  const handleTechChange = (e) => {
-    const { name, value } = e.target;
-    setTechForm((f) => ({ ...f, [name]: value }));
+  const startEditTech = () => {
+    setTechForm({
+      name: technician?.name || "",
+      designation: technician?.designation || "",
+      email: technician?.email || ""
+    });
+    setEditingTech(true);
+  };
+
+  const cancelEditTech = () => {
+    // revert to saved or backend data
+    if (tech) {
+      setTechForm(tech);
+    } else if (technician) {
+      setTechForm({
+        name: technician.name,
+        designation: technician.designation,
+        email: technician.email
+      });
+    } else {
+      setTechForm({ name: "", designation: "", email: "" });
+    }
+    setEditingTech(false);
   };
 
   const saveTech = () => {
     if (!techForm.name || !techForm.designation || !techForm.email) {
-      toast.error("Please fill all technician fields");
-      return;
+      return toast.error("Please fill all technician fields");
     }
     localStorage.setItem("techInfo", JSON.stringify(techForm));
     setTech(techForm);
     setEditingTech(false);
   };
 
-  const onAnswer = (id, field, val) => {
-    setAnswers((a) => ({ ...a, [id]: { ...a[id], [field]: val } }));
+  const handleTechChange = e => {
+    const { name, value } = e.target;
+    setTechForm(f => ({ ...f, [name]: value }));
   };
 
-  const onFile = (id, field, file) => {
-    setAnswers((a) => ({ ...a, [id]: { ...a[id], [field]: file } }));
+  const onCheck = (rowId, idx, val) => {
+    setAnswers(a => ({
+      ...a,
+      [rowId]: { ...a[rowId], checks: a[rowId].checks.map((c, i) => (i === idx ? val : c)) }
+    }));
   };
 
-  const submit = (e) => {
+  const onRemarks = (rowId, val) => {
+    setAnswers(a => ({
+      ...a,
+      [rowId]: { ...a[rowId], remarks: val }
+    }));
+  };
+
+  const submit = e => {
     e.preventDefault();
+    if (!tech) {
+      return toast.error("Provide technician info first");
+    }
     const report = {
-      equipmentId,
-      type,
+      equipmentId: dbId,
+      equipmentName: slug,
       technician: tech,
-      sections: {
-        pre: questionSets[type].pre.map((q) => ({ ...q, ...answers[q.id] })),
-        main: questionSets[type].main.map((q) => ({ ...q, ...answers[q.id] })),
-        post: questionSets[type].post.map((q) => ({ ...q, ...answers[q.id] })),
-      },
-      timestamp: new Date().toISOString(),
+      entries: cfg.rows.map(row => ({
+        ...row,
+        checks: answers[row.id].checks,
+        remarks: answers[row.id].remarks
+      })),
+      timestamp: new Date().toISOString()
     };
-    console.log("REPORT →", report);
+    console.log("MECH REPORT →", report);
     toast.success("Report submitted!");
     navigate("/");
   };
 
-  // Scroll container style
-  const scrollStyle = {
-    maxHeight: "300px",
-    overflowY: "auto",
-    overflowX: "auto",
-    marginBottom: "1rem",
-  };
-
   return (
     <div className="container py-4">
-      <h3 className="mb-4 text-capitalize">
-        {type} Maintenance – Equipment {equipmentId}
+      <h3 className="mb-4">
+        {type.charAt(0).toUpperCase() + type.slice(1)} Maintenance –{" "}
+        {slug.replace(/-/g, " ")}
       </h3>
 
-      {/* Technician Info */}
-      <div className="card mb-4">
+      {/* Technician Info Card */}
+      <div className="p-3 mb-4 shadow">
         <div className="card-body">
-          {editingTech ? (
-            <>
-              <h5 >Technician Info</h5>
+          {!editingTech && technician ? (
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>Technician:</strong> {technician.name} —{" "}
+                {technician.designation} (
+                <a href={`mailto:${technician.email}`}>{technician.email}</a>)
+              </div>
+              <button
+              style={{backgroundColor:'#236a80' , color:'#fff'}}
+                className="btn"
+                onClick={startEditTech}
+              >
+                Change
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={e => { e.preventDefault(); saveTech(); }}>
               <div className="row g-3">
                 <div className="col-md-4">
-                  <label>Name</label>
                   <input
-                    className="form-control"
+                    type="text"
                     name="name"
+                    className="form-control"
+                    placeholder="Name"
                     value={techForm.name}
                     onChange={handleTechChange}
                   />
                 </div>
                 <div className="col-md-4">
-                  <label>Designation</label>
                   <input
-                    className="form-control"
+                    type="text"
                     name="designation"
+                    className="form-control"
+                    placeholder="Designation"
                     value={techForm.designation}
                     onChange={handleTechChange}
                   />
                 </div>
                 <div className="col-md-4">
-                  <label>Email</label>
                   <input
                     type="email"
-                    className="form-control"
                     name="email"
+                    className="form-control"
+                    placeholder="Email"
                     value={techForm.email}
                     onChange={handleTechChange}
                   />
                 </div>
+                <div className="col-12 text-end">
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger me-2"
+                    onClick={cancelEditTech}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-success">
+                    Save
+                  </button>
+                </div>
               </div>
-              <button className="btn btn-success mt-3" onClick={saveTech}>
-                Save Technician Info
-              </button>
-            </>
-          ) : (
-            <>
-              <h5 className="text-light">Technician Info</h5>
-              <p className="text-light">
-                <strong>Name:</strong> {tech.name}
-              </p>
-              <p className="text-light">
-                <strong>Designation:</strong> {tech.designation}
-              </p>
-              <p className="text-light">
-                <strong>Email:</strong> {tech.email}
-              </p>
-              <button
-                className="btn btn-link" style={{color:'#fff' , fontSize:'12px'}}
-                onClick={() => setEditingTech(true)}
-              >
-                Change
-              </button>
-            </>
+            </form>
           )}
         </div>
       </div>
 
-      {/* Questions */}
+      {/* Maintenance Table */}
       {!editingTech && (
         <form onSubmit={submit}>
-          {["pre", "main", "post"].map((sec) => (
-            <div key={sec} className="mb-5">
-              <h5 className="text-capitalize">
-                {sec === "pre"
-                  ? "Pre Maintenance Check"
-                  : sec === "main"
-                  ? "Maintenance Check"
-                  : "Post Maintenance Check"}
-              </h5>
-
-              {/* scrollable wrapper */}
-              <div style={scrollStyle} className="table-responsive">
-                <table className="table table-bordered">
-                  <thead>
-                    <tr>
-                      <th style={{ minWidth: "40px" }}>#</th>
-                      <th style={{ minWidth: "200px" }}>Checkpoint</th>
-                      <th style={{ minWidth: "200px" }}>Standard Requirement</th>
-                      <th style={{ minWidth: "100px" }}>Response</th>
-                      <th style={{ minWidth: "150px" }}>Comments</th>
-                      <th style={{ minWidth: "120px" }}>Before Img</th>
-                      <th style={{ minWidth: "120px" }}>After Img</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {questionSets[type][sec].map((q, i) => (
-                      <tr key={q.id}>
-                        <td>{i + 1}</td>
-                        <td>{q.checkpoint}</td>
-                        <td>{q.requirement}</td>
-                        <td>
-                          <select
-                            required
-                            className="form-select"
-                            value={answers[q.id].response}
-                            onChange={(e) =>
-                              onAnswer(q.id, "response", e.target.value)
-                            }
-                          >
-                            <option value="">Select</option>
-                            <option value="Yes">Yes</option>
-                            <option value="No">No</option>
-                          </select>
-                        </td>
-                        <td>
-                          <input
-                            className="form-control"
-                            value={answers[q.id].comments}
-                            onChange={(e) =>
-                              onAnswer(q.id, "comments", e.target.value)
-                            }
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="file"
-                            className="form-control"
-                            onChange={(e) =>
-                              onFile(q.id, "beforeImage", e.target.files[0])
-                            }
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="file"
-                            className="form-control"
-                            onChange={(e) =>
-                              onFile(q.id, "afterImage", e.target.files[0])
-                            }
-                          />
-                        </td>
-                      </tr>
+          <div className="table-responsive mb-4">
+            <table className="table table-bordered">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Category</th>
+                  <th>Description</th>
+                  {cfg.columns.map(col => (
+                    <th key={col}>{col}</th>
+                  ))}
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cfg.rows.map((row, idx) => (
+                  <tr key={row.id}>
+                    <td>{idx + 1}</td>
+                    <td>Mechanical</td>
+                    <td>{row.category}</td>
+                    {cfg.columns.map((_, cidx) => (
+                      <td key={cidx}>
+                        <select
+                          className="form-select"
+                          value={answers[row.id]?.checks[cidx] || ""}
+                          onChange={e => onCheck(row.id, cidx, e.target.value)}
+                          required
+                        >
+                          <option value="">Select</option>
+                          <option value="OK">OK</option>
+                          <option value="Not OK">Not OK</option>
+                        </select>
+                      </td>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
-
-          <button type="submit" className="btn" style={{backgroundColor:'#236a80' , color:'#fff'}}>
+                    <td>
+                      <input
+                        className="form-control"
+                        value={answers[row.id]?.remarks || ""}
+                        onChange={e => onRemarks(row.id, e.target.value)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button type="submit" className="btn btn-primary">
             Submit Report
           </button>
         </form>

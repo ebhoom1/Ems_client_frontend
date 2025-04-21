@@ -82,6 +82,7 @@ import Services from './pages/Inventory/Services';
 import SubscriptionPlans from './pages/Subscribe/SubscriptionPlans';
 import PaymentPage from './pages/Subscribe/PaymentPage';
 import MaintenanceForm from './pages/Inventory/MaintenanceForm';
+import ElectricalMaintenance from './pages/Inventory/ElectricalMaintenance';
 
 
 function App() {
@@ -216,6 +217,11 @@ function App() {
                   <Route path="/subscription-plans/:userName" element={<SubscriptionPlans />} />
         <Route path="/payment/:userName" element={<PaymentPage />} />
         <Route path="/maintenance/:type/:equipmentId" element={<MaintenanceForm />} />
+        <Route
+    path="/maintenance/electrical/:equipmentId"
+    element={<ElectricalMaintenance onClose={() => navigate(-1)} />}
+  /> 
+        
                 </Route>
               )}
               {/* User Routes */}
@@ -255,7 +261,8 @@ function App() {
                   <Route path="/subscription-plans/:userName" element={<SubscriptionPlans />} />
                   <Route path="/payment/:userName" element={<PaymentPage />} />
                   <Route path="/maintenance/:type/:equipmentId" element={<MaintenanceForm />} />
-
+                  <Route path="/maintenance/electrical/:equipmentId" element={<ElectricalMaintenance />}
+ />
                 </Route>
               )}
             </Routes>
