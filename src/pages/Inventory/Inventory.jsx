@@ -213,9 +213,25 @@ const InventoryList = () => {
 const Inventory = () => {
   const { userData } = useSelector((state) => state.user);
   const userType = userData?.validUserOne?.userType;
-  const [activeTab, setActiveTab] = useState(userType === "admin" ? "admin" : "add");
+  const currentUserName = userData?.validUserOne?.userName;
+  const [equipmentList, setEquipmentList] = useState([]); // Add this line
+    const [activeTab, setActiveTab] = useState(userType === "admin" ? "admin" : "add");
   const navigate = useNavigate();
-
+  useEffect(() => {
+    const fetchEquipmentList = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/all-equipment`);
+        const data = await response.json();
+        if (response.ok) {
+          setEquipmentList(data.equipment);
+        }
+      } catch (error) {
+        console.error("Error fetching equipment list:", error);
+      }
+    };
+    
+    fetchEquipmentList();
+  }, []);
   // Render tab navigation based on user type
   const renderTabs = () => {
     if (userType === "admin") {
@@ -315,21 +331,24 @@ const Inventory = () => {
         <div className="card-body">
           <form className="m-2 p-5" onSubmit={handleAddInventory}>
             <div className="row">
-              <div className="col-lg-6 col-md-6 mb-4">
-                <div className="form-group">
-                  <label htmlFor="userName" className="form-label text-light">
-                    User Name
-                  </label>
-                  <input
-                    id="userName"
-                    type="text"
-                    placeholder="User Name"
-                    className="form-control"
-                    name="userName"
-                    style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
-                  />
-                </div>
-              </div>
+            <div className="col-lg-6 col-md-6 mb-4">
+  <div className="form-group">
+    <label htmlFor="userName" className="form-label text-light">
+      User Name
+    </label>
+    <input
+      id="userName"
+      type="text"
+      name="userName"
+      className="form-control"
+      placeholder="User Name"
+      style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+      // auto-fill and lock down for non-admins:
+      defaultValue={userType === "admin" ? "" : currentUserName}
+      readOnly={userType !== "admin"}
+    />
+  </div>
+</div>
               <div className="col-lg-6 col-md-6 mb-4">
                 <div className="form-group">
                   <label htmlFor="SKUname" className="form-label text-light">
@@ -428,7 +447,7 @@ const Inventory = () => {
         usageDate: formData.get("usageDate"),
         notes: formData.get("notes"),
       };
-
+  
       fetch(`${API_URL}/api/use`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -442,12 +461,13 @@ const Inventory = () => {
         })
         .then((response) => {
           toast.success("Usage log added successfully");
+          e.target.reset(); // Reset form after successful submission
         })
         .catch((error) => {
           toast.error(`Error: ${error.message}`);
         });
     };
-
+  
     return (
       <div className="col-12">
         <h1 className="text-center mt-3">Use Inventory</h1>
@@ -460,14 +480,20 @@ const Inventory = () => {
                     <label htmlFor="SKU" className="form-label text-light">
                       SKU
                     </label>
-                    <input
+                    <select
                       id="SKU"
-                      type="text"
-                      placeholder="SKU"
                       className="form-control"
                       name="SKU"
                       style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
-                    />
+                      required
+                    >
+                      <option value="">Select Equipment</option>
+                      {equipmentList.map((equip) => (
+                        <option key={equip._id} value={equip.equipmentName}>
+                          {equip.equipmentName}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <div className="col-lg-6 col-md-6 mb-4">
@@ -478,10 +504,11 @@ const Inventory = () => {
                     <input
                       id="username"
                       type="text"
-                      placeholder="username"
                       className="form-control"
                       name="username"
                       style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+                      defaultValue={currentUserName}
+                      readOnly
                     />
                   </div>
                 </div>
@@ -500,6 +527,7 @@ const Inventory = () => {
                       name="quantityUsed"
                       style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
                       min="0"
+                      required
                     />
                   </div>
                 </div>
@@ -514,6 +542,7 @@ const Inventory = () => {
                       className="form-control"
                       name="usageDate"
                       style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+                      required
                     />
                   </div>
                 </div>
@@ -669,9 +698,7 @@ const handleRequestInventory = (e) => {
             <div className="col-12">
               <HeaderSim />
             </div>
-            <div className={`col-12 ${userType === "user" ? "mt-5" : ""}`}>
-              <Maindashboard />
-            </div>
+           
             <div className="col-12 m-3">{renderTabs()}</div>
             <div className="col-12">{renderContent()}</div>
           </div>

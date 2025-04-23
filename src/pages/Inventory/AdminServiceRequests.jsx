@@ -63,7 +63,7 @@ const AdminServiceRequests = () => {
 
   return (
     <div className="container py-3">
-      <h2 className="mb-4">Admin View of Service Requests</h2>
+      <h4 className="mb-4">Admin View of Service Requests</h4>
       <div className="card">
         <div className="card-body">
           {faults.length === 0 ? (

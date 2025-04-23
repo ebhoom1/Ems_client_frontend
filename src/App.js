@@ -83,6 +83,10 @@ import SubscriptionPlans from './pages/Subscribe/SubscriptionPlans';
 import PaymentPage from './pages/Subscribe/PaymentPage';
 import MaintenanceForm from './pages/Inventory/MaintenanceForm';
 import ElectricalMaintenance from './pages/Inventory/ElectricalMaintenance';
+import ElectricalReport from './pages/Inventory/ElectricalReport';
+import MechanicalReport from './pages/Inventory/MechanicalReport';
+import MergedMechanicalReport from './pages/Inventory/MergedMechanicalReport';
+import MergedElectricalReport from './pages/Inventory/MergedElectricalReport';
 
 
 function App() {
@@ -221,7 +225,12 @@ function App() {
     path="/maintenance/electrical/:equipmentId"
     element={<ElectricalMaintenance onClose={() => navigate(-1)} />}
   /> 
-        
+  <Route path="/report/electrical/:equipmentId" element={<ElectricalReport />} />
+  <Route path="/report/mechanical/:equipmentId" element={<MechanicalReport />} />
+  <Route path="/report/mechanical/download" element={<MergedMechanicalReport />} />
+  
+  <Route path="/report/electrical/download" element={<MergedElectricalReport />} />
+
                 </Route>
               )}
               {/* User Routes */}
@@ -262,7 +271,11 @@ function App() {
                   <Route path="/payment/:userName" element={<PaymentPage />} />
                   <Route path="/maintenance/:type/:equipmentId" element={<MaintenanceForm />} />
                   <Route path="/maintenance/electrical/:equipmentId" element={<ElectricalMaintenance />}
+                  
  />
+ <Route path="/report/mechanical/download" element={<MergedMechanicalReport />} />
+  
+  <Route path="/report/electrical/download" element={<MergedElectricalReport />} />
                 </Route>
               )}
             </Routes>

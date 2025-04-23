@@ -177,7 +177,7 @@ const AdminDashboard = () => {
     };
   return (
     <div className="col-12">
-      <h1 className="text-center mt-3">Admin Inventory Dashboard</h1>
+      <h3 className="text-center mt-3">ADMIN INVENTORY DASHBOARD</h3>
       {/* Tabs Navigation */}
       <div className="mb-4">
         <ul className="nav nav-tabs">
@@ -253,7 +253,7 @@ const AdminDashboard = () => {
   {/* Inventory Added Tab */}
 {activeAdminTab === "inventoryAdded" && (
   <div>
-    <h2>Inventory Added</h2>
+    <h4 className="text-center">Inventory Added</h4>
     {loadingAdded ? (
       <p>Loading...</p>
     ) : errorAdded ? (

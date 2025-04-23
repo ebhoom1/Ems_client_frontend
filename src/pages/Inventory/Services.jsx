@@ -15,6 +15,8 @@ import ReportFault from "./ReportFault";
 
 const Services = () => {
   const { userData } = useSelector((state) => state.user);
+  console.log('userdata in services',userData);
+  
   const navigate = useNavigate();
   const initialTab = userData?.validUserOne?.userType === "admin" ? "adminView" : "reportFault";
   const [selectedTab, setSelectedTab] = useState(initialTab);
@@ -105,9 +107,15 @@ const Services = () => {
             <div className="col-12">
               <Header />
             </div>
-            <div className={`col-12 ${userData?.validUserOne?.userType === "user" ? "mt-5" : ""}`}> 
-              <Maindashboard />
-            </div>
+            <div className="d-flex align-items-center justify-content-center mt-5">
+            <button onClick={() => navigate("/inventory")} className="w-25 btn btn-outline-success me-2">
+              Inventory
+            </button>
+            <button onClick={() => navigate("/services")} className="w-25 btn btn-outline-success">
+              Services
+            </button>
+          </div>
+          <h3 className="text-center mt-3">SERVICES</h3>
             <div className="col-12 m-3">{renderTabs()}</div>
             <div className="col-12">{renderContent()}</div>
           </div>

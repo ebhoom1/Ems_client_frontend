@@ -213,9 +213,9 @@ function LIveLayout() {
                           </div>
                         </div>
                         <div className="row">
-                          <div className="col-md-12">
+                         {/*  <div className="col-md-12">
                             <Chemicals />
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                     </div>

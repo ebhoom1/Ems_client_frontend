@@ -50,8 +50,8 @@ export default function ElectricalMaintenance({  onClose }) {
         <div className='d-flex '> <button className="btn-close me-2" onClick={onClose} />
         <h3 className="mb-3 ">Electrical Maintenance</h3></div>
        
-        <ElectricalChecklist equipment={equipment} />
-      </div>
+        <ElectricalChecklist equipment={equipment} equipmentId={equipmentId} />
+        </div>
     </div>
   );
 }

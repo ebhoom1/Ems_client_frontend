@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const overlayStyle = {
@@ -11,53 +11,49 @@ const overlayStyle = {
   justifyContent: 'center',
   zIndex: 1000
 };
+
 const boxStyle = {
   background: '#fff',
   padding: '20px',
   borderRadius: '8px',
   maxWidth: '400px',
-  width: '90%'
+  width: '90%',
+  textAlign: 'center'
 };
 
-export default function MaintenanceTypeModal({ equipmentId, equipmentName, onClose }) {
-  const navigate = useNavigate();
+export default function ReportTypeModal({ equipmentId, equipmentName, onClose }) {
+  const nav = useNavigate();
 
-  // Log the equipment name each time this component renders
-  console.log('Selected equipment:', equipmentName);
-  console.log('SElected equipment id :', equipmentId);
-  
+  useEffect(() => {
+    console.log('ReportTypeModal opened for:', equipmentName, equipmentId);
+  }, [equipmentId, equipmentName]);
 
   const pick = (type) => {
     onClose();
-    navigate(`/maintenance/${type}/${equipmentId}`, {
-      state: { 
-        equipmentName,
-        equipmentId  // Also pass ID in state for double safety
-      }
-    });
+    nav(`/report/${type}/${equipmentId}`);
   };
 
   return (
     <div style={overlayStyle}>
       <div style={boxStyle}>
-        <h5>Select Maintenance Type for: {equipmentName}</h5>
+        <h5>Select Report</h5>
+        <p><strong>{equipmentName}</strong></p>
         <div className="d-grid gap-2">
-          <button 
-            className="btn" 
+          <button
+            className="btn  w-100 mb-2"
             style={{ backgroundColor: '#236a80', color: '#fff' }} 
             onClick={() => pick('mechanical')}
           >
-            Monthly Mechanical Maintenance
+            Mechanical Report
           </button>
-          <button 
-            className="btn btn-secondary" 
+          <button
+            className="btn btn-outline-secondary w-100 mb-3"
             onClick={() => pick('electrical')}
           >
-            Monthly Electrical Maintenance
+            Electrical Report
           </button>
-          <button 
-            className="btn btn-link" 
-            style={{ color: 'red' }} 
+          <button
+            className="btn btn-link text-danger"
             onClick={onClose}
           >
             Cancel

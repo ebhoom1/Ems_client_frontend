@@ -6,6 +6,7 @@ import { color } from '@mui/system';
 
 export default function ElectricalChecklist({
   equipment = {},
+  equipmentId,
   powerFactor = 0.8
 }) {
   // --- Technician state & handlers ---
@@ -128,6 +129,7 @@ export default function ElectricalChecklist({
     }
     try {
       const payload = {
+        equipmentId,
         technician,
         equipment,
         responses
