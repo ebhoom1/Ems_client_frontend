@@ -232,7 +232,9 @@ export default function DailyLog() {
                       </thead>
                       <tbody>
                         {treatedWaterParams.map((p, index) => (
-                          <tr key={`${p}-${index}`}>
+                          // <tr key={`${p}-${index}`}>
+                          <tr key={index}>
+
                             <td className="text-start">
                               {index < initialTreatedWaterParams.length ? (
                                 p

@@ -241,14 +241,25 @@ export default function AdminReport() {
                         <thead>
                           <tr><th colSpan="2">TREATED WATER</th></tr>
                         </thead>
-                        <tbody>
+                        {/* <tbody>
                           {log.treatedWater.map(tw => (
                             <tr key={tw.key}>
                               <td style={{ border:'1px solid #000', padding:4, textAlign:'left' }}>{tw.key}</td>
                               <td style={{ border:'1px solid #000', padding:4 }}>{tw.value}</td>
                             </tr>
                           ))}
-                        </tbody>
+                        </tbody> */}
+                        <tbody>
+  {log.treatedWater
+    .filter(tw => tw.key && tw.key.toLowerCase() !== "+ add parameter") // prevent empty or accidental '+ Add Parameter'
+    .map(tw => (
+      <tr key={tw.key}>
+        <td style={{ border:'1px solid #000', padding:4, textAlign:'left' }}>{tw.key}</td>
+        <td style={{ border:'1px solid #000', padding:4 }}>{tw.value}</td>
+      </tr>
+  ))}
+</tbody>
+
                       </table>
                     </td>
                   );
@@ -273,12 +284,21 @@ export default function AdminReport() {
                           <tr><th colSpan="2">Chemical Consumption</th></tr>
                         </thead>
                         <tbody>
-                          {log.chemicalConsumption.map(c => (
+                          {/* {log.chemicalConsumption.map(c => (
                             <tr key={c.key}>
                               <td style={{ border:'1px solid #000', padding:4, textAlign:'left' }}>{c.key}</td>
                               <td style={{ border:'1px solid #000', padding:4 }}>{c.value}</td>
                             </tr>
-                          ))}
+                          ))} */}
+                          {log.chemicalConsumption
+  .filter(c => c.key && c.key.toLowerCase() !== "+ add chemical")
+  .map(c => (
+    <tr key={c.key}>
+      <td style={{ border:'1px solid #000', padding:4, textAlign:'left' }}>{c.key}</td>
+      <td style={{ border:'1px solid #000', padding:4 }}>{c.value}</td>
+    </tr>
+))}
+
                         </tbody>
                       </table>
                     </td>

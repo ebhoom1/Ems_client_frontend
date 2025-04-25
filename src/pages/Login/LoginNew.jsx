@@ -81,38 +81,8 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
   
   const graphRef = useRef();
   // Water parameters
-  const waterParameters = [
-    { parameter: "pH", value: 'pH', name: 'ph' },
-    { parameter: "TDS", value: 'mg/l', name: 'TDS' },
-    { parameter: "Turbidity", value: 'NTU', name: 'turbidity' },
-    // { parameter: "Temperature", value: '℃', name: 'Temp' },
- 
-    { parameter: "BOD", value: 'mg/l', name: 'BOD' },
-    { parameter: "COD", value: 'mg/l', name: 'COD' },
-    { parameter: "TSS", value: 'mg/l', name: 'TSS' },
-    { parameter: "ORP", value: 'mV', name: 'ORP' },
-    { parameter: "Nitrate", value: 'mg/l', name: 'nitrate' },
-    { parameter: "DO", value: 'mg/l', name: 'DO' },
-    { parameter:"Total Flow", value:'m3/Day', name:'Totalizer_Flow'},
-    { parameter: "Chloride", value: 'mmol/l', name: 'chloride' },
-    { parameter: "Colour", value: 'color', name: 'color' },
-    { parameter: "Fluoride", value: "mg/Nm3", name: "Fluoride" },
-    { parameter: "Flow", value: 'm3/hr', name: "Flow" },
 
-  ];
-  const airParameters = [
-    { parameter: "Flow", value: "m3/hr", name: "Flow" },
-    { parameter: "CO", value: "µg/Nm³", name: "CO" },
-    { parameter: "NOX", value: "µg/Nm³", name: "NOX" },
-    { parameter: "PM 2.5", value: "µg/m³", name: "PM25" },
-    { parameter: "PM 10", value: "µg/m³", name: "PM10" },
-    { parameter: "SO2", value: "mg/Nm3", name: "SO2" },
-    { parameter: "Temperature", value: "℃", name: "AirTemperature" },
-    { parameter: "Humidity", value: "%", name: "Humidity" },
-    { parameter: "Wind Speed", value: "m/s", name: "WindSpeed" },
-    { parameter: "Wind Direction", value: "deg", name: "WindDir" },
-  ];
-  
+ 
  // Fetch stack names and filter effluent stationType stacks
  // Fetch stack names and filter effluent stationType stacks
  const fetchStacks = async (userName) => {
@@ -195,94 +165,8 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
     setShowPopup(true);
   };
 
-  const handleClosePopup = () => {
-    setShowPopup(false);
-    setSelectedCard(null);
-  };
 
-  const handleOpenCalibrationPopup = () => {
-    setShowCalibrationPopup(true);
-  };
-
-  const handleCloseCalibrationPopup = () => {
-    setShowCalibrationPopup(false);
-  };
-
-  // Pagination to handle user navigation
-  const handleNextUser = () => {
-    if (!currentUserName) {
-      console.error("currentUserName is undefined.");
-      return;
-    }
   
-    const userIdNumber = parseInt(currentUserName.replace(/[^\d]/g, ''), 10);
-    if (!isNaN(userIdNumber) && userIdNumber < 12) { // Restrict to KSPCB0013
-      const newUserId = `KSPCB${String(userIdNumber + 1).padStart(3, '0')}`;
-      setCurrentUserName(newUserId);
-    } else {
-      console.warn("Reached the last user or invalid user ID.");
-    }
-  };
-  
-  
-  const handlePrevUser = () => {
-    if (!currentUserName) {
-      console.error("currentUserName is undefined.");
-      return;
-    }
-  
-    const userIdNumber = parseInt(currentUserName.replace(/[^\d]/g, ''), 10);
-    if (!isNaN(userIdNumber) && userIdNumber > 1) { // Prevent going below KSPCB001
-      const newUserId = `KSPCB${String(userIdNumber - 1).padStart(3, '0')}`;
-      setCurrentUserName(newUserId);
-    } else {
-      console.warn("Reached the first user or invalid user ID.");
-    }
-  };
-  
-  const renderStackData = (stackData, parameters, image, stackType) => {
-    return (stackData || []).map((stack, index) => (
-
-      <div key={index} className="col-12 mb-4">
-        <div className="stack-box">
-          <h4 className="text-center">
-            {stack.stackName} <img src={image} alt={`${stackType} image`} width="100px" />
-          </h4>
-          <div className="row">
-            {parameters.map((param, paramIndex) => {
-              const value = stack[param.name];
-              return value && value !== "N/A" ? (
-                <div key={paramIndex} className="col-12 col-md-4">
-                  <div className="card stack-card">
-                    <div className="card-body">
-                      <h5>{param.parameter}</h5>
-                      <p>
-                        <strong>{value}</strong> {param.value}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : null;
-            })}
-          </div>
-        </div>
-      </div>
-    ));
-  };
-  useEffect(() => {
-    const interval = setInterval(() => {
-      handleNextUser(); // Automatically go to the next user
-    }, 3000); // 3 seconds interval
-
-    // Clear the interval on component unmount
-    return () => {
-      clearInterval(interval);
-    };
-  }, [currentUserName]);
-  /* stack */
-  const handleStackChange = (event) => {
-    setSelectedStack(event.target.value);
-  };
 
   const filteredData = selectedStack === "all"
     ? Object.values(realTimeData)
@@ -312,41 +196,50 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
       const { email, password, userType } = inpval;
     
       // Basic validation
-      if (email === "") {
+      if (!email) {
         toast.error("Email is required!");
         return;
-      } else if (!email.includes("@")) {
+      }
+      if (!email.includes("@")) {
         toast.warning("Please include '@' in your email!");
         return;
-      } else if (userType === "select") {
+      }
+      if (userType === "select") {
         toast.error("Please select the user type");
         return;
-      } else if (password === "") {
+      }
+      if (!password) {
         toast.error("Password is required!");
         return;
-      } else if (password.length < 6) {
+      }
+      if (password.length < 6) {
         toast.error("Password must be at least 6 characters!");
         return;
       }
     
       try {
         // Dispatch the login action
-        const result = await dispatch(loginUser({ email, password, userType })).unwrap();
-     // Save the login flag and user details in localStorage
-     localStorage.setItem("isLoggedIn", "true");
-     localStorage.setItem("userEmail", email);
-     localStorage.setItem("userType", userType);
+        await dispatch(loginUser({ email, password, userType })).unwrap();
+    
+        // Save the login flag and user details in localStorage
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userEmail", email);
+        localStorage.setItem("userType", userType);
+    
         // Navigate based on user type
-        navigate("/water");
+        if (userType === "operator") {
+          navigate("/operator-geolocation");
+        } else {
+          navigate("/water");
+        }
     
         // Reset the form
         setInpval({ email: "", password: "", userType: "select" });
       } catch (error) {
-              // Handle errors
-              toast.error("Invalid credentials");
-              console.error("Error during login:", error);
-              localStorage.removeItem("isLoggedIn");
-        
+        // Handle errors
+        toast.error("Invalid credentials");
+        console.error("Error during login:", error);
+        localStorage.removeItem("isLoggedIn");
       }
     };
     
@@ -432,6 +325,7 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
                 <option value="select">Select</option>
                 <option value="admin">Admin</option>
                 <option value="user">User</option>
+                <option value="operator">Operator</option> 
               </select>
               <div className='mb-2'>
                 <Button style={{ borderRadius: '20px', backgroundColor: '#236a80' , border:'none' }} className='btn w-100'

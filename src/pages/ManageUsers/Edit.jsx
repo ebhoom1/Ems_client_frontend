@@ -36,6 +36,7 @@ function Edit() {
     latitude: '',
     longitude: '',
     adminType: '',
+    operators: []   ,
   });
 
   const industryType = [
@@ -78,6 +79,7 @@ function Edit() {
       setUserData((prevData) => ({
         ...prevData,
         ...selectedUser,
+        operators: selectedUser.operators || [],
         additionalEmails:
           selectedUser.additionalEmails && selectedUser.additionalEmails.length > 0
             ? selectedUser.additionalEmails
@@ -103,7 +105,32 @@ function Edit() {
     newEmails[index] = value;
     setUserData({ ...userData, additionalEmails: newEmails });
   };
-
+  const handleAddOperator = () => {
+    setUserData(prev => ({
+      ...prev,
+      operators: [
+        ...prev.operators,
+        { name: '', email: '', password: '', userType: 'operator' }
+      ]
+    }));
+  };
+  
+  const handleOperatorChange = (idx, e) => {
+    const { name, value } = e.target;
+    setUserData(prev => {
+      const ops = [...prev.operators];
+      ops[idx] = { ...ops[idx], [name]: value };
+      return { ...prev, operators: ops };
+    });
+  };
+  
+  const handleRemoveOperator = (idx) => {
+    setUserData(prev => ({
+      ...prev,
+      operators: prev.operators.filter((_, i) => i !== idx)
+    }));
+  };
+  
   // Add a new additional email field
   const handleAddAdditionalEmail = () => {
     setUserData({ ...userData, additionalEmails: [...userData.additionalEmails, ""] });
@@ -382,6 +409,7 @@ function Edit() {
                             </select>
                           </div>
                         </div>
+                     
 
                         <div className="col-lg-6 col-md-6 mb-4">
                           <div className="form-group">
@@ -400,7 +428,55 @@ function Edit() {
                             </select>
                           </div>
                         </div>
-                        
+                        {userData.userType === 'user' && (
+  <div className="mb-4">
+    <h5>Operators</h5>
+    {userData.operators.map((op, i) => (
+      <div key={i} className="d-flex align-items-center mb-2">
+        <input
+          name="name"
+          value={op.name}
+          onChange={e => handleOperatorChange(i, e)}
+          placeholder="Operator Name"
+          className="form-control me-2"
+          style={{ width: '33%', padding:'15px' }}
+        />
+        <input
+          name="email"
+          type="email"
+          value={op.email}
+          onChange={e => handleOperatorChange(i, e)}
+          placeholder="Operator Email"
+          className="form-control me-2"
+          style={{ width: '33%', padding:'15px' }}
+        />
+        <input
+          name="password"
+          type="password"
+          value={op.password}
+          onChange={e => handleOperatorChange(i, e)}
+          placeholder="Operator Password"
+          className="form-control me-2"
+          style={{ width: '33%', padding:'15px' }}
+        />
+        <button
+          type="button"
+          className="btn btn-sm btn-danger"
+          onClick={() => handleRemoveOperator(i)}
+        >
+          &times;
+        </button>
+      </div>
+    ))}
+    <button
+      type="button"
+      className="btn btn-sm btn-secondary"
+      onClick={handleAddOperator}
+    >
+      + Add Operator
+    </button>
+  </div>
+)}
                         <div className="col-lg-6 col-md-6 mb-4">
                           <div className="form-group">
                             <label htmlFor="industry" className="form-label">Select Industry</label>

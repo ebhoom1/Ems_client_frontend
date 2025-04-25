@@ -89,6 +89,7 @@ import MergedMechanicalReport from './pages/Inventory/MergedMechanicalReport';
 import MergedElectricalReport from './pages/Inventory/MergedElectricalReport';
 import DailyLog from './pages/Inventory/DailyLog';
 import AdminReport from './pages/Inventory/AdminDailyLog';
+import OperatorGeo from './pages/Operator/OperatorGeo';
 
 
 function App() {
@@ -280,8 +281,16 @@ function App() {
   
   <Route path="/report/electrical/download" element={<MergedElectricalReport />} />
   <Route path="/dailylog" element={<DailyLog />} />
+  <Route path="/operator-geolocation" element={<OperatorGeo />} />
+
 
                 </Route>
+              )}
+
+
+              {userType === 'operator' && (
+                <Route path="/operator-geolocation" element={<OperatorGeo />} />
+
               )}
             </Routes>
           </NotificationProvider>

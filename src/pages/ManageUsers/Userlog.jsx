@@ -46,6 +46,7 @@ const UsersLog = () => {
     longitude: "",
     productID: "",
     adminType: "",
+    operators: []     , 
   });
   
   const [userName, setUserName] = useState("");
@@ -142,54 +143,87 @@ useEffect(() => {
     }
     return true;
   };
+// inside component:
+const handleAddOperator = () => {
+  setformData(prev => ({
+    ...prev,
+    operators: [
+      ...prev.operators,
+      { name: "", email: "", password: "", userType: "operator" }
+    ]
+  }));
+};
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleOperatorChange = (idx, e) => {
+  const { name, value } = e.target;
+  setformData(prev => {
+    const ops = [...prev.operators];
+    ops[idx] = { ...ops[idx], [name]: value };
+    return { ...prev, operators: ops };
+  });
+};
 
-    if (!validateFields()) {
-      toast.error("Please fill all the fields", { position: "top-center" });
-      return;
-    }
+const handleRemoveOperator = (idx) => {
+  setformData(prev => ({
+    ...prev,
+    operators: prev.operators.filter((_, i) => i !== idx)
+  }));
+};
 
-    if (formData.password !== formData.cpassword) {
-      toast.error("Passwords do not match", { position: "top-center" });
-      return;
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    try {
-      await dispatch(addUser(formData)).unwrap();
-      toast.success("User added successfully", { position: "top-center" });
+  if (!validateFields()) {
+    toast.error("Please fill all the fields", { position: "top-center" });
+    return;
+  }
 
-      setformData({
-        userName: "",
-        companyName: "",
-        modelName: "",
-        fname: "",
-        email: "",
-        additionalEmails: [""], 
-        password: "",
-        cpassword: "",
-        subscriptionDate: "",
-        userType: "",
-        industryType: "",
-        dataInteval: "",
-        district: "",
-        state: "",
-        address: "",
-        latitude: "",
-        longitude: "",
-        productID: "",
-        adminType: "",
-      });
+  if (formData.password !== formData.cpassword) {
+    toast.error("Passwords do not match", { position: "top-center" });
+    return;
+  }
 
-      dispatch(fetchUsers());
-    } catch (error) {
-      console.log("Error in AddUser:", error);
-      toast.error("An error occurred. Please try again.", {
-        position: "top-center",
-      });
-    }
-  };
+  try {
+    // send everything, including formData.operators
+    await dispatch(addUser(formData)).unwrap();
+    toast.success("User added successfully", { position: "top-center" });
+
+    // reset all fields — operators too
+    setformData({
+      userName: "",
+      companyName: "",
+      modelName: "",
+      fname: "",
+      email: "",
+      additionalEmails: [""],
+      mobileNumber: "",
+      password: "",
+      cpassword: "",
+      subscriptionDate: "",
+      subscriptionPlan: "",
+      userType: "",
+      adminType: "",
+      industryType: "",
+      dataInteval: "",
+      district: "",
+      state: "",
+      address: "",
+      latitude: "",
+      longitude: "",
+      productID: "",
+      // reset operators array
+      operators: []
+    });
+
+    dispatch(fetchUsers());
+  } catch (error) {
+    console.log("Error in AddUser:", error);
+    toast.error("An error occurred. Please try again.", {
+      position: "top-center",
+    });
+  }
+};
+
 
   const handleDeleteUser = async (userId) => {
     try {
@@ -734,6 +768,56 @@ const handleLogoDelete = async () => {
                                         </select>
                                     </div>
                                 </div>
+                                {formData.userType === "user" && (
+  <div className="mb-4">
+    <h5 className="text-light">Operators</h5>
+    {formData.operators.map((op, i) => (
+      <div key={i} className="d-flex align-items-center mb-2">
+        <input
+          name="name"
+          value={op.name}
+          onChange={e => handleOperatorChange(i, e)}
+          placeholder="Operator Name"
+          className="form-control me-2"
+          style={{ width: '33%',padding: '15px', }}
+        />
+        <input
+          name="email"
+          type="email"
+          value={op.email}
+          onChange={e => handleOperatorChange(i, e)}
+          placeholder="Operator Email"
+          className="form-control me-2"
+          style={{ width: '33%' , padding: '15px',}}
+        />
+        <input
+          name="password"
+          type="password"
+          value={op.password}
+          onChange={e => handleOperatorChange(i, e)}
+          placeholder="Operator Password"
+          className="form-control me-2"
+          style={{ width: '33%', padding: '15px', }}
+        />
+        <button
+          type="button"
+          className="btn btn-sm btn-danger"
+          onClick={() => handleRemoveOperator(i)}
+        >
+          &times;
+        </button>
+      </div>
+    ))}
+
+    <button
+      type="button"
+      className="btn btn-sm btn-secondary"
+      onClick={handleAddOperator}
+    >
+      + Add Operator
+    </button>
+  </div>
+)}
                                 {/* select industry */}
                                 <div className="col-lg-6 col-md-6 mb-4">
                                     <div className="form-group">
