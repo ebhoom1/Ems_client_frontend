@@ -50,6 +50,13 @@ const UsersLog = () => {
   });
   
   const [userName, setUserName] = useState("");
+// State for the new technician form
+const [techData, setTechData] = useState({
+  userName: '',
+  fname: '',
+  email: '',
+  password: ''
+});
 
   const industryType = [
     { category: "Sugar" },
@@ -169,6 +176,31 @@ const handleRemoveOperator = (idx) => {
     operators: prev.operators.filter((_, i) => i !== idx)
   }));
 };
+//add technician
+const handleAddTechnician = async (e) => {
+  e.preventDefault();
+  const { userName, fname, email, password, adminType } = techData;
+  if (!userName || !fname || !email || !password || !adminType) {
+    return toast.error('Please fill all technician fields', { position: 'top-center' });
+  }
+  try {
+    await dispatch(addUser({
+      userName,
+      companyName: formData.companyName,
+      fname,
+      email,
+      password,
+      cpassword: password,
+      userType: 'technician',
+      adminType           // ← now dynamic
+    })).unwrap();
+    toast.success('Technician added successfully', { position: 'top-center' });
+    setTechData({ userName: '', fname: '', email: '', password: '', adminType: '' });
+    dispatch(fetchUsers());
+  } catch (err) {
+    toast.error('Failed to add technician', { position: 'top-center' });
+  }
+};
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -224,7 +256,11 @@ const handleSubmit = async (e) => {
   }
 };
 
-
+// Handle changes to the technician form
+const handleTechChange = (e) => {
+  const { name, value } = e.target;
+  setTechData(prev => ({ ...prev, [name]: value }));
+};
   const handleDeleteUser = async (userId) => {
     try {
       await dispatch(deleteUser(userId)).unwrap();
@@ -942,7 +978,78 @@ const handleLogoDelete = async () => {
            
         </div>
 
-       
+       {/* --- Add Technician Section --- */}
+<div className="row mt-5">
+  <div className="col-12">
+    <div className="card">
+      <div className="card-body">
+        <h4 className="card-title text-center">Add Technician</h4>
+        <form className="row g-3" onSubmit={handleAddTechnician}>
+          <div className="col-md-3">
+            <input
+              type="text"
+              name="userName"
+              value={techData.userName}
+              onChange={handleTechChange}
+              className="form-control"
+              placeholder="Technician ID"
+            />
+          </div>
+          <div className="col-md-3">
+            <input
+              type="text"
+              name="fname"
+              value={techData.fname}
+              onChange={handleTechChange}
+              className="form-control"
+              placeholder="Name"
+            />
+          </div>
+          <div className="col-md-3">
+            <input
+              type="email"
+              name="email"
+              value={techData.email}
+              onChange={handleTechChange}
+              className="form-control"
+              placeholder="Email"
+            />
+          </div>
+          <div className="col-md-3">
+            <input
+              type="password"
+              name="password"
+              value={techData.password}
+              onChange={handleTechChange}
+              className="form-control"
+              placeholder="Password"
+            />
+          </div>
+          <div className="col-md-3">
+  <select
+    name="adminType"
+    value={techData.adminType}
+    onChange={handleTechChange}
+    className="form-control"
+  >
+    <option value="">Select Admin Type</option>
+    <option value="Genex">Genex</option>
+    <option value="KSPCB">KSPCB</option>
+    <option value="IESS">IESS</option>
+   
+  </select>
+</div>
+          <div className="col-12 text-center">
+            <button type="submit" className="btn btn-primary">
+              Add Technician
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
       {/* logo components */}
       <div className="row">
         <div className="col-lg-12 col-md-6">
