@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect  } from 'react';
+import axios from 'axios';
 import stank from '../../assests/images/stank.svg';
 import filtertank from '../../assests/images/filtertank.svg';
 import connector from '../../assests/images/connector.svg';
@@ -43,6 +44,7 @@ import settlingnew from '../../assests/images/settlingnew.svg'
 import watertanknew from '../../assests/images/watertanknew.svg'
 
 import './livemapping.css';
+import { API_URL } from '../../utils/apiConfig';
 
 // Default shapes
 const defaultShapes = [
@@ -95,6 +97,26 @@ function Sidebar() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [newText, setNewText] = useState(''); // Updated variable name to avoid conflicts
 
+  //new
+  useEffect(() => {
+    const loadServerSVGs = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/list-uploaded-svgs`);
+        const serverShapes = res.data.map((filename, index) => ({
+          id: `server_${index}`,
+          label: filename.replace('.svg', ''),
+          isSVG: true,
+          svgPath: `${API_URL}/uploads/${filename}`,
+        }));
+        setShapes((prev) => [...prev, ...serverShapes]);
+      } catch (err) {
+        console.error('Failed to load server SVGs:', err);
+      }
+    };
+  
+    loadServerSVGs();
+  }, []);
+
   const handleTextAdd = () => {
     if (newText.trim()) {
       const newTextShape = {
@@ -112,23 +134,56 @@ function Sidebar() {
     setSelectedFile(file);
   };
 
-  const handleUpload = () => {
-    if (selectedFile && selectedFile.type === 'image/svg+xml') {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const newShape = {
-          id: `user_${shapes.length}`,
-          label: `User SVG ${shapes.length + 1}`,
-          isSVG: true,
-          svgPath: reader.result,
-        };
-        setShapes((prevShapes) => [...prevShapes, newShape]);
-        setSelectedFile(null);
-        alert('SVG uploaded successfully!');
+  // const handleUpload = () => {
+  //   if (selectedFile && selectedFile.type === 'image/svg+xml') {
+  //     const reader = new FileReader();
+  //     reader.onload = () => {
+  //       const newShape = {
+  //         id: `user_${shapes.length}`,
+  //         label: `User SVG ${shapes.length + 1}`,
+  //         isSVG: true,
+  //         svgPath: reader.result,
+  //       };
+  //       setShapes((prevShapes) => [...prevShapes, newShape]);
+  //       setSelectedFile(null);
+  //       alert('SVG uploaded successfully!');
+  //     };
+  //     reader.readAsDataURL(selectedFile);
+  //   } else {
+  //     alert('Please select a valid SVG file before uploading.');
+  //   }
+  // };
+
+  //new
+  const handleUpload = async () => {
+    if (!selectedFile || selectedFile.type !== 'image/svg+xml') {
+      alert('Please select a valid SVG file.');
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append('svg', selectedFile);
+  
+    try {
+      const res = await axios.post(`${API_URL}/api/upload-svg`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+  
+      const newShape = {
+        id: `user_${shapes.length}`,
+        label: `User SVG ${shapes.length + 1}`,
+        isSVG: true,
+        svgPath: res.data.filePath, // returned from backend
       };
-      reader.readAsDataURL(selectedFile);
-    } else {
-      alert('Please select a valid SVG file before uploading.');
+  
+      setShapes((prevShapes) => [...prevShapes, newShape]);
+      setSelectedFile(null);
+      alert('SVG uploaded and saved to server!');
+    } catch (err) {
+      console.error('Upload failed:', err);
+      alert('Failed to upload SVG');
     }
   };
 

@@ -14,6 +14,7 @@ import HeaderSim from "../Header/HeaderSim";
 
 function LIveLayout() {
   const { userData } = useSelector((state) => state.user);
+  const [isEditMode, setIsEditMode] = useState(false); //new
   const [stationsList, setStationsList] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
   const [users, setUsers] = useState([]);
@@ -171,25 +172,33 @@ function LIveLayout() {
                     <div className="card-body">
                       <div className="row">
                         {/* Sidebar for drag-and-drop (hidden on mobile) */}
-                        <div className="col-md-3 d-none d-md-block">
+                        {/* <div className="col-md-3 d-none d-md-block">
                           <Sidebar />
-                        </div>
+                        </div> */}
+                        {isEditMode && (
+                          <div className="col-md-3 d-none d-md-block">
+                            <Sidebar />
+                          </div>
+                        )}
+
                         {/* Canvas Area with horizontal scroll on mobile */}
                         <div className="col-md-9">
-                          <div 
-                            className="shadow" 
+                          <div
+                            className="shadow"
                             style={{
                               overflowX: "auto",
                               WebkitOverflowScrolling: "touch",
                               width: "100%",
-                              minHeight: "500px"
+                              minHeight: "500px",
                             }}
                           >
-                            <div style={{ 
-                              minWidth: "800px", 
-                              width: "100%",
-                              padding: "10px"
-                            }}>
+                            <div
+                              style={{
+                                minWidth: "800px",
+                                width: "100%",
+                                padding: "10px",
+                              }}
+                            >
                               <Canvas
                                 key={
                                   selectedStation
@@ -197,6 +206,8 @@ function LIveLayout() {
                                     : "new"
                                 }
                                 selectedStation={selectedStation}
+                                isEditMode={isEditMode} //new
+                                setIsEditMode={setIsEditMode} //new
                               />
                             </div>
                           </div>
@@ -213,9 +224,9 @@ function LIveLayout() {
                           </div>
                         </div>
                         <div className="row">
-                         {/*  <div className="col-md-12">
+                          <div className="col-md-12">
                             <Chemicals />
-                          </div> */}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -229,8 +240,7 @@ function LIveLayout() {
             <div className="container-fluid clearfix">
               <span className="text-muted d-block text-center text-sm-left d-sm-inline-block"></span>
               <span className="float-none float-sm-right d-block mt-1 mt-sm-0 text-center">
-                AquaBox Control and Monitor System <br />
-                ©{" "}
+                AquaBox Control and Monitor System <br />©{" "}
                 <a
                   href="https://ebhoom.com"
                   target="_blank"

@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Resizable } from 're-resizable';
 import { FaSyncAlt, FaTrashAlt } from 'react-icons/fa';
+//new
+import { Handle, Position } from 'react-flow-renderer';
+
 
 const SVGNode = ({ data, selected, onDelete }) => {
+//new
+const [text, setText] = useState(data.label || '');
+
+
   const [size, setSize] = useState({ width: 100, height: 100 });
   const [isResizing, setIsResizing] = useState(false);
   const [isPumpOn, setIsPumpOn] = useState(false);
@@ -53,6 +60,22 @@ const SVGNode = ({ data, selected, onDelete }) => {
 
   const { minWidth, minHeight, maxWidth, maxHeight } = getResizeConstraints();
 
+  const commonHandleStyle = {
+    background: '#D9DFC6',
+    width: 10,
+    height: 10,
+    borderRadius: '50%',
+    zIndex: 9999,
+    cursor: 'crosshair',
+    position: 'absolute', // ensure all handles are floated outside
+  };
+
+  //new
+   // Update text in node data
+  useEffect(() => {
+    data.label = text;
+  }, [text]);
+
   return (
     <div
       onDoubleClick={toggleEditing}
@@ -65,6 +88,80 @@ const SVGNode = ({ data, selected, onDelete }) => {
         transition: 'transform 0.3s ease',
       }}
     >
+      {/**new */}
+     {/* Handles for all directions */}
+     <Handle
+  id="right"
+  type="source"
+  position={Position.Right}
+  style={{
+    background: data.isEditing ? '#D9DFC6' : 'transparent',
+    width: 10,
+    height: 10,
+    borderRadius: '50%',
+    zIndex: 9999,
+    cursor: 'crosshair',
+    position: 'absolute',
+    right: -12,
+    pointerEvents: data.isEditing ? 'auto' : 'none',
+    border: data.isEditing ? '1px solid #ccc' : 'none',
+  }}
+/>
+    
+<Handle
+  id="bottom"
+  type="source"
+  position={Position.Bottom}
+  style={{
+    background: data.isEditing ? '#D9DFC6' : 'transparent',
+    width: 10,
+    height: 10,
+    borderRadius: '50%',
+    zIndex: 9999,
+    cursor: 'crosshair',
+    position: 'absolute',
+    right: -12,
+    pointerEvents: data.isEditing ? 'auto' : 'none',
+    border: data.isEditing ? '1px solid #ccc' : 'none',
+  }}/>
+
+<Handle
+  id="top"
+  type="target"
+  position={Position.Top}
+  style={{
+    background: data.isEditing ? '#D9DFC6' : 'transparent',
+    width: 10,
+    height: 10,
+    borderRadius: '50%',
+    zIndex: 9999,
+    cursor: 'crosshair',
+    position: 'absolute',
+    right: -12,
+    pointerEvents: data.isEditing ? 'auto' : 'none',
+    border: data.isEditing ? '1px solid #ccc' : 'none',
+  }}/>
+
+<Handle
+  id="left"
+  type="target"
+  position={Position.Left}
+  style={{
+    background: data.isEditing ? '#D9DFC6' : 'transparent',
+    width: 10,
+    height: 10,
+    borderRadius: '50%',
+    zIndex: 9999,
+    cursor: 'crosshair',
+    position: 'absolute',
+    right: -12,
+    pointerEvents: data.isEditing ? 'auto' : 'none',
+    border: data.isEditing ? '1px solid #ccc' : 'none',
+  }}/>
+
+
+      {/**new */}
+
       <Resizable
         size={size}
         onResize={handleResize}
@@ -86,7 +183,53 @@ const SVGNode = ({ data, selected, onDelete }) => {
           }}
         />
       </Resizable>
+     
+{/**new */}
+ {/* Label input */}
+ {/* Label and future values container */}
+<div
+  style={{
+    width: '100%',
+    marginTop: 6,
+    fontSize: '12px',
+    border: '1px solid #ccc',
+    borderRadius: 4,
+    padding: 4,
+    backgroundColor: '#f9f9f9',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  }}
+>
+  {/* Label input */}
+  <input
+    type="text"
+    value={text}
+    onChange={(e) => setText(e.target.value)}
+    placeholder="Label..."
+    style={{
+      width: '100%',
+      fontSize: '12px',
+      border: 'none',
+      // borderRadius: 3,
+      // padding: '2px 4px',
+    }}
+  />
+  
+  {/* Placeholder for second value  */}
+  <div style={{ color: '#555' }}>
+    {/* Replace with dynamic content in future */}
+    <small> N/A</small>
+  </div>
 
+  {/* Placeholder for third value  */}
+  <div style={{ color: '#888' }}>
+    <small>N/A</small>
+  </div>
+</div>
+
+{/**new */}
       {/* Show toggle switch only for the "Pump" node */}
       {data.label === 'Pump' && (
         <div

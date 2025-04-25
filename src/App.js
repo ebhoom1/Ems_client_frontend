@@ -87,6 +87,8 @@ import ElectricalReport from './pages/Inventory/ElectricalReport';
 import MechanicalReport from './pages/Inventory/MechanicalReport';
 import MergedMechanicalReport from './pages/Inventory/MergedMechanicalReport';
 import MergedElectricalReport from './pages/Inventory/MergedElectricalReport';
+import DailyLog from './pages/Inventory/DailyLog';
+import AdminReport from './pages/Inventory/AdminDailyLog';
 
 
 function App() {
@@ -230,7 +232,8 @@ function App() {
   <Route path="/report/mechanical/download" element={<MergedMechanicalReport />} />
   
   <Route path="/report/electrical/download" element={<MergedElectricalReport />} />
-
+  <Route path="/dailylog" element={<DailyLog />} />
+  <Route path="/admin/report/:username" element={<AdminReport />} />
                 </Route>
               )}
               {/* User Routes */}
@@ -276,6 +279,8 @@ function App() {
  <Route path="/report/mechanical/download" element={<MergedMechanicalReport />} />
   
   <Route path="/report/electrical/download" element={<MergedElectricalReport />} />
+  <Route path="/dailylog" element={<DailyLog />} />
+
                 </Route>
               )}
             </Routes>

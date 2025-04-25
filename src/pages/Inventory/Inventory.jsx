@@ -217,34 +217,43 @@ const Inventory = () => {
   const [equipmentList, setEquipmentList] = useState([]); // Add this line
     const [activeTab, setActiveTab] = useState(userType === "admin" ? "admin" : "add");
   const navigate = useNavigate();
-  useEffect(() => {
-    const fetchEquipmentList = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/all-equipment`);
-        const data = await response.json();
-        if (response.ok) {
-          setEquipmentList(data.equipment);
-        }
-      } catch (error) {
-        console.error("Error fetching equipment list:", error);
-      }
-    };
-    
-    fetchEquipmentList();
-  }, []);
+useEffect(() => {
+  const fetchEquipmentList = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/user?userName=${currentUserName}`);
+      const data = await res.json();
+      // populate dropdown from the returned inventoryItems array
+      setEquipmentList(data.inventoryItems || []);
+    } catch (err) {
+      console.error("Error fetching equipment list:", err);
+    }
+  };
+  if (currentUserName) fetchEquipmentList();
+}, [currentUserName]);
+
   // Render tab navigation based on user type
   const renderTabs = () => {
     if (userType === "admin") {
       return (
         <div>
-          <div className="d-flex align-items-center justify-content-center">
-            <button onClick={() => navigate("/inventory")} className="w-25 btn btn-outline-success me-2">
-              Inventory
-            </button>
-            <button onClick={() => navigate("/services")} className="w-25 btn btn-outline-success">
-              Services
-            </button>
-          </div>
+        <div className="d-flex align-items-center justify-content-center mt-5">
+  <button onClick={() => navigate("/inventory")} className="w-25 btn btn-outline-success me-2">
+    Inventory
+  </button>
+  <button onClick={() => navigate("/services")} className="w-25 btn btn-outline-success me-2">
+    Services
+  </button>
+  <button
+    onClick={() =>
+      userType === "admin"
+        ? navigate(`/admin/report/HH014`)
+        : navigate("/dailylogs")
+    }
+    className="w-25 btn btn-outline-success me-2"
+  >
+    Daily Log
+  </button>
+</div>
         </div>
       );
     } else {
@@ -254,9 +263,19 @@ const Inventory = () => {
             <button onClick={() => navigate("/inventory")} className="w-25 btn btn-outline-success me-2">
               Inventory
             </button>
-            <button onClick={() => navigate("/services")} className="w-25 btn btn-outline-success">
+            <button onClick={() => navigate("/services")} className="w-25 btn btn-outline-success me-2">
               Services
             </button>
+            <button
+    onClick={() =>
+      userType === "admin"
+        ? navigate(`/admin/report/HH014`)
+        : navigate("/dailylog")
+    }
+    className="w-25 btn btn-outline-success me-2"
+  >
+    Daily Log
+  </button>
           </div>
           <ul className="nav nav-tabs mb-3 mt-3">
             <li className="nav-item">
@@ -481,19 +500,20 @@ const Inventory = () => {
                       SKU
                     </label>
                     <select
-                      id="SKU"
-                      className="form-control"
-                      name="SKU"
-                      style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
-                      required
-                    >
-                      <option value="">Select Equipment</option>
-                      {equipmentList.map((equip) => (
-                        <option key={equip._id} value={equip.equipmentName}>
-                          {equip.equipmentName}
-                        </option>
-                      ))}
-                    </select>
+  id="SKU"
+  name="SKU"
+  className="form-control"
+  style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+  required
+>
+  <option value="">Select SKU</option>
+  {equipmentList.map(item => (
+    <option key={item._id} value={item.skuName}>
+      {item.skuName}
+    </option>
+  ))}
+</select>
+
                   </div>
                 </div>
                 <div className="col-lg-6 col-md-6 mb-4">

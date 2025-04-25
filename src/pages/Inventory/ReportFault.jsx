@@ -16,6 +16,9 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
   const [faultDescription, setFaultDescription] = useState("");
   const [reportedDate, setReportedDate] = useState("");
 
+  // front/back camera state
+  const [facingMode, setFacingMode] = useState("environment"); // "environment" = back, "user" = front
+
   // Multi-photo capture state
   const [capturingPhoto, setCapturingPhoto] = useState(false);
   const [photos, setPhotos] = useState([]);
@@ -53,11 +56,13 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
     return () => { scanner.clear().catch(() => {}); };
   }, [scanning]);
 
-  // Open camera once <video> is rendered
+  // Open camera once <video> is rendered, using selected facingMode
   useEffect(() => {
     if (!capturingPhoto) return;
+
     let mounted = true;
-    navigator.mediaDevices.getUserMedia({ video: true })
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode } })
       .then(stream => {
         if (!mounted) {
           stream.getTracks().forEach(t => t.stop());
@@ -76,11 +81,12 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
         );
         setCapturingPhoto(false);
       });
+
     return () => {
       mounted = false;
       streamRef.current?.getTracks().forEach(t => t.stop());
     };
-  }, [capturingPhoto]);
+  }, [capturingPhoto, facingMode]);
 
   const startCamera = () => {
     setCapturingPhoto(true);
@@ -92,36 +98,31 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext("2d").drawImage(video, 0, 0);
-    
-    // Add quality parameter (0.7) to reduce image size
+
+    // reduce image size
     const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
     setPhotos(prev => [...prev, dataUrl]);
-    
+
     streamRef.current.getTracks().forEach(t => t.stop());
     setCapturingPhoto(false);
   };
 
-  const removePhoto = (index) => {
+  const removePhoto = index => {
     setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleReportFault = async (e) => {
+  const handleReportFault = async e => {
     e.preventDefault();
     if (!equipmentId.trim()) {
       return toast.error("Please scan a QR code first");
     }
 
     // Validate photos
-    const validatedPhotos = photos.map(photo => {
-      if (!photo.startsWith('data:image/')) {
-        console.warn('Invalid photo format:', photo);
-        return null;
-      }
-      return photo;
-    }).filter(Boolean);
-
+    const validatedPhotos = photos
+      .map(photo => (photo.startsWith("data:image/") ? photo : null))
+      .filter(Boolean);
     if (validatedPhotos.length !== photos.length) {
-      toast.warn('Some photos were invalid and removed');
+      toast.warn("Some photos were invalid and removed");
     }
 
     const newFault = {
@@ -129,7 +130,7 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
       equipmentName,
       faultDescription,
       photos: validatedPhotos,
-      reportedDate: reportedDate || new Date().toISOString().split('T')[0],
+      reportedDate: reportedDate || new Date().toISOString().split("T")[0],
       status: "Pending",
       userName,
     };
@@ -145,20 +146,19 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
 
       const contentType = res.headers.get("content-type");
       let data;
-      
-      if (contentType && contentType.includes("application/json")) {
+      if (contentType?.includes("application/json")) {
         data = await res.json();
       } else {
         data = await res.text();
       }
 
       if (!res.ok) {
-        throw new Error(data.message || data || `Request failed with status ${res.status}`);
+        throw new Error(data.message || data || `Status ${res.status}`);
       }
 
       toast.success("Fault reported successfully");
       onFaultReported?.(data.fault);
-      
+
       // Reset form
       setEquipmentId("");
       setEquipmentName("");
@@ -166,7 +166,6 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
       setReportedDate("");
       setUsername(defaultUsername);
       setPhotos([]);
-
     } catch (err) {
       console.error("Error reporting fault:", err);
       toast.error(err.message || "Server error while reporting fault");
@@ -179,8 +178,7 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
       <div className="card">
         <div className="card-body">
           <form onSubmit={handleReportFault} className="m-2 p-5">
-
-            {/* Equipment ID (read-only) + QR Scanner */}
+            {/* Equipment ID + QR */}
             <div className="mb-4">
               <label className="form-label">Equipment ID</label>
               <div className="d-flex">
@@ -215,7 +213,7 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
               )}
             </div>
 
-            {/* Display equipment name if known */}
+            {/* Equipment Name */}
             {equipmentName && (
               <div className="mb-4">
                 <label className="form-label">Equipment Name</label>
@@ -271,86 +269,108 @@ const ReportFault = ({ onFaultReported, defaultUsername }) => {
               <p>Add photos:</p>
               <div className="d-flex flex-wrap gap-2 mb-2">
                 {photos.map((src, i) => (
-                  <div key={i} style={{ position: 'relative' }}>
+                  <div key={i} style={{ position: "relative" }}>
                     <img
                       src={src}
                       alt={`captured-${i}`}
-                      style={{ 
-                        width: 80, 
-                        height: 80, 
-                        objectFit: "cover", 
-                        borderRadius: 8 
+                      style={{
+                        width: 80,
+                        height: 80,
+                        objectFit: "cover",
+                        borderRadius: 8,
                       }}
                     />
                     <button
                       type="button"
                       onClick={() => removePhoto(i)}
                       style={{
-                        position: 'absolute',
+                        position: "absolute",
                         top: -5,
                         right: -5,
-                        background: 'red',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '50%',
+                        background: "red",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "50%",
                         width: 20,
                         height: 20,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer'
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
                       }}
                     >
                       ×
                     </button>
                   </div>
                 ))}
+
+                {/* Add-photo button */}
                 {!capturingPhoto && (
                   <button
                     type="button"
                     className="btn btn-outline-dark"
                     onClick={startCamera}
                     style={{
-                      width: 80, 
+                      width: 80,
                       height: 80,
-                      display: "flex", 
-                      alignItems: "center", 
+                      display: "flex",
+                      alignItems: "center",
                       justifyContent: "center",
-                      fontSize: 24
+                      fontSize: 24,
                     }}
                   >
                     +
                   </button>
                 )}
               </div>
+
               {capturingPhoto && (
-                <div className="mt-2">
-                  <video
-                    ref={videoRef}
-                    style={{ width: "100%", maxHeight: 300 }}
-                    muted
-                  />
-                  <div className="d-flex gap-2 mt-2">
+                <>
+                  {/* Switch camera toggle */}
+                  <div className="mb-2">
                     <button
                       type="button"
-                      className="btn btn-success"
-                      onClick={takePhoto}
+                      className="btn btn-sm btn-outline-primary me-2"
+                      onClick={() =>
+                        setFacingMode(f =>
+                          f === "environment" ? "user" : "environment"
+                        )
+                      }
                     >
-                      Take Photo
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-danger"
-                      onClick={() => {
-                        streamRef.current?.getTracks().forEach(t => t.stop());
-                        setCapturingPhoto(false);
-                      }}
-                    >
-                      Cancel
+                      Switch to {facingMode === "environment" ? "Front" : "Back"} Camera
                     </button>
                   </div>
-                </div>
+
+                  {/* Video preview */}
+                  <div className="mt-2">
+                    <video
+                      ref={videoRef}
+                      style={{ width: "100%", maxHeight: 300 }}
+                      muted
+                    />
+                    <div className="d-flex gap-2 mt-2">
+                      <button
+                        type="button"
+                        className="btn btn-success"
+                        onClick={takePhoto}
+                      >
+                        Take Photo
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={() => {
+                          streamRef.current?.getTracks().forEach(t => t.stop());
+                          setCapturingPhoto(false);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
+
               <canvas ref={canvasRef} style={{ display: "none" }} />
             </div>
 
