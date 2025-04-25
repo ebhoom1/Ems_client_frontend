@@ -7,23 +7,12 @@ import html2pdf                               from "html2pdf.js";
 import { API_URL }                            from "../../utils/apiConfig";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+
 const times = [
   "7.00","8.00","9.00","10.00","11.00","12.00",
   "13.00","14.00","15.00","16.00","17.00","18.00",
   "19.00","20.00","21.00","22.00","23.00","24.00",
   "1.00","2.00","3.00","4.00","5.00","6.00"
-];
-
-const equipmentList = [
-  "Raw Sewage Pump-1","Raw Sewage Pump-2",
-  "AT & ET Blower-1","AT & ET Blower-2",
-  "MBR Blower-1","MBR Blower-2",
-  "RAS Pump-1","RAS Pump-2",
-  "Permeate Pump-1","Permeate Pump-2",
-  "Softener Feed Pump-1","Softener Feed Pump-2",
-  "Flash Mixer Pump-1","Flash Mixer Pump-2",
-  "Filter Press Feed Pump-1","Filter Press Feed Pump-2",
-  "Dosing Pump"
 ];
 
 const treatedWaterParams = ["Quality","Color","Odour","P.H","MLSS","Hardness"];
@@ -47,14 +36,17 @@ export default function AdminReport() {
   const [log, setLog]       = useState(null);
   const [error, setError]   = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [equipmentList, setEquipmentList] = useState([]);
   const reportRef           = useRef();
 
-  // fetch daily log
+  // fetch daily log and equipment list
   useEffect(() => {
     if (!isAdmin) {
       setError("Access denied");
       return;
     }
+
+    // Fetch daily log
     axios.get(`${API_URL}/api/getdailylogByUsername/${username}`)
       .then(r => {
         const data = r.data;
@@ -62,6 +54,17 @@ export default function AdminReport() {
         setLog(Array.isArray(data) ? data[0] : data);
       })
       .catch(e => setError(e.message));
+
+    // Fetch equipment list
+    axios.get(`${API_URL}/api/user/${username}`)
+      .then(response => {
+        if (response.data.equipment) {
+          setEquipmentList(response.data.equipment.map(eq => eq.equipmentName));
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching equipment list:", error);
+      });
   }, [username, isAdmin]);
 
   // fetch logo
@@ -113,6 +116,7 @@ export default function AdminReport() {
     pdf.addImage(imgData, "PNG", xOffset, yOffset, imgPDFWidth, imgPDFHeight);
     pdf.save(`DailyLog_${username}_${log.date.slice(0,10)}.pdf`);
   };
+
   if (error) return <div className="alert alert-danger">{error}</div>;
   if (!log)    return <div>Loading…</div>;
 
@@ -143,44 +147,49 @@ export default function AdminReport() {
       >
         {/* Header */}
         <div 
-  className="d-flex align-items-center mb-2" 
-  style={{ background: '#236a80', color: '#fff', padding: '10px' }}
->
-  {/* Logo on the left */}
-  {logoUrl ? (
-    <img
-      src={logoUrl}
-      alt={`${adminType} Logo`}
-      style={{ 
-        maxWidth: '120px', 
-        maxHeight: '120px', 
-        marginRight: '20px',  // Added more margin for better spacing
-        flexShrink: 0  // Prevent logo from shrinking
-      }}
-    />
-  ) : (
-    <div style={{ width: '120px', height: '80px', flexShrink: 0 }}>
-      Loading logo…
-    </div>
-  )}
+          className="d-flex align-items-center mb-2" 
+          style={{ background: '#236a80', color: '#fff', padding: '10px' }}
+        >
+          {/* Logo on the left */}
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={`${adminType} Logo`}
+              style={{ 
+                maxWidth: '120px', 
+                maxHeight: '120px', 
+                marginRight: '20px',
+                flexShrink: 0
+              }}
+            />
+          ) : (
+            <div style={{ width: '120px', height: '80px', flexShrink: 0 }}>
+              Loading logo…
+            </div>
+          )}
 
-  {/* Centered content that takes remaining space */}
-  <div 
-    style={{
-      flex: 1,  // Takes remaining space
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',  // Center horizontally
-      justifyContent: 'center'  // Center vertically
-    }}
-  >
-    <h5 style={{ margin: 0 }}>350 KLD SEWAGE TREATMENT PLANT – Hilton Manyata</h5>
-    <p style={{ margin: '5px 0 0 0' }}>
-      STP Operation &amp; Maintenance By{" "}
-      <strong>{userData?.validUserOne?.adminType} Utility Management Pvt Ltd</strong>
-    </p>
-  </div>
-</div>
+          {/* Centered content that takes remaining space */}
+          <div 
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <h5 style={{ margin: 0 }}>350 KLD SEWAGE TREATMENT PLANT – Hilton Manyata</h5>
+            <p style={{ margin: '5px 0 0 0' }}>
+              STP Operation &amp; Maintenance By{" "}
+              <strong>{userData?.validUserOne?.adminType} Utility Management Pvt Ltd</strong>
+            </p>
+            {equipmentList.length > 0 && (
+              <p style={{ margin: '5px 0 0 0', fontSize: '11px' }}>
+                <strong>Equipment:</strong> {equipmentList.join(", ")}
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* Title */}
         <div
@@ -335,7 +344,7 @@ export default function AdminReport() {
               <th style={{ border:'1px solid #000', padding:4 }}>Shift</th>
               <th style={{ border:'1px solid #000', padding:4 }}>Engineer Sign</th>
               <th style={{ border:'1px solid #000', padding:4 }}>Remarks</th>
-              <th style={{ border:'1px solid #000', padding:4 }}>Operator’s Name</th>
+              <th style={{ border:'1px solid #000', padding:4 }}>Operator's Name</th>
               <th style={{ border:'1px solid #000', padding:4 }}>Sign</th>
             </tr>
           </thead>
