@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { Resizable } from 're-resizable';
 import { FaSyncAlt, FaTrashAlt } from 'react-icons/fa';
@@ -15,6 +17,7 @@ const [text, setText] = useState(data.label || '');
   const [isPumpOn, setIsPumpOn] = useState(false);
   const [rotation, setRotation] = useState(data.rotation || 0);  // Store rotation
   const [isEditing, setIsEditing] = useState(false);  // Define isEditing state
+  const [hovered, setHovered] = useState(false);
 
   const handleResize = (e, direction, ref, delta) => {
     setSize({
@@ -79,6 +82,8 @@ const [text, setText] = useState(data.label || '');
   return (
     <div
       onDoubleClick={toggleEditing}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         position: 'relative',
         zIndex: isResizing ? 100 : 1,
@@ -187,47 +192,51 @@ const [text, setText] = useState(data.label || '');
 {/**new */}
  {/* Label input */}
  {/* Label and future values container */}
-<div
-  style={{
-    width: '100%',
-    marginTop: 6,
-    fontSize: '12px',
-    border: '1px solid #ccc',
-    borderRadius: 4,
-    padding: 4,
-    backgroundColor: '#f9f9f9',
-    textAlign: 'center',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  }}
->
-  {/* Label input */}
-  <input
-    type="text"
-    value={text}
-    onChange={(e) => setText(e.target.value)}
-    placeholder="Label..."
+{/* Label and future values container */}
+{(data.isEditing || hovered) && (
+  <div
     style={{
       width: '100%',
+      marginTop: 6,
       fontSize: '12px',
-      border: 'none',
-      // borderRadius: 3,
-      // padding: '2px 4px',
+      border: '1px solid #ccc',
+      borderRadius: 4,
+      padding: 4,
+      backgroundColor: '#f9f9f9',
+      textAlign: 'center',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '4px',
     }}
-  />
-  
-  {/* Placeholder for second value  */}
-  <div style={{ color: '#555' }}>
-    {/* Replace with dynamic content in future */}
-    <small> N/A</small>
-  </div>
+  >
+    {/* Label input */}
+    <input
+      type="text"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      placeholder="Label..."
+      style={{
+        width: '100%',
+        fontSize: '12px',
+        border: 'none',
+        backgroundColor: 'transparent',
+        textAlign: 'center',
+      }}
+      readOnly={!data.isEditing} // 🔥 Only editable in edit mode
+    />
 
-  {/* Placeholder for third value  */}
-  <div style={{ color: '#888' }}>
-    <small>N/A</small>
+    {/* Placeholder for second value */}
+    <div style={{ color: '#555' }}>
+      <small>N/A</small>
+    </div>
+
+    {/* Placeholder for third value */}
+    <div style={{ color: '#888' }}>
+      <small>N/A</small>
+    </div>
   </div>
-</div>
+)}
+
 
 {/**new */}
       {/* Show toggle switch only for the "Pump" node */}
@@ -288,3 +297,6 @@ const [text, setText] = useState(data.label || '');
 };
 
 export default SVGNode;
+
+
+

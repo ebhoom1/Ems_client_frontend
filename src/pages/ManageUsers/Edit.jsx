@@ -23,8 +23,8 @@ function Edit() {
     email: '',
     additionalEmails: [''], // Changed from a single email to an array
     mobileNumber: '',
-    password: '',
-    cpassword: '',
+  /*   password: '',
+    cpassword: '', */
     subscriptionDate: '',
     subscriptionPlan: '', // <-- New subscription field
     userType: '',
@@ -329,7 +329,7 @@ function Edit() {
                         </div>
                         
                         {/* Password fields */}
-                        <div className="col-lg-6 col-md-6 mb-4">
+                       {/*  <div className="col-lg-6 col-md-6 mb-4">
                           <div className="form-group">
                             <label htmlFor="password" className="form-label">Password</label>
                             <input
@@ -343,8 +343,8 @@ function Edit() {
                               style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
                             />
                           </div>
-                        </div>
-                        <div className="col-lg-6 col-md-6 mb-4">
+                        </div> */}
+                       {/*  <div className="col-lg-6 col-md-6 mb-4">
                           <div className="form-group">
                             <label htmlFor="cpassword" className="form-label">Confirm Password</label>
                             <input
@@ -358,7 +358,7 @@ function Edit() {
                               style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
                             />
                           </div>
-                        </div>
+                        </div> */}
 
                         <div className="col-lg-6 col-md-6 mb-4">
                           <div className="form-group">

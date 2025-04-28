@@ -8,6 +8,7 @@ import Hedaer from "../Header/Hedaer";
 import { fetchUsers, addUser ,deleteUser ,addStackName, fetchUserByCompanyName,clearState, setFilteredUsers , uploadLogo, editLogo, deleteLogo  } from "../../redux/features/userLog/userLogSlice"; // Add action for fetching and adding users
 import { useDispatch, useSelector } from "react-redux";
 import './userlog.css'
+import Admins from "./Admins";
 const UsersLog = () => {
   const dispatch = useDispatch();
   const { users, filteredUsers, loading, error } = useSelector(
@@ -191,7 +192,7 @@ const handleAddTechnician = async (e) => {
       email,
       password,
       cpassword: password,
-      userType: 'technician',
+      userType: 'admin',
       adminType           // ← now dynamic
     })).unwrap();
     toast.success('Technician added successfully', { position: 'top-center' });
@@ -983,7 +984,7 @@ const handleLogoDelete = async () => {
   <div className="col-12">
     <div className="card">
       <div className="card-body">
-        <h4 className="card-title text-center">Add Technician</h4>
+        <h4 className="card-title text-center text-light mb-3">Add Technician</h4>
         <form className="row g-3" onSubmit={handleAddTechnician}>
           <div className="col-md-3">
             <input
@@ -1040,7 +1041,7 @@ const handleLogoDelete = async () => {
   </select>
 </div>
           <div className="col-12 text-center">
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="btn btn-light ">
               Add Technician
             </button>
           </div>
@@ -1299,6 +1300,8 @@ const handleLogoDelete = async () => {
                 </div>
             </div>  
         </div>
+
+       
           <ToastContainer />
         </div>
       </div>

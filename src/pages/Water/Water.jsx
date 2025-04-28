@@ -1,5 +1,10 @@
 import React, { useEffect, useState , useRef } from "react";
+import {useNavigate} from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux';
+import axios from "axios";
+import { logoutUser } from "../../redux/features/user/userSlice";
+import { setSelectedUser } from "../../redux/features/selectedUsers/selectedUserSlice";
+
 import { fetchIotDataByUserName,} from "../../redux/features/iotData/iotDataSlice";
 import { fetchLast10MinDataByUserName, fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
 import { fetchUserById } from "../../redux/features/userLog/userLogSlice"; // Import Redux action
@@ -20,8 +25,10 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import DownloadaverageDataModal from "./DownloadaverageDataModal";
 import { fetchUserByUserName } from "../../redux/features/userLog/userLogSlice";
+import Modal from 'react-modal';
+Modal.setAppElement('#root');
 
-import axios from "axios";
+
 // Initialize Socket.IO
 const socket = io(API_URL, { 
   transports: ['websocket'], 
@@ -32,12 +39,16 @@ const socket = io(API_URL, {
 socket.on('connect', () => console.log('Connected to Socket.IO server'));
 socket.on('connect_error', (error) => console.error('Connection Error:', error));
 const Water = () => {
+  const navigate = useNavigate(); 
   // Use useOutletContext if available, otherwise set defaults
   const outletContext = useOutletContext() || {};
   const { searchTerm = '', searchStatus = '', handleSearch = () => {}, isSearchTriggered = false } = outletContext;
   const { selectedUser } = useSelector((state) => state.userLog);
   const dispatch = useDispatch();
   const { userData,userType } = useSelector((state) => state.user);
+  console.log("userdata:",userData);
+  const loggedInUser = userData?.validUserOne;
+
   const selectedUserIdFromRedux = useSelector((state) => state.selectedUser.userId);
   const selectedUserState = useSelector((state) => state.selectedUser);
 console.log("Full selectedUser state:", selectedUserState);
@@ -66,7 +77,15 @@ const [userId, setUserId] = useState(null);
   const [address, setAddress] = useState("No address available");
   const [district, setDistrict] = useState("Unknown District");
 
-  
+  //modal state
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+
+  const [checkoutLoading, setCheckoutLoading] = useState(false); // optional loader
+
+const handleCheckOut = () => {
+  setCheckoutModalOpen(true);
+};
+
   
 
 
@@ -466,6 +485,47 @@ const handleDownloadPdf = () => {
     : []
   : Object.values(realTimeData).filter((data) => data.stackName === selectedStack);
 
+  
+
+  const confirmCheckOut = async () => {
+    try {
+      setCheckoutLoading(true);
+  
+      const res = await fetch(`${API_URL}/api/attendance/checkout`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: loggedInUser?.userName,
+          checkOutTime: new Date().toISOString()
+        })
+      });
+  
+      if (!res.ok) throw new Error("Failed to mark checkout");
+  
+      // ✅ Clear session and logout
+      sessionStorage.removeItem('selectedUserId');
+      sessionStorage.clear();
+      await dispatch(logoutUser()).unwrap();
+      dispatch(setSelectedUser(null));
+  
+      // ✅ Show message
+      alert("✅ You have been checked out and signed out successfully.");
+  
+      // ✅ Navigate after 2 seconds
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
+  
+    } catch (err) {
+      console.error(err.message);
+      alert("❌ Checkout failed. Please try again.");
+    } finally {
+      setCheckoutLoading(false);
+      setCheckoutModalOpen(false);
+    }
+  };
+  
+
   return (
 <div>
       {/* Show loader while loading */}
@@ -531,6 +591,21 @@ const handleDownloadPdf = () => {
                 <h2 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
          EFFLUENT DASHBOARD
         </h2>
+                         {/* operator checkout button */}
+{localStorage.getItem('userType') === 'operator' && (
+  <div className="text-end px-3">
+    <button
+      onClick={handleCheckOut}
+      className="btn btn-danger mb-3"
+      style={{ backgroundColor: '#dc3545', color: 'white' }}
+    >
+      🔁 Operator Check-Out
+    </button>
+  </div>
+)}
+
+
+
                   {/* Check if no data is available */}
                  {/* Check if no data is available for stationType == 'effluent' */}
                 {/* Check if effluentStacks are empty */}
@@ -786,6 +861,32 @@ const handleDownloadPdf = () => {
         
             </div>
       )}
+      <Modal
+  isOpen={checkoutModalOpen}
+  onRequestClose={() => setCheckoutModalOpen(false)}
+  className="geo-modal"
+  overlayClassName="geo-modal-overlay"
+>
+  <h3 className="text-center">Operator Check-Out</h3>
+  <p className="text-center mt-3">Are you sure you want to check out?</p>
+
+  <div className="d-flex justify-content-center gap-3 mt-4">
+    <button 
+      onClick={confirmCheckOut} 
+      className="btn btn-danger"
+      disabled={checkoutLoading}
+    >
+      {checkoutLoading ? "Processing..." : "✅ Yes, Check-Out"}
+    </button>
+    <button 
+      onClick={() => setCheckoutModalOpen(false)} 
+      className="btn btn-secondary"
+    >
+      ❌ Cancel
+    </button>
+  </div>
+</Modal>
+
     </div>
 
 /*  */

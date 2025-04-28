@@ -643,4 +643,3 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
 
 export default LogTest; 
 
-

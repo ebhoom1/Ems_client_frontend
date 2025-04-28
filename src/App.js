@@ -90,6 +90,8 @@ import MergedElectricalReport from './pages/Inventory/MergedElectricalReport';
 import DailyLog from './pages/Inventory/DailyLog';
 import AdminReport from './pages/Inventory/AdminDailyLog';
 import OperatorGeo from './pages/Operator/OperatorGeo';
+import Attendence from './pages/Attendence/Attendence';
+import { AttendanceHistory } from './pages/Attendence/AttendenceHistory';
 
 
 function App() {
@@ -221,6 +223,10 @@ function App() {
                   <Route path="/previous-data" element={<PreviousData />} />
                   <Route path="/inventory" element={<Inventory />} />
                   <Route path="/services" element={<Services />} />
+                  
+                  <Route path="/attendence" element={<Attendence />} />
+                  <Route path="/attendence/history" element={<AttendanceHistory />} />
+
                   <Route path="/subscription-plans/:userName" element={<SubscriptionPlans />} />
         <Route path="/payment/:userName" element={<PaymentPage />} />
         <Route path="/maintenance/:type/:equipmentId" element={<MaintenanceForm />} />
