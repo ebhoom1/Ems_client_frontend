@@ -193,7 +193,7 @@ const [text, setText] = useState(data.label || '');
  {/* Label input */}
  {/* Label and future values container */}
 {/* Label and future values container */}
-{(data.isEditing || hovered) && (
+{((data.isEditing&&selected )|| hovered) && (
   <div
     style={{
       width: '100%',
@@ -297,6 +297,3 @@ const [text, setText] = useState(data.label || '');
 };
 
 export default SVGNode;
-
-
-

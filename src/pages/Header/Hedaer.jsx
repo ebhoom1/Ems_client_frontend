@@ -1,23 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Outlet } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchIotDataByUserName } from './../../redux/features/iotData/iotDataSlice';
-import { fetchUser, logoutUser } from './../../redux/features/user/userSlice';
-import { setSelectedUser } from '../../redux/features/selectedUsers/selectedUserSlice';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, Outlet } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchIotDataByUserName } from "./../../redux/features/iotData/iotDataSlice";
+import { fetchUser, logoutUser } from "./../../redux/features/user/userSlice";
+import { setSelectedUser } from "../../redux/features/selectedUsers/selectedUserSlice";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-import Nav from 'react-bootstrap/Nav';
-import Navbar from 'react-bootstrap/Navbar';
-import Offcanvas from 'react-bootstrap/Offcanvas';
-import Dropdown from 'react-bootstrap/Dropdown';
-import DashboardSam from '../Dashboard/DashboardSam';
-import axios from 'axios';
-import './header.css';
-import { API_URL } from '../../utils/apiConfig';
+import Nav from "react-bootstrap/Nav";
+import Navbar from "react-bootstrap/Navbar";
+import Offcanvas from "react-bootstrap/Offcanvas";
+import Dropdown from "react-bootstrap/Dropdown";
+import DashboardSam from "../Dashboard/DashboardSam";
+import axios from "axios";
+import "./header.css";
+import { API_URL } from "../../utils/apiConfig";
 
 // Ensure the sound file exists at the path specified.
-import notificationSound from '../../assests/notification.mp3';
+import notificationSound from "../../assests/notification.mp3";
 
 function Header() {
   const dispatch = useDispatch();
@@ -25,16 +25,20 @@ function Header() {
   const dropdownRef = useRef(null);
 
   const [show, setShow] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [notifications, setNotifications] = useState([]);
-  const [isDropdownOpenNotification, setIsDropdownOpenNotification] = useState(false);
-  const [userName, setUserName] = useState('');
+  const [isDropdownOpenNotification, setIsDropdownOpenNotification] =
+    useState(false);
+  const [userName, setUserName] = useState("");
   const [users, setUsers] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [dropdownAlignment, setDropdownAlignment] = useState('end');
-  const [onlineStatus, setOnlineStatus] = useState(navigator.onLine ? 'Online' : 'Offline');
+  const [dropdownAlignment, setDropdownAlignment] = useState("end");
+  const [onlineStatus, setOnlineStatus] = useState(
+    navigator.onLine ? "Online" : "Offline"
+  );
 
   const { userData } = useSelector((state) => state.user);
+
   const selectedUserId = useSelector((state) => state.selectedUser.userId);
 
   // Create an audio instance for the notification sound.
@@ -46,7 +50,7 @@ function Header() {
   const handleShow = () => setShow(true);
 
   const handleOnlineStatusChange = () => {
-    setOnlineStatus(navigator.onLine ? 'Online' : 'Offline');
+    setOnlineStatus(navigator.onLine ? "Online" : "Offline");
   };
 
   // Fetch users data.
@@ -54,19 +58,27 @@ function Header() {
     const fetchUsers = async () => {
       try {
         if (userData?.validUserOne) {
-          if (userData.validUserOne.adminType) {
-            const response = await axios.get(
-              `${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`
-            );
+          const { adminType, isTerritorialManager, _id } = userData.validUserOne;
+
+          if (adminType) {
+
+            let url = `${API_URL}/api/get-users-by-adminType/${adminType}`;
+
+            // If territorial manager, add query params
+            if (isTerritorialManager) {
+              url += `?territorialManagerId=${_id}&isTerritorialManager=true`;
+            }
+
+            const response = await axios.get(url);
             setUsers(response.data.users || []);
           } else {
-            console.log('No adminType found, fetching all users');
+            console.log("No adminType found, fetching all users");
             const response = await axios.get(`${API_URL}/api/getallusers`);
             setUsers(response.data.users || []);
           }
         }
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error("Error fetching users:", error);
         setUsers([]);
       }
     };
@@ -76,14 +88,17 @@ function Header() {
     }
   }, [userData]);
 
+  console.log(users);
+  
+
   useEffect(() => {
     const validateUser = async () => {
       try {
         const response = await dispatch(fetchUser()).unwrap();
-        if (!response) navigate('/');
+        if (!response) navigate("/");
       } catch (error) {
-        console.error('Error validating user:', error);
-        navigate('/');
+        console.error("Error validating user:", error);
+        navigate("/");
       }
     };
     if (!userData) validateUser();
@@ -98,7 +113,7 @@ function Header() {
         );
         setNotifications(response.data.userNotifications);
       } catch (error) {
-        console.error('Error fetching notifications:', error);
+        console.error("Error fetching notifications:", error);
       }
     }
   };
@@ -117,18 +132,18 @@ function Header() {
     if (notifications.length > prevNotificationsCount.current) {
       audioRef.current
         .play()
-        .catch((error) => console.error('Audio play prevented:', error));
+        .catch((error) => console.error("Audio play prevented:", error));
     }
     prevNotificationsCount.current = notifications.length;
   }, [notifications]);
 
   useEffect(() => {
-    window.addEventListener('online', handleOnlineStatusChange);
-    window.addEventListener('offline', handleOnlineStatusChange);
+    window.addEventListener("online", handleOnlineStatusChange);
+    window.addEventListener("offline", handleOnlineStatusChange);
 
     return () => {
-      window.removeEventListener('online', handleOnlineStatusChange);
-      window.removeEventListener('offline', handleOnlineStatusChange);
+      window.removeEventListener("online", handleOnlineStatusChange);
+      window.removeEventListener("offline", handleOnlineStatusChange);
     };
   }, []);
 
@@ -136,11 +151,11 @@ function Header() {
     const dropdownRect = dropdownRef.current.getBoundingClientRect();
     const spaceOnRight = window.innerWidth - dropdownRect.right;
     const neededSpace = 300;
-    setDropdownAlignment(spaceOnRight < neededSpace ? 'start' : 'end');
+    setDropdownAlignment(spaceOnRight < neededSpace ? "start" : "end");
   };
 
   const handleUserSelect = (userId) => {
-    sessionStorage.setItem('selectedUserId', userId);
+    sessionStorage.setItem("selectedUserId", userId);
     dispatch(setSelectedUser(userId));
     setUserName(userId);
   };
@@ -149,27 +164,29 @@ function Header() {
 
   const handleSignOut = async () => {
     try {
-      sessionStorage.removeItem('selectedUserId');
+      sessionStorage.removeItem("selectedUserId");
       sessionStorage.clear();
       await dispatch(logoutUser()).unwrap();
       dispatch(setSelectedUser(null));
-      setUserName('');
+      setUserName("");
       setUsers([]);
-      toast.success('Logged out successfully.', { position: 'top-center' });
-      navigate('/');
+      toast.success("Logged out successfully.", { position: "top-center" });
+      navigate("/");
     } catch (error) {
-      console.error('Error logging out:', error);
-      toast.error('Failed to log out. Please try again.', { position: 'top-center' });
+      console.error("Error logging out:", error);
+      toast.error("Failed to log out. Please try again.", {
+        position: "top-center",
+      });
     }
   };
 
   const filteredUsers = users.filter(
     (user) =>
-      user.userType === 'user' &&
+      user.userType === "user" &&
       user.userName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const savedUserId = sessionStorage.getItem('selectedUserId');
+  const savedUserId = sessionStorage.getItem("selectedUserId");
   console.log(savedUserId);
 
   return (
@@ -178,15 +195,20 @@ function Header() {
         <Navbar
           expand="lg"
           className="header-navbar"
-          style={{ position: 'fixed', top: '0', zIndex: '1000', backgroundColor: 'white' }}
+          style={{
+            position: "fixed",
+            top: "0",
+            zIndex: "1000",
+            backgroundColor: "white",
+          }}
         >
           <div className="w-100 px-2 d-flex align-items-center justify-content-between">
             <Navbar.Brand href="#home" className="brand-text">
               <span className="d-none d-lg-inline">User ID: </span>
               <span className="text-dark">
-                <b>{userData?.validUserOne?.userName || 'Admin Developer'}</b>
+                <b>{userData?.validUserOne?.userName || "Admin Developer"}</b>
                 <span className="d-inline ms-2">
-                  {onlineStatus === 'Online' ? (
+                  {onlineStatus === "Online" ? (
                     <span className="online">Online</span>
                   ) : (
                     <span className="offline">Offline</span>
@@ -198,11 +220,15 @@ function Header() {
               <Nav.Link
                 className="me-3"
                 href="#home"
-                onClick={() => setIsDropdownOpenNotification(!isDropdownOpenNotification)}
+                onClick={() =>
+                  setIsDropdownOpenNotification(!isDropdownOpenNotification)
+                }
               >
                 <i className="fa-regular fa-bell fa-1x"></i>
                 {notifications.length > 0 && (
-                  <span className="notification-badge">{notifications.length}</span>
+                  <span className="notification-badge">
+                    {notifications.length}
+                  </span>
                 )}
               </Nav.Link>
               {isDropdownOpenNotification && (
@@ -216,11 +242,22 @@ function Header() {
                   ))}
                 </div>
               )}
-              <Dropdown ref={dropdownRef} className="me-2" onToggle={handleDropdownClick}>
-                <Dropdown.Toggle as={Nav.Link} bsPrefix="p-0" id="user-dropdown">
+              <Dropdown
+                ref={dropdownRef}
+                className="me-2"
+                onToggle={handleDropdownClick}
+              >
+                <Dropdown.Toggle
+                  as={Nav.Link}
+                  bsPrefix="p-0"
+                  id="user-dropdown"
+                >
                   <i className="fa-solid fa-user"></i>
                 </Dropdown.Toggle>
-                <Dropdown.Menu align="end" style={{ right: 0, minWidth: '150px', overflow: 'visible' }}>
+                <Dropdown.Menu
+                  align="end"
+                  style={{ right: 0, minWidth: "150px", overflow: "visible" }}
+                >
                   <Dropdown.Item>
                     <img
                       src="https://cdn.pixabay.com/photo/2020/07/01/12/58/icon-5359553_640.png"
@@ -228,26 +265,36 @@ function Header() {
                       alt="User Icon"
                     />
                   </Dropdown.Item>
-                  <Dropdown.Item>{userData?.validUserOne?.userName || 'Admin-Developer'}</Dropdown.Item>
-                  <Dropdown.Item onClick={handleSignOut}>Sign Out</Dropdown.Item>
+                  <Dropdown.Item>
+                    {userData?.validUserOne?.userName || "Admin-Developer"}
+                  </Dropdown.Item>
+                  <Dropdown.Item onClick={handleSignOut}>
+                    Sign Out
+                  </Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown>
-              <Navbar.Toggle aria-controls="basic-navbar-nav" onClick={handleShow} />
+              <Navbar.Toggle
+                aria-controls="basic-navbar-nav"
+                onClick={handleShow}
+              />
             </div>
           </div>
         </Navbar>
 
-        {userData?.validUserOne?.userType !== 'user' && (
-          <div className="ms-0 mb-3" style={{ marginTop: '70px' }}>
+        {userData?.validUserOne?.userType !== "user" && (
+          <div className="ms-0 mb-3" style={{ marginTop: "70px" }}>
             <Dropdown show={isDropdownOpen} onToggle={toggleDropdown}>
-              <Dropdown.Toggle id="dropdown-basic" style={{ backgroundColor: '#236a80', border: 'none' }}>
-                {userName ? `Selected: ${userName}` : 'Select User'}
+              <Dropdown.Toggle
+                id="dropdown-basic"
+                style={{ backgroundColor: "#236a80", border: "none" }}
+              >
+                {userName ? `Selected: ${userName}` : "Select User"}
               </Dropdown.Toggle>
               <Dropdown.Menu
                 style={{
-                  maxHeight: '200px',
-                  overflowY: 'scroll',
-                  width: '300px',
+                  maxHeight: "200px",
+                  overflowY: "scroll",
+                  width: "300px",
                 }}
               >
                 <input
@@ -255,10 +302,10 @@ function Header() {
                   placeholder="Search by user or company..."
                   className="form-control"
                   style={{
-                    margin: '10px auto',
-                    width: '90%',
-                    padding: '8px',
-                    borderRadius: '5px',
+                    margin: "10px auto",
+                    width: "90%",
+                    padding: "8px",
+                    borderRadius: "5px",
                   }}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
@@ -269,9 +316,9 @@ function Header() {
                       key={index}
                       onClick={() => handleUserSelect(user.userName)}
                       style={{
-                        whiteSpace: 'nowrap',
-                        textOverflow: 'ellipsis',
-                        overflow: 'hidden',
+                        whiteSpace: "nowrap",
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
                       }}
                       title={`${user.userName}: ${user.companyName}`}
                     >
@@ -279,7 +326,9 @@ function Header() {
                     </Dropdown.Item>
                   ))
                 ) : (
-                  <Dropdown.Item disabled>No users or companies found</Dropdown.Item>
+                  <Dropdown.Item disabled>
+                    No users or companies found
+                  </Dropdown.Item>
                 )}
               </Dropdown.Menu>
             </Dropdown>
@@ -289,7 +338,11 @@ function Header() {
         <Outlet context={{ searchTerm: userName, isSearchTriggered: true }} />
         <Outlet />
 
-        <Offcanvas show={show} onHide={handleClose} className="full-screen-offcanvas">
+        <Offcanvas
+          show={show}
+          onHide={handleClose}
+          className="full-screen-offcanvas"
+        >
           <Offcanvas.Header closeButton>
             <Offcanvas.Title />
           </Offcanvas.Header>

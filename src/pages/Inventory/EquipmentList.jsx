@@ -8,6 +8,7 @@ import QRCodeLib from "qrcode";
 import MaintenanceTypeModal from "./MaintenanceTypeModal";
 import { useNavigate } from "react-router-dom";
 import ReportTypeModal from "./ReportTypeModal";
+import MonthSelectionModal from "./MonthSelectionModal"; // New component we'll create
 
 export default function EquipmentList() {
   const { userData } = useSelector((state) => state.user);
@@ -20,6 +21,8 @@ export default function EquipmentList() {
   const [selectedId, setSelectedId] = useState(null);
   const [selectedEquipmentName, setSelectedEquipmentName] = useState(null);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showMonthModal, setShowMonthModal] = useState(false);
+  const [reportType, setReportType] = useState(null); // 'mechanical' or 'electrical'
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -76,6 +79,20 @@ export default function EquipmentList() {
     navigate(`/report/${id}`);
   };
 
+  const handleMonthSelected = (year, month) => {
+    setShowMonthModal(false);
+    if (reportType === 'mechanical') {
+      navigate(`/report/mechanical/download/${year}/${month}`);
+    } else if (reportType === 'electrical') {
+      navigate(`/report/electrical/download/${year}/${month}`);
+    }
+  };
+
+  const openMergedReportModal = (type) => {
+    setReportType(type);
+    setShowMonthModal(true);
+  };
+
   const filtered = list.filter((e) => {
     const term = searchTerm.toLowerCase();
     const dateStr = e.installationDate
@@ -93,10 +110,12 @@ export default function EquipmentList() {
     setSelectedEquipmentName(name);
     setShowModal(true);
   };
+  
   const openReportModal = (id) => {
-      setSelectedId(id);
-      setShowReportModal(true);
-     };
+    setSelectedId(id);
+    setShowReportModal(true);
+  };
+
   return (
     <div className="p-3 border">
       {showModal && type?.userType === "user" && (
@@ -106,13 +125,21 @@ export default function EquipmentList() {
           onClose={() => setShowModal(false)}
         />
       )}
-   {/* admin report‑type‑chooser */}
-       {showReportModal && type?.userType === "admin" && (
-      <ReportTypeModal
-        equipmentId={selectedId}
-       onClose={() => setShowReportModal(false)}
-     />
-  )}
+      
+      {showReportModal && type?.userType === "admin" && (
+        <ReportTypeModal
+          equipmentId={selectedId}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
+      
+      {showMonthModal && (
+        <MonthSelectionModal
+          onClose={() => setShowMonthModal(false)}
+          onSelect={handleMonthSelected}
+        />
+      )}
+
       {/* Search bar */}
       <div className="mb-3 d-flex align-items-between justify-content-between">
         <input
@@ -123,22 +150,20 @@ export default function EquipmentList() {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         <div>
-    <button
-       className="btn btn-warning me-2"
-      onClick={() => navigate('/report/mechanical/download')}
-    >
-      <i className="fa-solid fa-download" /> Download Merged Mechanical report
-    </button>
-    <button
-      className="btn btn-warning"
-      onClick={() => navigate('/report/electrical/download')}
-    >
-      <i className="fa-solid fa-download" /> Download Merged Electrical report
-    </button>
-  </div>
+          <button
+            className="btn btn-warning me-2"
+            onClick={() => openMergedReportModal('mechanical')}
+          >
+            <i className="fa-solid fa-download" /> Download Merged Mechanical report
+          </button>
+          <button
+            className="btn btn-warning"
+            onClick={() => openMergedReportModal('electrical')}
+          >
+            <i className="fa-solid fa-download" /> Download Merged Electrical report
+          </button>
+        </div>
       </div>
-
-    
 
       <div style={{ maxHeight: "60vh", overflow: "auto" }}>
         {filtered.length === 0 ? (
@@ -194,18 +219,12 @@ export default function EquipmentList() {
                       </button>
                     ) : (
                       <>
-                          <button
-                      className="btn btn-sm btn-success me-1"
-                      onClick={() => openReportModal(e._id)}
-                    >
-                       View Report
-                </button>
-                        {/* <button
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => downloadReport(e._id)}
+                        <button
+                          className="btn btn-sm btn-success me-1"
+                          onClick={() => openReportModal(e._id)}
                         >
-                          Download Report
-                        </button> */}
+                          View Report
+                        </button>
                       </>
                     )}
                   </td>

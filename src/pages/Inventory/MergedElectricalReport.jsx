@@ -4,8 +4,10 @@ import axios from 'axios';
 import html2pdf from 'html2pdf.js';
 import { useSelector } from 'react-redux';
 import { API_URL } from '../../utils/apiConfig';
+import { useParams } from 'react-router-dom';
 
 export default function MergedElectricalReport() {
+  const { year, month } = useParams();
   const [reports, setReports] = useState([]);
   const [logoMetaUrl, setLogoMetaUrl] = useState('');
   const [logoDataUrl, setLogoDataUrl] = useState('');
@@ -30,15 +32,18 @@ export default function MergedElectricalReport() {
 
   // 1️⃣ fetch all electrical reports
   useEffect(() => {
-    axios.get(`${API_URL}/api/all-electricalreports`)
+    const url = year && month 
+      ? `${API_URL}/api/electricalreports/month/${year}/${month}`
+      : `${API_URL}/api/all-electricalreports`;
+    
+    axios.get(url)
       .then(res => {
         if (res.data.success && Array.isArray(res.data.reports)) {
           setReports(res.data.reports);
         }
       })
       .finally(() => setLoading(false));
-  }, []);
-
+  }, [year, month]);
   // 2️⃣ fetch logo metadata
   useEffect(() => {
     if (!adminType) return;
@@ -109,12 +114,15 @@ export default function MergedElectricalReport() {
     <div className="container py-3">
       {/* Search + Download */}
       <div className="d-flex justify-content-between align-items-center mb-3">
-      
+        {year && month && (
+          <h4>
+            Reports for {new Date(year, month-1).toLocaleString('default', { month: 'long' })} {year}
+          </h4>
+        )}
         <button className="btn btn-success" onClick={downloadPDF}>
           ⬇ Download PDF
         </button>
       </div>
-
       {/* Continuous report */}
       <div ref={reportRef} style={{ background:'#fff', padding:10 }}>
         {/* — single header — */}

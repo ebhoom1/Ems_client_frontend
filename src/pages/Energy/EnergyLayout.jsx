@@ -86,3 +86,23 @@ const EnergyDashboard = () => {
 };
 
 export default EnergyDashboard;
+
+
+/*  <div className="container-fluid">
+      <div className="row" style={{ backgroundColor: 'white' }}>
+        <div className="col-lg-3 d-none d-lg-block ">
+          <DashboardSam />
+        </div>
+        <div className="col-lg-9 col-12 ">
+          <div className="row">
+            <div className="col-12">
+              <Header />
+            </div>
+           
+          </div>
+         
+         
+        </div>
+      </div>
+     
+    </div> */

@@ -1,5 +1,8 @@
-import React from 'react';
+// src/components/MaintenanceTypeModal.jsx
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../../utils/apiConfig';
 
 const overlayStyle = {
   position: 'fixed',
@@ -11,6 +14,7 @@ const overlayStyle = {
   justifyContent: 'center',
   zIndex: 1000
 };
+
 const boxStyle = {
   background: '#fff',
   padding: '20px',
@@ -22,42 +26,79 @@ const boxStyle = {
 export default function MaintenanceTypeModal({ equipmentId, equipmentName, onClose }) {
   const navigate = useNavigate();
 
-  // Log the equipment name each time this component renders
-  console.log('Selected equipment:', equipmentName);
-  console.log('SElected equipment id :', equipmentId);
-  
+  const [loading, setLoading]             = useState(true);
+  const [canMechanical, setCanMechanical] = useState(false);
+  const [canElectrical, setCanElectrical] = useState(false);
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const { data } = await axios.get(
+          `${API_URL}/api/equiment/${equipmentId}/maintenance-status`
+        );
+        setCanMechanical(data.canMechanical);
+        setCanElectrical(data.canElectrical);
+      } catch (err) {
+        console.error('Failed to fetch maintenance status', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStatus();
+  }, [equipmentId]);
 
   const pick = (type) => {
     onClose();
     navigate(`/maintenance/${type}/${equipmentId}`, {
-      state: { 
-        equipmentName,
-        equipmentId  // Also pass ID in state for double safety
-      }
+      state: { equipmentName, equipmentId }
     });
   };
+
+  if (loading) {
+    return (
+      <div style={overlayStyle}>
+        <div style={boxStyle}>
+          <p>Checking report availability…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={overlayStyle}>
       <div style={boxStyle}>
-        <h5>Select Maintenance Type for: {equipmentName}</h5>
+        <h5>Select Maintenance Type for: <strong>{equipmentName}</strong></h5>
         <div className="d-grid gap-2">
-          <button 
-            className="btn" 
-            style={{ backgroundColor: '#236a80', color: '#fff' }} 
-            onClick={() => pick('mechanical')}
-          >
-            Monthly Mechanical Maintenance
-          </button>
-          <button 
-            className="btn btn-secondary" 
-            onClick={() => pick('electrical')}
-          >
-            Monthly Electrical Maintenance
-          </button>
-          <button 
-            className="btn btn-link" 
-            style={{ color: 'red' }} 
+          {canMechanical ? (
+            <button
+              className="btn "
+              style={{backgroundColor:'#236a80' , color:'#fff'}}
+              onClick={() => pick('mechanical')}
+            >
+              Monthly Mechanical Maintenance
+            </button>
+          ) : (
+            <button className="btn btn-outline-secondary" disabled>
+              Mechanical Already Done This Month
+            </button>
+          )}
+
+          {canElectrical ? (
+            <button
+              className="btn "
+              style={{backgroundColor:'#236a80' , color:'#fff'}}
+              onClick={() => pick('electrical')}
+            >
+              Monthly Electrical Maintenance
+            </button>
+          ) : (
+            <button className="btn btn-outline-secondary" disabled>
+              Electrical Already Done This Month
+            </button>
+          )}
+
+          <button
+            className="btn btn-link text-danger"
             onClick={onClose}
           >
             Cancel

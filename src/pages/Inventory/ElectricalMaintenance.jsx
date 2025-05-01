@@ -47,7 +47,7 @@ export default function ElectricalMaintenance({  onClose }) {
   return (
     <div className="modal-backdrop bg-light">
       <div className="modal-card p-4" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-        <div className='d-flex '> <button className="btn-close me-2" onClick={onClose} />
+        <div className='d-flex '>
         <h3 className="mb-3 ">Electrical Maintenance</h3></div>
        
         <ElectricalChecklist equipment={equipment} equipmentId={equipmentId} />

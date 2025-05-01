@@ -1,5 +1,5 @@
 import React, { useEffect, useState , useRef } from "react";
-import {useNavigate} from 'react-router-dom'
+import {useNavigate,useLocation} from 'react-router-dom';//new useLocation
 import { useDispatch, useSelector } from 'react-redux';
 import axios from "axios";
 import { logoutUser } from "../../redux/features/user/userSlice";
@@ -39,6 +39,8 @@ const socket = io(API_URL, {
 socket.on('connect', () => console.log('Connected to Socket.IO server'));
 socket.on('connect_error', (error) => console.error('Connection Error:', error));
 const Water = () => {
+  const location = useLocation(); //new get location state
+
   const navigate = useNavigate(); 
   // Use useOutletContext if available, otherwise set defaults
   const outletContext = useOutletContext() || {};
@@ -78,11 +80,36 @@ const [userId, setUserId] = useState(null);
   const [district, setDistrict] = useState("Unknown District");
 
   //modal state
-  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);//new
 
-  const [checkoutLoading, setCheckoutLoading] = useState(false); // optional loader
+  const [checkoutLoading, setCheckoutLoading] = useState(false); //new optional loader
+
+  const [isCheckedIn, setIsCheckedIn] = useState(false); // new
+const [allowClicks, setAllowClicks] = useState(false); //new for overlay control
+//new
+useEffect(() => {
+  if (location?.state?.checkedIn) {
+    setIsCheckedIn(true); // ✅ Set to true when coming from Check-In success
+    setAllowClicks(true); // ✅ Allow page clicks
+    localStorage.setItem('isCheckedIn', 'true'); // ✅ Save Check-In status
+
+  }
+}, [location]);
+
+useEffect(() => {
+  const isAlreadyCheckedIn = localStorage.getItem('isCheckedIn') === 'true';
+  if (isAlreadyCheckedIn) {
+    setIsCheckedIn(true);
+    setAllowClicks(true);
+  }
+}, []);
+
 
 const handleCheckOut = () => {
+  if (!isCheckedIn) {
+    alert("❌ Please Check-In first before trying to Check-Out.");
+    return;
+  }
   setCheckoutModalOpen(true);
 };
 
@@ -487,35 +514,36 @@ const handleDownloadPdf = () => {
 
   
 
+  
+
   const confirmCheckOut = async () => {
     try {
       setCheckoutLoading(true);
   
+      const userRole = loggedInUser?.isTechnician
+        ? "technician"
+        : loggedInUser?.isTerritorialManager
+        ? "territorialManager"
+        : "operator";
+  
+      const payload = {
+        username: loggedInUser?.userName,
+        checkOutTime: new Date().toISOString(),
+        userRole
+      };
+  
       const res = await fetch(`${API_URL}/api/attendance/checkout`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: loggedInUser?.userName,
-          checkOutTime: new Date().toISOString()
-        })
+        body: JSON.stringify(payload)
       });
   
       if (!res.ok) throw new Error("Failed to mark checkout");
-  
-      // ✅ Clear session and logout
-      sessionStorage.removeItem('selectedUserId');
-      sessionStorage.clear();
-      await dispatch(logoutUser()).unwrap();
-      dispatch(setSelectedUser(null));
-  
-      // ✅ Show message
-      alert("✅ You have been checked out and signed out successfully.");
-  
-      // ✅ Navigate after 2 seconds
-      setTimeout(() => {
-        navigate("/");
-      }, 2000);
-  
+  console.log("checkout success")
+      alert("✅ Checked out successfully.");
+      localStorage.removeItem('isCheckedIn');
+      setIsCheckedIn(false);
+      setAllowClicks(false);
     } catch (err) {
       console.error(err.message);
       alert("❌ Checkout failed. Please try again.");
@@ -525,9 +553,62 @@ const handleDownloadPdf = () => {
     }
   };
   
+  
 
+  //browser
+  useEffect(() => {
+    const preventNavigation = (e) => {
+      const isCheckedIn = localStorage.getItem('isCheckedIn') === 'true';
+      if (!isCheckedIn) {
+        alert('❌ You cannot navigate before Check-In!');
+        window.history.pushState(null, null, window.location.href); // Force stay at current page
+      }
+    };
+  
+    const handleBeforeUnload = (e) => {
+      const isCheckedIn = localStorage.getItem('isCheckedIn') === 'true';
+      if (!isCheckedIn) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+  
+    // When page loads, add pushState so history stack is controlled
+    window.history.pushState(null, null, window.location.href);
+    window.addEventListener('popstate', preventNavigation); // For back/forward button
+  
+    return () => {
+      window.removeEventListener('popstate', preventNavigation);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  
+  const isSpecialUser =
+  localStorage.getItem('userType') === 'operator' ||
+  userData?.validUserOne?.isTechnician === true ||
+  userData?.validUserOne?.isTerritorialManager === true;
+
+  
   return (
 <div>
+  {/**overlay-block click-new */}
+{isSpecialUser && !allowClicks && (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(255, 255, 255, 0.3)'	, // semi-transparent white
+        zIndex: 9999,
+        pointerEvents: 'auto',
+        backdropFilter: 'blur(2px)', // slight blur effect (optional, looks professional)
+      }}
+    >
+    </div>
+  )}
       {/* Show loader while loading */}
       {loading ? (
          <div className="loader-container">
@@ -592,17 +673,39 @@ const handleDownloadPdf = () => {
          EFFLUENT DASHBOARD
         </h2>
                          {/* operator checkout button */}
-{localStorage.getItem('userType') === 'operator' && (
-  <div className="text-end px-3">
+                         {isSpecialUser && (
+  <div className="d-flex justify-content-end align-items-center px-3 gap-2" style={{ position: 'relative', ...( !allowClicks && { zIndex: 10000 } )  }}>
+   <button
+  onClick={() => {
+    if (!isCheckedIn) {  // ✅ Only allow if NOT checked in
+      navigate('/geolocation');
+    } else {
+      alert("✅ You are already Checked-In. Please Check-Out first."); // optional alert
+    }
+  }}
+  className="btn btn-success mb-3"
+  disabled={isCheckedIn} // ✅ Disable button if already checked-in
+  style={{
+    backgroundColor: isCheckedIn ? '#6c757d' : '#28a745',  // ✅ Gray out the button if disabled
+    color: 'white',
+    cursor: isCheckedIn ? 'not-allowed' : 'pointer', // ✅ Update cursor
+    opacity: isCheckedIn ? 0.7 : 1, // ✅ Slightly transparent when disabled
+  }}
+>
+  ✅ Check-In
+</button>
+
+
     <button
       onClick={handleCheckOut}
       className="btn btn-danger mb-3"
       style={{ backgroundColor: '#dc3545', color: 'white' }}
     >
-      🔁 Operator Check-Out
+      🔁 Check-Out
     </button>
   </div>
 )}
+
 
 
 
@@ -867,7 +970,18 @@ const handleDownloadPdf = () => {
   className="geo-modal"
   overlayClassName="geo-modal-overlay"
 >
-  <h3 className="text-center">Operator Check-Out</h3>
+<h3 className="text-center">
+  {
+    localStorage.getItem('userType') === 'operator'
+      ? "Operator Checkout"
+      : userData?.validUserOne?.isTechnician === true
+      ? "Technician Checkout"
+      : userData?.validUserOne?.isTerritorialManager === true
+      ? "Territorial Manager Checkout"
+      : "User Checkout"
+  }
+</h3>
+
   <p className="text-center mt-3">Are you sure you want to check out?</p>
 
   <div className="d-flex justify-content-center gap-3 mt-4">

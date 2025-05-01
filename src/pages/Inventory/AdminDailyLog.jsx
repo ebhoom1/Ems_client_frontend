@@ -1,125 +1,173 @@
-// AdminReport.jsx
+
+
+
+
+
+
+
+
+/*  */
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate }             from "react-router-dom";
-import { useSelector }                        from "react-redux";
-import axios                                  from "axios";
-import html2pdf                               from "html2pdf.js";
-import { API_URL }                            from "../../utils/apiConfig";
-import jsPDF from "jspdf";
+import { useNavigate, useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
+import axios from "axios";
 import html2canvas from "html2canvas";
-
-const times = [
-  "7.00","8.00","9.00","10.00","11.00","12.00",
-  "13.00","14.00","15.00","16.00","17.00","18.00",
-  "19.00","20.00","21.00","22.00","23.00","24.00",
-  "1.00","2.00","3.00","4.00","5.00","6.00"
-];
-
-const treatedWaterParams = ["Quality","Color","Odour","P.H","MLSS","Hardness"];
-const chemicals        = ["NaOCl","NaCl","Lime Powder"];
-const backwashItems    = ["PSF-","ASF-","Softener-"];
-const runningHours     = [
-  "MBR Permeate Pump Main →",
-  "MBR Permeate Pump Standby →",
-  "MBR Back wash Pump →",
-  "MBR Chemical Cleaning Pump →",
-  "Filter Press Operating Time →"
-];
+import jsPDF from "jspdf";
+import { API_URL } from "../../utils/apiConfig";
+import Dashboard from "../Dashboard/Dashboard";
+import DashboardSam from "../Dashboard/DashboardSam";
+import HeaderSim from "../Header/HeaderSim";
 
 export default function AdminReport() {
   const { username } = useParams();
-  const navigate     = useNavigate();
-  const { userData } = useSelector(s => s.user);
-  const adminType    = userData?.validUserOne?.adminType;
-  const isAdmin      = userData?.validUserOne?.userType === "admin";
-
-  const [log, setLog]       = useState(null);
-  const [error, setError]   = useState("");
+  const { userData } = useSelector((s) => s.user);
+  const adminType = userData?.validUserOne?.adminType;
+  const isAdmin = userData?.validUserOne?.userType === "admin";
+const navigate = useNavigate();
+  const [logs, setLogs] = useState([]);
+  const [error, setError] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [equipmentList, setEquipmentList] = useState([]);
-  const reportRef           = useRef();
+  const [selectedLog, setSelectedLog] = useState(null);
 
-  // fetch daily log and equipment list
+  const reportRef = useRef();
+
+  // fetch logs and equipment & logo on mount
   useEffect(() => {
     if (!isAdmin) {
       setError("Access denied");
       return;
     }
 
-    // Fetch daily log
+    // fetch all logs
     axios.get(`${API_URL}/api/getdailylogByUsername/${username}`)
-      .then(r => {
+      .then((r) => {
         const data = r.data;
         if (data.message) throw new Error(data.message);
-        setLog(Array.isArray(data) ? data[0] : data);
+        setLogs(Array.isArray(data) ? data : []);
       })
-      .catch(e => setError(e.message));
+      .catch((e) => setError(e.message));
 
-    // Fetch equipment list
+    // fetch equipment list
     axios.get(`${API_URL}/api/user/${username}`)
-      .then(response => {
-        if (response.data.equipment) {
-          setEquipmentList(response.data.equipment.map(eq => eq.equipmentName));
-        }
-      })
-      .catch(error => {
-        console.error("Error fetching equipment list:", error);
-      });
-  }, [username, isAdmin]);
-
-  // fetch logo
-  useEffect(() => {
-    if (!adminType) return;
-    axios.get(`${API_URL}/api/logo/${adminType}`)
-      .then(res => {
-        const arr = res.data?.data || [];
-        if (arr.length) {
-          const latest = arr.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-          setLogoUrl(latest.logoUrl);
+      .then((r) => {
+        if (r.data.equipment) {
+          setEquipmentList(r.data.equipment.map((eq) => eq.equipmentName));
         }
       })
       .catch(console.error);
-  }, [adminType]);
+
+    // fetch logo
+    if (adminType) {
+      axios.get(`${API_URL}/api/logo/${adminType}`)
+        .then((res) => {
+          const arr = res.data?.data || [];
+          if (arr.length) {
+            const latest = arr.sort(
+              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            )[0];
+            setLogoUrl(latest.logoUrl);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [username, isAdmin, adminType]);
 
   const downloadPDF = async () => {
-    if (!reportRef.current) return;
-    // 1. capture at high resolution
-    const canvas = await html2canvas(reportRef.current, {
-      scale: 2,
-      useCORS: true,
-    });
+    if (!reportRef.current || !selectedLog) return;
+    const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true });
     const imgData = canvas.toDataURL("image/png");
-  
-    // 2. create jsPDF in landscape A4
-    const pdf = new jsPDF({
-      orientation: "landscape",
-      unit: "pt",
-      format: "a4",
-    });
-  
-    // 3. calculate dimensions
-    const pdfWidth  = pdf.internal.pageSize.getWidth();
+    const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth  = canvas.width;
-    const imgHeight = canvas.height;
-  
-    // fit the image into the PDF (maintaining aspect ratio)
-    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-    const imgPDFWidth  = imgWidth * ratio;
-    const imgPDFHeight = imgHeight * ratio;
-  
-    // 4. center image if there's margin
-    const xOffset = (pdfWidth - imgPDFWidth) / 2;
-    const yOffset = (pdfHeight - imgPDFHeight) / 2;
-  
-    // 5. add to PDF and save
-    pdf.addImage(imgData, "PNG", xOffset, yOffset, imgPDFWidth, imgPDFHeight);
-    pdf.save(`DailyLog_${username}_${log.date.slice(0,10)}.pdf`);
+    const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+    const imgW = canvas.width * ratio;
+    const imgH = canvas.height * ratio;
+    const xOffset = (pdfWidth - imgW) / 2;
+    const yOffset = (pdfHeight - imgH) / 2;
+    pdf.addImage(imgData, "PNG", xOffset, yOffset, imgW, imgH);
+    pdf.save(`DailyLog_${username}_${selectedLog.date.slice(0,10)}.pdf`);
   };
 
   if (error) return <div className="alert alert-danger">{error}</div>;
-  if (!log)    return <div>Loading…</div>;
+  if (!logs.length) return <div>Loading…</div>;
 
+  // List view
+  if (!selectedLog) {
+    return (
+      <div className="container-fluid">
+      <div className="row" style={{ backgroundColor: 'white' }}>
+        <div className="col-lg-3 d-none d-lg-block ">
+          <DashboardSam />
+        </div>
+        <div className="col-lg-9 col-12 ">
+          <div className="row">
+            <div className="col-12">
+              <HeaderSim />
+            </div>
+           
+          </div>
+          <div className="container py-3">
+        <h4>Daily Logs for {username}</h4>
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th style={{backgroundColor:'#236a80' , color :'#fff'}}>Date</th>
+              <th style={{backgroundColor:'#236a80' , color :'#fff'}}>Username</th>
+              <th style={{backgroundColor:'#236a80' , color :'#fff'}}>Company Name</th>
+            </tr>
+          </thead>
+          <tbody>
+            {logs.map((log) => (
+              <tr
+                key={log._id}
+                style={{ cursor: 'pointer' }}
+                onClick={() => setSelectedLog(log)}
+              >
+                <td>{new Date(log.date).toLocaleDateString()}</td>
+                <td>{log.username}</td>
+                <td>{log.companyName}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+         
+         
+        </div>
+      </div>
+     
+    </div> 
+   /*   <div className="container py-3">
+        <h4>Daily Logs for {username}</h4>
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Username</th>
+              <th>Company Name</th>
+            </tr>
+          </thead>
+          <tbody>
+            {logs.map((log) => (
+              <tr
+                key={log._id}
+                style={{ cursor: 'pointer' }}
+                onClick={() => setSelectedLog(log)}
+              >
+                <td>{new Date(log.date).toLocaleDateString()}</td>
+                <td>{log.username}</td>
+                <td>{log.companyName}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div> */
+    );
+  }
+
+  // Detail view
+  const log = selectedLog;
   return (
     <div className="container py-3">
       {/* top controls */}

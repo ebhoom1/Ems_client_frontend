@@ -227,12 +227,13 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
         localStorage.setItem("userType", userType);
     
         // Navigate based on user type
-        if (userType === "operator") {
-          navigate("/operator-geolocation");
-        } else {
-          navigate("/water");
-        }
-    
+        // if (userType === "operator") {
+        //   navigate("/operator-geolocation");
+        // } else {
+        //   navigate("/water");
+        // }
+        navigate("/water");
+
         // Reset the form
         setInpval({ email: "", password: "", userType: "select" });
       } catch (error) {
