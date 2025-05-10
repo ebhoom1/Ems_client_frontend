@@ -11,15 +11,133 @@ import { useSelector } from "react-redux";
 import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
 import HeaderSim from "../Header/HeaderSim";
+import io from 'socket.io-client';
 
 function LIveLayout() {
   const { userData } = useSelector((state) => state.user);
-  const [isEditMode, setIsEditMode] = useState(false); //new
+  const [isEditMode, setIsEditMode] = useState(false);
   const [stationsList, setStationsList] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState("");
+  const [socket, setSocket] = useState(null);
+  const [pumpStates, setPumpStates] = useState({});
+  const [socketConnected, setSocketConnected] = useState(false);
   const navigate = useNavigate();
+
+  // Initialize socket connection
+  useEffect(() => {
+    const newSocket = io('https://api.ocems.ebhoom.com', {
+      reconnectionAttempts: 5,
+      reconnectionDelay: 5000,
+    });
+  
+    setSocket(newSocket);
+  
+    const handleConnect = () => {
+      console.log('Connected to socket server');
+      setSocketConnected(true);
+      newSocket.emit('joinRoom', { product_id: '27' }); // Changed to 27 to match your logs
+    };
+  
+    const handleDisconnect = () => {
+      console.log('Disconnected from socket server');
+      setSocketConnected(false);
+    };
+  
+    const handlePumpAcknowledgment = (ackData) => {
+      console.log('Processing acknowledgment:', ackData);
+      
+      if (!ackData.pumps) return;
+      
+      // Create a map of updated pumps for batch state update
+      const updates = {};
+      
+      ackData.pumps.forEach((pump) => {
+        // Handle both numeric (1/0) and string ('ON'/'OFF') status values
+        const newStatus = pump.status === 1 || pump.status === 'ON' || pump.status === 'on';
+        
+        updates[pump.pumpId] = {
+          status: newStatus,
+          pending: false,
+          name: pump.pumpName || `Pump ${pump.pumpId}`,
+          lastUpdated: new Date().toISOString()
+        };
+      });
+  
+      // Batch update all pump states at once
+      setPumpStates(prev => ({
+        ...prev,
+        ...updates
+      }));
+  
+      // Debug log to verify updates
+      console.log('Applied pump state updates:', updates);
+    };
+  
+    // Error handler with automatic reconnection
+    const handleError = (error) => {
+      console.error('Socket error:', error);
+      if (!socketConnected) {
+        setTimeout(() => newSocket.connect(), 2000);
+      }
+    };
+  
+    // Setup all event listeners
+    newSocket.on('connect', handleConnect);
+    newSocket.on('disconnect', handleDisconnect);
+    newSocket.on('pumpAck', handlePumpAcknowledgment);
+    newSocket.on('pumpStateUpdate', handlePumpAcknowledgment);
+    newSocket.on('error', handleError);
+  
+    return () => {
+      // Cleanup all event listeners
+      newSocket.off('connect', handleConnect);
+      newSocket.off('disconnect', handleDisconnect);
+      newSocket.off('pumpAck', handlePumpAcknowledgment);
+      newSocket.off('pumpStateUpdate', handlePumpAcknowledgment);
+      newSocket.off('error', handleError);
+      newSocket.disconnect();
+    };
+  }, []); // Empty dependency array ensures this runs once on mount // Empty dependency array ensures this runs once on mount
+
+  const handlePumpToggle = (pumpId, pumpName, status, isPending = false) => {
+    if (!socket || !socketConnected) {
+      console.error('Socket not connected');
+      return;
+    }
+  
+    // Update local state immediately
+    setPumpStates(prev => ({
+      ...prev,
+      [pumpId]: {
+        status: status === 'ON',
+        pending: isPending,
+        name: pumpName,
+        lastUpdated: new Date().toISOString()
+      }
+    }));
+  
+    // Only send command if not pending (pending is set by SVGNode)
+    if (!isPending) {
+      const statusValue = status === 'ON' ? 1 : 0;
+      const messageId = `cmd-${Date.now()}`;
+  
+      const command = {
+        product_id: '27', // Consistent with acknowledgment messages
+        pumps: [{
+          pumpId,
+          pumpName,
+          status: statusValue
+        }],
+        timestamp: new Date().toISOString(),
+        messageId
+      };
+  
+      console.log('Sending pump command:', command);
+      socket.emit('controlPump', command);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -95,17 +213,22 @@ function LIveLayout() {
     <DndProvider backend={HTML5Backend}>
       <div className="container-fluid">
         <div className="row" style={{ backgroundColor: "white" }}>
-          {/* Sidebar (hidden on mobile) */}
           <div className="col-lg-3 d-none d-lg-block">
             <DashboardSam />
           </div>
-          {/* Main Content */}
+          
           <div className="col-lg-9 col-12">
             <div className="row">
               <div className="col-12">
                 <HeaderSim />
+                {!socketConnected && (
+                  <div className="alert alert-warning mb-0">
+                    Connection to pump control server is offline
+                  </div>
+                )}
               </div>
             </div>
+            
             {userData?.validUserOne?.userType === "admin" && (
               <div className="row my-2">
                 <div className="col-3">
@@ -124,13 +247,14 @@ function LIveLayout() {
                 </div>
               </div>
             )}
+            
             <div>
               <div className="row" style={{ overflowX: "hidden" }}>
                 <div className="col-12 col-md-12 grid-margin">
                   <div className="col-12 d-flex align-items-center justify-content-center m-2">
-                    <h1 className="text-center mt-3">Digital Twin</h1>
+                    <h1 className="text-center mt-3">AutoNerve</h1>
                   </div>
-                  {/* Stations List Table displayed in a box */}
+                  
                   <div className="mb-3">
                     {stationsList && stationsList.length > 0 ? (
                       <div className="box">
@@ -168,20 +292,16 @@ function LIveLayout() {
                       </div>
                     )}
                   </div>
+                  
                   <div className="cardn m-">
                     <div className="card-body">
                       <div className="row">
-                        {/* Sidebar for drag-and-drop (hidden on mobile) */}
-                        {/* <div className="col-md-3 d-none d-md-block">
-                          <Sidebar />
-                        </div> */}
                         {isEditMode && (
                           <div className="col-md-3 d-none d-md-block">
                             <Sidebar />
                           </div>
                         )}
 
-                        {/* Canvas Area with horizontal scroll on mobile */}
                         <div className="col-md-9">
                           <div
                             className="shadow"
@@ -206,8 +326,12 @@ function LIveLayout() {
                                     : "new"
                                 }
                                 selectedStation={selectedStation}
-                                isEditMode={isEditMode} //new
-                                setIsEditMode={setIsEditMode} //new
+                                isEditMode={isEditMode}
+                                setIsEditMode={setIsEditMode}
+                                socket={socket}
+                                socketConnected={socketConnected}
+                                pumpStates={pumpStates}
+                                onPumpToggle={handlePumpToggle}
                               />
                             </div>
                           </div>
@@ -218,14 +342,10 @@ function LIveLayout() {
                             Add another station +
                           </button>
                         </div>
+                        
                         <div className="row">
                           <div className="col-md-12">
                             <RunningTime />
-                          </div>
-                        </div>
-                        <div className="row">
-                          <div className="col-md-12">
-                            <Chemicals />
                           </div>
                         </div>
                       </div>
@@ -235,7 +355,7 @@ function LIveLayout() {
               </div>
             </div>
           </div>
-          {/* Footer */}
+          
           <footer className="footer">
             <div className="container-fluid clearfix">
               <span className="text-muted d-block text-center text-sm-left d-sm-inline-block"></span>

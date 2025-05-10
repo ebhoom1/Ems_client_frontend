@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify"; // Import toast
@@ -28,12 +24,12 @@ import "./userlog.css";
 import Admins from "./Admins";
 import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
-import { Table } from "react-bootstrap";
 const UsersLog = () => {
   const dispatch = useDispatch();
   const { users, filteredUsers, loading, error } = useSelector(
     (state) => state.userLog
   );
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { userData } = useSelector((state) => state.user);
@@ -124,32 +120,41 @@ const UsersLog = () => {
 
   // Fetch users filtered by adminType or show all if no adminType
   // Fetch users filtered by adminType or show all if adminType is Ebhoom
-  useEffect(() => {
-    const fetchUsersData = async () => {
-      try {
-        const response = await dispatch(fetchUsers()).unwrap(); // Fetch all users
 
-        if (userData?.validUserOne?.adminType === "EBHOOM") {
-          // Show all users if adminType is Ebhoom
-          dispatch(setFilteredUsers(response));
-        } else if (userData?.validUserOne?.adminType) {
-          // Filter users based on adminType and exclude admins
-          const filtered = response.filter(
-            (user) =>
-              user.adminType === userData.validUserOne.adminType &&
-              user.userType === "user"
-          );
-          dispatch(setFilteredUsers(filtered));
-        } else {
-          // Fallback in case no adminType is available
-          dispatch(setFilteredUsers([]));
-        }
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        toast.error("Failed to fetch users.", { position: "top-center" });
+  const fetchUsersData = async () => {
+    try {
+      const response = await dispatch(fetchUsers()).unwrap(); // Fetch all users
+
+      if (userData?.validUserOne?.adminType === "EBHOOM") {
+        // Filter users based on != isTechnician & isTerritorialManager
+        const filtered = response.filter(
+          (user) =>
+            user.isTechnician !== true && user.isTerritorialManager !== true
+        );
+
+        dispatch(setFilteredUsers(filtered));
+
+        // Show all users if adminType is Ebhoom
+        // dispatch(setFilteredUsers(response));
+      } else if (userData?.validUserOne?.adminType) {
+        // Filter users based on adminType and exclude admins
+        const filtered = response.filter(
+          (user) =>
+            user.adminType === userData.validUserOne.adminType &&
+            user.userType === "user"
+        );
+        dispatch(setFilteredUsers(filtered));
+      } else {
+        // Fallback in case no adminType is available
+        dispatch(setFilteredUsers([]));
       }
-    };
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast.error("Failed to fetch users.", { position: "top-center" });
+    }
+  };
 
+  useEffect(() => {
     fetchUsersData();
   }, [dispatch, userData]);
 
@@ -259,6 +264,7 @@ const UsersLog = () => {
         adminType: "",
       });
       dispatch(fetchUsers());
+      fetchUsersData();
     } catch (err) {
       toast.error("Failed to add technician", { position: "top-center" });
     }
@@ -279,7 +285,9 @@ const UsersLog = () => {
   };
 
   const handleDeleteTechnician = async (id) => {
-    const confirmed = window.confirm("Are you sure you want to delete this Territorial Manager?");
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this Territorial Manager?"
+    );
     if (!confirmed) return;
     try {
       await axios.delete(`${API_URL}/api/deleteTechnician/${id}`);
@@ -323,6 +331,7 @@ const UsersLog = () => {
         adminType: "",
       });
       dispatch(fetchUsers());
+      fetchUsersData();
     } catch (err) {
       toast.error("Failed to add Territory Manager", {
         position: "top-center",
@@ -339,13 +348,15 @@ const UsersLog = () => {
       console.error("Failed to fetch territory managers", err);
     }
   };
-  
+
   const handleCloseTerritoryModal = () => {
     setShowTerritoryModal(false);
   };
-  
+
   const handleDeleteTerritoryManager = async (id) => {
-    const confirmed = window.confirm("Are you sure you want to delete this Territorial Manager?");
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this Territorial Manager?"
+    );
     if (!confirmed) return;
     try {
       await axios.delete(`${API_URL}/api/deleteTerritoryManager/${id}`);
@@ -354,7 +365,6 @@ const UsersLog = () => {
       console.error("Error deleting manager", err);
     }
   };
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1513,16 +1523,13 @@ const UsersLog = () => {
                 <div className="card-body position-relative">
                   {/* Top-right delete button */}
                   <div className="d-flex justify-content-end mb-2">
-                  {!userData?.validUserOne?.isTechnician && !userData?.validUserOne?.isTerritorialManager && (
-  <button
-    type="button"
-    className="btn btn-danger"
-    onClick={handleShowTechModal}
-  >
-    Delete Technician
-  </button>
-)}
-
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={handleShowTechModal}
+                    >
+                      Delete Technician
+                    </button>
                   </div>
                   <h4 className="card-title text-center text-light mb-3">
                     Add Technician
@@ -1598,16 +1605,13 @@ const UsersLog = () => {
               <div className="card">
                 <div className="card-body position-relative">
                   <div className="d-flex justify-content-end mb-2">
-                  {!userData?.validUserOne?.isTechnician && !userData?.validUserOne?.isTerritorialManager && (
-  <button
-    type="button"
-    className="btn btn-danger"
-    onClick={handleShowTerritoryModal}
-  >
-    Delete Territory Manager
-  </button>
-)}
-
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={handleShowTerritoryModal}
+                    >
+                      Delete Territory Manager
+                    </button>
                   </div>
                   <h4 className="card-title text-center text-light mb-3">
                     Add Territorial Manager
@@ -1886,8 +1890,6 @@ const UsersLog = () => {
           </div>
 
           {/* delete user */}
-          {!userData?.validUserOne?.isTechnician && !userData?.validUserOne?.isTerritorialManager && (
-
           <div className="row" style={{ overflowX: "hidden" }}>
             <div className="col-12 col-md-12 grid-margin">
               <div className="col-12 d-flex justify-content-between align-items-center m-3">
@@ -1931,8 +1933,6 @@ const UsersLog = () => {
               </div>
             </div>
           </div>
-          )}
-
 
           <div className="row" style={{ overflowX: "hidden" }}>
             <div className="col-12 col-md-12 grid-margin">
@@ -1991,128 +1991,108 @@ const UsersLog = () => {
       </div>
       {/* Technician Delete Modal */}
       <Modal
-  show={showTechModal}
-  onHide={handleCloseTechModal}
-             // more horizontal space
-  centered
-  dialogClassName="modal-dialog-centered"
->
-  <Modal.Header closeButton>
-    <Modal.Title>Delete Technicians</Modal.Title>
-  </Modal.Header>
-
-  <Modal.Body className="p-0">
-    <div className="table-responsive">
-      <Table
-        striped
-        bordered
-        hover
-        size="sm"
-        className="mb-0 text-center"  // center all cells
+        show={showTechModal}
+        onHide={handleCloseTechModal}
+        size="lg"
+        centered
       >
-        <thead className="table-light">
-          <tr>
-            <th>Technician ID</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Admin Type</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
+        <Modal.Header closeButton>
+          <Modal.Title>Delete Technicians</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
           {technicians.length > 0 ? (
-            technicians.map((tech) => (
-              <tr key={tech._id}>
-                <td>{tech.userName}</td>
-                <td>{tech.fname}</td>
-                <td>{tech.email}</td>
-                <td>{tech.adminType}</td>
-                <td>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDeleteTechnician(tech._id)}
-                  >
-                    Delete
-                  </Button>
-                </td>
-              </tr>
-            ))
+            <table className="table table-striped">
+              <thead>
+                <tr>
+                  <th>Technician ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Admin Type</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {technicians.map((tech) => (
+                  <tr key={tech._id}>
+                    <td>{tech.userName}</td>
+                    <td>{tech.fname}</td>
+                    <td>{tech.email}</td>
+                    <td>{tech.adminType}</td>
+                    <td>
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDeleteTechnician(tech._id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <tr>
-              <td colSpan={5}>No technicians found.</td>
-            </tr>
+            <p>No technicians found.</p>
           )}
-        </tbody>
-      </Table>
-    </div>
-  </Modal.Body>
-
-  <Modal.Footer>
-    <Button variant="secondary" onClick={handleCloseTechModal}>
-      Close
-    </Button>
-  </Modal.Footer>
-</Modal>
-      ;
-
-{/* territory manager Delete Modal */}
-{!userData?.validUserOne?.isTechnician && !userData?.validUserOne?.isTerritorialManager && (
-
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseTechModal}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      ;{/* territory manager Delete Modal */}
       <Modal
-  show={showTerritoryModal}
-  onHide={handleCloseTerritoryModal}
-  /* size="xl" */
-  centered
->
-  <Modal.Header closeButton>
-    <Modal.Title>Delete Territorial Managers</Modal.Title>
-  </Modal.Header>
-  <Modal.Body style={{ overflowX: "auto" }}>
-    {territoryManagers.length > 0 ? (
-      <div style={{ minWidth: "1000px" }}>
-        <table className="table table-striped text-center">
-          <thead>
-            <tr>
-              <th>Manager ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Admin Type</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {territoryManagers.map((tm) => (
-              <tr key={tm._id}>
-                <td>{tm.userName}</td>
-                <td>{tm.fname}</td>
-                <td>{tm.email}</td>
-                <td>{tm.adminType}</td>
-                <td>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => handleDeleteTerritoryManager(tm._id)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    ) : (
-      <p>No territorial managers found.</p>
-    )}
-  </Modal.Body>
-  <Modal.Footer>
-    <Button variant="secondary" onClick={handleCloseTerritoryModal}>
-      Close
-    </Button>
-  </Modal.Footer>
-</Modal>
-)}
-
+        show={showTerritoryModal}
+        onHide={handleCloseTerritoryModal}
+        size="xl"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Delete Territorial Managers</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ overflowX: "auto" }}>
+          {territoryManagers.length > 0 ? (
+            <div style={{ minWidth: "1000px" }}>
+              <table className="table table-striped text-center">
+                <thead>
+                  <tr>
+                    <th>Manager ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Admin Type</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {territoryManagers.map((tm) => (
+                    <tr key={tm._id}>
+                      <td>{tm.userName}</td>
+                      <td>{tm.fname}</td>
+                      <td>{tm.email}</td>
+                      <td>{tm.adminType}</td>
+                      <td>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDeleteTerritoryManager(tm._id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>No territorial managers found.</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseTerritoryModal}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

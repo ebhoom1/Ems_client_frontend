@@ -11,7 +11,7 @@ import image1 from '../../assests/images/image1.svg';
 import meter from '../../assests/images/meter.svg';
 import pump from '../../assests/images/pump.svg';
 import tank from '../../assests/images/tank.svg';
-import wheel from '../../assests/images/wheel.svg';
+import airblower from '../../assests/images/wheel.svg';
 import zigzag from '../../assests/images/zigzag.svg';
 import pipelong from '../../assests/images/pipelong.svg';
 import connect from '../../assests/images/connect.svg';
@@ -61,8 +61,7 @@ const defaultShapes = [
   { id: 'meter', label: 'Meter', isSVG: true, svgPath: meter },
   { id: 'pump', label: 'Pump', isSVG: true, svgPath: pump },
   { id: 'tank', label: 'Tank', isSVG: true, svgPath: tank },
-  { id: 'wheel', label: 'Wheel', isSVG: true, svgPath: wheel },
-  { id: 'zigzag', label: 'Zigzag', isSVG: true, svgPath: zigzag },
+  { id: 'airblower', label: 'Airblower', isSVG: true, svgPath: airblower, isAirblower: true }, // <-- mark airblower  { id: 'zigzag', label: 'Zigzag', isSVG: true, svgPath: zigzag },
   { id: 'pipelong', label: 'Pipe Long', isSVG: true, svgPath: pipelong },
   { id: 'connect', label: 'Connect', isSVG: true, svgPath: connect },
   { id: 'filterset', label: 'Filter Set', isSVG: true, svgPath: filterset },

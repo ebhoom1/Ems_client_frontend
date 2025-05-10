@@ -5,15 +5,13 @@ import ReactFlow, {
   Controls,
   useNodesState,
   useEdgesState,
-  useReactFlow,
 } from "react-flow-renderer";
 import SVGNode from "./SVGnode";
 import TextNode from "./TextNode";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
-//new
-import PipingEdge from "./PipingEdge"; // import your new edge type
+import PipingEdge from "./PipingEdge";
 
 const nodeTypes = {
   svgNode: SVGNode,
@@ -33,36 +31,106 @@ const nodeTypes = {
   ),
 };
 
-function Canvas({ selectedStation, isEditMode, setIsEditMode }) { 
+function Canvas({
+  selectedStation,
+  isEditMode,
+  setIsEditMode,
+  socket,
+  socketConnected,
+}) {
   const { userId } = useSelector((state) => state.selectedUser);
-
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [isDragging, setIsDragging] = useState(false); 
-  const [currentUserName, setCurrentUserName] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-  const [noLiveStation, setNoLiveStation] = useState(false);
-  // const [isEditMode, setIsEditMode] = useState(false); // New state for enabling edit mode
-  const [stationName, setStationName] = useState("");
-
-
   const { userData } = useSelector((state) => state.user);
   const userType = userData?.validUserOne?.userType || "";
   const loggedUserName = userData?.validUserOne?.userName || "";
-  const storedUserId = sessionStorage.getItem("selectedUserId");
 
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const [currentUserName, setCurrentUserName] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [noLiveStation, setNoLiveStation] = useState(false);
+  const [stationName, setStationName] = useState("");
+
+  // Map of pumpId → {status: boolean, pending: boolean}
+  const [pumpStates, setPumpStates] = useState({});
+
+  // Handle pump toggle from child components
+  const handlePumpToggle = useCallback((pumpId, pumpName, status, isPending) => {
+    setPumpStates(prev => ({
+      ...prev,
+      [pumpId]: {
+        status,
+        pending: isPending,
+        name: pumpName
+      }
+    }));
+  }, []);
+
+  // Setup socket listeners for acknowledgments
+  useEffect(() => {
+    if (!socket) return;
+
+    const handlePumpAck = (ackData) => {
+      if (!ackData.pumps) return;
+      
+      ackData.pumps.forEach((pump) => {
+        setPumpStates(prev => ({
+          ...prev,
+          [pump.pumpId]: {
+            status: pump.status === 1,
+            pending: false,
+            name: pump.pumpName
+          }
+        }));
+      });
+    };
+
+    if (socketConnected) {
+      socket.emit("joinRoom", { product_id: "27" });
+      socket.on("pumpAck", handlePumpAck);
+      socket.on("pumpStateUpdate", handlePumpAck);
+    }
+
+    return () => {
+      socket.off("pumpAck", handlePumpAck);
+      socket.off("pumpStateUpdate", handlePumpAck);
+    };
+  }, [socket, socketConnected]);
+
+  // Update nodes with pump status when they change
+// In Canvas.jsx
+useEffect(() => {
+  if (nodes.length > 0) {
+    setNodes(nds =>
+      nds.map(node => {
+        const pumpState = pumpStates[node.id] || { 
+          status: false, 
+          pending: false 
+        };
+        
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            pumpStatus: pumpState.status,
+            isPending: pumpState.pending,
+            socketConnected,
+            onPumpToggle: handlePumpToggle
+          }
+        };
+      })
+    );
+  }
+}, [pumpStates, socketConnected]);
+
+  // Drag and connect handlers
   const onDragStart = () => setIsDragging(true);
   const onDragStop = () => setIsDragging(false);
 
-  // const onConnect = useCallback(
-  //   (params) => setEdges((eds) => addEdge(params, eds)),
-  //   [setEdges]
-  // );
-
-  //new
   const onConnect = useCallback(
     (params) => {
-      console.log("Connected:", params);
+      if (!isEditMode) return;
       setEdges((eds) =>
         addEdge(
           {
@@ -77,7 +145,7 @@ function Canvas({ selectedStation, isEditMode, setIsEditMode }) {
         )
       );
     },
-    [setEdges]
+    [isEditMode, setEdges]
   );
 
   const onDragOver = (event) => {
@@ -85,263 +153,246 @@ function Canvas({ selectedStation, isEditMode, setIsEditMode }) {
   };
 
   const onDrop = (event) => {
-    if (!isEditMode) return; // Disable dropping when not in edit mode
-
+    if (!isEditMode) return;
     event.preventDefault();
+
     const reactFlowBounds = event.target.getBoundingClientRect();
     const shapeData = event.dataTransfer.getData("application/reactflow");
+    if (!shapeData) return;
 
-    if (!shapeData) {
-      console.error("No data found in drag event");
-      return;
-    }
-
-    let parsedShapeData;
-    try {
-      parsedShapeData = JSON.parse(shapeData);
-    } catch (error) {
-      console.error("Error parsing JSON:", error);
-      return;
-    }
-
+    const parsed = JSON.parse(shapeData);
     const position = {
       x: event.clientX - reactFlowBounds.left,
       y: event.clientY - reactFlowBounds.top,
     };
 
-    // const newNode = {
-    //   id: `${parsedShapeData.id}_${nodes.length}`,
-    //   type: parsedShapeData.type,
-    //   position,
-    //   data: { label: parsedShapeData.label, svgPath: parsedShapeData.svgPath },
-    // };
-
-    //new
     const newNode = {
-      id: `${parsedShapeData.id}_${nodes.length}`,
-      type: parsedShapeData.type,
+      id: `${parsed.id}_${nodes.length}`,
+      type: parsed.type,
       position,
       data: {
-        label: parsedShapeData.label,
-        svgPath: parsedShapeData.svgPath,
-        isEditing: true, // ✅ Make sure new node has handles in edit mode
+        ...parsed,
+        isEditing: true,
+        isPump: parsed.label.toLowerCase().includes("pump"),
+        isAirblower: parsed.label.toLowerCase().includes("blower"),
+        socket,
+        socketConnected,
+        pumpStatus: false,
+        isPending: false,
+        onPumpToggle: handlePumpToggle,
       },
     };
-
     setNodes((nds) => nds.concat(newNode));
   };
 
+  // Save/Delete handlers
   const handleSave = async () => {
     if (!stationName) {
       alert("Please enter a station name.");
       return;
     }
+
     try {
       const apiUrl = isEditing
-        ? `${API_URL}/api/edit-live-station/${
-            currentUserName || loggedUserName
-          }/${stationName}`
+        ? `${API_URL}/api/edit-live-station/${currentUserName || loggedUserName}/${stationName}`
         : `${API_URL}/api/build-live-station`;
       const method = isEditing ? "patch" : "post";
-      const payload = isEditing
-        ? {
-            userName: currentUserName || loggedUserName,
-            stationName,
-            newStationName: stationName,
-            nodes: nodes.map((node) => ({
-              ...node,
-              rotation: node.data.rotation,
-              label: node.data.label, //new ✅ Save label
-              width: node.width,
-              height: node.height,
-            })),
-            edges,
-          }
-        : {
-            userName: loggedUserName,
-            stationName,
-            nodes: nodes.map((node) => ({
-              ...node,
-              rotation: node.data.rotation,
-              label: node.data.label, //new ✅ Save label
-              width: node.width,
-              height: node.height,
-            })),
-            edges,
-          };
-      const response = await axios({
-        method,
-        url: apiUrl,
-        data: payload,
-      });
-      console.log("Saved successfully:", response.data);
+
+      const payload = {
+        userName: isEditing ? currentUserName || loggedUserName : loggedUserName,
+        stationName,
+        ...(isEditing ? { newStationName: stationName } : {}),
+        nodes: nodes.map((n) => ({
+          id: n.id,
+          type: n.type,
+          position: n.position,
+          data: {
+            label: n.data.label,
+            svgPath: n.data.svgPath,
+            rotation: n.data.rotation,
+            isPump: n.data.isPump,
+            isAirblower: n.data.isAirblower,
+          },
+          width: n.width,
+          height: n.height,
+        })),
+        edges,
+      };
+
+      await axios({ method, url: apiUrl, data: payload });
       alert("Map saved successfully!");
       setNoLiveStation(false);
-      setIsEditMode(false); // Disable edit mode after saving
-    } catch (error) {
-      console.error("Error saving map:", error);
-      alert("Failed to save map. Please try again.");
+      setIsEditMode(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save map");
     }
   };
 
   const handleDelete = async () => {
+    if (!window.confirm("Delete this station?")) return;
     try {
       await axios.delete(
-        `${API_URL}/api/delete-live-station/${
-          currentUserName || loggedUserName
-        }/${stationName}`
+        `${API_URL}/api/delete-live-station/${currentUserName || loggedUserName}/${stationName}`
       );
-      alert("Live station deleted successfully!");
+      alert("Deleted");
       setNodes([]);
       setEdges([]);
       setIsEditing(false);
       setNoLiveStation(true);
-    } catch (error) {
-      console.error("Error deleting live station:", error);
-      alert("Failed to delete live station. Please try again.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete");
     }
   };
 
+  // Fetch initial pump states
+  const fetchInitialPumpStates = async (pumpNodes) => {
+    const states = {};
+    
+    await Promise.all(
+      pumpNodes.map(async (node) => {
+        try {
+          const { data } = await axios.get(
+            `${API_URL}/api/pump-states/27/${node.id}`
+          );
+          states[node.id] = {
+            status: data.status,
+            pending: data.pending,
+            name: node.data.label
+          };
+        } catch {
+          states[node.id] = {
+            status: false,
+            pending: false,
+            name: node.data.label
+          };
+        }
+      })
+    );
+    
+    return states;
+  };
+
+  // Load station data
   const fetchLiveStation = async (user, station) => {
     setNodes([]);
     setEdges([]);
-
+    setPumpStates({});
+    
     try {
-      const response = await axios.get(
+      const { data } = await axios.get(
         `${API_URL}/api/find-live-station/${user}/${station}`
       );
-      const { data } = response.data;
-      if (data) {
-        // setNodes(data.nodes || []);
-        setNodes(
-          (data.nodes || []).map((node) => ({
-            ...node,
-            data: {
-              ...node.data,
-              isEditing: false, // 🚫 Always set false when loading a saved station
-            },
-          }))
-        );
+      
+      if (!data.data) throw new Error();
 
-        setEdges(data.edges || []);
-        setCurrentUserName(user);
-        setIsEditing(true);
-        setNoLiveStation(false);
-      } else {
-        setIsEditing(false);
-        setNoLiveStation(true);
-      }
-    } catch (error) {
-      console.error("Error fetching live station:", error);
+      const { nodes: savedNodes, edges: savedEdges } = data.data;
+      const pumpNodes = savedNodes.filter(
+        (n) => n.data.label?.toLowerCase().includes("pump") || n.data.isPump
+      );
+
+      const initialPumpStates = await fetchInitialPumpStates(pumpNodes);
+      setPumpStates(initialPumpStates);
+
+      setNodes(
+        savedNodes.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            isEditing: false,
+            socket,
+            socketConnected,
+            pumpStatus: initialPumpStates[node.id]?.status || false,
+            isPending: initialPumpStates[node.id]?.pending || false,
+            onPumpToggle: handlePumpToggle,
+          },
+        }))
+      );
+      
+      setEdges(savedEdges || []);
+      setCurrentUserName(user);
+      setIsEditing(true);
+      setNoLiveStation(false);
+      setStationName(station);
+    } catch {
       setIsEditing(false);
       setNoLiveStation(true);
     }
   };
 
-  // When the selectedStation prop changes, load that station
+  // Load station when selected
   useEffect(() => {
-    if (selectedStation && selectedStation.stationName) {
+    if (selectedStation?.stationName) {
       fetchLiveStation(selectedStation.userName, selectedStation.stationName);
-      setStationName(selectedStation.stationName);
     } else {
-      // Clear canvas for new station creation
       setNodes([]);
       setEdges([]);
       setStationName("");
       setIsEditing(false);
     }
-  }, [selectedStation]);
-
-  // Optionally, if no station is selected, clear the canvas (new station mode)
-  useEffect(() => {
-    if (!selectedStation) {
-      setNodes([]);
-      setEdges([]);
-      setStationName("");
-      setIsEditing(false);
-    }
-  }, [selectedStation]);
-
-  //new
-  const edgeTypes = {
-    piping: PipingEdge,
-  };
-
-
-
+  }, [selectedStation, socketConnected]);
 
   return (
     <div className="react-flow-container">
       <div className="react-flow-scrollable">
         {noLiveStation && (
-          <div className="text-center text-danger mt-3">
+          <div className="text-danger text-center mb-3">
             <h5>
               {userType === "admin"
-                ? "No live station available for this user."
-                : "No live station available. Please create a new one."}
+                ? "No station for this user."
+                : "No station—create one."}
             </h5>
           </div>
         )}
-        {/* Station Name Input */}
-        <div className="d-flex align-items-center justify-content-between mb-2">
+
+        <div className="d-flex justify-content-between align-items-center mb-2">
           <div>
-            <label htmlFor="stationName" className="form-label">
-              Station Name:
-            </label>
+            <label>Station Name:</label>
             <input
-              id="stationName"
-              type="text"
               className="form-control"
               value={stationName}
               onChange={(e) => setStationName(e.target.value)}
-              // Allow editing station name regardless of new or existing station
+              disabled={isEditing && userType !== "admin"}
             />
           </div>
-          <div className="d-flex "style={{ marginRight: "40px" }}>
-            {/* <button
-              className="btn btn-warning me-3"
-              onClick={() => setIsEditMode((prev) => !prev)}
-            >
-              {isEditMode ? ' Edit' : ' Edit'}
-            </button> */}
+
+          <div>
             <button
               className="btn btn-warning me-2"
               onClick={() => {
-                setIsEditMode((prev) => {
-                  const newMode = !prev; // 🔁 Toggle mode
-                  setNodes((nds) =>
-                    nds.map((node) => ({
-                      ...node,
-                      data: {
-                        ...node.data,
-                        isEditing: newMode, // ✅ Add `isEditing` to each node
-                      },
-                    }))
-                  );
-                  return newMode;
-                });
+                setIsEditMode((v) => !v);
+                setNodes((nds) =>
+                  nds.map((n) => ({
+                    ...n,
+                    data: { ...n.data, isEditing: !isEditMode },
+                  }))
+                );
               }}
             >
-              {isEditMode ? " View" : " Edit"}
+              {isEditMode ? "View" : "Edit"}
             </button>
-
             <button
-              className="btn btn-success me-3"
+              className="btn btn-success me-2"
               onClick={handleSave}
               disabled={!isEditMode}
             >
               {isEditing ? "Update" : "Save"}
             </button>
             {isEditing && userType === "admin" && (
-              <button className="btn btn-danger" onClick={handleDelete}>
+              <button
+                className="btn btn-danger"
+                onClick={handleDelete}
+              >
                 Delete
               </button>
             )}
           </div>
         </div>
+
         <div
           className="reactflow-wrapper"
-          style={{ width: "100%", height: "600px" }}
+          style={{ width: "100%", height: 600 }}
         >
           <ReactFlow
             nodes={nodes}
@@ -352,20 +403,14 @@ function Canvas({ selectedStation, isEditMode, setIsEditMode }) {
             onDragOver={onDragOver}
             onDrop={onDrop}
             nodeTypes={nodeTypes}
+            edgeTypes={{ piping: PipingEdge }}
             style={{
               pointerEvents: isDragging || !isEditMode ? "none" : "auto",
             }}
-            //new
-            edgeTypes={edgeTypes}
-            connectable={isEditMode} // ✅ NEW LINE!
-            snapToGrid={true}
-            snapGrid={[15, 15]} // adjust for your layout spacing//new
-            isValidConnection={({ sourceNode, targetNode }) => {
-              //new
-              // Allow all types of connections as long as it's not the same node
-              return sourceNode.id !== targetNode.id;
-            }}
-           
+            connectable={isEditMode}
+            snapToGrid
+            snapGrid={[15, 15]}
+            panOnScroll
           >
             <Controls />
             <Background />

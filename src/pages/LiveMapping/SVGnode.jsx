@@ -1,299 +1,335 @@
-
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import { Resizable } from 're-resizable';
-import { FaSyncAlt, FaTrashAlt } from 'react-icons/fa';
-//new
+import { FaSyncAlt } from 'react-icons/fa';
 import { Handle, Position } from 'react-flow-renderer';
+import './livemapping.css';
 
+const API = 'https://api.ocems.ebhoom.com';
 
-const SVGNode = ({ data, selected, onDelete }) => {
-//new
-const [text, setText] = useState(data.label || '');
+const SVGnode = ({ id, data, selected }) => {
+  const {
+    socket,
+    socketConnected,
+    pumpStatus: propStatus = false,
+    isPending: propPending = false,
 
+    svgPath,
+    label: initialLabel = '',
+    rotation: initialRotation = 0,
+    isPump = false,
+    isAirblower = false,
+    isEditing = false,
+    width: initW = 100,
+    height: initH = 100,
+    onPumpToggle
+  } = data;
 
-  const [size, setSize] = useState({ width: 100, height: 100 });
-  const [isResizing, setIsResizing] = useState(false);
-  const [isPumpOn, setIsPumpOn] = useState(false);
-  const [rotation, setRotation] = useState(data.rotation || 0);  // Store rotation
-  const [isEditing, setIsEditing] = useState(false);  // Define isEditing state
+  const productId = '27';
+
+  // Local state
+  const [isOn, setIsOn] = useState(propStatus);
+  const [isPending, setIsPending] = useState(propPending);
+  const [text, setText] = useState(initialLabel);
+  const [size, setSize] = useState({ width: initW, height: initH });
+  const [rotation, setRotation] = useState(initialRotation);
   const [hovered, setHovered] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
 
-  const handleResize = (e, direction, ref, delta) => {
-    setSize({
-      width: ref.offsetWidth,
-      height: ref.offsetHeight,
-    });
-  };
+  // Handle acknowledgment from MQTT
+  const handleAcknowledgment = useCallback((ackData) => {
+    console.log('🏓 ACK callback got:', ackData);
+    if (ackData.product_id !== productId) return;
 
-  const handleResizeStart = () => {
-    setIsResizing(true);
-  };
+    const pumpUpdate = ackData.pumps.find(p => p.pumpId === id);
+    if (!pumpUpdate) return;
 
-  const handleResizeStop = () => {
-    setIsResizing(false);
-  };
+    const newStatus = pumpUpdate.status === 1 || pumpUpdate.status === 'ON';
+    
+    // Update local state
+    setIsPending(false);
+    setIsOn(newStatus);
 
-  const togglePump = () => {
-    setIsPumpOn(!isPumpOn);
-  };
+    // Update backend state
+    axios.patch(`${API}/api/pump-states/${productId}/${id}`, {
+      status: newStatus,
+      pending: false
+    }).catch(err => console.error('Failed to sync state:', err));
 
-  const handleRotation = () => {
-    const newRotation = (rotation + 45) % 360;
-    setRotation(newRotation);
-    // Save the rotation as part of the data
-    data.rotation = newRotation;
-  };
-
-  const toggleEditing = () => {
-    setIsEditing(!isEditing);  // Toggle the editing state
-  };
-
-  const getResizeConstraints = () => {
-    const screenWidth = window.innerWidth;
-
-    if (screenWidth <= 768) {
-      return { minWidth: 50, minHeight: 50, maxWidth: 150, maxHeight: 150 };
-    } else if (screenWidth <= 1024) {
-      return { minWidth: 75, minHeight: 75, maxWidth: 250, maxHeight: 250 };
-    } else {
-      return { minWidth: 100, minHeight: 100, maxWidth: 300, maxHeight: 300 };
+    // Notify parent component
+    if (onPumpToggle) {
+      onPumpToggle(id, text, newStatus, false);
     }
-  };
+  }, [productId, id, text, onPumpToggle]);
 
-  const { minWidth, minHeight, maxWidth, maxHeight } = getResizeConstraints();
+  // Setup socket listeners
+  // In SVGnode.jsx
+  useEffect(() => {
+    if (!socket) return;
+  
+    socket.on('pumpAck', handleAcknowledgment);
+    socket.on('pumpStateUpdate', handleAcknowledgment);
+  
+    return () => {
+      socket.off('pumpAck', handleAcknowledgment);
+      socket.off('pumpStateUpdate', handleAcknowledgment);
+    };
+  }, [socket, handleAcknowledgment]);
+  
 
-  const commonHandleStyle = {
-    background: '#D9DFC6',
-    width: 10,
-    height: 10,
-    borderRadius: '50%',
-    zIndex: 9999,
-    cursor: 'crosshair',
-    position: 'absolute', // ensure all handles are floated outside
-  };
+  // Initialize state from backend
+  useEffect(() => {
+    if (!isPump && !isAirblower) return;
 
-  //new
-   // Update text in node data
+    const fetchInitialState = async () => {
+      try {
+        const { data: state } = await axios.get(`${API}/api/pump-states/${productId}/${id}`);
+        setIsOn(state.status);
+        setIsPending(state.pending);
+        // Update parent with initial state
+        if (onPumpToggle) {
+          onPumpToggle(id, text, state.status, state.pending);
+        }
+      } catch (err) {
+        console.error('Failed to fetch initial state:', err);
+        setIsOn(propStatus || false);
+      }
+    };
+
+    fetchInitialState();
+  }, [id, isPump, isAirblower, productId, text, onPumpToggle, propStatus]);
+  useEffect(() => {
+    setIsOn(propStatus);
+  }, [propStatus]);
+  
+  useEffect(() => {
+    setIsPending(propPending);
+  }, [propPending]);
+  
+  // Keep label in sync
   useEffect(() => {
     data.label = text;
-  }, [text]);
+  }, [text, data]);
+
+  // Toggle device state
+  const toggleDevice = async () => {
+    if (!socketConnected || isPending) {
+      alert('Cannot control device - offline or pending');
+      return;
+    }
+
+    const newStatus = !isOn;
+    
+    // Optimistic UI update
+    setIsPending(true);
+    if (onPumpToggle) {
+      onPumpToggle(id, text, newStatus, true);
+    }
+
+    try {
+      // Update backend pending state
+      await axios.patch(`${API}/api/pump-states/${productId}/${id}`, {
+        status: newStatus,
+        pending: true
+      });
+
+      // Send control command
+      socket.emit('controlPump', {
+        product_id: productId,
+        pumps: [{
+          pumpId: id,
+          pumpName: text,
+          status: newStatus ? 'ON' : 'OFF',
+          messageId: `cmd-${Date.now()}-${id}`
+        }]
+      });
+    } catch (err) {
+      console.error('Toggle failed:', err);
+      // Revert on error
+      setIsPending(false);
+      if (onPumpToggle) {
+        onPumpToggle(id, text, isOn, false);
+      }
+    }
+  };
+  useEffect(() => {
+    console.log(`Pump ${id} state updated:`, {
+      status: isOn,
+      pending: isPending,
+      timestamp: new Date().toISOString()
+    });
+  }, [isOn, isPending, id]);
+  // Rotation handler
+  const rotateHandler = () => {
+    const next = (rotation + 45) % 360;
+    setRotation(next);
+    data.rotation = next;
+  };
+
+  // Resize handler
+  const handleResize = (e, dir, el) => {
+    const newSize = { width: el.offsetWidth, height: el.offsetHeight };
+    setSize(newSize);
+    data.width = newSize.width;
+    data.height = newSize.height;
+  };
+
+  // Status text helper
+  const statusText = () => {
+    if (isPending) return 'PENDING…';
+    if (isOn) return isPump ? 'RUNNING' : 'ON';
+    return isPump ? 'STOPPED' : 'OFF';
+  };
+
+  // Responsive min/max
+  let minW = 100, minH = 100, maxW = 300, maxH = 300;
+  const w = window.innerWidth;
+  if (w <= 768) [minW, minH, maxW, maxH] = [50,50,150,150];
+  else if (w <= 1024) [minW, minH, maxW, maxH] = [75,75,250,250];
+
+  // Styles
+  const nodeStyle = {
+    position: 'relative',
+    zIndex: isResizing ? 100 : 1,
+    border: selected ? '2px solid #0074D9' : 'none',
+    boxShadow: isResizing ? '0 0 10px rgba(0,0,0,0.3)' : 'none',
+    transform: `rotate(${rotation}deg)`,
+    transition: 'all 0.3s ease',
+  };
+
+  const imageStyle = {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+    filter: (isPump || isAirblower)
+      ? (isPending
+          ? 'drop-shadow(0 0 8px rgba(255,165,0,0.7))'
+          : (isOn
+              ? 'drop-shadow(0 0 8px rgba(0,255,0,0.7))'
+              : 'drop-shadow(0 0 8px rgba(255,0,0,0.5))'))
+      : 'none',
+    transition: 'all 0.3s ease',
+  };
+
+  const toggleStyle = {
+    position: 'absolute',
+    bottom: isEditing ? 50 : 10,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: 50,
+    height: 25,
+    borderRadius: 25,
+    display: 'flex',
+    alignItems: 'center',
+    padding: 2,
+    cursor: socketConnected && !isPending ? 'pointer' : 'not-allowed',
+    zIndex: 10,
+    backgroundColor: isPending
+      ? '#FFA500'
+      : isOn
+      ? '#2ECC40'
+      : '#FF4136',
+    opacity: socketConnected ? 1 : 0.5,
+    transition: 'all 0.3s ease',
+  };
+
+  const handleStyle = {
+    width: 21,
+    height: 21,
+    borderRadius: '50%',
+    backgroundColor: '#fff',
+    transform: isOn ? 'translateX(25px)' : 'translateX(0)',
+    transition: 'transform 0.3s ease',
+  };
+
+  const rotateStyle = {
+    position: 'absolute',
+    top: 10,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    cursor: 'pointer',
+  };
 
   return (
     <div
-      onDoubleClick={toggleEditing}
+      style={nodeStyle}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{
-        position: 'relative',
-        zIndex: isResizing ? 100 : 1,
-        border: selected ? '2px solid blue' : 'none',
-        boxShadow: isResizing ? '0 0 10px rgba(0,0,0,0.3)' : 'none',
-        transform: `rotate(${rotation}deg)`, // Apply rotation
-        transition: 'transform 0.3s ease',
-      }}
     >
-      {/**new */}
-     {/* Handles for all directions */}
-     <Handle
-  id="right"
-  type="source"
-  position={Position.Right}
-  style={{
-    background: data.isEditing ? '#D9DFC6' : 'transparent',
-    width: 10,
-    height: 10,
-    borderRadius: '50%',
-    zIndex: 9999,
-    cursor: 'crosshair',
-    position: 'absolute',
-    right: -12,
-    pointerEvents: data.isEditing ? 'auto' : 'none',
-    border: data.isEditing ? '1px solid #ccc' : 'none',
-  }}
-/>
-    
-<Handle
-  id="bottom"
-  type="source"
-  position={Position.Bottom}
-  style={{
-    background: data.isEditing ? '#D9DFC6' : 'transparent',
-    width: 10,
-    height: 10,
-    borderRadius: '50%',
-    zIndex: 9999,
-    cursor: 'crosshair',
-    position: 'absolute',
-    right: -12,
-    pointerEvents: data.isEditing ? 'auto' : 'none',
-    border: data.isEditing ? '1px solid #ccc' : 'none',
-  }}/>
+      {/* Connection handles */}
+      {isEditing &&
+        ['Top','Right','Bottom','Left'].map((pos) => (
+          <Handle
+            key={pos}
+            type={pos==='Top'||pos==='Left'?'target':'source'}
+            position={Position[pos]}
+            style={{
+              background:'#D9DFC6', width:10, height:10,
+              borderRadius:'50%', border:'1px solid #999',
+              cursor:'crosshair', zIndex:9999
+            }}
+          />
+        ))}
 
-<Handle
-  id="top"
-  type="target"
-  position={Position.Top}
-  style={{
-    background: data.isEditing ? '#D9DFC6' : 'transparent',
-    width: 10,
-    height: 10,
-    borderRadius: '50%',
-    zIndex: 9999,
-    cursor: 'crosshair',
-    position: 'absolute',
-    right: -12,
-    pointerEvents: data.isEditing ? 'auto' : 'none',
-    border: data.isEditing ? '1px solid #ccc' : 'none',
-  }}/>
-
-<Handle
-  id="left"
-  type="target"
-  position={Position.Left}
-  style={{
-    background: data.isEditing ? '#D9DFC6' : 'transparent',
-    width: 10,
-    height: 10,
-    borderRadius: '50%',
-    zIndex: 9999,
-    cursor: 'crosshair',
-    position: 'absolute',
-    right: -12,
-    pointerEvents: data.isEditing ? 'auto' : 'none',
-    border: data.isEditing ? '1px solid #ccc' : 'none',
-  }}/>
-
-
-      {/**new */}
-
+      {/* Resizable image */}
       <Resizable
         size={size}
         onResize={handleResize}
-        onResizeStart={handleResizeStart}
-        onResizeStop={handleResizeStop}
-        minWidth={minWidth}
-        minHeight={minHeight}
-        maxWidth={maxWidth}
-        maxHeight={maxHeight}
-        enable={isEditing ? { top: true, right: true, bottom: true, left: true, bottomRight: true } : {}}
-      >
-        <img
-          src={data.svgPath}
-          alt={data.label}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-          }}
-        />
+        onResizeStart={() => setIsResizing(true)}
+        onResizeStop={() => setIsResizing(false)}
+        minWidth={minW} minHeight={minH}
+        maxWidth={maxW} maxHeight={maxH}
+        enable={isEditing?{ top:true,right:true,bottom:true,left:true,bottomRight:true }:{}}>
+        <img src={svgPath} alt={text} style={imageStyle} />
       </Resizable>
-     
-{/**new */}
- {/* Label input */}
- {/* Label and future values container */}
-{/* Label and future values container */}
-{((data.isEditing&&selected )|| hovered) && (
-  <div
-    style={{
-      width: '100%',
-      marginTop: 6,
-      fontSize: '12px',
-      border: '1px solid #ccc',
-      borderRadius: 4,
-      padding: 4,
-      backgroundColor: '#f9f9f9',
-      textAlign: 'center',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '4px',
-    }}
-  >
-    {/* Label input */}
-    <input
-      type="text"
-      value={text}
-      onChange={(e) => setText(e.target.value)}
-      placeholder="Label..."
-      style={{
-        width: '100%',
-        fontSize: '12px',
-        border: 'none',
-        backgroundColor: 'transparent',
-        textAlign: 'center',
-      }}
-      readOnly={!data.isEditing} // 🔥 Only editable in edit mode
-    />
 
-    {/* Placeholder for second value */}
-    <div style={{ color: '#555' }}>
-      <small>N/A</small>
-    </div>
-
-    {/* Placeholder for third value */}
-    <div style={{ color: '#888' }}>
-      <small>N/A</small>
-    </div>
-  </div>
-)}
-
-
-{/**new */}
-      {/* Show toggle switch only for the "Pump" node */}
-      {data.label === 'Pump' && (
-        <div
-          className="toggle-switch"
-          onClick={togglePump}
-          style={{
-            position: 'absolute',
-            bottom: '10px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            cursor: 'pointer',
-            width: '50px',
-            height: '25px',
-            borderRadius: '25px',
-            backgroundColor: isPumpOn ? '#4caf50' : '#ff0000',
-            display: 'flex',
-            alignItems: 'center',
-            padding: '2px',
-            transition: 'background-color 0.3s ease',
-          }}
-        >
-          <div
+      {/* Label & status */}
+      {(isEditing || hovered) && (
+        <div style={{
+          width:'100%', marginTop:6, fontSize:'12px',
+          border:'1px solid #ddd', borderRadius:4,
+          padding:4, backgroundColor:'#f9f9f9', textAlign:'center'
+        }}>
+          <input
+            value={text}
+            onChange={e=>setText(e.target.value)}
+            readOnly={!isEditing}
+            placeholder="Label..."
             style={{
-              width: '23px',
-              height: '23px',
-              borderRadius: '50%',
-              backgroundColor: '#fff',
-              transition: 'transform 0.3s ease',
-              transform: isPumpOn ? 'translateX(25px)' : 'translateX(0)',
+              width:'100%', fontSize:'12px',
+              border:'none', textAlign:'center', outline:'none'
             }}
           />
+          {(isPump||isAirblower) && (
+            <div style={{
+              color: isPending?'#FFA500':isOn?'#2ECC40':'#FF4136',
+              fontWeight:'bold', fontSize:'12px'
+            }}>
+              {statusText()}
+            </div>
+          )}
         </div>
       )}
 
-      {isEditing && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '10px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
+      {/* Toggle control */}
+      {(isPump||isAirblower) && (
+        <div 
+          style={toggleStyle} 
+          onClick={toggleDevice} 
+          title={!socketConnected ? 'Offline' : isPending ? 'Pending...' : ''}
         >
-          <FaSyncAlt
-            onClick={handleRotation}
-            style={{ cursor: 'pointer', marginTop: '10px' }}
-            size={20}
-          />
+          <div style={handleStyle} />
+        </div>
+      )}
+
+      {/* Rotate button */}
+      {isEditing && (
+        <div style={rotateStyle} onClick={rotateHandler}>
+          <FaSyncAlt size={18} />
         </div>
       )}
     </div>
   );
 };
 
-export default SVGNode;
+export default SVGnode;
