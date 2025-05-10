@@ -1,11 +1,14 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect,useMemo } from "react";
 import ReactFlow, {
   addEdge,
   Background,
   Controls,
   useNodesState,
   useEdgesState,
+  useReactFlow
 } from "react-flow-renderer";
+import io from 'socket.io-client';
+
 import SVGNode from "./SVGnode";
 import TextNode from "./TextNode";
 import { useSelector } from "react-redux";
@@ -13,23 +16,8 @@ import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
 import PipingEdge from "./PipingEdge";
 
-const nodeTypes = {
-  svgNode: SVGNode,
-  textNode: ({ data }) => (
-    <div
-      style={{
-        padding: "10px",
-        backgroundColor: "#fff",
-        border: "1px solid #ccc",
-        borderRadius: "4px",
-        cursor: "move",
-        textAlign: "center",
-      }}
-    >
-      {data.label}
-    </div>
-  ),
-};
+
+
 
 function Canvas({
   selectedStation,
@@ -51,6 +39,8 @@ function Canvas({
   const [isEditing, setIsEditing] = useState(false);
   const [noLiveStation, setNoLiveStation] = useState(false);
   const [stationName, setStationName] = useState("");
+  //tankdata
+  const [liveTankData, setLiveTankData] = useState([]);
 
   // Map of pumpId → {status: boolean, pending: boolean}
   const [pumpStates, setPumpStates] = useState({});
@@ -148,6 +138,8 @@ useEffect(() => {
     [isEditMode, setEdges]
   );
 
+  
+
   const onDragOver = (event) => {
     event.preventDefault();
   };
@@ -212,6 +204,7 @@ useEffect(() => {
             rotation: n.data.rotation,
             isPump: n.data.isPump,
             isAirblower: n.data.isAirblower,
+            totalDepth: n.data.totalDepth,  // ← new
           },
           width: n.width,
           height: n.height,
@@ -333,6 +326,60 @@ useEffect(() => {
     }
   }, [selectedStation, socketConnected]);
 
+
+
+// 👇 Connect socket.io for real-time tank data
+useEffect(() => {
+  const socket = io("https://api.ocems.ebhoom.com"); // or your hosted URL
+
+  socket.on("connect", () => {
+    console.log("✅ Socket connected:", socket.id);
+
+    // Make sure this matches the `userName` used in backend `.emit()`
+    socket.emit("joinRoom", "CROWN_PLAZA"); 
+  });
+
+  socket.on("data", (tankPayload) => {
+    console.log("📦 Received tank payload:", tankPayload);
+    if (tankPayload?.tankData) {
+      setLiveTankData(tankPayload.tankData);
+    }
+  });
+
+  return () => {
+    socket.disconnect();
+  };
+}, []);
+
+
+
+const nodeTypes = useMemo(() => {
+  const getNodeTypes = (liveTankData) => ({
+    svgNode: (props) => <SVGNode {...props} liveTankData={liveTankData} />,
+    textNode: ({ data }) => (
+      <div
+        style={{
+          padding: "10px",
+          backgroundColor: "#fff",
+          border: "1px solid #ccc",
+          borderRadius: "4px",
+          cursor: "move",
+          textAlign: "center",
+        }}
+      >
+        {data.label}
+      </div>
+    ),
+  });
+
+  return getNodeTypes(liveTankData);
+}, [liveTankData]);
+
+//new
+const edgeTypes = {
+  piping: PipingEdge,
+};
+
   return (
     <div className="react-flow-container">
       <div className="react-flow-scrollable">
@@ -392,7 +439,9 @@ useEffect(() => {
 
         <div
           className="reactflow-wrapper"
-          style={{ width: "100%", height: 600 }}
+          // style={{ width: "100%", height: 600 }}
+          style={{ width: "100%", height: "600px", minHeight: "400px" }}
+
         >
           <ReactFlow
             nodes={nodes}
@@ -403,10 +452,10 @@ useEffect(() => {
             onDragOver={onDragOver}
             onDrop={onDrop}
             nodeTypes={nodeTypes}
-            edgeTypes={{ piping: PipingEdge }}
-            style={{
-              pointerEvents: isDragging || !isEditMode ? "none" : "auto",
-            }}
+            edgeTypes={edgeTypes}
+            // style={{
+            //   pointerEvents: isDragging || !isEditMode ? "none" : "auto",
+            // }}
             connectable={isEditMode}
             snapToGrid
             snapGrid={[15, 15]}

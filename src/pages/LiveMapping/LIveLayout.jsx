@@ -240,7 +240,7 @@ function LIveLayout() {
                   >
                     {users.map((user) => (
                       <option key={user.userName} value={user.userName}>
-                        {user.userName}
+                        {user.companyName}({user.userName})
                       </option>
                     ))}
                   </select>
@@ -302,7 +302,7 @@ function LIveLayout() {
                           </div>
                         )}
 
-                        <div className="col-md-9">
+                        <div className={`col-12 ${isEditMode ? "col-md-9" : "col-md-12"}`}>
                           <div
                             className="shadow"
                             style={{
@@ -314,7 +314,8 @@ function LIveLayout() {
                           >
                             <div
                               style={{
-                                minWidth: "800px",
+                                // minWidth: "800px",
+                                minWidth: "100%",
                                 width: "100%",
                                 padding: "10px",
                               }}

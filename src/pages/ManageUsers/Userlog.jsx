@@ -1257,58 +1257,69 @@ const UsersLog = () => {
                       </div>
 
                       {formData.userType === "user" && (
-                        <div className="mb-4">
-                          <h5 className="text-light">Operators</h5>
-                          {formData.operators.map((op, i) => (
-                            <div
-                              key={i}
-                              className="d-flex align-items-center mb-2"
-                            >
-                              <input
-                                name="name"
-                                value={op.name}
-                                onChange={(e) => handleOperatorChange(i, e)}
-                                placeholder="Operator Name"
-                                className="form-control me-2"
-                                style={{ width: "33%", padding: "15px" }}
-                              />
-                              <input
-                                name="email"
-                                type="email"
-                                value={op.email}
-                                onChange={(e) => handleOperatorChange(i, e)}
-                                placeholder="Operator Email"
-                                className="form-control me-2"
-                                style={{ width: "33%", padding: "15px" }}
-                              />
-                              <input
-                                name="password"
-                                type="password"
-                                value={op.password}
-                                onChange={(e) => handleOperatorChange(i, e)}
-                                placeholder="Operator Password"
-                                className="form-control me-2"
-                                style={{ width: "33%", padding: "15px" }}
-                              />
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-danger"
-                                onClick={() => handleRemoveOperator(i)}
-                              >
-                                &times;
-                              </button>
-                            </div>
-                          ))}
+  <div className="mb-4">
+    <h5 className="text-light">Operators</h5>
 
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-secondary"
-                            onClick={handleAddOperator}
-                          >
-                            + Add Operator
-                          </button>
-                        </div>
-                      )}
+    {formData.operators.map((op, i) => (
+      <div key={i} className="row gx-2 gy-2 align-items-center mb-3">
+        {/* Name */}
+        <div className="col-12 col-md-3">
+          <input
+            name="name"
+            value={op.name}
+            onChange={e => handleOperatorChange(i, e)}
+            placeholder="Operator Name"
+            className="form-control py-3"
+          />
+        </div>
+
+        {/* Email */}
+        <div className="col-12 col-md-3">
+          <input
+            name="email"
+            type="email"
+            value={op.email}
+            onChange={e => handleOperatorChange(i, e)}
+            placeholder="Operator Email"
+            className="form-control py-3"
+          />
+        </div>
+
+        {/* Password */}
+        <div className="col-12 col-md-3">
+          <input
+            name="password"
+            type="password"
+            value={op.password}
+            onChange={e => handleOperatorChange(i, e)}
+            placeholder="Operator Password"
+            className="form-control py-3"
+          />
+        </div>
+
+        {/* Remove button */}
+        <div className="col-12 col-md-auto">
+          <button
+            type="button"
+            className="btn btn-sm btn-danger w-100 w-md-auto"
+            onClick={() => handleRemoveOperator(i)}
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+    ))}
+
+    <button
+      type="button"
+      className="btn btn-sm btn-secondary"
+      onClick={handleAddOperator}
+    >
+      + Add Operator
+    </button>
+  </div>
+)}
+
                       {/* select industry */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
