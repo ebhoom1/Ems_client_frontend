@@ -216,7 +216,7 @@ function Edit() {
 
                 <div className="card">
                   <div className="card-body">
-                    <form className="m-2 p-5" onSubmit={handleSaveUser}>
+                    <form className="m-2 p-2" onSubmit={handleSaveUser}>
                       <div className="row">
                         <div className="col-lg-6 col-md-6 mb-4">
                           <div className="form-group">

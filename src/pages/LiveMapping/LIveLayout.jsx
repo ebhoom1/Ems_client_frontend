@@ -15,6 +15,8 @@ import io from 'socket.io-client';
 
 function LIveLayout() {
   const { userData } = useSelector((state) => state.user);
+  console.log('userdata respone ', userData)
+   const productId = userData?.validUserOne?.productID;
   const [isEditMode, setIsEditMode] = useState(false);
   const [stationsList, setStationsList] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
@@ -37,7 +39,7 @@ function LIveLayout() {
     const handleConnect = () => {
       console.log('Connected to socket server');
       setSocketConnected(true);
-      newSocket.emit('joinRoom', { product_id: '27' }); // Changed to 27 to match your logs
+      newSocket.emit('joinRoom', { product_id: productId }); // Changed to 27 to match your logs
     };
   
     const handleDisconnect = () => {
@@ -124,7 +126,7 @@ function LIveLayout() {
       const messageId = `cmd-${Date.now()}`;
   
       const command = {
-        product_id: '27', // Consistent with acknowledgment messages
+        product_id: productId,  // Consistent with acknowledgment messages
         pumps: [{
           pumpId,
           pumpName,
@@ -146,7 +148,10 @@ function LIveLayout() {
         if (userData.validUserOne.adminType) {
           response = await axios.get(
             `${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`
+            
           );
+          console.log('responnse', response);
+          
         } else {
           response = await axios.get(`${API_URL}/api/getallusers`);
         }
@@ -297,12 +302,12 @@ function LIveLayout() {
                     <div className="card-body">
                       <div className="row">
                         {isEditMode && (
-                          <div className="col-md-3 d-none d-md-block">
+                          <div className="col-md-2 d-none d-md-block">
                             <Sidebar />
                           </div>
                         )}
 
-                        <div className={`col-12 ${isEditMode ? "col-md-9" : "col-md-12"}`}>
+                        <div className={`col-12 ${isEditMode ? "col-md-10" : "col-md-12"}`}>
                           <div
                             className="shadow"
                             style={{

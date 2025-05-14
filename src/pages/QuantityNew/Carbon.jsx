@@ -36,7 +36,7 @@ const ConsumptionEmissionDashboard = () => {
         }
       })
       .catch(error => {
-        console.error("Error fetching API data", error);
+        console.error("Error fetching API data", error); 
       })
       .finally(() => {
         setLoading(false);
@@ -44,13 +44,16 @@ const ConsumptionEmissionDashboard = () => {
   }, [userName]);
   
   // Build the sampleData array for the pie chart and compute total consumption.
+   // Build the sampleData array for the pie chart and compute total consumption,
+  // but only include strictly positive entries.
   let sampleData = [];
   let totalConsumption = 0;
   if (apiData) {
-    Object.keys(apiData).forEach((key) => {
+    Object.entries(apiData).forEach(([key, rawVal]) => {
       if (!excludedKeys.includes(key)) {
-        const value = parseFloat(apiData[key]);
-        if (!isNaN(value)) {
+        const value = parseFloat(rawVal);
+        // only include if it's a valid positive number
+        if (!isNaN(value) && value > 0) {
           sampleData.push({ name: key, value });
           totalConsumption += value;
         }

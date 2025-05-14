@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect  } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import stank from '../../assests/images/stank.svg';
 import filtertank from '../../assests/images/filtertank.svg';
@@ -12,37 +11,11 @@ import meter from '../../assests/images/meter.svg';
 import pump from '../../assests/images/pump.svg';
 import tank from '../../assests/images/tank.svg';
 import airblower from '../../assests/images/wheel.svg';
-import zigzag from '../../assests/images/zigzag.svg';
-import pipelong from '../../assests/images/pipelong.svg';
-import connect from '../../assests/images/connect.svg';
-import filterset from '../../assests/images/filterset.svg';
-import yellowtank from '../../assests/images/yellowtank.svg';
 import bluetank from '../../assests/images/bluetank.svg';
 import pumpsingle from '../../assests/images/pumpsingle.svg';
-import connectinginlet from '../../assests/images/conectinginlet.svg';
-import flowout from '../../assests/images/flowout.svg';
 import energymeter from '../../assests/images/energymeter.svg';
-import upipe from '../../assests/images/upipe.svg';
-import straightconnector from '../../assests/images/straightconnector.svg';
-import blacktank from '../../assests/images/blacktank.svg';
-import greentank from '../../assests/images/greentank.svg';
-import imagenext from '../../assests/images/imagenext.svg';
-import solar from '../../assests/images/solar.svg';
-import imagenew from '../../assests/images/imagenew.svg';
-import curvedpipe from '../../assests/images/curvedpipe.png';
-import bubble from '../../assests/images/newbubble.svg'
-import widetank from '../../assests/images/widetank.svg'
-import tanksamp from '../../assests/images/tanksamp.svg'
-import zvalve from '../../assests/images/z.png'
-import lineround from '../../assests/images/lineround.svg'
-import linearrow from '../../assests/images/arrowline.svg'
-import aorangeline from '../../assests/images/aorangeline.svg'
-import ablackline from '../../assests/images/ablackline.svg'
-import agreenline from '../../assests/images/agreenline.svg'
-import settlingnew from '../../assests/images/settlingnew.svg'
-
-import watertanknew from '../../assests/images/watertanknew.svg'
-
+import settlingnew from '../../assests/images/settlingnew.svg';
+import watertanknew from '../../assests/images/watertanknew.svg';
 import './livemapping.css';
 import { API_URL } from '../../utils/apiConfig';
 
@@ -50,70 +23,48 @@ import { API_URL } from '../../utils/apiConfig';
 const defaultShapes = [
   { id: 'settlingnew', label: 'settlingnew', isSVG: true, svgPath: settlingnew },
   { id: 'watertanknew', label: 'watertanknew', isSVG: true, svgPath: watertanknew },
-
-  { id: 'stank', label: 'Stank', isSVG: true, svgPath: stank },
-  { id: 'filtertank', label: 'Filter Tank', isSVG: true, svgPath: filtertank },
-  { id: 'connector', label: 'Connector', isSVG: true, svgPath: connector },
-  { id: 'elbow', label: 'Elbow', isSVG: true, svgPath: elbow },
-  { id: 'filters', label: 'Filters', isSVG: true, svgPath: filters },
   { id: 'flowmeter', label: 'Flowmeter', isSVG: true, svgPath: flowmeter },
-  { id: 'image1', label: 'Image 1', isSVG: true, svgPath: image1 },
   { id: 'meter', label: 'Meter', isSVG: true, svgPath: meter },
   { id: 'pump', label: 'Pump', isSVG: true, svgPath: pump },
   { id: 'tank', label: 'Tank', isSVG: true, svgPath: tank },
-  { id: 'airblower', label: 'Airblower', isSVG: true, svgPath: airblower, isAirblower: true }, // <-- mark airblower  { id: 'zigzag', label: 'Zigzag', isSVG: true, svgPath: zigzag },
-  { id: 'pipelong', label: 'Pipe Long', isSVG: true, svgPath: pipelong },
-  { id: 'connect', label: 'Connect', isSVG: true, svgPath: connect },
-  { id: 'filterset', label: 'Filter Set', isSVG: true, svgPath: filterset },
-  { id: 'yellowtank', label: 'Yellow Tank', isSVG: true, svgPath: yellowtank },
-  { id: 'bluetank', label: 'Blue Tank', isSVG: true, svgPath: bluetank },
+  { id: 'airblower', label: 'Airblower', isSVG: true, svgPath: airblower, isAirblower: true },
   { id: 'pumpsingle', label: 'Pump Single', isSVG: true, svgPath: pumpsingle },
-  { id: 'connectinginlet', label: 'Connecting Inlet', isSVG: true, svgPath: connectinginlet },
   { id: 'energymeter', label: 'Energymeter', isSVG: true, svgPath: energymeter },
-  { id: 'upipe', label: 'Upipe', isSVG: true, svgPath: upipe },
-  { id: 'straightconnector', label: 'Straight Connector', isSVG: true, svgPath: straightconnector },
-  { id: 'blacktank', label: 'Black Tank', isSVG: true, svgPath: blacktank },
-  { id: 'greentank', label: 'Green Tank', isSVG: true, svgPath: greentank },
-  { id: 'imagenext', label: 'Image Next', isSVG: true, svgPath: imagenext },
-  { id: 'solar', label: 'Solar', isSVG: true, svgPath: solar },
-  { id: 'imagenew', label: 'Image New', isSVG: true, svgPath: imagenew },
-  { id: 'flowout', label: 'Flow Out', isSVG: true, svgPath: flowout },
-  { id: 'curvedpipe', label: 'Curved Pipe', isSVG: true, svgPath: curvedpipe },
-  { id: 'bubble', label: 'Bubble', isSVG: true, svgPath: bubble },
-  { id: 'widetank', label: 'Widetank', isSVG: true, svgPath: widetank },
-  { id: 'tanksamp', label: 'Tanksamp', isSVG: true, svgPath: tanksamp },
-  { id: 'zvalve', label: 'zvalve', isSVG: true, svgPath: zvalve },
-  { id: 'lineround', label: 'lineround', isSVG: true, svgPath: lineround },
-  { id: 'linearrow', label: 'linearrow', isSVG: true, svgPath: linearrow },
-  { id: 'aorangeline', label: 'aorangeline', isSVG: true, svgPath: aorangeline },
-  { id: 'agreenline', label: 'agreenline', isSVG: true, svgPath: agreenline },
-  { id: 'ablackline', label: 'ablackline', isSVG: true, svgPath: ablackline },
-
 ];
+
+// Accepted file types
+const acceptedFileTypes = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
 
 function Sidebar() {
   const [shapes, setShapes] = useState(defaultShapes);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [newText, setNewText] = useState(''); // Updated variable name to avoid conflicts
+  const [newText, setNewText] = useState('');
+  const [fileTypeError, setFileTypeError] = useState('');
 
-  //new
   useEffect(() => {
-    const loadServerSVGs = async () => {
+    const loadServerImages = async () => {
       try {
-        const res = await axios.get(`${API_URL}/api/list-uploaded-svgs`);
-        const serverShapes = res.data.map((filename, index) => ({
-          id: `server_${index}`,
-          label: filename.replace('.svg', ''),
-          isSVG: true,
-          svgPath: `${API_URL}/uploads/${filename}`,
-        }));
+        const res = await axios.get(`${API_URL}/api/list-uploaded-files`);
+        const serverShapes = res.data.map((filename, index) => {
+          const extension = filename.split('.').pop().toLowerCase();
+          const isImage = ['svg', 'png', 'jpg', 'jpeg'].includes(extension);
+          
+          return {
+            id: `server_${index}`,
+            label: filename.replace(/\.[^/.]+$/, ''), // Remove extension
+            isSVG: extension === 'svg',
+            isImage: isImage && extension !== 'svg',
+            isPDF: extension === 'pdf',
+            filePath: `${API_URL}/uploads/${filename}`,
+          };
+        });
         setShapes((prev) => [...prev, ...serverShapes]);
       } catch (err) {
-        console.error('Failed to load server SVGs:', err);
+        console.error('Failed to load server files:', err);
       }
     };
   
-    loadServerSVGs();
+    loadServerImages();
   }, []);
 
   const handleTextAdd = () => {
@@ -130,93 +81,121 @@ function Sidebar() {
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
-    setSelectedFile(file);
+    if (file && acceptedFileTypes.includes(file.type)) {
+      setSelectedFile(file);
+      setFileTypeError('');
+    } else {
+      setSelectedFile(null);
+      setFileTypeError('Please select a valid file (SVG, PNG, JPG, or PDF)');
+    }
   };
 
-  // const handleUpload = () => {
-  //   if (selectedFile && selectedFile.type === 'image/svg+xml') {
-  //     const reader = new FileReader();
-  //     reader.onload = () => {
-  //       const newShape = {
-  //         id: `user_${shapes.length}`,
-  //         label: `User SVG ${shapes.length + 1}`,
-  //         isSVG: true,
-  //         svgPath: reader.result,
-  //       };
-  //       setShapes((prevShapes) => [...prevShapes, newShape]);
-  //       setSelectedFile(null);
-  //       alert('SVG uploaded successfully!');
-  //     };
-  //     reader.readAsDataURL(selectedFile);
-  //   } else {
-  //     alert('Please select a valid SVG file before uploading.');
-  //   }
-  // };
-
-  //new
   const handleUpload = async () => {
-    if (!selectedFile || selectedFile.type !== 'image/svg+xml') {
-      alert('Please select a valid SVG file.');
+    if (!selectedFile) {
+      alert('Please select a file before uploading.');
       return;
     }
-  
+
     const formData = new FormData();
-    formData.append('svg', selectedFile);
-  
+    formData.append('file', selectedFile);
+
     try {
-      const res = await axios.post(`${API_URL}/api/upload-svg`, formData, {
+      const res = await axios.post(`${API_URL}/api/upload-file`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-  
+
+      const extension = selectedFile.name.split('.').pop().toLowerCase();
+      const isImage = ['svg', 'png', 'jpg', 'jpeg'].includes(extension);
+      
       const newShape = {
         id: `user_${shapes.length}`,
-        label: `User SVG ${shapes.length + 1}`,
-        isSVG: true,
-        svgPath: res.data.filePath, // returned from backend
+        label: selectedFile.name.replace(/\.[^/.]+$/, ''),
+        isSVG: extension === 'svg',
+        isImage: isImage && extension !== 'svg',
+        isPDF: extension === 'pdf',
+        filePath: res.data.filePath,
       };
-  
+
       setShapes((prevShapes) => [...prevShapes, newShape]);
       setSelectedFile(null);
-      alert('SVG uploaded and saved to server!');
+      alert('File uploaded and saved to server!');
     } catch (err) {
       console.error('Upload failed:', err);
-      alert('Failed to upload SVG');
+      alert('Failed to upload file');
     }
   };
 
   const onDragStart = (event, shape) => {
-    event.dataTransfer.setData(
-      'application/reactflow',
-      JSON.stringify({
-        ...shape,
-        type: shape.isText ? 'textNode' : 'svgNode',
-      })
-    );
+  // Sidebar.js → onDragStart
+event.dataTransfer.setData(
+  "application/reactflow",
+  JSON.stringify({
+    ...shape,
+    // new types:
+    type: shape.isPump
+      ? "pumpNode"
+      : shape.isAirblower
+      ? "blowerNode"
+      : shape.isText
+      ? "textNode"
+      : shape.isPDF
+      ? "pdfNode"
+      : shape.isImage
+      ? "imageNode"
+      : "svgNode",
+    // carry through these booleans:
+    isPump: shape.isPump,
+    isAirblower: shape.isAirblower,
+  })
+);
+
     event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const getFileIcon = (shape) => {
+    if (shape.isSVG) {
+      return <img src={shape.svgPath || shape.filePath} alt={shape.label} style={{ width: '50px', height: '50px' }} />;
+    }
+    if (shape.isImage) {
+      return <img src={shape.filePath} alt={shape.label} style={{ width: '50px', height: '50px' }} />;
+    }
+    if (shape.isPDF) {
+      return (
+        <div style={{ width: '50px', height: '50px', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>PDF</span>
+        </div>
+      );
+    }
+    return (
+      <div style={{ padding: '10px', backgroundColor: '#f0f0f0', textAlign: 'center', borderRadius: '4px', cursor: 'grab' }}>
+        {shape.label}
+      </div>
+    );
   };
 
   return (
     <div className="sidebar-container">
       <aside>
         <div className="description">
-          Drag a shape or text box to the canvas, or upload your own SVG.
+          Drag a shape or text box to the canvas, or upload your own SVG, PNG, JPG, or PDF.
         </div>
         <div className="upload-container">
           <input
             type="file"
-            accept=".svg"
+            accept=".svg,.png,.jpg,.jpeg,.pdf"
             onChange={handleFileChange}
             className="form-control mb-2"
           />
+          {fileTypeError && <div className="text-danger small mb-2">{fileTypeError}</div>}
           <button
             className="btn text-light"
-            style={{backgroundColor:'#236a80'}}
+            style={{ backgroundColor: '#236a80' }}
             onClick={handleUpload}
             disabled={!selectedFile}
           >
-            Upload SVG
+            Upload File
           </button>
         </div>
         <div className="text-input-container mt-2">
@@ -230,7 +209,7 @@ function Sidebar() {
           <button
             onClick={handleTextAdd}
             className="btn text-light"
-            style={{backgroundColor:'#236a80'}}
+            style={{ backgroundColor: '#236a80' }}
             disabled={!newText.trim()}
           >
             Add Text
@@ -244,25 +223,7 @@ function Sidebar() {
               onDragStart={(event) => onDragStart(event, shape)}
               draggable
             >
-              {shape.isSVG ? (
-                <img
-                  src={shape.svgPath}
-                  alt={shape.label}
-                  style={{ width: '50px', height: '50px' }}
-                />
-              ) : (
-                <div
-                  style={{
-                    padding: '10px',
-                    backgroundColor: '#f0f0f0',
-                    textAlign: 'center',
-                    borderRadius: '4px',
-                    cursor: 'grab',
-                  }}
-                >
-                  {shape.label}
-                </div>
-              )}
+              {getFileIcon(shape)}
             </div>
           ))}
         </div>
@@ -272,4 +233,3 @@ function Sidebar() {
 }
 
 export default Sidebar;
-

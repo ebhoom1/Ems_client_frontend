@@ -13,16 +13,16 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
     socketConnected,
     pumpStatus: propStatus = false,
     isPending: propPending = false,
-
     svgPath,
     label: initialLabel = "",
     rotation: initialRotation = 0,
     isPump = false,
     isAirblower = false,
-    // isEditing = false,
+    isTank = false,
     width: initW = 100,
     height: initH = 100,
     onPumpToggle,
+    isEditing: isParentEditing,
   } = data;
 
   const productId = "27";
@@ -32,11 +32,8 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
   const [isPending, setIsPending] = useState(propPending);
   const [text, setText] = useState(initialLabel);
   const [size, setSize] = useState({ width: initW, height: initH });
-  const [rotation, setRotation] = useState(data.rotation || 0);
-  const [isEditing, setIsEditing] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [rotation, setRotation] = useState(initialRotation);
   const [isResizing, setIsResizing] = useState(false);
-
   const [totalDepth, setTotalDepth] = useState(data.totalDepth || "");
 
   const match = liveTankData.find(
@@ -54,7 +51,6 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
   // Handle acknowledgment from MQTT
   const handleAcknowledgment = useCallback(
     (ackData) => {
-      console.log("🏓 ACK callback got:", ackData);
       if (ackData.product_id !== productId) return;
 
       const pumpUpdate = ackData.pumps.find((p) => p.pumpId === id);
@@ -62,11 +58,9 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
 
       const newStatus = pumpUpdate.status === 1 || pumpUpdate.status === "ON";
 
-      // Update local state
       setIsPending(false);
       setIsOn(newStatus);
 
-      // Update backend state
       axios
         .patch(`${API}/api/pump-states/${productId}/${id}`, {
           status: newStatus,
@@ -74,7 +68,6 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
         })
         .catch((err) => console.error("Failed to sync state:", err));
 
-      // Notify parent component
       if (onPumpToggle) {
         onPumpToggle(id, text, newStatus, false);
       }
@@ -83,7 +76,6 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
   );
 
   // Setup socket listeners
-  // In SVGnode.jsx
   useEffect(() => {
     if (!socket) return;
 
@@ -107,7 +99,6 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
         );
         setIsOn(state.status);
         setIsPending(state.pending);
-        // Update parent with initial state
         if (onPumpToggle) {
           onPumpToggle(id, text, state.status, state.pending);
         }
@@ -119,6 +110,7 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
 
     fetchInitialState();
   }, [id, isPump, isAirblower, productId, text, onPumpToggle, propStatus]);
+
   useEffect(() => {
     setIsOn(propStatus);
   }, [propStatus]);
@@ -127,7 +119,6 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
     setIsPending(propPending);
   }, [propPending]);
 
-  // Keep label in sync
   useEffect(() => {
     data.label = text;
   }, [text, data]);
@@ -141,20 +132,17 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
 
     const newStatus = !isOn;
 
-    // Optimistic UI update
     setIsPending(true);
     if (onPumpToggle) {
       onPumpToggle(id, text, newStatus, true);
     }
 
     try {
-      // Update backend pending state
       await axios.patch(`${API}/api/pump-states/${productId}/${id}`, {
         status: newStatus,
         pending: true,
       });
 
-      // Send control command
       socket.emit("controlPump", {
         product_id: productId,
         pumps: [
@@ -168,20 +156,13 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
       });
     } catch (err) {
       console.error("Toggle failed:", err);
-      // Revert on error
       setIsPending(false);
       if (onPumpToggle) {
         onPumpToggle(id, text, isOn, false);
       }
     }
   };
-  useEffect(() => {
-    console.log(`Pump ${id} state updated:`, {
-      status: isOn,
-      pending: isPending,
-      timestamp: new Date().toISOString(),
-    });
-  }, [isOn, isPending, id]);
+
   // Rotation handler
   const rotateHandler = () => {
     const next = (rotation + 45) % 360;
@@ -204,16 +185,125 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
     return isPump ? "STOPPED" : "OFF";
   };
 
-  // Responsive min/max
-  let minW = 100,
-    minH = 100,
-    maxW = 300,
-    maxH = 300;
-  const w = window.innerWidth;
-  if (w <= 768) [minW, minH, maxW, maxH] = [50, 50, 150, 150];
-  else if (w <= 1024) [minW, minH, maxW, maxH] = [75, 75, 250, 250];
+  // Simplified pump/airblower render
+  if (isPump || isAirblower) {
+    return (
+      <div
+        style={{
+          border: selected ? "2px solid #0074D9" : "1px solid #ddd",
+          borderRadius: 8,
+          padding: 12,
+          backgroundColor: "#fff",
+          minWidth: 150,
+          cursor: "move",
+          position: "relative",
+        }}
+      >
+        {/* Connection handles */}
+        {["Top", "Right", "Bottom", "Left"].map((pos) => (
+          <Handle
+            id={pos.toLowerCase()}
+            key={pos}
+            type={pos === "Top" || pos === "Left" ? "target" : "source"}
+            position={Position[pos]}
+            style={{
+              background: isParentEditing ? "#D9DFC6" : "transparent",
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              zIndex: 9999,
+              position: "absolute",
+              [pos]: -12,
+              pointerEvents: isParentEditing ? "auto" : "none",
+              border: isParentEditing ? "1px solid #ccc" : "none",
+            }}
+          />
+        ))}
 
-  // Styles
+        {/* Label - always visible and editable in edit mode */}
+        <div style={{ marginBottom: 8 }}>
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            readOnly={!isParentEditing}
+            placeholder="Label..."
+            style={{
+              width: "100%",
+              fontSize: "14px",
+              fontWeight: "bold",
+              border: isParentEditing ? "1px solid #ddd" : "none",
+              textAlign: "center",
+              outline: "none",
+              backgroundColor: "transparent",
+              borderRadius: 4,
+              padding: isParentEditing ? "4px" : 0,
+            }}
+          />
+        </div>
+
+        {/* Status indicator - always visible */}
+        <div
+          style={{
+            color: isPending ? "#FFA500" : isOn ? "#2ECC40" : "#FF4136",
+            fontSize: "12px",
+            textAlign: "center",
+            marginBottom: 8,
+          }}
+        >
+          {statusText()}
+        </div>
+
+        {/* Toggle switch - always visible */}
+        <div
+          style={{
+            position: "relative",
+            width: 60,
+            height: 30,
+            borderRadius: 15,
+            display: "flex",
+            alignItems: "center",
+            padding: 2,
+            cursor: socketConnected && !isPending ? "pointer" : "not-allowed",
+            margin: "0 auto",
+            backgroundColor: isPending ? "#FFA500" : isOn ? "#2ECC40" : "#FF4136",
+            opacity: socketConnected ? 1 : 0.5,
+            transition: "all 0.3s ease",
+          }}
+          onClick={toggleDevice}
+          title={!socketConnected ? "Offline" : isPending ? "Pending..." : ""}
+        >
+          <div
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: "50%",
+              backgroundColor: "#fff",
+              transform: isOn ? "translateX(30px)" : "translateX(0)",
+              transition: "transform 0.3s ease",
+            }}
+          />
+        </div>
+
+        {/* Rotate button in edit mode */}
+        {isParentEditing && (
+          <div
+            style={{
+              position: "absolute",
+              top: 10,
+              left: "50%",
+              transform: "translateX(-50%)",
+              cursor: "pointer",
+            }}
+            onClick={rotateHandler}
+          >
+            <FaSyncAlt size={18} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Existing render for other node types (tanks, etc.)
   const nodeStyle = {
     position: "relative",
     zIndex: isResizing ? 100 : 1,
@@ -227,65 +317,12 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
     width: "100%",
     height: "100%",
     objectFit: "contain",
-    filter:
-      isPump || isAirblower
-        ? isPending
-          ? "drop-shadow(0 0 8px rgba(255,165,0,0.7))"
-          : isOn
-          ? "drop-shadow(0 0 8px rgba(0,255,0,0.7))"
-          : "drop-shadow(0 0 8px rgba(255,0,0,0.5))"
-        : "none",
+    filter: isTank ? "none" : "drop-shadow(0 0 8px rgba(0,0,0,0.2))",
     transition: "all 0.3s ease",
   };
 
-  const toggleStyle = {
-    position: "absolute",
-    // bottom: data.isEditing ? 60 : 10, 
-    bottom: (data.isEditing ? selected : hovered) ? 50 : 10,
-
-    left: "50%",
-    transform: "translateX(-50%)",
-    width: 50,
-    height: 25,
-    borderRadius: 25,
-    display: "flex",
-    alignItems: "center",
-    padding: 2,
-    cursor: socketConnected && !isPending ? "pointer" : "not-allowed",
-    zIndex: 10,
-    backgroundColor: isPending ? "#FFA500" : isOn ? "#2ECC40" : "#FF4136",
-    opacity: socketConnected ? 1 : 0.5,
-    transition: "all 0.3s ease",
-  };
-
-  const handleStyle = {
-    width: 21,
-    height: 21,
-    borderRadius: "50%",
-    backgroundColor: "#fff",
-    transform: isOn ? "translateX(25px)" : "translateX(0)",
-    transition: "transform 0.3s ease",
-  };
-
-  const rotateStyle = {
-    position: "absolute",
-    top: 10,
-    left: "50%",
-    transform: "translateX(-50%)",
-    cursor: "pointer",
-  };
-
-  const toggleLocalEditing = () => setIsEditing(!isEditing);
-  console.log("localEditing:", isEditing);
-  console.log("isEditing:", data.isEditing);
-  console.log("data:", data);
   return (
-    <div
-      style={nodeStyle}
-      onDoubleClick={toggleLocalEditing}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <div style={nodeStyle}>
       {/* Connection handles */}
       {["Top", "Right", "Bottom", "Left"].map((pos) => (
         <Handle
@@ -294,31 +331,30 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
           type={pos === "Top" || pos === "Left" ? "target" : "source"}
           position={Position[pos]}
           style={{
-            background: data.isEditing ? "#D9DFC6" : "transparent",
+            background: isParentEditing ? "#D9DFC6" : "transparent",
             width: 10,
             height: 10,
             borderRadius: "50%",
             zIndex: 9999,
             position: "absolute",
             [pos]: -12,
-            pointerEvents: data.isEditing ? "auto" : "none",
-            border: data.isEditing ? "1px solid #ccc" : "none",
+            pointerEvents: isParentEditing ? "auto" : "none",
+            border: isParentEditing ? "1px solid #ccc" : "none",
           }}
         />
       ))}
 
-      {/* Resizable image */}
       <Resizable
         size={size}
         onResize={handleResize}
         onResizeStart={() => setIsResizing(true)}
         onResizeStop={() => setIsResizing(false)}
-        minWidth={minW}
-        minHeight={minH}
-        maxWidth={maxW}
-        maxHeight={maxH}
+        minWidth={100}
+        minHeight={100}
+        maxWidth={300}
+        maxHeight={300}
         enable={
-          isEditing
+          isParentEditing
             ? {
                 top: true,
                 right: true,
@@ -329,13 +365,10 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
             : {}
         }
       >
-        {/* <img src={svgPath} alt={text} style={imageStyle} /> */}
         <div style={{ position: "relative", width: "100%", height: "100%" }}>
-          {/* 1) Your tank/pump image: */}
           <img src={svgPath} alt={text} style={imageStyle} />
 
-          {/* 2) Right here, drop in the water‐fill overlay: */}
-          {waterLevel !== null && (
+          {isTank && waterLevel !== null && (
             <div
               style={{
                 position: "absolute",
@@ -357,140 +390,76 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
         </div>
       </Resizable>
 
-      {/* {(isEditing || hovered) && (
-        <div style={{
-          width:'100%', marginTop:6, fontSize:'12px',
-          border:'1px solid #ddd', borderRadius:4,
-          padding:4, backgroundColor:'#f9f9f9', textAlign:'center'
-        }}>
-          <input
-            value={text}
-            onChange={e=>setText(e.target.value)}
-            readOnly={!isEditing}
-            placeholder="Label..."
-            style={{
-              width:'100%', fontSize:'12px',
-              border:'none', textAlign:'center', outline:'none'
-            }}
-          />
-          {(isPump||isAirblower) && (
-            <div style={{
-              color: isPending?'#FFA500':isOn?'#2ECC40':'#FF4136',
-              fontWeight:'bold', fontSize:'12px'
-            }}>
-              {statusText()}
-            </div>
-          )}
-        </div>
-      )} */}
+      {/* Label and controls - always visible */}
+      <div
+        style={{
+          width: "100%",
+          marginTop: 6,
+          fontSize: "12px",
+          border: "1px solid #ddd",
+          borderRadius: 4,
+          padding: 4,
+          backgroundColor: "#f9f9f9",
+          textAlign: "center",
+        }}
+      >
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          readOnly={!isParentEditing}
+          placeholder={isTank ? "Tank Name" : "Label"}
+          style={{
+            width: "100%",
+            fontSize: "12px",
+            border: isParentEditing ? "1px solid #ddd" : "none",
+            textAlign: "center",
+            outline: "none",
+            backgroundColor: "transparent",
+            borderRadius: 4,
+            padding: isParentEditing ? "4px" : 0,
+          }}
+        />
 
-      {/* ——— PUMP NODES ——— */}
-      {((data.isEditing && selected) || (!data.isEditing && hovered)) &&
-        (isPump || isAirblower) && (
-          <div
-            style={{
-              width: "100%",
-              marginTop: 6,
-              fontSize: "12px",
-              border: "1px solid #ddd",
-              borderRadius: 4,
-              padding: 4,
-              backgroundColor: "#f9f9f9",
-              textAlign: "center",
-            }}
-          >
-            <input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              readOnly={!data.isEditing}
-              placeholder="Label..."
-              style={{
-                width: "100%",
-                fontSize: "12px",
-                border: "none",
-                textAlign: "center",
-                outline: "none",
-              }}
-            />
-            <div
-              style={{
-                color: isPending ? "#FFA500" : isOn ? "#2ECC40" : "#FF4136",
-                fontWeight: "bold",
-                fontSize: "12px",
-              }}
-            >
-              {statusText()}
-            </div>
-          </div>
-        )}
-
-      {/* ——— TANK NODES ——— */}
-      {((data.isEditing && selected) || (!data.isEditing && hovered)) &&
-        !(isPump || isAirblower) && (
-          <div
-            style={{
-              width: "100%",
-              marginTop: 6,
-              fontSize: "12px",
-              border: "1px solid #ddd",
-              borderRadius: 4,
-              padding: 4,
-              backgroundColor: "#f9f9f9",
-              textAlign: "center",
-            }}
-          >
-            {/* tank name */}
-            <input
-              type="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              readOnly={!data.isEditing}
-              placeholder="Tank Name"
-              style={{
-                width: "100%",
-                fontSize: "12px",
-                border: "none",
-                textAlign: "center",
-                outline: "none",
-              }}
-            />
-            {/* total depth */}
+        {isTank && (
+          <>
             <input
               type="number"
               value={totalDepth}
               onChange={(e) => setTotalDepth(e.target.value)}
-              readOnly={!data.isEditing}
+              readOnly={!isParentEditing}
               placeholder="Total Depth"
               style={{
                 width: "100%",
                 fontSize: "12px",
-                border: "none",
+                border: isParentEditing ? "1px solid #ddd" : "none",
                 textAlign: "center",
                 outline: "none",
+                backgroundColor: "transparent",
                 marginTop: 4,
+                borderRadius: 4,
+                padding: isParentEditing ? "4px" : 0,
               }}
             />
-            {/* computed water level */}
             <div style={{ marginTop: 4 }}>
               {waterLevel != null ? `Water level: ${waterLevel}%` : "N/A"}
             </div>
-          </div>
+          </>
         )}
+      </div>
 
-      {/* Toggle control */}
-      {(isPump || isAirblower) && (
+      {/* Rotate button in edit mode */}
+      {isParentEditing && (
         <div
-          style={toggleStyle}
-          onClick={toggleDevice}
-          title={!socketConnected ? "Offline" : isPending ? "Pending..." : ""}
+          style={{
+            position: "absolute",
+            top: 10,
+            left: "50%",
+            transform: "translateX(-50%)",
+            cursor: "pointer",
+          }}
+          onClick={rotateHandler}
         >
-          <div style={handleStyle} />
-        </div>
-      )}
-
-      {/* Rotate button */}
-      {isEditing && (
-        <div style={rotateStyle} onClick={rotateHandler}>
           <FaSyncAlt size={18} />
         </div>
       )}

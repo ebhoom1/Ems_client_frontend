@@ -30,6 +30,7 @@ socket.on('connect_error', (error) => console.error('Connection Error:', error))
 const QuantityFlow = () => {
   const dispatch = useDispatch();
   const selectedUserIdFromRedux = useSelector((state) => state.selectedUser.userId);
+  
   const storedUserId = sessionStorage.getItem('selectedUserId');
   const { userId } = useSelector((state) => state.selectedUser); 
   const { userData, userType } = useSelector((state) => state.user);
@@ -62,6 +63,8 @@ const QuantityFlow = () => {
   const [yesterday, setyesterday] = useState({});
   const [dailyConsumptionData, setDailyConsumptionData] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const effectiveUserName = selectedUserIdFromRedux || storedUserId || userData?.validUserOne?.userName;
+ 
   const graphRef = useRef();
 
   const openModal = () => {
@@ -220,8 +223,8 @@ const QuantityFlow = () => {
             return acc;
           }, {});
 
-        console.log("⏳ Loaded Last 10-Minute Effluent Flow Data:", last10MinEffluentFlowData);
-
+/*         console.log("⏳ Loaded Last 10-Minute Effluent Flow Data:", last10MinEffluentFlowData);
+ */
         // Set last 10-minute data initially
         setRealTimeData(last10MinEffluentFlowData || {});
         setPreviousNonZeroData(last10MinEffluentFlowData || {}); // Initialize previous non-zero data
@@ -399,8 +402,8 @@ const QuantityFlow = () => {
       const response = await axios.post(`${API_URL}/api/set-primary-station`, postData);
       setPrimaryStation(response.data?.data?.stackName || stationName);
     } catch (error) {
-      console.error("Error setting primary station:", error);
-    }
+/*       console.error("Error setting primary station:", error);
+ */    }
   };
 
   // Calculate Daily values for HH014
@@ -424,8 +427,10 @@ const QuantityFlow = () => {
     async function fetchMonthlyAndYesterdayData() {
       try {
         const monthlyRes = await fetch(
-          `${API_URL}/api/first-day-monthly-difference?userName=HH014&year=2025`
+          `${API_URL}/api/first-day-monthly-difference?userName=${effectiveUserName}&year=${new Date().getFullYear()}`
         );
+        console.log('monthly res in ', monthlyRes);
+        
         const monthlyJson = await monthlyRes.json();
         let monthlyFlows = {};
         monthlyJson.data.forEach((item) => {
@@ -436,8 +441,11 @@ const QuantityFlow = () => {
         setmonthlyflows(monthlyFlows);
 
         const yesterdayRes = await fetch(
-          `${API_URL}/api/differenceData/yesterday/HH014`
+          `${API_URL}/api/differenceData/yesterday/${effectiveUserName}`
+          
         );
+        console.log('yester', yesterdayRes);
+        
         const yesterdayJson = await yesterdayRes.json();
         let yesterdayFlows = {};
         yesterdayJson.data.forEach((item) => {
@@ -457,7 +465,8 @@ const QuantityFlow = () => {
   useEffect(() => {
     async function fetchDailyData() {
       try {
-        const response = await fetch(`${API_URL}/api/difference/HH014?interval=daily`);
+        const response = await fetch(`${API_URL}/api/difference/${effectiveUserName}?interval=daily`);
+        console.log('response new', response)
         const dailyJson = await response.json();
         let dailyData = {};
         const today = moment().format("DD/MM/YYYY");
@@ -521,8 +530,14 @@ const QuantityFlow = () => {
             </div> 
             <div className="col-12 justify-content-center align-items-center">
               <h3 className="text-center">
-                {storedUserId === "HH014" || currentUserName === "HH014" ? "Hilton Manyata" : companyName}
-              </h3>
+  { (storedUserId === "HH014" || currentUserName === "HH014")
+      ? "Hilton Manyata"
+      : (storedUserId === "KIMS027" || currentUserName === "KIMS027")
+        ? "KIMSHEALTH Multispeciality Hospital"
+        : companyName
+  }
+</h3>
+
             </div>            
           </div>
         </div>

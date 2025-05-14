@@ -792,7 +792,7 @@ const UsersLog = () => {
               </div>
               <div className="card ">
                 <div className="card-body">
-                  <form className="m-2 p-5" onSubmit={handleSubmit}>
+                  <form className="m-2 p-2" onSubmit={handleSubmit}>
                     <div className="row">
                       {/* Select Industry */}
                       <div className="col-lg-6 col-md-6 mb-4">

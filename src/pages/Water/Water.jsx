@@ -338,6 +338,7 @@ useEffect(() => {
         console.log("API Response:", response.data); // Debug API response
         if (response.data.status === 200) {
           const user = response.data.user;
+          setCompanyName(user.companyName || 'unknown conpmay')
           setAddress(user.address || "No address available");
           setDistrict(user.district || "Unknown District");
         }
