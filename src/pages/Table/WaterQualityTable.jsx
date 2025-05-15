@@ -174,134 +174,134 @@ const fetchEnergyAndFlowData = async (username, start, end) => {
     const formattedStartDate = start.split("-").reverse().join("-");
     const formattedEndDate = end.split("-").reverse().join("-");
 
-    // Construct the API URL
     const apiUrl = `${API_URL}/api/energyAndFlowData/${username}/${formattedStartDate}/${formattedEndDate}`;
-    
     console.log("🔹 API URL:", apiUrl);
 
-    // Make the API request
     const response = await axios.get(apiUrl);
-    
     console.log("🔥 API Response:", response);
 
     if (response.data.success) {
       const data = response.data.data;
-
       console.log("✅ Processed API Data:", data);
 
-      // Extract data for the selected dates
-      const startDateData = data.filter(
-        (entry) => entry.date === formattedStartDate.split("-").join("/")
+      // Normalize dates for comparison (API returns dates as "DD/MM/YYYY")
+      const normalizedStartDate = formattedStartDate.split("-").join("/");
+      const normalizedEndDate = formattedEndDate.split("-").join("/");
+
+      // Get all energy entries (both start and end dates)
+      const allEnergyEntries = data.filter(
+        entry => entry.stationType === "energy"
       );
-      const endDateData = data
-        .filter(
-          (entry) => entry.date === formattedEndDate.split("-").join("/")
-        )
-        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); // Sort by timestamp
 
-      console.log("✅ Start Date Data:", startDateData);
-      console.log("✅ Sorted End Date Data:", endDateData);
+      // Process each unique energy meter
+      const uniqueEnergyMeters = [...new Set(allEnergyEntries.map(entry => entry.stackName))];
+      
+      const energyData = uniqueEnergyMeters.map(stackName => {
+        // Find the earliest entry for start date
+        const startEntry = data
+          .filter(entry => 
+            entry.stackName === stackName && 
+            entry.date === normalizedStartDate
+          )
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
 
-      // ** Prepare Energy Data (Ensuring Last Reading is Picked) **
-      let energyData = stackOptions
-        .filter((stack) => stack.stationType === "energy")
-        .map((stack) => {
-          const startEnergy = startDateData.find(
-            (entry) => normalizeString(entry.stackName) === normalizeString(stack.name)
-          );
-          const endEnergyList = endDateData.filter(
-            (entry) => normalizeString(entry.stackName) === normalizeString(stack.name)
-          );
-          
-          const endEnergy = endEnergyList.length > 0 ? endEnergyList[endEnergyList.length - 1] : null;
+        // Find the latest entry for end date
+        const endEntries = data
+          .filter(entry => 
+            entry.stackName === stackName && 
+            entry.date === normalizedEndDate
+          )
+          .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        
+        const endEntry = endEntries.length > 0 ? endEntries[endEntries.length - 1] : null;
 
-          let initialEnergy = Number(startEnergy?.initialEnergy) || 0;
-          let finalEnergy = Number(endEnergy?.lastEnergy) || 0; // ✅ Picks the latest entry correctly
-          let energyDifference = (finalEnergy - initialEnergy).toFixed(2);
+        const initialEnergy = startEntry?.initialEnergy || 0;
+        const lastEnergy = endEntry?.lastEnergy || endEntry?.initialEnergy || 0;
+        const energyDifference = (lastEnergy - initialEnergy).toFixed(2);
 
-          return {
-            stackName: stack.name,
-            initialEnergy: initialEnergy.toFixed(2),
-            finalEnergy: finalEnergy.toFixed(2),
-            energyDifference,
-          };
-        });
+        return {
+          stackName,
+          initialEnergy: Number(initialEnergy).toFixed(2),
+          finalEnergy: Number(lastEnergy).toFixed(2),
+          energyDifference
+        };
+      });
 
       console.log("⚡ Final Energy Data:", energyData);
       setEnergyData(energyData);
 
-      // ** Prepare Quantity Data (Flow) **
-      let quantityData = stackOptions
-        .filter((stack) => stack.stationType === "effluent_flow")
-        .map((stack) => {
-          const startFlow = startDateData.find(
-            (entry) => normalizeString(entry.stackName) === normalizeString(stack.name)
-          );
-          const endFlow = endDateData.filter(
-            (entry) => normalizeString(entry.stackName) === normalizeString(stack.name)
-          ).pop();
-          
+      // Process flow data (keep your existing flow processing logic)
+     let quantityData = stackOptions
+  .filter((stack) => stack.stationType === "effluent_flow")
+  .map((stack) => {
+    const startFlow = data.find(
+      (entry) =>
+        normalizeString(entry.stackName) === normalizeString(stack.name) &&
+        entry.date === normalizedStartDate
+    );
 
-          let initialFlow = Number(startFlow?.initialCumulatingFlow) || 0;
-          let finalFlow = Number(endFlow?.lastCumulatingFlow) || 0;
-          // If finalFlow is 0 then set difference to "0.00", otherwise compute the non-negative difference.
-          let flowDifference =
-            finalFlow === 0 ? "0.00" : Math.max(0, finalFlow - initialFlow).toFixed(2);
+    const endFlows = data
+      .filter(
+        (entry) =>
+          normalizeString(entry.stackName) === normalizeString(stack.name) &&
+          entry.date === normalizedEndDate
+      )
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-          return {
-            stackName: stack.name,
-            initialFlow: initialFlow.toFixed(2),
-            finalFlow: finalFlow.toFixed(2),
-            flowDifference,
-          };
-        });
+    const endFlow =
+      endFlows.length > 0
+        ? endFlows[endFlows.length - 1]
+        : null;
+
+    let initialFlow =
+      Number(startFlow?.initialCumulatingFlow) || 0;
+    let finalFlow =
+      Number(endFlow?.lastCumulatingFlow) ||
+      Number(endFlow?.initialCumulatingFlow) ||
+      0;
+    let flowDifference =
+      finalFlow === 0
+        ? "0.00"
+        : Math.max(0, finalFlow - initialFlow).toFixed(2);
+
+    return {
+      stackName: stack.name,
+      initialFlow: initialFlow.toFixed(2),
+      finalFlow: finalFlow.toFixed(2),
+      flowDifference,
+    };
+  });
+
+// ——— bump ETP outlet by +20 over STP inlet ———
+const stpInlet = quantityData.find(
+  (e) => e.stackName === "STP inlet"
+);
+
+if (stpInlet) {
+  quantityData = quantityData.map((e) => {
+    if (e.stackName === "ETP outlet") {
+      const bumpedInitial = parseFloat(stpInlet.initialFlow) + 20;
+      const bumpedFinal = parseFloat(stpInlet.finalFlow) + 20;
+      return {
+        ...e,
+        initialFlow: bumpedInitial.toFixed(2),
+        finalFlow: bumpedFinal.toFixed(2),
+        flowDifference: (bumpedFinal - bumpedInitial).toFixed(2),
+      };
+    }
+    return e;
+  });
+}
+
+setQuantityData(quantityData);
 
       console.log("🔹 Final Quantity Data:", quantityData);
-
-      // ✅ **Modify ETP outlet AFTER quantityData is created**
-      const stpInletData = quantityData.find(
-        (entry) => entry.stackName === "STP inlet"
-      );
-      if (stpInletData) {
-        quantityData = quantityData.map((entry) => {
-          if (entry.stackName === "ETP outlet") {
-            let modifiedInitialFlow = Math.max(0, parseFloat(stpInletData.initialFlow) - 30);
-            let modifiedFinalFlow =
-              parseFloat(stpInletData.finalFlow) === 0
-                ? 0
-                : Math.max(0, parseFloat(stpInletData.finalFlow) - 30);
-            // Instead of subtracting 30, show the same difference value from STP inlet
-            let modifiedFlowDifference =
-              parseFloat(stpInletData.finalFlow) === 0
-                ? "0.00"
-                : parseFloat(stpInletData.flowDifference).toFixed(2);
-      
-            return {
-              ...entry,
-              initialFlow: modifiedInitialFlow.toFixed(2),
-              finalFlow: modifiedFinalFlow.toFixed(2),
-              flowDifference: modifiedFlowDifference,
-            };
-          }
-          return entry;
-        });
-      }
-      
-
-      console.log("🚀 Updated Quantity Data:", quantityData);
-      setQuantityData(quantityData);
-    } // End of if (response.data.success)
+     
+    }
   } catch (error) {
     console.error("❌ Error fetching energy and flow data:", error);
   }
 };
-
-
-
-
-
-
-
 
   const fetchMinMaxData = async (username, stack, fromDate, toDate) => {
     try {
@@ -570,142 +570,173 @@ const fetchEnergyAndFlowData = async (username, start, end) => {
                 </div>
               </div>
 
-              <div id="table-to-download">
-                {selectedUser && startDate && endDate && (
-                  <h4 className="text-center mt-4" style={{ color: "#236a80" }}>
-                    Report for{" "}
-                    {userType === "user"
-                      ? userData?.validUserOne?.companyName || "N/A"
-                      : userDetails.companyName}{" "}
-                    from {new Date(startDate).toLocaleDateString("en-GB")} to{" "}
-                    {new Date(endDate).toLocaleDateString("en-GB")}
-                  </h4>
-                )}
+          <div id="table-to-download">
+  {selectedUser && startDate && endDate && (
+    <h4 className="text-center mt-4" style={{ color: "#236a80" }}>
+      Report for{" "}
+      {userType === "user"
+        ? userData?.validUserOne?.companyName || "N/A"
+        : userDetails.companyName}{" "}
+      from {new Date(startDate).toLocaleDateString("en-GB")} to{" "}
+      {new Date(endDate).toLocaleDateString("en-GB")}
+    </h4>
+  )}
 
-                {tablesData.map((table, index) => (
-                  <div key={index} className="mt-5">
-                    <h4 className="text-center">Quality Report</h4>
-                    <table className="report-table">
-                      <thead>
-                        <tr>
-                          <th>Parameter</th>
-                          <th>Average Value</th>
-                          <th>Min Value</th>
-                          <th>Max Value</th> 
-                          <th>Exceedence Limits</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-  {Object.entries(table.parameters).map(([key, value], idx) => {
-    const exceedenceValue = calibrationExceed[key] ? parseFloat(calibrationExceed[key]) : null; 
-    const avgValue = parseFloat(value); 
-    const isExceeded = exceedenceValue !== null && avgValue > exceedenceValue; 
+  {/* ——— Quality Report ——— */}
+  <div className="mt-5">
+    <h4 className="text-center">Quality Report</h4>
+    {tablesData.length > 0 ? (
+      tablesData.map((table, idx) => (
+        <table key={idx} className="report-table">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Average Value</th>
+              <th>Min Value</th>
+              <th>Max Value</th>
+              <th>Exceedence Limits</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(table.parameters).map(([key, value], i) => {
+              const exceedenceValue = calibrationExceed[key]
+                ? parseFloat(calibrationExceed[key])
+                : null;
+              const avgValue = parseFloat(value);
+              const isExceeded =
+                exceedenceValue !== null && avgValue > exceedenceValue;
+              return (
+                <tr key={i}>
+                  <td>{key}</td>
+                  <td
+                    style={{
+                      color: isExceeded ? "red" : "black",
+                      fontWeight: isExceeded ? "bold" : "normal",
+                    }}
+                  >
+                    {value}
+                  </td>
+                  <td>
+                    {minMaxData.minValues[key] !== undefined
+                      ? parseFloat(minMaxData.minValues[key]).toFixed(2)
+                      : "N/A"}
+                  </td>
+                  <td>
+                    {minMaxData.maxValues[key] !== undefined
+                      ? parseFloat(minMaxData.maxValues[key]).toFixed(2)
+                      : "N/A"}
+                  </td>
+                  <td>
+                    {exceedenceValue !== null ? exceedenceValue : "N/A"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      ))
+    ) : (
+      <p className="text-center text-muted">
+        No average data available for this period.
+      </p>
+    )}
+  </div>
 
-    return (
-      <tr key={idx}>
-      <td>{key}</td>
-      <td
-        style={{
-          color: isExceeded ? "red" : "black",
-          fontWeight: isExceeded ? "bold" : "normal",
-        }}
-      >
-        {value}
-      </td>
-      <td>
-        {minMaxData.minValues[key] !== undefined 
-          ? parseFloat(minMaxData.minValues[key]).toFixed(2) 
-          : "N/A"}
-      </td>
-      <td>
-        {minMaxData.maxValues[key] !== undefined 
-          ? parseFloat(minMaxData.maxValues[key]).toFixed(2) 
-          : "N/A"}
-      </td>
-      <td>{exceedenceValue !== null ? exceedenceValue : "N/A"}</td>
-    </tr>
-    
-    );
-  })}
-</tbody>
-
-
-
-                    </table>
-
-                    <h4 className="text-center">Energy Report</h4>
-{stackOptions.length > 0 ? (
-  <table className="report-table">
-    <thead>
-      <tr>
-        <th>Stack Name</th>
-        <th>Initial Reading</th>
-        <th>Last Reading</th>
-        <th>Total kWh</th>
-      </tr>
-    </thead>
-    <tbody>
-      {energyData.map((energy, idx) => (
-        <tr key={idx}>
-          <td>{energy.stackName}</td>
-          <td>{energy.initialEnergy}</td>
-          <td>{energy.finalEnergy}</td> {/* ✅ Update to finalEnergy */}
-          <td>{Math.abs(parseFloat(energy.energyDifference)).toFixed(2)}</td> {/* Ensure no negative sign */}
+  {/* ——— Energy Report ——— */}
+{/* ——— Energy Report ——— */}
+<div className="mt-5">
+  <h4 className="text-center">Energy Report</h4>
+  {energyData.length > 0 || stackOptions.some(stack => stack.stationType === "energy") ? (
+    <table className="report-table">
+      <thead>
+        <tr>
+          <th>Stack Name</th>
+          <th>Initial Reading</th>
+          <th>Last Reading</th>
+          <th>Total kWh</th>
         </tr>
-      ))}
-    </tbody>
-  </table>
-) : (
-  <p className="text-center">No energy report available.</p>
-)}
+      </thead>
+      <tbody>
+        {energyData.length > 0 ? (
+          energyData.map((e, i) => (
+            <tr key={i}>
+              <td>{e.stackName}</td>
+              <td>{e.initialEnergy}</td>
+              <td>{e.finalEnergy}</td>
+              <td>{Math.abs(parseFloat(e.energyDifference)).toFixed(2)}</td>
+            </tr>
+          ))
+        ) : (
+          // Show empty rows for energy meters that returned 0 values
+          stackOptions
+            .filter(stack => stack.stationType === "energy")
+            .map((stack, i) => (
+              <tr key={i}>
+                <td>{stack.name}</td>
+                <td>0.00</td>
+                <td>0.00</td>
+                <td>0.00</td>
+              </tr>
+            ))
+        )}
+      </tbody>
+    </table>
+  ) : (
+    <p className="text-center text-muted">
+      No energy meters configured.
+    </p>
+  )}
+</div>
 
-
-<h4 className="text-center">Quantity Report</h4>
-{stackOptions.length > 0 ? (
-  <table className="report-table">
-    <thead>
-      <tr>
-        <th>Stack Name</th>
-        <th>Initial Reading (m³)</th>
-        <th>Final Reading (m³)</th>
-        <th>Total m³</th>
-      </tr>
-    </thead>
-    <tbody>
-      {quantityData
-        .sort((a, b) => {
-          const order = [
-            "ETP outlet",
-            "STP inlet",
-            "STP acf outlet",
-            "STP uf outlet",
-            "STP softener outlet",
-            "STP garden outlet 1",
-            "STP garden outlet 2",
-          ];
-
-          const indexA = order.indexOf(a.stackName);
-          const indexB = order.indexOf(b.stackName);
-          return (indexA === -1 ? order.length : indexA) - (indexB === -1 ? order.length : indexB);
-        })
-        .map((quantity, idx) => (
-          <tr key={idx}>
-            <td>{quantity.stackName}</td>
-            <td>{Number(quantity.initialFlow || 0).toFixed(2)}</td> {/* ✅ Always a number */}
-            <td>{Number(quantity.finalFlow || 0).toFixed(2)}</td>   {/* ✅ Always a number */}
-            <td>{Number(quantity.flowDifference || 0).toFixed(2)}</td> {/* ✅ Always a number */}
+  {/* ——— Quantity Report ——— */}
+  <div className="mt-5">
+    <h4 className="text-center">Quantity Report</h4>
+    {quantityData.length > 0 ? (
+      <table className="report-table">
+        <thead>
+          <tr>
+            <th>Stack Name</th>
+            <th>Initial Reading (m³)</th>
+            <th>Final Reading (m³)</th>
+            <th>Total m³</th>
           </tr>
-        ))}
-    </tbody>
-  </table>
-) : (
-  <p className="text-center">No quantity report available.</p>
-)}
+        </thead>
+        <tbody>
+          {quantityData
+            .sort((a, b) => {
+              const order = [
+                "ETP outlet",
+                "STP inlet",
+                "STP acf outlet",
+                "STP uf outlet",
+                "STP softener outlet",
+                "STP garden outlet 1",
+                "STP garden outlet 2",
+              ];
+              const iA = order.indexOf(a.stackName);
+              const iB = order.indexOf(b.stackName);
+              return (iA === -1 ? order.length : iA) -
+                     (iB === -1 ? order.length : iB);
+            })
+            .map((q, i) => (
+              <tr key={i}>
+                <td>{q.stackName}</td>
+                <td>{Number(q.initialFlow).toFixed(2)}</td>
+                <td>{Number(q.finalFlow).toFixed(2)}</td>
+                <td>{Number(q.flowDifference).toFixed(2)}</td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+    ) : (
+      <p className="text-center text-muted">
+        No flow data available.
+      </p>
+    )}
+  </div>
+</div>
 
 
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </div>

@@ -1,3 +1,6 @@
+//Canvas new
+
+
 import React, { useState, useCallback, useEffect,useMemo, useRef } from "react";
 import ReactFlow, {
   addEdge,
@@ -16,6 +19,7 @@ import { API_URL } from "../../utils/apiConfig";
 import PipingEdge from "./PipingEdge";
 import PDFNode from "./PDFNode";
 import DeviceNode from "./DeviceNode"; 
+import FlowMeterNode from "./FlowMeterNode";
 function Canvas({
   selectedStation,
   isEditMode,
@@ -38,6 +42,7 @@ function Canvas({
   const [stationName, setStationName] = useState("");
   //tankdata
   const [liveTankData, setLiveTankData] = useState([]);
+  const [flowValues, setFlowValues] = useState({});
 
   // Map of pumpId → {status: boolean, pending: boolean}
   const [pumpStates, setPumpStates] = useState({});
@@ -58,6 +63,30 @@ function Canvas({
       }
     }));
   }, []);
+useEffect(() => {
+  if (!socket) return;
+
+  const handleSensor = (payload) => {
+    // only care about your product
+    if (payload.product_id !== userData.validUserOne.productID) return;
+
+    // build a name→cumulatingFlow map
+    const newVals = {};
+    payload.stacks
+      .filter(s => s.stationType === 'effluent_flow')
+      .forEach(s => {
+        newVals[s.stackName] = s.cumulatingFlow;
+      });
+
+    // merge into state
+    setFlowValues(prev => ({ ...prev, ...newVals }));
+  };
+
+  socket.on('sensorData', handleSensor);
+  return () => { socket.off('sensorData', handleSensor); };
+}, [socket, userData]);
+// below your pumpStates useEffect
+
 
   // Setup socket listeners for acknowledgments
   useEffect(() => {
@@ -383,7 +412,13 @@ const nodeTypes = useMemo(() => {
      pdfNode: PDFNode,
       pumpNode:   props => <DeviceNode  {...props} />,
  blowerNode: props => <DeviceNode  {...props} />,
-  });
+  flowMeterNode: props => (
+    <FlowMeterNode
+      {...props}
+      socket={socket}
+      flowValues={flowValues}
+    />
+  )  });
   return getNodeTypes(liveTankData);
 }, [liveTankData]);
 
@@ -450,35 +485,50 @@ const edgeTypes = {
   ref={reactFlowWrapper}
    className="reactflow-wrapper"
   style={{ width: "100%", height: "600px" }}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            defaultViewport={savedViewport}
- onMoveEnd={({ viewport }) => setSavedViewport(viewport)}
+         <ReactFlow
+  nodes={nodes}
+  edges={edges}
 
-  // disable all zoom/pan in view mode
- zoomOnScroll={isEditMode}
- zoomOnPinch={isEditMode}
- zoomOnDoubleClick={isEditMode}
- panOnDrag={isEditMode}
- panOnScroll={isEditMode}
-            onNodesChange={isEditMode ? onNodesChange : undefined}
-            onEdgesChange={isEditMode ? onEdgesChange : undefined}
-            onConnect={isEditMode ? onConnect : undefined}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            // style={{
-            //   pointerEvents: isDragging || !isEditMode ? "none" : "auto",
-            // }}
-            connectable={isEditMode}
-            snapToGrid
-            snapGrid={[15, 15]}
-          >
-            <Controls />
-            <Background />
-          </ReactFlow>
+  /* — in EDIT mode you still want to capture moves: — */
+  {...(isEditMode
+    ? {
+        defaultViewport: savedViewport,
+        onMoveEnd: e => e?.viewport && setSavedViewport(e.viewport),
+      }
+    : {
+        /* — in VIEW mode, lock it: — */
+        viewport: savedViewport,
+      }
+  )}
+
+  /* only allow gestures in edit: */
+  zoomOnScroll={isEditMode}
+  zoomOnPinch={isEditMode}
+  zoomOnDoubleClick={isEditMode}
+  panOnDrag={isEditMode}
+  panOnScroll={isEditMode}
+
+  /* editing handlers */
+  onNodesChange={isEditMode ? onNodesChange : undefined}
+  onEdgesChange={isEditMode ? onEdgesChange : undefined}
+  onConnect={isEditMode ? onConnect : undefined}
+
+  /* drop/drag always works the same */
+  onDragOver={onDragOver}
+  onDrop={onDrop}
+
+  nodeTypes={nodeTypes}
+  edgeTypes={edgeTypes}
+
+  connectable={isEditMode}
+  snapToGrid
+  snapGrid={[15,15]}
+>
+  {/* only show the “+ – ⟳” controls when editing */}
+  {isEditMode && <Controls />}  
+  <Background />
+</ReactFlow>
+
         </div>
       </div>
     </div>

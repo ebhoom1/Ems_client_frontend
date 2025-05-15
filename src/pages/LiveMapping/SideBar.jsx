@@ -23,8 +23,7 @@ import { API_URL } from '../../utils/apiConfig';
 const defaultShapes = [
   { id: 'settlingnew', label: 'settlingnew', isSVG: true, svgPath: settlingnew },
   { id: 'watertanknew', label: 'watertanknew', isSVG: true, svgPath: watertanknew },
-  { id: 'flowmeter', label: 'Flowmeter', isSVG: true, svgPath: flowmeter },
-  { id: 'meter', label: 'Meter', isSVG: true, svgPath: meter },
+ { id: 'flowmeter', label: 'Flowmeter', isSVG: true, svgPath: flowmeter, isFlowmeter: true },  { id: 'meter', label: 'Meter', isSVG: true, svgPath: meter },
   { id: 'pump', label: 'Pump', isSVG: true, svgPath: pump },
   { id: 'tank', label: 'Tank', isSVG: true, svgPath: tank },
   { id: 'airblower', label: 'Airblower', isSVG: true, svgPath: airblower, isAirblower: true },
@@ -133,7 +132,6 @@ event.dataTransfer.setData(
   "application/reactflow",
   JSON.stringify({
     ...shape,
-    // new types:
     type: shape.isPump
       ? "pumpNode"
       : shape.isAirblower
@@ -144,13 +142,15 @@ event.dataTransfer.setData(
       ? "pdfNode"
       : shape.isImage
       ? "imageNode"
+      : shape.isFlowmeter
+      ? "flowMeterNode"
       : "svgNode",
-    // carry through these booleans:
+    // carry through these flags
     isPump: shape.isPump,
     isAirblower: shape.isAirblower,
+    isFlowmeter: shape.isFlowmeter,
   })
 );
-
     event.dataTransfer.effectAllowed = 'move';
   };
 

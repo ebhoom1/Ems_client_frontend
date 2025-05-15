@@ -1,3 +1,4 @@
+//SVGnode new
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Resizable } from "re-resizable";
@@ -192,9 +193,9 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
         style={{
           border: selected ? "2px solid #0074D9" : "1px solid #ddd",
           borderRadius: 8,
-          padding: 12,
+          padding: 3,
           backgroundColor: "#fff",
-          minWidth: 150,
+          minWidth: 100,
           cursor: "move",
           position: "relative",
         }}
@@ -306,6 +307,7 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
   // Existing render for other node types (tanks, etc.)
   const nodeStyle = {
     position: "relative",
+    overflow: isParentEditing ? "visible" : "hidden",
     zIndex: isResizing ? 100 : 1,
     border: selected ? "2px solid #0074D9" : "none",
     boxShadow: isResizing ? "0 0 10px rgba(0,0,0,0.3)" : "none",
@@ -353,17 +355,20 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
         minHeight={100}
         maxWidth={300}
         maxHeight={300}
-        enable={
-          isParentEditing
-            ? {
-                top: true,
-                right: true,
-                bottom: true,
-                left: true,
-                bottomRight: true,
-              }
-            : {}
+       enable={
+    isParentEditing
+      ? {
+          top: true,
+          right: true,
+          bottom: true,
+          left: true,
+          topRight: true,
+          topLeft: true,
+          bottomRight: true,
+          bottomLeft: true,
         }
+      : {}
+  }
       >
         <div style={{ position: "relative", width: "100%", height: "100%" }}>
           <img src={svgPath} alt={text} style={imageStyle} />
