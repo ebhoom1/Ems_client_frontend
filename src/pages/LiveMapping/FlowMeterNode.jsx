@@ -1,46 +1,80 @@
-// FlowMeterNode.jsx
 import React, { useState, useEffect } from 'react';
 import { Handle, Position } from 'react-flow-renderer';
 
 export default function FlowMeterNode({ data, flowValues, selected }) {
   const { isEditing } = data;
 
-  // local label state
-  const [label, setLabel] = useState(data.label);
-  // push edits back into React-Flow
-  useEffect(() => { data.label = label }, [label]);
+  // keep a local copy of label so React re-renders on change
+  const [label, setLabel] = useState(data.label || '');
+  useEffect(() => {
+    data.label = label;
+  }, [label, data]);
 
-  // derive live value from the latest map
-  const liveValue = flowValues[label] ?? '--';
+  const matchedKey = Object.keys(flowValues).find(
+    k => k.trim().toLowerCase() === label.trim().toLowerCase()
+  );
+  const liveValue = matchedKey ? flowValues[matchedKey] : '--';
 
   return (
-    <div style={{
-      border: selected ? '2px solid #0074D9' : '1px solid #ccc',
-      borderRadius: 6, padding: 8, background: '#fff', minWidth: 120, textAlign: 'center'
-    }}>
-      <Handle type="target" position={Position.Top} />
+    <div
+      style={{
+        width: 80,
+        height: 40,
+/*         border: selected ? '2px solid #0074D9' : '1px solid #ccc',
+ */        borderRadius: 6,
+        background: '#fff',
+        textAlign: 'center',
+        padding: '2px',
+        boxSizing: 'border-box',
+        fontSize: 8,
+        color: 'green',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
+      {/* top connection */}
+      <Handle type="target" position={Position.Top} style={{ top: 0, background: '#555' }} />
 
-      <input
-        value={label}
-        onChange={e => setLabel(e.target.value)}
-        readOnly={!isEditing}
-        placeholder="Flowmeter name"
+      {/* editable label */}
+      {isEditing ? (
+        <input
+          value={label}
+          onChange={e => setLabel(e.target.value)}
+          placeholder="Name"
+          style={{
+            width: '100%',
+            fontSize: 8,
+          
+            borderRadius: 4,
+            padding: '1px',
+            boxSizing: 'border-box',
+            textAlign: 'center',
+            color:'green'
+          }}
+        />
+      ) : (
+        <div style={{ lineHeight: 1, fontWeight: 'bold', fontSize: 8 }}>
+          {label}
+        </div>
+      )}
+
+      {/* value */}
+      <div
         style={{
-          width: '100%', fontSize: 14,
-          border: isEditing ? '1px solid #ddd' : 'none',
-          background: 'transparent', textAlign: 'center'
+          lineHeight: 1,
+          border: '1px solid #aaa',
+          borderRadius: 4,
+          background: '#f7f7f7',
+          fontSize: 10,
+          padding: '1px 2px',
         }}
-      />
-
-      <div style={{
-        marginTop: 6, padding: '4px 8px',
-        border: '1px solid #aaa', borderRadius: 4,
-        background: '#f7f7f7', fontSize: 16, fontWeight: 'bold'
-      }}>
+      >
         {liveValue}
       </div>
 
-      <Handle type="source" position={Position.Bottom} />
+      {/* bottom connection */}
+      <Handle type="source" position={Position.Bottom} style={{ bottom: 0, background: '#555' }} />
     </div>
   );
 }

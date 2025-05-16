@@ -21,18 +21,25 @@ import { API_URL } from '../../utils/apiConfig';
 
 // Default shapes
 const defaultShapes = [
-  { id: 'settlingnew', label: 'settlingnew', isSVG: true, svgPath: settlingnew },
+  { id: 'settlingnew',  label: 'settlingnew',  isSVG: true, svgPath: settlingnew },
   { id: 'watertanknew', label: 'watertanknew', isSVG: true, svgPath: watertanknew },
- { id: 'flowmeter', label: 'Flowmeter', isSVG: true, svgPath: flowmeter, isFlowmeter: true },  { id: 'meter', label: 'Meter', isSVG: true, svgPath: meter },
-  { id: 'pump', label: 'Pump', isSVG: true, svgPath: pump },
-  { id: 'tank', label: 'Tank', isSVG: true, svgPath: tank },
-  { id: 'airblower', label: 'Airblower', isSVG: true, svgPath: airblower, isAirblower: true },
-  { id: 'pumpsingle', label: 'Pump Single', isSVG: true, svgPath: pumpsingle },
-  { id: 'energymeter', label: 'Energymeter', isSVG: true, svgPath: energymeter },
+  { id: 'flowmeter',    label: 'Flowmeter',    isSVG: true, svgPath: flowmeter,    isFlowmeter: true },
+  { id: 'meter',        label: 'Meter',        isSVG: true, svgPath: meter },
+  { id: 'pump',         label: 'Pump',         isSVG: true, svgPath: pump },
+  { id: 'tank',         label: 'Tank',         isSVG: true, svgPath: tank,         isTank: true },
+  { id: 'airblower',    label: 'Airblower',    isSVG: true, svgPath: airblower,    isAirblower: true },
+  { id: 'pumpsingle',   label: 'Pump Single',  isSVG: true, svgPath: pumpsingle },
+  { id: 'energymeter',  label: 'Energymeter',  isSVG: true, svgPath: energymeter },
 ];
 
 // Accepted file types
-const acceptedFileTypes = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+const acceptedFileTypes = [
+  'image/svg+xml',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'application/pdf',
+];
 
 function Sidebar() {
   const [shapes, setShapes] = useState(defaultShapes);
@@ -47,10 +54,9 @@ function Sidebar() {
         const serverShapes = res.data.map((filename, index) => {
           const extension = filename.split('.').pop().toLowerCase();
           const isImage = ['svg', 'png', 'jpg', 'jpeg'].includes(extension);
-          
           return {
             id: `server_${index}`,
-            label: filename.replace(/\.[^/.]+$/, ''), // Remove extension
+            label: filename.replace(/\.[^/.]+$/, ''),
             isSVG: extension === 'svg',
             isImage: isImage && extension !== 'svg',
             isPDF: extension === 'pdf',
@@ -62,24 +68,20 @@ function Sidebar() {
         console.error('Failed to load server files:', err);
       }
     };
-  
     loadServerImages();
   }, []);
 
   const handleTextAdd = () => {
-    if (newText.trim()) {
-      const newTextShape = {
-        id: `text_${shapes.length}`,
-        label: newText.trim(),
-        isText: true,
-      };
-      setShapes((prevShapes) => [...prevShapes, newTextShape]);
-      setNewText('');
-    }
+    if (!newText.trim()) return;
+    setShapes((prev) => [
+      ...prev,
+      { id: `text_${prev.length}`, label: newText.trim(), isText: true },
+    ]);
+    setNewText('');
   };
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
     if (file && acceptedFileTypes.includes(file.type)) {
       setSelectedFile(file);
       setFileTypeError('');
@@ -94,30 +96,27 @@ function Sidebar() {
       alert('Please select a file before uploading.');
       return;
     }
-
     const formData = new FormData();
     formData.append('file', selectedFile);
-
     try {
-      const res = await axios.post(`${API_URL}/api/upload-file`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+      const res = await axios.post(
+        `${API_URL}/api/upload-file`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+      const ext = selectedFile.name.split('.').pop().toLowerCase();
+      const isImage = ['svg', 'png', 'jpg', 'jpeg'].includes(ext);
+      setShapes((prev) => [
+        ...prev,
+        {
+          id: `user_${prev.length}`,
+          label: selectedFile.name.replace(/\.[^/.]+$/, ''),
+          isSVG: ext === 'svg',
+          isImage: isImage && ext !== 'svg',
+          isPDF: ext === 'pdf',
+          filePath: res.data.filePath,
         },
-      });
-
-      const extension = selectedFile.name.split('.').pop().toLowerCase();
-      const isImage = ['svg', 'png', 'jpg', 'jpeg'].includes(extension);
-      
-      const newShape = {
-        id: `user_${shapes.length}`,
-        label: selectedFile.name.replace(/\.[^/.]+$/, ''),
-        isSVG: extension === 'svg',
-        isImage: isImage && extension !== 'svg',
-        isPDF: extension === 'pdf',
-        filePath: res.data.filePath,
-      };
-
-      setShapes((prevShapes) => [...prevShapes, newShape]);
+      ]);
       setSelectedFile(null);
       alert('File uploaded and saved to server!');
     } catch (err) {
@@ -127,49 +126,65 @@ function Sidebar() {
   };
 
   const onDragStart = (event, shape) => {
-  // Sidebar.js → onDragStart
-event.dataTransfer.setData(
-  "application/reactflow",
-  JSON.stringify({
-    ...shape,
-    type: shape.isPump
-      ? "pumpNode"
-      : shape.isAirblower
-      ? "blowerNode"
-      : shape.isText
-      ? "textNode"
-      : shape.isPDF
-      ? "pdfNode"
-      : shape.isImage
-      ? "imageNode"
-      : shape.isFlowmeter
-      ? "flowMeterNode"
-      : "svgNode",
-    // carry through these flags
-    isPump: shape.isPump,
-    isAirblower: shape.isAirblower,
-    isFlowmeter: shape.isFlowmeter,
-  })
-);
+    event.dataTransfer.setData(
+      'application/reactflow',
+      JSON.stringify({
+        ...shape,
+        type: shape.isPump
+          ? 'pumpNode'
+          : shape.isAirblower
+          ? 'blowerNode'
+          : shape.isText
+          ? 'textNode'
+          : shape.isPDF
+          ? 'pdfNode'
+          : shape.isImage
+          ? 'imageNode'
+          : shape.isFlowmeter
+          ? 'flowMeterNode'
+          : shape.isTank
+          ? 'tankNode'
+          : 'svgNode',
+        isPump: shape.isPump,
+        isAirblower: shape.isAirblower,
+        isFlowmeter: shape.isFlowmeter,
+        isTank: shape.isTank,
+      })
+    );
     event.dataTransfer.effectAllowed = 'move';
   };
 
   const getFileIcon = (shape) => {
-    if (shape.isSVG) {
-      return <img src={shape.svgPath || shape.filePath} alt={shape.label} style={{ width: '50px', height: '50px' }} />;
-    }
-    if (shape.isImage) {
-      return <img src={shape.filePath} alt={shape.label} style={{ width: '50px', height: '50px' }} />;
+    if (shape.isSVG || shape.isImage) {
+      const src = shape.svgPath || shape.filePath;
+      return <img src={src} alt={shape.label} style={{ width: 50, height: 50 }} />;
     }
     if (shape.isPDF) {
       return (
-        <div style={{ width: '50px', height: '50px', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '10px', fontWeight: 'bold' }}>PDF</span>
+        <div
+          style={{
+            width: 50,
+            height: 50,
+            background: '#f0f0f0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <strong style={{ fontSize: 10 }}>PDF</strong>
         </div>
       );
     }
     return (
-      <div style={{ padding: '10px', backgroundColor: '#f0f0f0', textAlign: 'center', borderRadius: '4px', cursor: 'grab' }}>
+      <div
+        style={{
+          padding: 10,
+          backgroundColor: '#f0f0f0',
+          textAlign: 'center',
+          borderRadius: 4,
+          cursor: 'grab',
+        }}
+      >
         {shape.label}
       </div>
     );
@@ -181,7 +196,7 @@ event.dataTransfer.setData(
         <div className="description">
           Drag a shape or text box to the canvas, or upload your own SVG, PNG, JPG, or PDF.
         </div>
-        <div className="upload-container">
+        <div className="upload-container d-flex">
           <input
             type="file"
             accept=".svg,.png,.jpg,.jpeg,.pdf"
@@ -198,13 +213,13 @@ event.dataTransfer.setData(
             Upload File
           </button>
         </div>
-        <div className="text-input-container mt-2">
+        <div className="text-input-container mt-2 d-flex">
           <input
             type="text"
             value={newText}
             onChange={(e) => setNewText(e.target.value)}
             placeholder="Enter text"
-            className="form-control mb-2"
+            className="form-control "
           />
           <button
             onClick={handleTextAdd}
@@ -215,13 +230,26 @@ event.dataTransfer.setData(
             Add Text
           </button>
         </div>
-        <div className="shapes-container">
+
+        {/* HORIZONTAL SHAPES LIST */}
+        <div
+          className="shapes-container"
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            overflowX: 'auto',
+            gap: '8px',
+            padding: '8px 0',
+          }}
+        >
           {shapes.map((shape) => (
             <div
               key={shape.id}
               className="dndnode"
-              onDragStart={(event) => onDragStart(event, shape)}
+              onDragStart={(e) => onDragStart(e, shape)}
               draggable
+              style={{ flex: '0 0 auto' }}
             >
               {getFileIcon(shape)}
             </div>

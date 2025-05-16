@@ -18,7 +18,7 @@ aside {
 .sidebar-container {
 border: 2px solid #236a80;
 padding: 10px;
-height: 100vh; /* Full height */
+height: 200px; /* Full height */
 overflow-y: auto; /* Make it scrollable */
 box-sizing: border-box; /* Ensure padding is included in the width/height */
 }
@@ -41,4 +41,12 @@ background-color: white;
 border: 1px solid #ccc;
 padding: 10px;
 box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+/* Push all PDF nodes to z-index:0, everyone else to z-index:10 */
+.react-flow__node-pdfNode {
+  z-index: 0 !important;
+}
+
+.react-flow__node:not(.react-flow__node-pdfNode) {
+  z-index: 10 !important;
 }

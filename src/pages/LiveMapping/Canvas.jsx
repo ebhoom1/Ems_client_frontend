@@ -20,6 +20,7 @@ import PipingEdge from "./PipingEdge";
 import PDFNode from "./PDFNode";
 import DeviceNode from "./DeviceNode"; 
 import FlowMeterNode from "./FlowMeterNode";
+import TankNode from "./TankNode";
 function Canvas({
   selectedStation,
   isEditMode,
@@ -63,61 +64,81 @@ function Canvas({
       }
     }));
   }, []);
+// In your Canvas.jsx component
 useEffect(() => {
-  if (!socket) return;
+  if (!socket || !socketConnected) return;
 
-  const handleSensor = (payload) => {
-    // only care about your product
-    if (payload.product_id !== userData.validUserOne.productID) return;
+  // Join the room using the actual userName from userData
+  const userName = userData?.validUserOne?.userName;
+  console.log('🔌 Connecting socket for user:', userName);
+  socket.emit('joinRoom', userName); // Changed from hardcoded "CROWN_PLAZA"
 
-    // build a name→cumulatingFlow map
-    const newVals = {};
-    payload.stacks
-      .filter(s => s.stationType === 'effluent_flow')
-      .forEach(s => {
-        newVals[s.stackName] = s.cumulatingFlow;
-      });
-
-    // merge into state
-    setFlowValues(prev => ({ ...prev, ...newVals }));
+  // Tank data handler
+  const handleTankData = (payload) => {
+    console.log('📦 [TANK DATA RECEIVED]', payload);
+    
+    if (payload.tankData) {
+      console.log('🏭 Processing tank data:', payload.tankData);
+      setLiveTankData(payload.tankData);
+      
+      // Update nodes with tank data
+      setNodes(nds => nds.map(node => {
+        if (node.data.isTank) {
+          const tankMatch = payload.tankData.find(
+            t => t.tankName?.toLowerCase() === node.data.label?.toLowerCase()
+          );
+          
+          if (tankMatch) {
+            console.log(`💧 Updating tank ${node.data.label} with depth:`, tankMatch.depth);
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                currentDepth: tankMatch.depth,
+                waterLevel: Math.round((tankMatch.depth / (node.data.totalDepth || 1)) * 100)
+              }
+            };
+          }
+        }
+        return node;
+      }));
+    }
   };
 
-  socket.on('sensorData', handleSensor);
-  return () => { socket.off('sensorData', handleSensor); };
-}, [socket, userData]);
-// below your pumpStates useEffect
-
-
-  // Setup socket listeners for acknowledgments
-  useEffect(() => {
-    if (!socket) return;
-
-    const handlePumpAck = (ackData) => {
-      if (!ackData.pumps) return;
-      
-      ackData.pumps.forEach((pump) => {
-        setPumpStates(prev => ({
-          ...prev,
-          [pump.pumpId]: {
-            status: pump.status === 1,
-            pending: false,
-            name: pump.pumpName
-          }
-        }));
-      });
-    };
-
-    if (socketConnected) {
-      socket.emit("joinRoom", { product_id: "27" });
-      socket.on("pumpAck", handlePumpAck);
-      socket.on("pumpStateUpdate", handlePumpAck);
+  // Sensor data handler (keep your existing flow value logic)
+  const handleSensorData = (payload) => {
+    if (payload.stacks) {
+      const effluentMap = {};
+      payload.stacks
+        .filter(s => s.stationType === 'effluent_flow')
+        .forEach(s => { 
+          effluentMap[s.stackName] = s.cumulatingFlow;
+          console.log(`🌊 Flow update for ${s.stackName}:`, s.cumulatingFlow);
+        });
+      setFlowValues(prev => ({ ...prev, ...effluentMap }));
     }
+  };
 
-    return () => {
-      socket.off("pumpAck", handlePumpAck);
-      socket.off("pumpStateUpdate", handlePumpAck);
-    };
-  }, [socket, socketConnected]);
+  // Set up listeners
+  socket.on('data', (payload) => {
+    console.group('📡 Incoming Data Payload');
+    console.log('Product ID:', payload.product_id);
+    console.log('User:', payload.userName);
+    
+    if (payload.tankData) {
+      handleTankData(payload);
+    } else if (payload.stacks) {
+      handleSensorData(payload);
+    }
+    
+    console.groupEnd();
+  });
+
+  return () => {
+    socket.off('data');
+  };
+}, [socket, socketConnected, userData]);
+
 
   // Update nodes with pump status when they change
 // In Canvas.jsx
@@ -200,7 +221,8 @@ const onDrop = useCallback((event) => {
     id: `${parsed.id}_${nodes.length}`,
     type: parsed.type,
     position,
-    style: isPDF
+/*     draggable:false,
+ */    style: isPDF
       ? { width: bounds.width, height: bounds.height }
       : {},
     data: {
@@ -412,15 +434,16 @@ const nodeTypes = useMemo(() => {
      pdfNode: PDFNode,
       pumpNode:   props => <DeviceNode  {...props} />,
  blowerNode: props => <DeviceNode  {...props} />,
-  flowMeterNode: props => (
+ flowMeterNode: props => (
     <FlowMeterNode
       {...props}
-      socket={socket}
       flowValues={flowValues}
     />
-  )  });
+  ),
+   tankNode:     (p) => <TankNode      {...p} liveTankData={liveTankData} />,
+  });
   return getNodeTypes(liveTankData);
-}, [liveTankData]);
+}, [liveTankData, flowValues]);
 
 //new
 const edgeTypes = {
@@ -457,7 +480,8 @@ const edgeTypes = {
                 setNodes((nds) =>
                   nds.map((n) => ({
                     ...n,
-                    data: { ...n.data, isEditing: !isEditMode },
+/*                     draggable:!isEditMode,
+ */                    data: { ...n.data, isEditing: !isEditMode },
                   }))
                 );
               }}
@@ -488,18 +512,8 @@ const edgeTypes = {
          <ReactFlow
   nodes={nodes}
   edges={edges}
-
-  /* — in EDIT mode you still want to capture moves: — */
-  {...(isEditMode
-    ? {
-        defaultViewport: savedViewport,
-        onMoveEnd: e => e?.viewport && setSavedViewport(e.viewport),
-      }
-    : {
-        /* — in VIEW mode, lock it: — */
-        viewport: savedViewport,
-      }
-  )}
+viewport={savedViewport}
+   onMoveEnd={e => e?.viewport && setSavedViewport(e.viewport)}
 
   /* only allow gestures in edit: */
   zoomOnScroll={isEditMode}

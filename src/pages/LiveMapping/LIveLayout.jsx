@@ -215,99 +215,103 @@ function LIveLayout() {
   };
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="container-fluid">
-        <div className="row" style={{ backgroundColor: "white" }}>
-          <div className="col-lg-3 d-none d-lg-block">
-            <DashboardSam />
+<DndProvider backend={HTML5Backend}>
+  <div className="container-fluid">
+    <div className="row" style={{ backgroundColor: "white" }}>
+      <div className="col-lg-3 d-none d-lg-block">
+        <DashboardSam />
+      </div>
+      
+      <div className="col-lg-9 col-12">
+        <div className="row">
+          <div className="col-12">
+            <HeaderSim />
+            {!socketConnected && (
+              <div className="alert alert-warning mb-0">
+                Connection to pump control server is offline
+              </div>
+            )}
           </div>
-          
-          <div className="col-lg-9 col-12">
-            <div className="row">
-              <div className="col-12">
-                <HeaderSim />
-                {!socketConnected && (
-                  <div className="alert alert-warning mb-0">
-                    Connection to pump control server is offline
+        </div>
+        
+        {userData?.validUserOne?.userType === "admin" && (
+          <div className="row my-2">
+            <div className="col-3">
+              <label>Select User:</label>
+              <select
+                className="form-select"
+                value={selectedUser}
+                onChange={handleUserChange}
+              >
+                {users.map((user) => (
+                  <option key={user.userName} value={user.userName}>
+                    {user.companyName}({user.userName})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+        
+        <div>
+          <div className="row" style={{ overflowX: "hidden" }}>
+            <div className="col-12 col-md-12 grid-margin">
+              <div className="col-12 d-flex align-items-center justify-content-center m-2">
+                <h1 className="text-center mt-3">AutoNerve</h1>
+              </div>
+              
+              <div className="mb-3">
+                {stationsList && stationsList.length > 0 ? (
+                  <div className="box">
+                    <div className="table-responsive">
+                      <table className="table table-bordered">
+                        <thead>
+                          <tr>
+                            <th>User Name</th>
+                            <th>Station Name</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stationsList.map((station) => (
+                            <tr
+                              key={station._id}
+                              style={{ cursor: "pointer" }}
+                              onClick={() =>
+                                handleStationClick({
+                                  userName: station.userName,
+                                  stationName: station.stationName,
+                                })
+                              }
+                            >
+                              <td>{station.userName}</td>
+                              <td>{station.stationName}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-danger">
+                    <h5>No live stations available. Please create one.</h5>
                   </div>
                 )}
               </div>
-            </div>
-            
-            {userData?.validUserOne?.userType === "admin" && (
-              <div className="row my-2">
-                <div className="col-3">
-                  <label>Select User:</label>
-                  <select
-                    className="form-select"
-                    value={selectedUser}
-                    onChange={handleUserChange}
-                  >
-                    {users.map((user) => (
-                      <option key={user.userName} value={user.userName}>
-                        {user.companyName}({user.userName})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
-            
-            <div>
-              <div className="row" style={{ overflowX: "hidden" }}>
-                <div className="col-12 col-md-12 grid-margin">
-                  <div className="col-12 d-flex align-items-center justify-content-center m-2">
-                    <h1 className="text-center mt-3">AutoNerve</h1>
-                  </div>
-                  
-                  <div className="mb-3">
-                    {stationsList && stationsList.length > 0 ? (
-                      <div className="box">
-                        <div className="table-responsive">
-                          <table className="table table-bordered">
-                            <thead>
-                              <tr>
-                                <th>User Name</th>
-                                <th>Station Name</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {stationsList.map((station) => (
-                                <tr
-                                  key={station._id}
-                                  style={{ cursor: "pointer" }}
-                                  onClick={() =>
-                                    handleStationClick({
-                                      userName: station.userName,
-                                      stationName: station.stationName,
-                                    })
-                                  }
-                                >
-                                  <td>{station.userName}</td>
-                                  <td>{station.stationName}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+              
+              <div className="cardn m-">
+                <div className="card-body">
+                  {isEditMode ? (
+                    <>
+                      {/* Row 1: full-width sidebar */}
+                      <div className="row mb-3">
+                        <div className="col-12">
+                          <Sidebar />
                         </div>
                       </div>
-                    ) : (
-                      <div className="text-center text-danger">
-                        <h5>No live stations available. Please create one.</h5>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="cardn m-">
-                    <div className="card-body">
+                      
+                      {/* Row 2: canvas + button */}
                       <div className="row">
-                        {isEditMode && (
-                          <div className="col-md-2 d-none d-md-block">
-                            <Sidebar />
-                          </div>
-                        )}
-
-                        <div className={`col-12 ${isEditMode ? "col-md-10" : "col-md-12"}`}>
+                        <div className="col-12">
                           <div
                             className="shadow"
                             style={{
@@ -319,7 +323,6 @@ function LIveLayout() {
                           >
                             <div
                               style={{
-                                // minWidth: "800px",
                                 minWidth: "100%",
                                 width: "100%",
                                 padding: "10px",
@@ -348,39 +351,90 @@ function LIveLayout() {
                             Add another station +
                           </button>
                         </div>
-                        
-                        <div className="row">
-                          <div className="col-md-12">
-                            <RunningTime />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* View mode: just canvas + button */}
+                      <div className="row">
+                        <div className="col-12">
+                          <div
+                            className="shadow"
+                            style={{
+                              overflowX: "auto",
+                              WebkitOverflowScrolling: "touch",
+                              width: "100%",
+                              minHeight: "500px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                minWidth: "100%",
+                                width: "100%",
+                                padding: "10px",
+                              }}
+                            >
+                              <Canvas
+                                key={
+                                  selectedStation
+                                    ? selectedStation.stationName
+                                    : "new"
+                                }
+                                selectedStation={selectedStation}
+                                isEditMode={isEditMode}
+                                setIsEditMode={setIsEditMode}
+                                socket={socket}
+                                socketConnected={socketConnected}
+                                pumpStates={pumpStates}
+                                onPumpToggle={handlePumpToggle}
+                              />
+                            </div>
                           </div>
+                          <button
+                            className="btn btn-success mb-2 mt-2 d-flex justify-content-end align-items-center"
+                            onClick={handleAddStation}
+                          >
+                            Add another station +
+                          </button>
                         </div>
                       </div>
+                    </>
+                  )}
+
+                  {/* RunningTime stays below */}
+                  <div className="row">
+                    <div className="col-md-12">
+                      <RunningTime />
                     </div>
                   </div>
                 </div>
               </div>
+              
             </div>
           </div>
-          
-          <footer className="footer">
-            <div className="container-fluid clearfix">
-              <span className="text-muted d-block text-center text-sm-left d-sm-inline-block"></span>
-              <span className="float-none float-sm-right d-block mt-1 mt-sm-0 text-center">
-                AquaBox Control and Monitor System <br />©{" "}
-                <a
-                  href="https://ebhoom.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Ebhoom
-                </a>{" "}
-                2022
-              </span>
-            </div>
-          </footer>
         </div>
       </div>
-    </DndProvider>
+      
+      <footer className="footer">
+        <div className="container-fluid clearfix">
+          <span className="text-muted d-block text-center text-sm-left d-sm-inline-block"></span>
+          <span className="float-none float-sm-right d-block mt-1 mt-sm-0 text-center">
+            AquaBox Control and Monitor System <br />©{" "}
+            <a
+              href="https://ebhoom.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Ebhoom
+            </a>{" "}
+            2022
+          </span>
+        </div>
+      </footer>
+    </div>
+  </div>
+</DndProvider>
+
   );
 }
 
