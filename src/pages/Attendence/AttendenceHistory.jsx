@@ -116,7 +116,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import moment from 'moment';
 import { API_URL } from '../../utils/apiConfig';
-
+import { FaArrowLeft } from 'react-icons/fa';
 export function AttendanceHistory() {
   const navigate = useNavigate();
   const [filterDate, setFilterDate] = useState('');
@@ -127,7 +127,6 @@ export function AttendanceHistory() {
 
   const { userData } = useSelector(state => state.user);
   const adminType = userData?.validUserOne?.adminType;
-
   useEffect(() => {
     if (!adminType) return;
     const fetchAttendance = async () => {
@@ -157,24 +156,39 @@ export function AttendanceHistory() {
 
   return (
     <div className="container mt-4">
-      <button className="btn btn-link mb-3" onClick={() => navigate(-1)}>
-        ← Back
-      </button>
+    <button
+      className="btn mb-3"
+      onClick={() => navigate(-1)}
+      style={{
+        backgroundColor: '#236a80',
+        color: '#fff',
+        display: 'inline-flex',
+        alignItems: 'center',
+      }}
+    >
+      <FaArrowLeft className="me-2" />
+      Back
+    </button>
       <h2>Attendance History</h2>
 
       {/* Tabs */}
-      <ul className="nav nav-tabs mb-3">
-        {['operator', 'technician', 'territorialManager'].map(role => (
-          <li className="nav-item" key={role}>
-            <button
-              className={`nav-link ${activeTab === role ? 'active' : ''}`}
-              onClick={() => setActiveTab(role)}
-            >
-              {role.charAt(0).toUpperCase() + role.slice(1).replace('Manager', ' Manager')}
-            </button>
-          </li>
-        ))}
-      </ul>
+    <ul className="nav nav-tabs mb-3">
+  {['operator', 'technician', 'territorialManager'].map(role => (
+    <li className="nav-item" key={role}>
+      <button
+        className={`nav-link ${activeTab === role ? 'active' : ''}`}
+        onClick={() => setActiveTab(role)}
+        style={{
+          color: activeTab === role ? '#236a80' : '#000',
+          fontWeight: activeTab === role ? 'bold' : 'normal'
+        }}
+      >
+        {role.charAt(0).toUpperCase() +
+          role.slice(1).replace('Manager', ' Manager')}
+      </button>
+    </li>
+  ))}
+</ul>
 
       {/* Date Filter */}
       <div className="row mb-3">
@@ -195,14 +209,14 @@ export function AttendanceHistory() {
         <table className="table table-bordered table-hover">
           <thead className="table-light">
             <tr>
-              <th>Date</th>
-              <th>Name</th>
-              <th>Check-In</th>
-              <th>Check-Out</th>
-              <th>Hours</th>
-              <th>Method</th>
+              <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Date</th>
+              <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Name</th>
+              <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Check-In</th>
+              <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Check-Out</th>
+              <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Hours</th>
+              <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Method</th>
               {(activeTab === 'technician' || activeTab === 'territorialManager') && (
-                <th>Map</th>
+                <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Map</th>
               )}
             </tr>
           </thead>
@@ -223,7 +237,8 @@ export function AttendanceHistory() {
                   {(row.userRole === 'technician' || row.userRole === 'territorialManager') && (
                     <td>
                       <button
-                        className="btn btn-sm btn-info"
+                      style={{backgroundColor:'#269db4', color:'#fff' , border:'none'}}
+                        className="btn btn-sm btn-info text-center"
                         onClick={() =>
                           navigate('/view-map', {
                             state: {

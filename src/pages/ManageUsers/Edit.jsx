@@ -8,6 +8,7 @@ import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
 import DashboardSam from "../Dashboard/DashboardSam";
 import Header from "../Header/Hedaer";
+import HeaderSim from "../Header/HeaderSim";
 
 function Edit() {
   const { userId } = useParams(); // Get the userId from the route parameters
@@ -204,22 +205,22 @@ function Edit() {
         <div className="col-lg-9 col-12">
           <div className="row">
             <div className="col-12">
-              <Header />
+              <HeaderSim />
             </div>
           </div>
           <div>
             <div className="row" style={{ overflowX: "hidden" }}>
               <div className="col-12 col-md-12 grid-margin">
                 <div className="col-12 d-flex justify-content-between align-items-center m-3">
-                  <h1 className="text-center mt-5">Edit User</h1>
+                  <h1 className="text-center ">Edit User</h1>
                 </div>
 
                 <div className="card">
-                  <div className="card-body">
+                  <div className="card-body text-light">
                     <form className="m-2 p-2" onSubmit={handleSaveUser}>
                       <div className="row">
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
+                          <div className="form-group text-light">
                             <label htmlFor="userId" className="form-label">
                               User ID
                             </label>

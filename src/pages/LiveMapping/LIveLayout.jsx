@@ -236,7 +236,7 @@ function LIveLayout() {
         
         {userData?.validUserOne?.userType === "admin" && (
           <div className="row my-2">
-            <div className="col-3">
+            <div className="col-md-3">
               <label>Select User:</label>
               <select
                 className="form-select"
@@ -257,7 +257,7 @@ function LIveLayout() {
           <div className="row" style={{ overflowX: "hidden" }}>
             <div className="col-12 col-md-12 grid-margin">
               <div className="col-12 d-flex align-items-center justify-content-center m-2">
-                <h1 className="text-center mt-3">AutoNerve</h1>
+                <h1 className="text-center ">AutoNerve</h1>
               </div>
               
               <div className="mb-3">
@@ -267,8 +267,8 @@ function LIveLayout() {
                       <table className="table table-bordered">
                         <thead>
                           <tr>
-                            <th>User Name</th>
-                            <th>Station Name</th>
+                            <th style={{backgroundColor:'#236a80', color:'#fff'}}>User Name</th>
+                            <th style={{backgroundColor:'#236a80', color:'#fff'}}>Station Name</th>
                           </tr>
                         </thead>
                         <tbody>

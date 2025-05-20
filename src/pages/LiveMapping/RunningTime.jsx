@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 
 function RunningTime() {
   // Sample data rows for demonstration
-  // Make sure each row has 'auto', 'run', and 'trip' fields for this layout
   const data = [
     { id: 1, instrument: 'Instrument 1', auto: '00:05:00', run: '00:02:00', trip: '00:03:00' },
     { id: 2, instrument: 'Instrument 2', auto: '00:10:00', run: '00:05:00', trip: '00:05:00' },
@@ -21,55 +20,129 @@ function RunningTime() {
     <div style={{ padding: '20px' }}>
       <h3>Running Time</h3>
 
-      {/* Table container with medium height and vertical scroll */}
-      <div style={{ maxHeight: '500px', overflowY: 'auto', marginBottom: '10px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      {/* Mobile‐friendly horizontal & vertical scroll */}
+      <div
+        className="table-responsive"
+        style={{
+          maxHeight: '500px',
+          overflowY: 'auto',
+          marginBottom: '10px',
+        }}
+      >
+        <table
+          className="table table-bordered mb-0"
+          style={{ minWidth: '600px', borderCollapse: 'collapse' }}
+        >
           <thead style={{ backgroundColor: '#236a80', color: '#fff' }}>
             <tr>
-              {/* "SL.NO" and "Instrument Name" each span 2 rows */}
               <th
                 rowSpan="2"
-                style={{ padding: '8px', border: '1px solid #ddd',backgroundColor: '#236a80', color: '#fff' , textAlign: 'center' }}
+                style={{
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  textAlign: 'center',
+                  backgroundColor: '#236a80', color: '#fff' 
+                }}
               >
                 SL.NO
               </th>
               <th
                 rowSpan="2"
-                style={{ padding: '8px', border: '1px solid #ddd', backgroundColor: '#236a80', color: '#fff' ,textAlign: 'center' }}
+                style={{
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  textAlign: 'center',
+                  backgroundColor: '#236a80', color: '#fff' 
+                }}
               >
                 Instrument Name
               </th>
-              {/* "Running Time" header spans 3 columns */}
               <th
                 colSpan="3"
-                style={{ padding: '8px', border: '1px solid #ddd',backgroundColor: '#236a80', color: '#fff' , textAlign: 'center' }}
+                style={{
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  textAlign: 'center',
+                  backgroundColor: '#236a80', color: '#fff' 
+                }}
               >
                 Running Time
               </th>
             </tr>
             <tr>
-              {/* Sub-headers for Running Time */}
-              <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center',backgroundColor: '#236a80', color: '#fff'  }}>Auto</th>
-              <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center',backgroundColor: '#236a80', color: '#fff'  }}>Run</th>
-              <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center',backgroundColor: '#236a80', color: '#fff'  }}>Trip</th>
+              <th
+                style={{
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  textAlign: 'center',
+                  backgroundColor: '#236a80', color: '#fff' 
+                }}
+              >
+                Auto
+              </th>
+              <th
+                style={{
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  textAlign: 'center',
+                  backgroundColor: '#236a80', color: '#fff' 
+                }}
+              >
+                Run
+              </th>
+              <th
+                style={{
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  textAlign: 'center',
+                  backgroundColor: '#236a80', color: '#fff' 
+                }}
+              >
+                Trip
+              </th>
             </tr>
           </thead>
 
           <tbody>
             {data.map((row) => (
               <tr key={row.id}>
-                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                <td
+                  style={{
+                    padding: '8px',
+                    border: '1px solid #ddd',
+                    textAlign: 'center',
+                  }}
+                >
                   {row.id}
                 </td>
-                <td style={{ padding: '8px', border: '1px solid #ddd' }}>{row.instrument}</td>
-                {/* Corresponding cells for Auto, Run, Trip */}
-                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                  {row.instrument}
+                </td>
+                <td
+                  style={{
+                    padding: '8px',
+                    border: '1px solid #ddd',
+                    textAlign: 'center',
+                  }}
+                >
                   {row.auto}
                 </td>
-                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                <td
+                  style={{
+                    padding: '8px',
+                    border: '1px solid #ddd',
+                    textAlign: 'center',
+                  }}
+                >
                   {row.run}
                 </td>
-                <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                <td
+                  style={{
+                    padding: '8px',
+                    border: '1px solid #ddd',
+                    textAlign: 'center',
+                  }}
+                >
                   {row.trip}
                 </td>
               </tr>
@@ -78,7 +151,7 @@ function RunningTime() {
         </table>
       </div>
 
-      {/* Previous Data button with green border and right arrow icon */}
+      {/* Previous Data button */}
       <div className="d-flex align-items-center justify-content-end">
         <button
           onClick={() => navigate('/previous-data')}

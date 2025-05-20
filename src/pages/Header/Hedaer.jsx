@@ -218,7 +218,7 @@ function Header() {
             </Navbar.Brand>
             <div className="d-flex">
               <Nav.Link
-                className="me-3"
+                className="me-3 mt-2"
                 href="#home"
                 onClick={() =>
                   setIsDropdownOpenNotification(!isDropdownOpenNotification)
@@ -244,7 +244,7 @@ function Header() {
               )}
               <Dropdown
                 ref={dropdownRef}
-                className="me-2"
+                className="me-2 mt-2"
                 onToggle={handleDropdownClick}
               >
                 <Dropdown.Toggle

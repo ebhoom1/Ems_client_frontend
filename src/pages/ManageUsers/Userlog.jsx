@@ -15,6 +15,8 @@ import {
   fetchUserByCompanyName,
   clearState,
   setFilteredUsers,
+  setTechnicianUsers,
+  setTerritoryManagerUsers,
   uploadLogo,
   editLogo,
   deleteLogo,
@@ -26,9 +28,14 @@ import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
 const UsersLog = () => {
   const dispatch = useDispatch();
-  const { users, filteredUsers, loading, error } = useSelector(
-    (state) => state.userLog
-  );
+  const {
+    users,
+    filteredUsers,
+    technicianUsers,
+    territoryManagerUsers,
+    loading,
+    error,
+  } = useSelector((state) => state.userLog);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -134,6 +141,18 @@ const UsersLog = () => {
 
         dispatch(setFilteredUsers(filtered));
 
+        // Filter user based on isTechnician
+        const filteredTechnician = response.filter(
+          (user) => user.isTechnician === true
+        );
+        dispatch(setTechnicianUsers(filteredTechnician));
+
+        // Filter user based on isTerritorialManager
+        const filteredTerritoryManager = response.filter(
+          (user) => user.isTerritorialManager === true
+        );
+        dispatch(setTerritoryManagerUsers(filteredTerritoryManager));
+
         // Show all users if adminType is Ebhoom
         // dispatch(setFilteredUsers(response));
       } else if (userData?.validUserOne?.adminType) {
@@ -144,6 +163,22 @@ const UsersLog = () => {
             user.userType === "user"
         );
         dispatch(setFilteredUsers(filtered));
+
+        // Filter user based on isTechnician
+        const filteredTechnician = response.filter(
+          (user) =>
+            user.isTechnician === true &&
+            user.adminType == userData.validUserOne.adminType
+        );
+        dispatch(setTechnicianUsers(filteredTechnician));
+
+        // Filter user based on isTerritorialManager
+        const filteredTerritoryManager = response.filter(
+          (user) =>
+            user.isTerritorialManager === true &&
+            user.adminType == userData.validUserOne.adminType
+        );
+        dispatch(setTerritoryManagerUsers(filteredTerritoryManager));
       } else {
         // Fallback in case no adminType is available
         dispatch(setFilteredUsers([]));
@@ -784,6 +819,100 @@ const UsersLog = () => {
             </div>
           </div>
 
+          {/* Technician List */}
+          <div className="col-12 d-flex justify-content-between align-items-center m-3">
+            <h1 className="text-center mt-3"> Technician List </h1>
+          </div>
+          <div className="card mt-4">
+            <div className="card-body">
+              {loading /* From Uiverse.io by boryanakrasteva */ && (
+                <div class="">
+                  <div>Loading ...</div>
+                </div>
+              )}
+              {error && (
+                <p>
+                  Error fetching users: {error.message || JSON.stringify(error)}
+                </p>
+              )}
+
+              {!loading && !error && (
+                <div className="user-list-container">
+                  <table className="userlog-table">
+                    <thead>
+                      <tr>
+                        <th className="userlog-head">User Name</th>
+                        <th className="userlog-head">Full Name</th>
+                        <th className="userlog-head">Email</th>
+                        <th className="userlog-head">Admin</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {technicianUsers.map((user) => (
+                        <tr
+                          key={user._id}
+                          onClick={() => handleUserClick(user.userName)}
+                        >
+                          <td className="userlog-head">{user.userName}</td>
+                          <td className="userlog-head">{user.fname}</td>
+                          <td className="userlog-head">{user.email}</td>
+                          <td className="userlog-head">{user.adminType}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* TerritoryManagers List */}
+          <div className="col-12 d-flex justify-content-between align-items-center m-3">
+            <h1 className="text-center mt-3"> Territory Managers List </h1>
+          </div>
+          <div className="card mt-4">
+            <div className="card-body">
+              {loading /* From Uiverse.io by boryanakrasteva */ && (
+                <div class="">
+                  <div>Loading ...</div>
+                </div>
+              )}
+              {error && (
+                <p>
+                  Error fetching users: {error.message || JSON.stringify(error)}
+                </p>
+              )}
+
+              {!loading && !error && (
+                <div className="user-list-container">
+                  <table className="userlog-table">
+                    <thead>
+                      <tr>
+                        <th className="userlog-head">User Name</th>
+                        <th className="userlog-head">Full Name</th>
+                        <th className="userlog-head">Email</th>
+                        <th className="userlog-head">Admin</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {territoryManagerUsers.map((user) => (
+                        <tr
+                          key={user._id}
+                          onClick={() => handleUserClick(user.userName)}
+                        >
+                          <td className="userlog-head">{user.userName}</td>
+                          <td className="userlog-head">{user.fname}</td>
+                          <td className="userlog-head">{user.email}</td>
+                          <td className="userlog-head">{user.adminType}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Add User Form */}
           <div className="row" style={{ overflowX: "hidden" }}>
             <div className="col-12 col-md-12 grid-margin">
@@ -792,7 +921,7 @@ const UsersLog = () => {
               </div>
               <div className="card ">
                 <div className="card-body">
-                  <form className="m-2 p-2" onSubmit={handleSubmit}>
+                  <form className="m-2 p-1" onSubmit={handleSubmit}>
                     <div className="row">
                       {/* Select Industry */}
                       <div className="col-lg-6 col-md-6 mb-4">
@@ -1257,69 +1386,58 @@ const UsersLog = () => {
                       </div>
 
                       {formData.userType === "user" && (
-  <div className="mb-4">
-    <h5 className="text-light">Operators</h5>
+                        <div className="mb-4">
+                          <h5 className="text-light">Operators</h5>
+                          {formData.operators.map((op, i) => (
+                            <div
+                              key={i}
+                              className="d-flex align-items-center mb-2"
+                            >
+                              <input
+                                name="name"
+                                value={op.name}
+                                onChange={(e) => handleOperatorChange(i, e)}
+                                placeholder="Operator Name"
+                                className="form-control me-2"
+                                style={{ width: "33%", padding: "15px" }}
+                              />
+                              <input
+                                name="email"
+                                type="email"
+                                value={op.email}
+                                onChange={(e) => handleOperatorChange(i, e)}
+                                placeholder="Operator Email"
+                                className="form-control me-2"
+                                style={{ width: "33%", padding: "15px" }}
+                              />
+                              <input
+                                name="password"
+                                type="password"
+                                value={op.password}
+                                onChange={(e) => handleOperatorChange(i, e)}
+                                placeholder="Operator Password"
+                                className="form-control me-2"
+                                style={{ width: "33%", padding: "15px" }}
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-danger"
+                                onClick={() => handleRemoveOperator(i)}
+                              >
+                                &times;
+                              </button>
+                            </div>
+                          ))}
 
-    {formData.operators.map((op, i) => (
-      <div key={i} className="row gx-2 gy-2 align-items-center mb-3">
-        {/* Name */}
-        <div className="col-12 col-md-3">
-          <input
-            name="name"
-            value={op.name}
-            onChange={e => handleOperatorChange(i, e)}
-            placeholder="Operator Name"
-            className="form-control py-3"
-          />
-        </div>
-
-        {/* Email */}
-        <div className="col-12 col-md-3">
-          <input
-            name="email"
-            type="email"
-            value={op.email}
-            onChange={e => handleOperatorChange(i, e)}
-            placeholder="Operator Email"
-            className="form-control py-3"
-          />
-        </div>
-
-        {/* Password */}
-        <div className="col-12 col-md-3">
-          <input
-            name="password"
-            type="password"
-            value={op.password}
-            onChange={e => handleOperatorChange(i, e)}
-            placeholder="Operator Password"
-            className="form-control py-3"
-          />
-        </div>
-
-        {/* Remove button */}
-        <div className="col-12 col-md-auto">
-          <button
-            type="button"
-            className="btn btn-sm btn-danger w-100 w-md-auto"
-            onClick={() => handleRemoveOperator(i)}
-          >
-            &times;
-          </button>
-        </div>
-      </div>
-    ))}
-
-    <button
-      type="button"
-      className="btn btn-sm btn-secondary"
-      onClick={handleAddOperator}
-    >
-      + Add Operator
-    </button>
-  </div>
-)}
-
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-secondary"
+                            onClick={handleAddOperator}
+                          >
+                            + Add Operator
+                          </button>
+                        </div>
+                      )}
                       {/* select industry */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
@@ -1780,7 +1898,7 @@ const UsersLog = () => {
                   <p>Loading Stack Names, please wait...</p>
                 </div>
               ) : (
-                <form className="m-2 p-5">
+                <form className="m-2 p-1">
                   {/* Select Company */}
                   <div className="row">
                     <div className="col-lg-12 col-md-6 mb-4">
@@ -1908,7 +2026,7 @@ const UsersLog = () => {
               </div>
               <div className="card">
                 <div className="card-body">
-                  <form className="m-2 p-5">
+                  <form className="m-2 p-1">
                     <div className="row">
                       {/* User ID Input */}
                       <div className="col-lg-6 col-md-6 mb-4">

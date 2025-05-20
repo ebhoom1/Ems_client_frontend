@@ -204,12 +204,13 @@ export default function Attendence() {
                   type="text"
                   placeholder="Search by name"
                   className="form-control d-inline-block me-2"
-                  style={{ width: "200px" }}
+                  style={{ width: "200px" , fontSize:'15px'}}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <button
-                  className="btn btn-secondary"
+                  className="btn "
+                  style={{backgroundColor:'#236a80' , color:'#fff'}}
                   onClick={() => navigate("history")}
                 >
                   View History
@@ -219,21 +220,27 @@ export default function Attendence() {
           </div>
 
           {/* TABS */}
-          <div className="mt-3">
-            <ul className="nav nav-tabs">
-              {["operator", "technician", "territorialManager"].map((role) => (
-                <li className="nav-item" key={role}>
-                  <button
-                    className={`nav-link ${activeTab === role ? "active" : ""}`}
-                    onClick={() => setActiveTab(role)}
-                  >
-                    {role.charAt(0).toUpperCase() +
-                      role.slice(1).replace("Manager", " Manager")}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+       <div className="mt-3">
+  <ul className="nav nav-tabs">
+    {["operator", "technician", "territorialManager"].map((role) => (
+      <li className="nav-item" key={role}>
+        <button
+          className={`nav-link ${activeTab === role ? "active" : ""}`}
+          onClick={() => setActiveTab(role)}
+          style={{
+            color: activeTab === role ? "#236a80" : "#000",
+            fontWeight: activeTab === role ? "bold" : "normal"
+          }}
+        >
+          {role.charAt(0).toUpperCase() +
+            role.slice(1).replace("Manager", " Manager")}
+        </button>
+      </li>
+    ))}
+  </ul>
+</div>
+
+
 
           {/* TABLE */}
           <div className="row mt-4">
@@ -241,11 +248,11 @@ export default function Attendence() {
               <table className="table table-bordered table-striped">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Check-In</th>
-                    <th>Check-Out</th>
-                    <th>Hours</th>
-                    <th>Method</th>
+                    <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Name</th>
+                    <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Check-In</th>
+                    <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Check-Out</th>
+                    <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Hours</th>
+                    <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Method</th>
                     {displayedList.some((row) =>
                       ["technician", "territorialManager"].includes(
                         row.userRole

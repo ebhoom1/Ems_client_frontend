@@ -1,10 +1,10 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { LOCAL_API_URL, API_URL } from '../../../utils/apiConfig';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
+import { LOCAL_API_URL, API_URL } from "../../../utils/apiConfig";
 
 // Thunks
 export const fetchUsers = createAsyncThunk(
-  'userLog/fetchUsers',
+  "userLog/fetchUsers",
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/api/getallusers`);
@@ -16,7 +16,7 @@ export const fetchUsers = createAsyncThunk(
 );
 
 export const fetchUserById = createAsyncThunk(
-  'userLog/fetchUserById',
+  "userLog/fetchUserById",
   async (userId, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/api/getauser/${userId}`);
@@ -27,56 +27,66 @@ export const fetchUserById = createAsyncThunk(
   }
 );
 export const fetchUserByUserName = createAsyncThunk(
-  'userLog/fetchUserByUserName',
-  async(userName,{rejectWithValue})=>{
-    try{
-      const response = await axios.get(`${API_URL}/api/get-user-by-userName/${userName}`);
+  "userLog/fetchUserByUserName",
+  async (userName, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/api/get-user-by-userName/${userName}`
+      );
       return response.data.user;
-    }catch(error){
+    } catch (error) {
       return rejectWithValue(error.response.data);
     }
-  }  
+  }
 );
 export const fetchUserLatestByUserName = createAsyncThunk(
-  'userLog/fetchUserLatestByUserName',
+  "userLog/fetchUserLatestByUserName",
   async (userName, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/api/latest/${userName}`);
       return response.data.data; // Extract 'data' directly for use in the component
     } catch (error) {
-      return rejectWithValue(error.response?.data || "Error fetching latest data.");
+      return rejectWithValue(
+        error.response?.data || "Error fetching latest data."
+      );
     }
   }
 );
 // Add a new thunk to fetch the last 10 minutes of IoT data
 export const fetchLast10MinDataByUserName = createAsyncThunk(
-  'userLog/fetchLast10MinDataByUserName',
+  "userLog/fetchLast10MinDataByUserName",
   async (userName, { rejectWithValue }) => {
     try {
       const response = await axios.get(`${API_URL}/api/tenmin/${userName}`);
       return response.data.data; // Assuming the data field contains the required records
     } catch (error) {
-      return rejectWithValue(error.response?.data || "Error fetching last 10 minutes of data.");
+      return rejectWithValue(
+        error.response?.data || "Error fetching last 10 minutes of data."
+      );
     }
   }
 );
 export const fetchUserByCompanyName = createAsyncThunk(
-  'userLog/fetchUserByCompanyName',
-  async(companyName,{rejectWithValue})=>{
-    try{
-      const response = await axios.get(`${API_URL}/api/get-user-by-companyName/${companyName}`);
-      return response.data.user;
-    }catch(error){
-      return rejectWithValue(error.response.data);
-    }
-  }  
-);
-export const fetchStackNameByCompanyName = createAsyncThunk(
-  'userLog/fetchStackNameByCompanyName',
+  "userLog/fetchUserByCompanyName",
   async (companyName, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/api/get-stacknames-by-companyName/${companyName}`);
-      return response.data.stackNames;  // Assuming stackNames array is returned
+      const response = await axios.get(
+        `${API_URL}/api/get-user-by-companyName/${companyName}`
+      );
+      return response.data.user;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+export const fetchStackNameByCompanyName = createAsyncThunk(
+  "userLog/fetchStackNameByCompanyName",
+  async (companyName, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/api/get-stacknames-by-companyName/${companyName}`
+      );
+      return response.data.stackNames; // Assuming stackNames array is returned
     } catch (error) {
       return rejectWithValue(error.response.data);
     }
@@ -84,31 +94,30 @@ export const fetchStackNameByCompanyName = createAsyncThunk(
 );
 
 export const fetchStackNameByUserName = createAsyncThunk(
-  'userLog/fetchStackNameByUserName',
+  "userLog/fetchStackNameByUserName",
   async (userName, { rejectWithValue }) => {
     try {
       const response = await axios.get(
         `${API_URL}/api/get-stacknames-by-userName/${userName}`
       );
-      console.log('API Response:', response.data); // Debugging
+      console.log("API Response:", response.data); // Debugging
 
       // Ensure the stackNames array is correctly returned
       return response.data.stackNames || [];
     } catch (error) {
-      console.error('Error fetching stack names:', error);
-      return rejectWithValue(error.response?.data || 'An error occurred');
+      console.error("Error fetching stack names:", error);
+      return rejectWithValue(error.response?.data || "An error occurred");
     }
   }
 );
 
-
 export const addUser = createAsyncThunk(
-  'userLog/addUser',
+  "userLog/addUser",
   async (formData, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${API_URL}/api/register`, formData, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
       return response.data.storeData;
@@ -119,36 +128,37 @@ export const addUser = createAsyncThunk(
 );
 
 export const addStackName = createAsyncThunk(
-  'userLog/addStackName',
+  "userLog/addStackName",
   async ({ companyName, stackData }, { rejectWithValue }) => {
     try {
       const response = await axios.patch(
         `${API_URL}/api/updateStackName/${companyName}`,
         { stackData }, // Correct payload key
         {
-          headers: { 'Content-Type': 'application/json' },
+          headers: { "Content-Type": "application/json" },
         }
       );
       return response.data.user; // Assuming response contains updated user data
     } catch (error) {
-      console.error('Error in addStackName thunk:', error.response.data);
+      console.error("Error in addStackName thunk:", error.response.data);
       return rejectWithValue(error.response.data);
     }
   }
 );
 
-
-
-
 export const updateUser = createAsyncThunk(
-  'userLog/updateUser',
+  "userLog/updateUser",
   async ({ userId, userData }, { rejectWithValue }) => {
     try {
-      const response = await axios.patch(`${API_URL}/api/edituser/${userId}`, userData, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await axios.patch(
+        `${API_URL}/api/edituser/${userId}`,
+        userData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
       return response.data.user;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -156,12 +166,13 @@ export const updateUser = createAsyncThunk(
   }
 );
 
-
 export const deleteUser = createAsyncThunk(
-  'userLog/deleteUser',
+  "userLog/deleteUser",
   async (userName, { rejectWithValue }) => {
     try {
-      const response = await axios.delete(`${API_URL}/api/deleteuser/${userName}`);
+      const response = await axios.delete(
+        `${API_URL}/api/deleteuser/${userName}`
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -169,12 +180,12 @@ export const deleteUser = createAsyncThunk(
   }
 );
 export const uploadLogo = createAsyncThunk(
-  'userLog/uploadLogo',
+  "userLog/uploadLogo",
   async (formData, { rejectWithValue }) => {
     try {
       const response = await axios.post(`${API_URL}/api/logo`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
       return response.data;
@@ -185,12 +196,12 @@ export const uploadLogo = createAsyncThunk(
 );
 
 export const editLogo = createAsyncThunk(
-  'userLog/editLogo',
+  "userLog/editLogo",
   async (formData, { rejectWithValue }) => {
     try {
       const response = await axios.put(`${API_URL}/api/logo/edit`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
       return response.data;
@@ -201,7 +212,7 @@ export const editLogo = createAsyncThunk(
 );
 
 export const deleteLogo = createAsyncThunk(
-  'userLog/deleteLogo',
+  "userLog/deleteLogo",
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.delete(`${API_URL}/api/logo`);
@@ -213,14 +224,16 @@ export const deleteLogo = createAsyncThunk(
 );
 // Slice
 const userLogSlice = createSlice({
-  name: 'userLog',
+  name: "userLog",
   initialState: {
     users: [],
     filteredUsers: [],
+    technicianUsers: [],
+    territoryManagerUsers: [],
     selectedUser: null,
     address: "", // Add address field here
 
-    stackNames: [], 
+    stackNames: [],
     latestUser: null,
     last10MinData: null, // Add state for storing last 10 minutes data
     loading: false,
@@ -230,6 +243,12 @@ const userLogSlice = createSlice({
   reducers: {
     setFilteredUsers: (state, action) => {
       state.filteredUsers = action.payload;
+    },
+    setTechnicianUsers: (state, action) => {
+      state.technicianUsers = action.payload;
+    },
+    setTerritoryManagerUsers: (state, action) => {
+      state.territoryManagerUsers = action.payload;
     },
     clearState: (state) => {
       state.loading = false;
@@ -272,14 +291,17 @@ const userLogSlice = createSlice({
         state.loading = false;
         state.selectedUser = action.payload || null;
         state.address = action.payload?.address || "No address available"; // ✅ Store address
-        console.log("Updated selectedUser by userName in Redux:", action.payload);
+        console.log(
+          "Updated selectedUser by userName in Redux:",
+          action.payload
+        );
       })
       .addCase(fetchUserByUserName.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       })
-       // Add cases for fetchLast10MinDataByUserName
-       .addCase(fetchLast10MinDataByUserName.pending, (state) => {
+      // Add cases for fetchLast10MinDataByUserName
+      .addCase(fetchLast10MinDataByUserName.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -289,17 +311,18 @@ const userLogSlice = createSlice({
       })
       .addCase(fetchLast10MinDataByUserName.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to fetch the last 10 minutes data';
+        state.error =
+          action.payload || "Failed to fetch the last 10 minutes data";
       })
-     
-      .addCase(fetchUserByCompanyName.pending,(state)=>{
+
+      .addCase(fetchUserByCompanyName.pending, (state) => {
         state.loading = false;
       })
       .addCase(fetchUserByCompanyName.fulfilled, (state, action) => {
         state.loading = false;
         state.selectedUser = action.payload; // Store the user object directly
-    })
-      .addCase(fetchUserByCompanyName.rejected,(state, action) => {
+      })
+      .addCase(fetchUserByCompanyName.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       })
@@ -346,7 +369,9 @@ const userLogSlice = createSlice({
       })
       .addCase(updateUser.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.users.findIndex(user => user._id === action.payload._id);
+        const index = state.users.findIndex(
+          (user) => user._id === action.payload._id
+        );
         if (index !== -1) {
           state.users[index] = action.payload;
         }
@@ -360,7 +385,9 @@ const userLogSlice = createSlice({
       })
       .addCase(deleteUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.users = state.users.filter(user => user.userName !== action.payload);
+        state.users = state.users.filter(
+          (user) => user.userName !== action.payload
+        );
       })
       .addCase(deleteUser.rejected, (state, action) => {
         state.loading = false;
@@ -393,42 +420,48 @@ const userLogSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-// Delete logo
-.addCase(deleteLogo.pending, (state) => {
-  state.loading = true;
-  state.error = null;
-})
-.addCase(deleteLogo.fulfilled, (state) => {
-  state.loading = false;
-  state.logo = null; // Clear logo data
-})
-.addCase(deleteLogo.rejected, (state, action) => {
-  state.loading = false;
-  state.error
-  = action.payload;
-})
+      // Delete logo
+      .addCase(deleteLogo.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteLogo.fulfilled, (state) => {
+        state.loading = false;
+        state.logo = null; // Clear logo data
+      })
+      .addCase(deleteLogo.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
 
       // addStackName cases
-       // Updated addStackName cases
-       .addCase(addStackName.pending, (state) => {
+      // Updated addStackName cases
+      .addCase(addStackName.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(addStackName.fulfilled, (state, action) => {
         state.loading = false;
-        if (state.selectedUser && state.selectedUser.companyName === action.payload.companyName) {
-            state.selectedUser.stackName = action.payload.stackName; // Update stackName field
+        if (
+          state.selectedUser &&
+          state.selectedUser.companyName === action.payload.companyName
+        ) {
+          state.selectedUser.stackName = action.payload.stackName; // Update stackName field
         }
-    })
-    
+      })
+
       .addCase(addStackName.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
-
   },
 });
 
-export const { setFilteredUsers, clearState } = userLogSlice.actions;
+export const {
+  setFilteredUsers,
+  setTechnicianUsers,
+  setTerritoryManagerUsers,
+  clearState,
+} = userLogSlice.actions;
 
 export default userLogSlice.reducer;

@@ -94,10 +94,10 @@ function  HeaderSim() {
             <div className='d-flex'>
               {/* Icons pushed to the right */}
               <div className="d-flex align-items-center icons">
-                <Nav.Link className='me-3' href="#home">
+                <Nav.Link className='me-2' href="#home">
                   <i className="fa-regular fa-bell fa-1x"></i>
                 </Nav.Link>
-                <Dropdown className="me-3">
+                <Dropdown className="">
                   <Dropdown.Toggle as={Nav.Link} bsPrefix="p-0" id="user-dropdown">
                     <i className="fa-solid fa-user"></i>
                   </Dropdown.Toggle>

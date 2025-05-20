@@ -52,6 +52,8 @@ function Canvas({
   y: 0,
   zoom: 1,
 });
+const product_id= userData?.validUserOne?.productID
+console.log('new product Id' , product_id);
 
   // Handle pump toggle from child components
   const handlePumpToggle = useCallback((pumpId, pumpName, status, isPending) => {
@@ -217,27 +219,33 @@ const onDrop = useCallback((event) => {
   const isPDF = parsed.isPDF || parsed.type === 'pdfNode';
 
   // 5) build the node, sizing PDFs to fill the entire bounds
-  const newNode = {
-    id: `${parsed.id}_${nodes.length}`,
-    type: parsed.type,
-    position,
-/*     draggable:false,
- */    style: isPDF
-      ? { width: bounds.width, height: bounds.height }
-      : {},
-    data: {
-      ...parsed,
-      isEditing: true,
-      isPump:      parsed.label.toLowerCase().includes('pump'),
-      isAirblower: parsed.label.toLowerCase().includes('blower'),
-      isTank:      parsed.label.toLowerCase().includes('tank'),
-      socket,
-      socketConnected,
-      pumpStatus: false,
-      isPending:   false,
-      onPumpToggle: handlePumpToggle,
+ // In your Canvas component where you create nodes:
+const newNode = {
+  id: `${parsed.id}_${nodes.length}`,
+  type: parsed.type,
+  position,
+  data: {
+    ...parsed,
+    isEditing: true,
+    isPump: parsed.label.toLowerCase().includes('pump'),
+    isAirblower: parsed.label.toLowerCase().includes('blower'),
+    socket,
+    socketConnected,
+    pumpStatus: false,
+    isPending: false,
+    onPumpToggle: handlePumpToggle,
+    onLabelChange: (id, newLabel) => {
+      setNodes(nds => nds.map(n => 
+        n.id === id ? { ...n, data: { ...n.data, label: newLabel } } : n
+      ));
     },
-  };
+    onRotate: (id, newRotation) => {
+      setNodes(nds => nds.map(n => 
+        n.id === id ? { ...n, data: { ...n.data, rotation: newRotation } } : n
+      ));
+    }
+  },
+};
 
   setNodes((nds) => nds.concat(newNode));
 }, [
@@ -281,9 +289,10 @@ const onDrop = useCallback((event) => {
           isTank: n.data.isTank,
           totalDepth: n.data.totalDepth,
           filePath:  n.data.filePath,
-        },
-        width: n.width,
+           width: n.width,
         height: n.height,
+        },
+       
       })),
       edges,
       viewport: savedViewport,   // ← add this line
@@ -368,6 +377,8 @@ const onDrop = useCallback((event) => {
             pumpStatus: initialPumpStates[node.id]?.status || false,
             isPending: initialPumpStates[node.id]?.pending || false,
             onPumpToggle: handlePumpToggle,
+             width:  node.data.width,
+             height: node.data.height,
           },
         }))
       );
@@ -432,8 +443,8 @@ const nodeTypes = useMemo(() => {
       </div>
     ),
      pdfNode: PDFNode,
-      pumpNode:   props => <DeviceNode  {...props} />,
- blowerNode: props => <DeviceNode  {...props} />,
+       pumpNode: props => <SVGNode {...props} liveTankData={liveTankData} />,
+  blowerNode: props => <SVGNode {...props} liveTankData={liveTankData} />,
  flowMeterNode: props => (
     <FlowMeterNode
       {...props}
@@ -450,8 +461,17 @@ const edgeTypes = {
   piping: PipingEdge,
 };
   return (
-    <div className="react-flow-container">
-      <div className="react-flow-scrollable">
+    <div className="react-flow-container" style={{ 
+  width: '100%',
+  height: '100%',
+  position: 'relative'
+}}>
+      <div className="react-flow-scrollable" style={{
+    width: '100%',
+    height: 'calc(100vh - 200px)', // Adjust based on your header height
+    overflow: 'auto',
+    '-webkit-overflow-scrolling': 'touch' // For smooth scrolling on iOS
+  }}>
         {noLiveStation && (
           <div className="text-danger text-center mb-3">
             <h5>
@@ -461,55 +481,62 @@ const edgeTypes = {
             </h5>
           </div>
         )}
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <div>
-            <label>Station Name:</label>
-            <input
-              className="form-control"
-              value={stationName}
-              onChange={(e) => setStationName(e.target.value)}
-              disabled={isEditing && userType !== "admin"}
-            />
-          </div>
+ <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-2">
+  {/* 1) Station name stretches on desktop, full‐width on mobile */}
+  <div className="flex-fill mb-2 mb-md-0 me-md-3">
+    
+    <input
+      className="form-control w-100"
+      value={stationName}
+      onChange={(e) => setStationName(e.target.value)}
+      disabled={isEditing && userType !== "admin"}
+    />
+  </div>
 
-          <div>
-            <button
-              className="btn btn-warning me-2"
-              onClick={() => {
-                setIsEditMode((v) => !v);
-                setNodes((nds) =>
-                  nds.map((n) => ({
-                    ...n,
-/*                     draggable:!isEditMode,
- */                    data: { ...n.data, isEditing: !isEditMode },
-                  }))
-                );
-              }}
-            >
-              {isEditMode ? "View" : "Edit"}
-            </button>
-            <button
-              className="btn btn-success me-2"
-              onClick={handleSave}
-              disabled={!isEditMode}
-            >
-              {isEditing ? "Update" : "Save"}
-            </button>
-            {isEditing && userType === "admin" && (
-              <button
-                className="btn btn-danger"
-                onClick={handleDelete}
-              >
-                Delete
-              </button>
-            )}
-          </div>
-        </div>
+  {/* 2) Button group wraps on mobile, sits inline & centered on desktop */}
+  <div className="d-flex flex-wrap gap-2">
+    <button
+      className="btn btn-warning"
+      onClick={() => {
+        setIsEditMode((v) => !v);
+        setNodes((nds) =>
+          nds.map((n) => ({
+            ...n,
+            data: { ...n.data, isEditing: !isEditMode },
+          }))
+        );
+      }}
+    >
+      {isEditMode ? "View" : "Edit"}
+    </button>
+
+    <button
+      className="btn btn-success"
+      onClick={handleSave}
+      disabled={!isEditMode}
+    >
+      {isEditing ? "Update" : "Save"}
+    </button>
+
+    {isEditing && userType === "admin" && (
+      <button className="btn btn-danger" onClick={handleDelete}>
+        Delete
+      </button>
+    )}
+  </div>
+</div>
+
        <div
   ref={reactFlowWrapper}
    className="reactflow-wrapper"
-  style={{ width: "100%", height: "600px" }}>
+  style={{ width: "100%", height: "600px" ,minWidth: '1000px', // Minimum width to ensure content doesn't get too squeezed
+        minHeight: '600px'}}>
          <ReactFlow
+          style={{
+          width: '100%',
+          height: '100%',
+          touchAction: 'manipulation' // Helps with touch events
+        }}
   nodes={nodes}
   edges={edges}
 viewport={savedViewport}
