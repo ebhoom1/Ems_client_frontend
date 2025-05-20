@@ -9,7 +9,8 @@ const AdminServiceRequests = () => {
 
   const [faults, setFaults] = useState([]);
   const [editing, setEditing] = useState(null);
-
+const [technicians, setTechnicians] = useState([]);
+const { validUserOne: u } = userData || {};
   // Only the fields your API uses:
   const [serviceDetails, setServiceDetails] = useState({
     status: "Pending",
@@ -37,7 +38,26 @@ const AdminServiceRequests = () => {
     };
     fetchFaults();
   }, [userData]);
+useEffect(() => {
+  const fetchTechs = async () => {
+    try {
+      // fetch all technicians
+      const res = await fetch(`${API_URL}/api/getAll-technicians`);
+      const data = await res.json();
+      let list = data.users || [];
 
+      // filter by this admin’s adminType
+      if (u?.userType === "admin") {
+        list = list.filter(t => t.adminType === u.adminType);
+      }
+      setTechnicians(list);
+    } catch (err) {
+      toast.error("Failed to load technicians");
+    }
+  };
+
+  fetchTechs();
+}, [u]);
   const updateService = async (id) => {
     try {
       const res = await fetch(`${API_URL}/api/update-fault/${id}`, {
@@ -149,25 +169,32 @@ const AdminServiceRequests = () => {
                             </div>
 
                             {/* Technician Name */}
-                            <div>
-                              <label htmlFor="technicianName" className="form-label">
-                                Technician Name
-                              </label>
-                              <input
-                                id="technicianName"
-                                type="text"
-                                className="form-control form-control-sm"
-                                placeholder="Technician Name"
-                                value={serviceDetails.technicianName}
-                                onChange={(e) =>
-                                  setServiceDetails((sd) => ({
-                                    ...sd,
-                                    technicianName: e.target.value,
-                                  }))
-                                }
-                                required
-                              />
-                            </div>
+                    {/* Technician Name */}
+<div>
+  <label htmlFor="technicianName" className="form-label">
+    Technician Name
+  </label>
+  <select
+    id="technicianName"
+    className="form-select form-select-sm"
+    value={serviceDetails.technicianName}
+    onChange={e =>
+      setServiceDetails(sd => ({
+        ...sd,
+        technicianName: e.target.value
+      }))
+    }
+    required
+  >
+    <option value="">Select Technician</option>
+    {technicians.map((tech) => (
+      <option key={tech._id} value={tech.userName}>
+        {tech.fname} ({tech.userName})
+      </option>
+    ))}
+  </select>
+</div>
+
 
                             {/* Next Service Due */}
                             <div>

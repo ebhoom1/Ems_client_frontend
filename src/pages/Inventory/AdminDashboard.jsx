@@ -16,7 +16,8 @@ const AdminDashboard = () => {
   const [errorUsed, setErrorUsed] = useState(null);
   const [errorRequests, setErrorRequests] = useState(null);
   const { userData } = useSelector((state) => state.user);
-
+const [users, setUsers] = useState([]);
+const [selectedUserName, setSelectedUserName] = useState("all");
   // New state for search filter and sort order
   const [searchTerm, setSearchTerm] = useState("");
   const [dateSortOrder, setDateSortOrder] = useState("asc");
@@ -50,6 +51,16 @@ const AdminDashboard = () => {
         });
     }
   }, [activeAdminTab, userData]);
+useEffect(() => {
+  if (userData?.validUserOne?.userType === "admin") {
+    fetch(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`)
+      .then(res => res.json())
+      .then(data => {
+        setUsers(data.users || []);
+      })
+      .catch(console.error);
+  }
+}, [userData]);
 
   // Fetch Usage Logs
   useEffect(() => {
@@ -140,9 +151,10 @@ const AdminDashboard = () => {
 
   // Compute filtered and sorted data for each tab based on searchTerm and dateSortOrder
   const filteredInventoryAddedData = inventoryAddedData
-    .filter((item) =>
-      item.userName.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+  .filter(item =>
+  selectedUserName === "all" || item.userName === selectedUserName
+)
+
     .sort((a, b) =>
       dateSortOrder === "asc"
         ? new Date(a.date) - new Date(b.date)
@@ -150,9 +162,9 @@ const AdminDashboard = () => {
     );
 
   const filteredUsageLogs = usageLogs
-    .filter((log) =>
-      log.userName.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+     .filter(item =>
+  selectedUserName === "all" || item.userName === selectedUserName
+)
     .sort((a, b) =>
       dateSortOrder === "asc"
         ? new Date(a.date) - new Date(b.date)
@@ -160,9 +172,9 @@ const AdminDashboard = () => {
     );
 
   const filteredRequestLogs = requestLogs
-    .filter((req) =>
-      req.userName.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+     .filter(item =>
+  selectedUserName === "all" || item.userName === selectedUserName
+)
     .sort((a, b) =>
       dateSortOrder === "asc"
         ? new Date(a.requestDate) - new Date(b.requestDate)
@@ -223,30 +235,28 @@ const AdminDashboard = () => {
       </div>
 
       {/* Global Search Bar */}
-      <div style={{ margin: "1rem 0", position: "relative", width: "20%" }}>
-  <i
-    className="fa-solid fa-magnifying-glass"
+     <div style={{ margin: "1rem 0", width: "20%" }}>
+  <select
+    value={selectedUserName}
+    onChange={e => setSelectedUserName(e.target.value)}
     style={{
-      position: "absolute",
-      top: "50%",
-      left: "10px",
-      transform: "translateY(-50%)",
-      color: "#aaa"
-    }}
-  ></i>
-  <input
-    type="text"
-    placeholder="Search by username..."
-    value={searchTerm}
-    onChange={(e) => setSearchTerm(e.target.value)}
-    style={{
-      padding: "0.5rem 0.5rem 0.5rem 2.5rem", // add left padding for the icon
+      padding: "0.5rem",
       width: "100%",
       borderRadius: "20px",
-      border: "1px solid #ccc"
+      border: "1px solid #ccc",
+      backgroundColor: "#fff",
+      appearance: "none"
     }}
-  />
+  >
+    <option value="all">Select Companies</option>
+    {users.map(u => (
+      <option key={u._id} value={u.userName}>
+        {u.companyName}
+      </option>
+    ))}
+  </select>
 </div>
+
 
 
       {/* Inventory Added Tab */}

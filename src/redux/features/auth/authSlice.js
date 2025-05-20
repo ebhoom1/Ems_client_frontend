@@ -13,14 +13,13 @@ export const loginUser = createAsyncThunk(
         userType
       });
       const data = response.data;
-
       // The backend returns either:
       //  • { result: { userValid, token }, ... }  for normal users/admins
       //  • { operator: {...}, token, ... }        for operators
       let user, token;
-      if (data.operator) {
-        user  = data.operator;
-        token = data.token;
+      if (data.result?.operator) {
+        user = data.result.operator;
+        token = data.result.token || data.token;
       } else if (data.result) {
         user  = data.result.userValid || data.result.user;
         token = data.result.token || data.token;

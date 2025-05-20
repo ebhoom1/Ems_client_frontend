@@ -594,6 +594,7 @@ useEffect(() => {
 
   // Form for users to request more inventory
   const renderRequestInventory = () => (
+  
     <div className="col-12">
       <h1 className="text-center mt-3">Request Inventory</h1>
       <div className="card">
@@ -638,14 +639,17 @@ useEffect(() => {
                   <label htmlFor="username" className="form-label text-light">
                     Username
                   </label>
-                  <input
-                    id="username"
-                    type="text"
-                    placeholder="username"
-                    className="form-control"
-                    name="username"
-                    style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
-                  />
+                   <input
+                  id="username"
+                  type="text"
+                  name="username"
+                  className="form-control"
+                  placeholder="username"
+                  style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+                  // if it's a regular user, prefill & lock it
+                  defaultValue={userType === "user" ? currentUserName : ""}
+                  readOnly={userType === "user"}
+                />
                 </div>
               </div>
               <div className="col-lg-6 col-md-6 mb-4">

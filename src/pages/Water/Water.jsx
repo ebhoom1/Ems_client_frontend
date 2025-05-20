@@ -187,88 +187,35 @@ useEffect(() => {
   }
 };
   // Fetching data by username
-  const fetchData = async (userName) => {
-    setLoading(true);
-  
-    try {
-      if (userName === "HH014") {
-        // Fetch last 10 minutes data for HH014
-        const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
-  
-        // Filter effluent stationType data
-        const effluentData = last10MinData.flatMap(record =>
-          record.records.filter(stack =>
-            stack.stackData.some(item => item.stationType === "effluent")
-          )
-        );
-  
-        console.log("Last 10 Minutes Effluent Data:", effluentData);
-  
-        // Set searchResult to last10MinData for consistency
-        setSearchResult(last10MinData);
-        console.log("searchResult for HH014:", last10MinData);
-  
-        // Extract stackNames from the effluentData and update effluentStacks
-        const stacks = effluentData.flatMap(record =>
-          record.stackData
-            .filter(stack => stack.stationType === "effluent")
-            .map(stack => stack.stackName)
-        );
-        setEffluentStacks(stacks);
-  
-        // Pick the first or most recent data point
-        const singleData = effluentData.length > 0 ? effluentData[effluentData.length - 1] : null; // Use the last record
-        const formattedData = singleData
-          ? {
-              stackName: singleData.stackName,
-              ...singleData.stackData.find(item => item.stationType === "effluent"),
-            }
-          : null;
-  
-        if (!realTimeData || Object.keys(realTimeData).length === 0) {
-          // If no real-time data is available, show the last 10 minutes' last record
-          console.log("Showing the last value from the last 10 minutes.");
-          setRealTimeData(formattedData ? [formattedData] : []);
-        } else {
-          console.log("Real-time data is already available.");
-        }
-      } else {
-        // Fetch the latest data for other users
-        const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
-  
-        if (result) {
-          setSearchResult(result); // Save the result in state
-          console.log("fetchData of Latest - searchResult:", result);
-          console.log("searchResult.stackData:", result.stackData);
-  
-          setCompanyName(result.companyName || "Unknown Company");
-         
-  
-          // Extract stackNames from the stackData and update effluentStacks
-          const stacks = result.stackData
-            ?.filter(stack => stack.stationType === "effluent")
-            .map(stack => stack.stackName) || [];
-          setEffluentStacks(stacks);
-  
-          // Show latest data until real-time data comes
-          if (!realTimeData || Object.keys(realTimeData).length === 0) {
-            console.log("Displaying fetched latest data until real-time data is available.");
-            setRealTimeData(result.stackData || []);
-          }
-        } else {
-          throw new Error("No data found for this user.");
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching data:", err.message);
-      setSearchResult(null);
-      setCompanyName("Unknown Company");
-      setSearchError(err.message || "No result found for this userID");
-    } finally {
-      setLoading(false);
-    }
-  };
-  
+const fetchData = async (userName) => {
+  setLoading(true);
+  try {
+    // Always fetch the latest data
+    const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
+
+    // Save company info
+    setSearchResult(result);
+    setCompanyName(result.companyName || "Unknown Company");
+
+    // **Filter out only the effluent entries**
+    const effluentData = result.stackData
+      .filter(stack => stack.stationType === "effluent");
+
+    // Update dropdown with effluent stack names
+    setEffluentStacks(effluentData.map(stack => stack.stackName));
+
+    // Show only effluent data until real-time kicks in
+    setRealTimeData(effluentData);
+  } catch (err) {
+    console.error("Error fetching data:", err.message);
+    setSearchResult(null);
+    setCompanyName("Unknown Company");
+    setSearchError(err.message || "No result found for this userID");
+  } finally {
+    setLoading(false);
+  }
+};
+
   
  
   

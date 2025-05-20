@@ -15,7 +15,8 @@ export default function EquipmentList() {
   const [list, setList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const { validUserOne: type } = userData || {};
-
+ const [users, setUsers] = useState([]);               // ← New
+  const [selectedUserName, setSelectedUserName] = useState("all");  // ← New
   // modal state
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -26,7 +27,20 @@ export default function EquipmentList() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    
     (async () => {
+
+      if (type?.userType === "admin") {
+      try {
+        const res = await fetch(
+          `${API_URL}/api/get-users-by-adminType/${type.adminType}`
+        );
+        const data = await res.json();
+        setUsers(data.users || []);
+      } catch (err) {
+        toast.error("Error fetching user list");
+      }
+    }
       try {
         let url = `${API_URL}/api/all-equipment`;
         if (type?.userType === "user")
@@ -42,6 +56,8 @@ export default function EquipmentList() {
         toast.error("Error fetching equipment list");
       }
     })();
+
+    
   }, [type]);
 
   const downloadQR = async (value) => {
@@ -92,18 +108,23 @@ export default function EquipmentList() {
     setReportType(type);
     setShowMonthModal(true);
   };
+const filtered = list.filter((e) => {
+  // 1) if a user is selected, skip everything else:
+  if (selectedUserName !== "all" && e.userName !== selectedUserName) {
+    return false;
+  }
 
-  const filtered = list.filter((e) => {
-    const term = searchTerm.toLowerCase();
-    const dateStr = e.installationDate
-      ? new Date(e.installationDate).toLocaleDateString("en-GB")
-      : "";
-    return (
-      e.equipmentName.toLowerCase().includes(term) ||
-      e.userName.toLowerCase().includes(term) ||
-      dateStr.includes(term)
-    );
-  });
+  // 2) then apply your existing searchTerm match:
+  const term = searchTerm.toLowerCase();
+  const dateStr = e.installationDate
+    ? new Date(e.installationDate).toLocaleDateString("en-GB")
+    : "";
+  return (
+    e.equipmentName.toLowerCase().includes(term) ||
+    e.userName.toLowerCase().includes(term) ||
+    dateStr.includes(term)
+  );
+});
 
   const openModal = (id, name) => {
     setSelectedId(id);
@@ -142,13 +163,19 @@ export default function EquipmentList() {
 
       {/* Search bar */}
       <div className="mb-3 d-flex align-items-between justify-content-between">
-        <input
-          className="form-control"
-          style={{ maxWidth: 300 }}
-          placeholder="Search name, user, date..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+       <select
+  className="form-control me-2"
+  style={{ maxWidth: 300 }}
+  value={selectedUserName}
+  onChange={(e) => setSelectedUserName(e.target.value)}
+>
+  <option value="all">All Companies</option>
+  {users.map((u) => (
+    <option key={u._id} value={u.userName}>
+      {u.companyName}
+    </option>
+  ))}
+</select>
         <div>
           <button
             className="btn btn-warning me-2"

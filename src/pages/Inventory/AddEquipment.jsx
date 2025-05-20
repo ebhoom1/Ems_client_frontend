@@ -129,7 +129,7 @@ const AddEquipment = () => {
                 className="form-control"
                 value={form.modelSerial}
                 onChange={handleChange}
-                required
+              
                 style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
               />
             </div>
@@ -150,7 +150,7 @@ const AddEquipment = () => {
                 placeholder="e.g. 10 HP"
                 value={form.capacity}
                 onChange={handleChange}
-                required
+               
                 style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
               />
             </div>
@@ -168,7 +168,7 @@ const AddEquipment = () => {
                 placeholder="e.g. 11.5 A"
                 value={form.ratedLoad}
                 onChange={handleChange}
-                required
+              
                 style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
               />
             </div>
@@ -185,13 +185,13 @@ const AddEquipment = () => {
                 className="form-control"
                 value={form.installationDate}
                 onChange={handleChange}
-                required
+              
                 style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
               />
             </div>
 
             {/* Location */}
-            <div className="col-lg-6 col-md-6 mb-4">
+           {/*  <div className="col-lg-6 col-md-6 mb-4">
               <label htmlFor="location" className="form-label text-light">
                 Location
               </label>
@@ -202,10 +202,10 @@ const AddEquipment = () => {
                 className="form-control"
                 value={form.location}
                 onChange={handleChange}
-                required
+            
                 style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
               />
-            </div>
+            </div> */}
 
             {/* Optional Notes */}
             <div className="col-lg-12 mb-4">

@@ -99,72 +99,48 @@ const EnergyFlow = () => {
     }
   };
 
-  const fetchData = async (userName) => {
-    setLoading(true);
-    try {
-      if (userName === "HH014") {
-        // Fetch last 10 minutes data for HH014
-        const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
-        const energyData = last10MinData.flatMap(record =>
-          record.records.filter(stack => stack.stackData.some(item => item.stationType === "energy"))
-        );
-        console.log("Last 10 Minutes Energy Data:", energyData);
-        setSearchResult(last10MinData);
-        console.log("searchResult for HH014:", last10MinData);
-        const stacks = energyData.flatMap(record =>
-          record.stackData.filter(stack => stack.stationType === "energy").map(stack => stack.stackName)
-        );
-        setEnergyStacks(stacks);
-        const singleData = energyData.length > 0 ? energyData[energyData.length - 1] : null;
-        // Updated to store as an object keyed by stackName for consistency
-        const formattedData = singleData
-          ? { [singleData.stackName]: { 
-                ...singleData.stackData.find(item => item.stationType === "energy"),
-                timestamp: singleData.timestamp 
-             } }
-          : {};
-        if (!realTimeData || Object.keys(realTimeData).length === 0) {
-          console.log("Showing the last value from the last 10 minutes.");
-          setRealTimeData(formattedData);
-        } else {
-          console.log("Real-time data is already available.");
-        }
-      } else {
-        // Fetch the latest data for other users
-        const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
-        if (result) {
-          setSearchResult(result);
-          console.log("fetchData of Latest - searchResult:", result);
-          console.log("searchResult.stackData:", result.stackData);
-          setCompanyName(result.companyName || "Unknown Company");
-          const stacks = result.stackData
-            ?.filter(stack => stack.stationType === "energy")
-            .map(stack => stack.stackName) || [];
-          setEnergyStacks(stacks);
-          // Convert stackData (if an array) to an object keyed by stackName
-          if (!realTimeData || Object.keys(realTimeData).length === 0) {
-            const energyDataObj = {};
-            (result.stackData || []).forEach(item => {
-              if (item.stationType === "energy" && item.stackName) {
-                energyDataObj[item.stackName] = item;
-              }
-            });
-            console.log("Displaying fetched latest data until real-time data is available.");
-            setRealTimeData(energyDataObj);
-          }
-        } else {
-          throw new Error("No data found for this user.");
-        }
+const fetchData = async (userName) => {
+  setLoading(true);
+  try {
+    // 1) Always fetch "latest" data
+    const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
+
+    // 2) Save company & raw result
+    setSearchResult(result);
+    setCompanyName(result.companyName || "Unknown Company");
+
+    // 3) Pull out only the energy stacks
+    const energyStacks = (result.stackData || [])
+      .filter(stack => stack.stationType === "energy");
+
+    // 4) Update dropdown/list of stack names
+    setEnergyStacks(energyStacks.map(s => s.stackName));
+
+    // 5) Build an object keyed by stackName for your realTimeData
+    const energyDataObj = {};
+    energyStacks.forEach(item => {
+      if (item.stackName) {
+        // copy all energy fields + timestamp if you want
+        energyDataObj[item.stackName] = {
+          ...item,
+          timestamp: result.timestamp    // top-level timestamp from the API
+        };
       }
-    } catch (err) {
-      console.error("Error fetching data:", err.message);
-      setSearchResult(null);
-      setCompanyName("Unknown Company");
-      setSearchError(err.message || "No result found for this userID");
-    } finally {
-      setLoading(false);
-    }
-  };
+    });
+
+    // 6) Show that until real-time socket data arrives
+    setRealTimeData(energyDataObj);
+
+  } catch (err) {
+    console.error("Error fetching latest data:", err.message);
+    setSearchResult(null);
+    setCompanyName("Unknown Company");
+    setSearchError(err.message || "No result found for this userID");
+  } finally {
+    setLoading(false);
+  }
+};
+
   
   // Fetch initial energy data from API
   const fetchEnergyDifferenceData = async (userName) => {
@@ -566,7 +542,7 @@ const EnergyFlow = () => {
                                 <strong style={{ color: "#ffff", fontSize: "24px" }}>
                                   {dailyEnergyConsumption[stack.stackName]?.toFixed(2) || "0.00"}
                                 </strong>{" "}
-                                kW/hr
+                                kW
                               </p>
                             </div>
                           </div>

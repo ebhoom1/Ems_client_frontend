@@ -93,57 +93,51 @@ const QuantityFlow = () => {
     }
   };
   
-  const fetchData = async (userName) => {
-    setLoading(true);
-  
-    try {
-      if (userName === "HH014") {
-        const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
-        const effluentFlowData = last10MinData.flatMap((record) =>
-          record.records.flatMap((stack) =>
-            stack.stackData.filter((item) => item.stationType === "effluent_flow")
-          )
-        );
+const fetchData = async (userName) => {
+  setLoading(true);
+  try {
+    // 1) Try “latest” endpoint first
+    const latest = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
+    const liveStacks = (latest.stackData || [])
+      .filter(i => i.stationType === 'effluent_flow');
 
-        const last10MinDataByStackName = effluentFlowData.reduce((acc, item) => {
-          acc[item.stackName] = item;
-          return acc;
-        }, {});
-
-        setSearchResult(Object.values(last10MinDataByStackName));
-        setEffluentFlowStacks(Object.keys(last10MinDataByStackName));
-      } else {
-        const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
-  
-        if (result) {
-          setCompanyName(result.companyName || "Unknown Company");
-
-          const latestEffluentFlowData = result.stackData
-            ?.filter((stack) => stack.stationType === "effluent_flow")
-            ?.reduce((acc, item) => {
-              acc[item.stackName] = item;
-              return acc;
-            }, {});
-
-          setSearchResult(Object.values(latestEffluentFlowData || {}));
-          setEffluentFlowStacks(Object.keys(latestEffluentFlowData || {}));
-
-          if (!realTimeData || Object.keys(realTimeData).length === 0) {
-            setRealTimeData(latestEffluentFlowData || {});
-          }
-        } else {
-          throw new Error("No data found for this user.");
-        }
+    if (liveStacks.length) {
+      const byName = liveStacks.reduce((acc, i) => {
+        acc[i.stackName] = i;
+        return acc;
+      }, {});
+      setCompanyName(latest.companyName);
+      setSearchResult(Object.values(byName));
+      setEffluentFlowStacks(Object.keys(byName));
+      if (!Object.keys(realTimeData).length) {
+        setRealTimeData(byName);
       }
-    } catch (err) {
-      console.error("Error fetching data:", err.message);
-      setSearchResult(null);
-      setCompanyName("Unknown Company");
-      setSearchError(err.message || "No result found for this userID");
-    } finally {
-      setLoading(false);
+      return; // done
     }
-  };
+
+    // 2) Fallback to hourly‐last
+    const { data: hourly } = await axios.get(
+      `${API_URL}/api/hourly/effluent/last`,
+      { params: { userName } }
+    );
+    const stacks = hourly.data.stacks;
+    const byName = stacks.reduce((acc, s) => {
+      acc[s.stackName] = s;
+      return acc;
+    }, {});
+    setSearchResult(stacks);
+    setEffluentFlowStacks(stacks.map(s => s.stackName));
+    setRealTimeData(byName);
+
+  } catch (err) {
+    console.error("Error fetching data:", err);
+    setSearchError(err.message || "Error fetching data");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const fetchDifferenceData = async (userName) => {
     try {
@@ -196,107 +190,31 @@ const QuantityFlow = () => {
     fetchPrimaryStation(userName);
   }, [storedUserId, currentUserName]);
 
-  useEffect(() => {
-    const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+useEffect(() => {
+  const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+  setCurrentUserName(userName);    // ensure state matches
+  fetchData(userName);             // always load on change
 
-    resetColors();
+  // join with { userId }
+  socket.emit("joinRoom", { userId: userName });
 
-    // Fetch last 10-minute data first
-    dispatch(fetchLast10MinDataByUserName(userName))
-      .unwrap()
-      .then((last10MinData) => {
-        const last10MinEffluentFlowData = last10MinData
-          .flatMap((record) =>
-            record.records.flatMap((stack) =>
-              stack.stackData
-                .filter((item) => item.stationType === "effluent_flow")
-                .map((item) => ({
-                  ...item,
-                  timestamp: record.timestamp,
-                }))
-            )
-          )
-          .reduce((acc, item) => {
-            if (item.cumulatingFlow > 0) { // Only store non-zero values
-              acc[item.stackName] = item;
-            }
-            return acc;
-          }, {});
+  const handleUpdate = (msg) => {
+    if (msg.userName !== userName) return;
+    const eff = msg.stackData.filter(i => i.stationType === "effluent_flow");
+    const byName = eff.reduce((acc, i) => {
+      acc[i.stackName] = i;
+      return acc;
+    }, {});
+    setRealTimeData(rt => ({ ...rt, ...byName }));
+  };
+  socket.on("stackDataUpdate", handleUpdate);
 
-/*         console.log("⏳ Loaded Last 10-Minute Effluent Flow Data:", last10MinEffluentFlowData);
- */
-        // Set last 10-minute data initially
-        setRealTimeData(last10MinEffluentFlowData || {});
-        setPreviousNonZeroData(last10MinEffluentFlowData || {}); // Initialize previous non-zero data
-      });
+  return () => {
+    socket.emit("leaveRoom", { userId: userName });
+    socket.off("stackDataUpdate", handleUpdate);
+  };
+}, [selectedUserIdFromRedux, storedUserId, currentUserName]);
 
-    // Fetch effluent flow stacks
-    fetchEffluentFlowStacks(userName);
-
-    // Join the socket room
-    socket.emit("joinRoom", { userId: userName });
-
-    const handleStackDataUpdate = async (data) => {
-      console.log(`📡 Real-time data received for ${userName}:`, data);
-    
-      if (data.userName === userName) {
-        setExceedanceColor(data.ExceedanceColor || "green");
-        setTimeIntervalColor(data.timeIntervalColor || "green");
-    
-        if (data?.stackData?.length > 0) {
-          const effluentFlowData = data.stackData.filter(
-            (item) => item.stationType === "effluent_flow"
-          );
-    
-          if (effluentFlowData.length > 0) {
-            // Process real-time data
-            const processedRealTimeData = effluentFlowData.reduce((acc, item) => {
-              if (item.stackName) {
-                // If value is 0, use previous non-zero value if available
-                const currentValue = parseFloat(item.cumulatingFlow);
-                const previousValue = previousNonZeroData[item.stackName]?.cumulatingFlow || 0;
-                
-                const displayItem = {
-                  ...item,
-                  timestamp: data.timestamp,
-                  cumulatingFlow: currentValue > 0 ? currentValue : previousValue
-                };
-                
-                acc[item.stackName] = displayItem;
-                
-                // Update previous non-zero data if current value is non-zero
-                if (currentValue > 0) {
-                  setPreviousNonZeroData(prev => ({
-                    ...prev,
-                    [item.stackName]: displayItem
-                  }));
-                }
-              }
-              return acc;
-            }, {});
-    
-            // ✅ Store the last valid timestamp
-            setLastValidTimestamp(data.timestamp);
-    
-            // Update real-time data
-            setRealTimeData((prevRealTimeData) => {
-              return { ...prevRealTimeData, ...processedRealTimeData };
-            });
-    
-            console.log("✅ Switched to Real-Time Effluent Flow Data:", processedRealTimeData);
-          }
-        }
-      }
-    };
-
-    socket.on("stackDataUpdate", handleStackDataUpdate);
-
-    return () => {
-      socket.emit("leaveRoom", { userId: userName });
-      socket.off("stackDataUpdate", handleStackDataUpdate);
-      clearTimeout(window.realTimeTimeout);
-    };
-  }, [selectedUserIdFromRedux, currentUserName, previousNonZeroData]);
   
   const handleCardClick = (stack, parameter) => {
     setSelectedCard({
