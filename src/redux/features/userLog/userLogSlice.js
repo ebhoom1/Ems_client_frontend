@@ -230,6 +230,7 @@ const userLogSlice = createSlice({
     filteredUsers: [],
     technicianUsers: [],
     territoryManagerUsers: [],
+    operatorUsers: [],    
     selectedUser: null,
     address: "", // Add address field here
 
@@ -250,6 +251,9 @@ const userLogSlice = createSlice({
     setTerritoryManagerUsers: (state, action) => {
       state.territoryManagerUsers = action.payload;
     },
+     setOperatorUsers: (state, action) => {   // ← add this
+     state.operatorUsers = action.payload;
+   },
     clearState: (state) => {
       state.loading = false;
       state.error = null;
@@ -265,6 +269,9 @@ const userLogSlice = createSlice({
         state.loading = false;
         state.users = action.payload;
         state.filteredUsers = action.payload;
+        state.technicianUsers      = action.payload.filter(u => u.isTechnician);
+        state.territoryManagerUsers = action.payload.filter(u => u.isTerritorialManager);
+        state.operatorUsers        = action.payload.filter(u => u.userType === "operator");
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false;
@@ -355,10 +362,14 @@ const userLogSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(addUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.users.push(action.payload);
-      })
+     .addCase(addUser.fulfilled, (state, action) => {
+   state.loading = false;
+   state.users.push(action.payload);
+  if (action.payload.userType === "operator") {
+   state.operatorUsers.push(action.payload);
+  }
+ })
+
       .addCase(addUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
@@ -383,12 +394,16 @@ const userLogSlice = createSlice({
       .addCase(deleteUser.pending, (state) => {
         state.loading = true;
       })
-      .addCase(deleteUser.fulfilled, (state, action) => {
-        state.loading = false;
-        state.users = state.users.filter(
-          (user) => user.userName !== action.payload
-        );
-      })
+     .addCase(deleteUser.fulfilled, (state, action) => {
+   state.loading = false;
+   state.users = state.users.filter(
+     (user) => user.userName !== action.payload
+   );
+  state.operatorUsers = state.operatorUsers.filter(
+    u => u.userName !== action.payload
+  );
+ })
+
       .addCase(deleteUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;

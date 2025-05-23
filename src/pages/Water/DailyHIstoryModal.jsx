@@ -82,9 +82,8 @@ const DailyHistoryModal = ({ isOpen, onRequestClose }) => {
       const stackNames = result.map((stack) => stack.name);
       setStackOptions(stackNames);
     } catch (error) {
-      console.error('Error fetching stack names:', error);
-      alert('Failed to fetch stack names for the selected user.');
-    }
+/*       console.error('Error fetching stack names:', error);
+ */    }
   };
 
   const handleViewClick = async () => {

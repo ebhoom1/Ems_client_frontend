@@ -8,6 +8,14 @@ import Hedaer from "../Header/Hedaer";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 import {
+  FaEye,
+  FaEdit,
+  FaTrash,
+  FaPlusCircle,
+  FaTrashAlt,
+} from "react-icons/fa";
+
+import {
   fetchUsers,
   addUser,
   deleteUser,
@@ -36,7 +44,8 @@ const UsersLog = () => {
     loading,
     error,
   } = useSelector((state) => state.userLog);
-
+  const [showAddTechDialog, setShowAddTechDialog] = useState(false);
+  const [showAddTerritoryDialog, setShowAddTerritoryDialog] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { userData } = useSelector((state) => state.user);
@@ -53,6 +62,14 @@ const UsersLog = () => {
   const [technicians, setTechnicians] = useState([]);
   const [showTerritoryModal, setShowTerritoryModal] = useState(false);
   const [territoryManagers, setTerritoryManagers] = useState([]);
+  const [showAddOperatorDialog, setShowAddOperatorDialog] = useState(false);
+  const operatorList = users.filter(u => u.userType === "operator");
+
+// after
+const [operatorData, setOperatorData] = useState({
+  userName: "", fname: "", email: "", password: "", adminType: "", companyName: ""
+});
+
 
   const [formData, setformData] = useState({
     userName: "",
@@ -127,7 +144,15 @@ const UsersLog = () => {
 
   // Fetch users filtered by adminType or show all if no adminType
   // Fetch users filtered by adminType or show all if adminType is Ebhoom
-
+const handleAssignOperatorsChange = (e) => {
+  const { value } = e.target;
+  setformData(prev => ({
+    ...prev,
+    operators: Array.isArray(prev.operators) 
+      ? [...prev.operators, value]
+      : [value]
+  }));
+};
   const fetchUsersData = async () => {
     try {
       const response = await dispatch(fetchUsers()).unwrap(); // Fetch all users
@@ -215,41 +240,48 @@ const UsersLog = () => {
     }));
   };
 
-  const validateFields = () => {
-    const {
-      userName,
-      companyName,
-      fname,
-      email,
-      mobileNumber,
-      password,
-      cpassword,
-    } = formData;
+const validateFields = () => {
+  const {
+    userName,
+    companyName,
+    password,
+    cpassword,
+    userType,
+    adminType,
+    email,
+  } = formData;
 
-    if (
-      !userName ||
-      !companyName ||
-      !fname ||
-      !email ||
-      !mobileNumber ||
-      !password ||
-      !cpassword
-    ) {
-      return false;
-    }
-    return true;
-  };
+  return (
+    !!userName &&
+    !!companyName &&
+    !!password &&
+    !!cpassword &&
+    !!userType &&
+    !!adminType &&
+    !!email
+  );
+};
+
   // inside component:
-  const handleAddOperator = () => {
-    setformData((prev) => ({
-      ...prev,
-      operators: [
-        ...prev.operators,
-        { name: "", email: "", password: "", userType: "operator" },
-      ],
-    }));
-  };
+  // const handleAddOperator = () => {
+  //   setformData((prev) => ({
+  //     ...prev,
+  //     operators: [
+  //       ...prev.operators,
+  //       { name: "", email: "", password: "", userType: "operator" },
+  //     ],
+  //   }));
+  // };
+const currentAdmin = userData?.validUserOne?.adminType?.toLowerCase();
+let userTypeOptions = [];
 
+if (currentAdmin === "ebhoom") {
+  userTypeOptions = ["super_admin", "admin", "user"];
+} else if (currentAdmin === "super_admin") {
+  userTypeOptions = ["admin", "user"];
+} else if (currentAdmin === "admin") {
+  userTypeOptions = ["user"];
+}
   const handleOperatorChange = (idx, e) => {
     const { name, value } = e.target;
     setformData((prev) => {
@@ -326,6 +358,7 @@ const UsersLog = () => {
     if (!confirmed) return;
     try {
       await axios.delete(`${API_URL}/api/deleteTechnician/${id}`);
+      await fetchUsersData();
       setTechnicians((prev) => prev.filter((tech) => tech._id !== id));
     } catch (err) {
       console.error("Error deleting technician", err);
@@ -714,7 +747,32 @@ const UsersLog = () => {
       });
     }
   };
+const handleAddOperator = async e => {
+  e.preventDefault();
+  const { userName, fname, email, password, adminType, companyName } = operatorData;
+  if ([userName, fname, email, password, adminType, companyName].some(v => !v))
+    return toast.error("Please fill all operator fields");
 
+  await dispatch(addUser({
+    userName,
+    companyName,
+    fname,
+    email,
+    password,
+    cpassword: password,
+    userType: "operator",  
+    adminType,
+    isOperator: true
+  })).unwrap();
+
+  toast.success("Operator added!");
+  setOperatorData({ userName:"", fname:"", email:"", password:"", adminType:"", companyName:"" });
+  dispatch(fetchUsers());
+  setShowAddOperatorDialog(false);
+};
+
+
+  
   return (
     <div className="container-fluid">
       <div className="row">
@@ -798,6 +856,7 @@ const UsersLog = () => {
                         <th className="userlog-head">User Name</th>
                         <th className="userlog-head">Industry Type</th>
                         <th className="userlog-head">Location</th>
+                        <th className="userlog-head">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -810,6 +869,34 @@ const UsersLog = () => {
                           <td className="userlog-head">{user.userName}</td>
                           <td className="userlog-head">{user.industryType}</td>
                           <td className="userlog-head">{user.district}</td>
+                          <td className="userlog-head text-center">
+                            <button
+                              className="btn btn-sm btn-outline-primary me-2"
+                              onClick={() =>
+                                navigate(`/view/${user._id}`, {
+                                  state: { userId: user.userId },
+                                })
+                              }
+                            >
+                              <FaEye />
+                            </button>
+                            <button
+                              className="btn btn-sm btn-outline-warning me-2"
+                              onClick={() =>
+                                navigate(`/edit/${user._id}`, {
+                                  state: { userId: user.userId },
+                                })
+                              }
+                            >
+                              <FaEdit />
+                            </button>
+                            <button
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => handleDeleteUser(user.userName)}
+                            >
+                              <FaTrash />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -820,8 +907,20 @@ const UsersLog = () => {
           </div>
 
           {/* Technician List */}
-          <div className="col-12 d-flex justify-content-between align-items-center m-3">
+          <div className="d-flex justify-content-between align-items-center m-3">
             <h1 className="text-center mt-3"> Technician List </h1>
+            <div>
+              Add Technician
+              <FaPlusCircle
+                onClick={() => setShowAddTechDialog(true)}
+                style={{
+                  cursor: "pointer",
+                  color: "#236A80",
+                  fontSize: "24px",
+                }}
+                title="Add Technician"
+              />
+            </div>
           </div>
           <div className="card mt-4">
             <div className="card-body">
@@ -845,6 +944,7 @@ const UsersLog = () => {
                         <th className="userlog-head">Full Name</th>
                         <th className="userlog-head">Email</th>
                         <th className="userlog-head">Admin</th>
+                        <th className="userlog-head">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -857,6 +957,13 @@ const UsersLog = () => {
                           <td className="userlog-head">{user.fname}</td>
                           <td className="userlog-head">{user.email}</td>
                           <td className="userlog-head">{user.adminType}</td>
+                          <td className="userlog-head">
+                            <FaTrashAlt
+                              onClick={() => handleDeleteTechnician(user._id)}
+                              style={{ cursor: "pointer", color: "red" }}
+                              title="Delete Technician"
+                            />
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -867,8 +974,20 @@ const UsersLog = () => {
           </div>
 
           {/* TerritoryManagers List */}
-          <div className="col-12 d-flex justify-content-between align-items-center m-3">
+          <div className="d-flex justify-content-between align-items-center m-3">
             <h1 className="text-center mt-3"> Territory Managers List </h1>
+            <div>
+              Add Territory Managers
+              <FaPlusCircle
+                onClick={() => setShowAddTerritoryDialog(true)}
+                style={{
+                  cursor: "pointer",
+                  color: "#236A80",
+                  fontSize: "24px",
+                }}
+                title="Add Manager"
+              />
+            </div>
           </div>
           <div className="card mt-4">
             <div className="card-body">
@@ -892,6 +1011,7 @@ const UsersLog = () => {
                         <th className="userlog-head">Full Name</th>
                         <th className="userlog-head">Email</th>
                         <th className="userlog-head">Admin</th>
+                        <th className="userlog-head">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -904,6 +1024,15 @@ const UsersLog = () => {
                           <td className="userlog-head">{user.fname}</td>
                           <td className="userlog-head">{user.email}</td>
                           <td className="userlog-head">{user.adminType}</td>
+                          <td className="userlog-head">
+                            <FaTrashAlt
+                              onClick={() =>
+                                handleDeleteTerritoryManager(user._id)
+                              }
+                              style={{ cursor: "pointer", color: "red" }}
+                              title="Delete Manager"
+                            />
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -912,7 +1041,72 @@ const UsersLog = () => {
               )}
             </div>
           </div>
+{/* Operator List */}
+<div className="d-flex justify-content-between align-items-center m-3">
+  <h1 className="text-center mt-3"> Operators List </h1>
+  <div>
+    Add Operator
+    <FaPlusCircle
+      onClick={() => setShowAddOperatorDialog(true)}
+      style={{
+        cursor: "pointer",
+        color: "#236A80",
+        fontSize: "24px",
+      }}
+      title="Add Operator"
+    />
+  </div>
+</div>
+<div className="card mt-4">
+  <div className="card-body">
+    {loading && (
+      <div className="">
+        <div>Loading ...</div>
+      </div>
+    )}
+    {error && (
+      <p>Error fetching users: {error.message || JSON.stringify(error)}</p>
+    )}
 
+    {!loading && !error && (
+      <div className="user-list-container">
+        <table className="userlog-table">
+          <thead>
+            <tr>
+              <th className="userlog-head">User Name</th>
+              <th className="userlog-head">Full Name</th>
+              <th className="userlog-head">Email</th>
+              <th className="userlog-head">Admin</th>
+              <th className="userlog-head">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users
+              .filter((user) => user.userType === "operator")
+              .map((user) => (
+                <tr
+                  key={user._id}
+                  onClick={() => handleUserClick(user.userName)}
+                >
+                  <td className="userlog-head">{user.userName}</td>
+                  <td className="userlog-head">{user.fname}</td>
+                  <td className="userlog-head">{user.email}</td>
+                  <td className="userlog-head">{user.adminType}</td>
+                  <td className="userlog-head">
+                    <FaTrashAlt
+                      onClick={() => handleDeleteUser(user._id)}
+                      style={{ cursor: "pointer", color: "red" }}
+                      title="Delete Operator"
+                    />
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+  </div>
           {/* Add User Form */}
           <div className="row" style={{ overflowX: "hidden" }}>
             <div className="col-12 col-md-12 grid-margin">
@@ -930,7 +1124,7 @@ const UsersLog = () => {
                             htmlFor="userId"
                             className="form-label text-light"
                           >
-                            User ID
+                            User ID *
                           </label>
                           <input
                             id="userId"
@@ -956,7 +1150,7 @@ const UsersLog = () => {
                             htmlFor="companyName"
                             className="form-label  text-light"
                           >
-                            Company Name{" "}
+                            Company Name{" "} *
                           </label>
                           <input
                             type="text"
@@ -981,7 +1175,7 @@ const UsersLog = () => {
                             htmlFor="firstName"
                             className="form-label  text-light"
                           >
-                            First Name{" "}
+                            First Name{" "}*
                           </label>
                           <input
                             id="firstName"
@@ -1005,7 +1199,7 @@ const UsersLog = () => {
                             htmlFor="email"
                             className="form-label  text-light"
                           >
-                            Email{" "}
+                            Email{" "}*
                           </label>
                           <input
                             id="email"
@@ -1159,7 +1353,7 @@ const UsersLog = () => {
                             className="form-label text-light"
                           >
                             {" "}
-                            Password{" "}
+                            Password{" "}*
                           </label>
                           <div style={{ position: "relative" }}>
                             <input
@@ -1200,7 +1394,7 @@ const UsersLog = () => {
                             className="form-label text-light"
                           >
                             {" "}
-                            Confirm Password{" "}
+                            Confirm Password{" "}*
                           </label>
                           <div style={{ position: "relative" }}>
                             <input
@@ -1295,31 +1489,26 @@ const UsersLog = () => {
                       </div>
                       {/* User Type */}
                       <div className="col-lg-6 col-md-6 mb-4">
-                        <div className="form-group">
-                          <label
-                            htmlFor="userType"
-                            className="form-label  text-light"
-                          >
-                            User Type
-                          </label>
-                          <select
-                            id="userType"
-                            className="form-control"
-                            value={formData.userType}
-                            onChange={handleInputChange}
-                            name="userType"
-                            style={{
-                              width: "100%",
-                              padding: "15px",
-                              borderRadius: "10px",
-                            }}
-                          >
-                            <option value="select">Select</option>
-                            <option value="admin">Admin</option>
-                            <option value="user">User</option>
-                            {/* Add options for companies */}
-                          </select>
-                        </div>
+                      <div className="form-group">
+  <label htmlFor="userType" className="form-label text-light">
+    User Type *
+  </label>
+  <select
+    id="userType"
+    name="userType"
+    className="form-control"
+    value={formData.userType}
+    onChange={handleInputChange}
+    style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
+  >
+    <option value="">Select</option>
+    {userTypeOptions.map((type) => (
+      <option key={type} value={type}>
+        {type.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+      </option>
+    ))}
+  </select>
+</div>
                       </div>
 
                       {/* User Type */}
@@ -1329,7 +1518,7 @@ const UsersLog = () => {
                             htmlFor="adminType"
                             className="form-label  text-light"
                           >
-                            Admin Type
+                            Admin Type *
                           </label>
                           <select
                             id="adminType"
@@ -1344,6 +1533,8 @@ const UsersLog = () => {
                             }}
                           >
                             <option value="select">Select</option>
+                                                  <option value="KSPCB">Test</option>
+      
                             <option value="KSPCB">KSPCB</option>
                             <option value="Genex">Genex</option>
                             <option value="Banka_bio">Banka Bio</option>
@@ -1353,6 +1544,73 @@ const UsersLog = () => {
                           </select>
                         </div>
                       </div>
+<div className="col-lg-6 col-md-6 mb-4">
+  <div className="form-group">
+    <label htmlFor="operators" className="form-label text-light">
+      Assign Operator(s)
+    </label>
+    <div className="input-group">
+      <select
+        id="operators"
+        name="operators"
+        className="form-control"
+        value=""
+        style={{
+                              width: "100%",
+                              padding: "15px",
+                              borderRadius: "10px",
+                            }}
+        onChange={(e) => {
+          if (e.target.value) {
+            handleAssignOperatorsChange({
+              target: {
+                name: "operators",
+                value: e.target.value
+              }
+            });
+          }
+        }}
+      >
+        <option value="">Select Operator</option>
+        {operatorList
+          .filter(op => !formData.operators?.includes(op._id))
+          .map(op => (
+            <option key={op._id} value={op._id}>
+              {op.fname} ({op.userName})
+            </option>
+          ))}
+      </select>
+      
+    </div>
+
+    {/* Display selected operators */}
+    <div className="mt-2">
+      {formData.operators?.map(operatorId => {
+        const operator = operatorList.find(op => op._id === operatorId);
+        return operator ? (
+          <span key={operatorId} className="badge bg-primary me-2 mb-2">
+            {operator.fname} ({operator.userName})
+            <button
+              type="button"
+              className="btn-close btn-close-white ms-2"
+              aria-label="Remove"
+              onClick={() => {
+                setformData(prev => ({
+                  ...prev,
+                  operators: prev.operators?.filter(id => id !== operatorId) || []
+                }));
+              }}
+              style={{
+                fontSize: "0.5rem",
+                padding: "0.25rem"
+              }}
+            ></button>
+          </span>
+        ) : null;
+      })}
+    </div>
+  </div>
+</div>
 
                       {/* Territorial Manager */}
                       <div className="col-lg-6 col-md-6 mb-4">
@@ -1385,7 +1643,7 @@ const UsersLog = () => {
                         </div>
                       </div>
 
-                      {formData.userType === "user" && (
+                   {/*    {formData.userType === "user" && (
                         <div className="mb-4">
                           <h5 className="text-light">Operators</h5>
                           {formData.operators.map((op, i) => (
@@ -1437,7 +1695,7 @@ const UsersLog = () => {
                             + Add Operator
                           </button>
                         </div>
-                      )}
+                      )} */}
                       {/* select industry */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
@@ -1646,11 +1904,10 @@ const UsersLog = () => {
           </div>
 
           {/* --- Add Technician Section --- */}
-          <div className="row mt-5">
+          {/* <div className="row mt-5">
             <div className="col-12">
               <div className="card">
                 <div className="card-body position-relative">
-                  {/* Top-right delete button */}
                   <div className="d-flex justify-content-end mb-2">
                     <button
                       type="button"
@@ -1727,9 +1984,9 @@ const UsersLog = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
           {/* --- Add Territorial Managers Section --- */}
-          <div className="row mt-5">
+          {/* <div className="row mt-5">
             <div className="col-12">
               <div className="card">
                 <div className="card-body position-relative">
@@ -1811,7 +2068,7 @@ const UsersLog = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* logo components */}
           <div className="row">
@@ -2019,7 +2276,7 @@ const UsersLog = () => {
           </div>
 
           {/* delete user */}
-          <div className="row" style={{ overflowX: "hidden" }}>
+          {/* <div className="row" style={{ overflowX: "hidden" }}>
             <div className="col-12 col-md-12 grid-margin">
               <div className="col-12 d-flex justify-content-between align-items-center m-3">
                 <h1 className="text-center mt-5">Delete Users</h1>
@@ -2028,7 +2285,6 @@ const UsersLog = () => {
                 <div className="card-body">
                   <form className="m-2 p-1">
                     <div className="row">
-                      {/* User ID Input */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
                           <label htmlFor="userId" className="form-label">
@@ -2044,7 +2300,7 @@ const UsersLog = () => {
                               borderRadius: "10px",
                             }}
                             value={userName}
-                            onChange={(e) => setUserName(e.target.value)} // Update the userId state on input change
+                            onChange={(e) => setUserName(e.target.value)} 
                           />
                         </div>
                       </div>
@@ -2061,9 +2317,9 @@ const UsersLog = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
-          <div className="row" style={{ overflowX: "hidden" }}>
+          {/* <div className="row" style={{ overflowX: "hidden" }}>
             <div className="col-12 col-md-12 grid-margin">
               <div className="col-12 d-flex justify-content-between align-items-center m-3">
                 <h1 className="text-center mt-5">Edit Users</h1>
@@ -2113,7 +2369,7 @@ const UsersLog = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           <ToastContainer />
         </div>
@@ -2222,6 +2478,205 @@ const UsersLog = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+      <Modal
+        show={showAddTechDialog}
+        onHide={() => setShowAddTechDialog(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Add Technician</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <form onSubmit={handleAddTechnician}>
+            <input
+              name="userName"
+              placeholder="Technician ID"
+              value={techData.userName}
+              onChange={handleTechChange}
+              className="form-control mb-2"
+            />
+            <input
+              name="fname"
+              placeholder="Name"
+              value={techData.fname}
+              onChange={handleTechChange}
+              className="form-control mb-2"
+            />
+            <input
+              name="email"
+              placeholder="Email"
+              type="email"
+              value={techData.email}
+              onChange={handleTechChange}
+              className="form-control mb-2"
+            />
+            <input
+              name="password"
+              placeholder="Password"
+              type="password"
+              value={techData.password}
+              onChange={handleTechChange}
+              className="form-control mb-2"
+            />
+            <select
+              name="adminType"
+              value={techData.adminType}
+              onChange={handleTechChange}
+              className="form-control mb-2"
+            >
+              <option value="">Select Admin Type</option>
+              <option value="Genex">Genex</option>
+              <option value="KSPCB">KSPCB</option>
+              <option value="IESS">IESS</option>
+            </select>
+            <Button type="submit" className="btn btn-primary w-100">
+              Add Technician
+            </Button>
+          </form>
+        </Modal.Body>
+      </Modal>
+      <Modal
+        show={showAddTerritoryDialog}
+        onHide={() => setShowAddTerritoryDialog(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Add Territorial Manager</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <form onSubmit={handleAddTerritorialManager}>
+            <input
+              name="userName"
+              placeholder="Manager ID"
+              value={territorialData.userName}
+              onChange={handleTerritoryChange}
+              className="form-control mb-2"
+            />
+            <input
+              name="fname"
+              placeholder="Name"
+              value={territorialData.fname}
+              onChange={handleTerritoryChange}
+              className="form-control mb-2"
+            />
+            <input
+              name="email"
+              placeholder="Email"
+              type="email"
+              value={territorialData.email}
+              onChange={handleTerritoryChange}
+              className="form-control mb-2"
+            />
+            <input
+              name="password"
+              placeholder="Password"
+              type="password"
+              value={territorialData.password}
+              onChange={handleTerritoryChange}
+              className="form-control mb-2"
+            />
+            <select
+              name="adminType"
+              value={territorialData.adminType}
+              onChange={handleTerritoryChange}
+              className="form-control mb-2"
+            >
+              <option value="">Select Admin Type</option>
+              <option value="Genex">Genex</option>
+              <option value="KSPCB">KSPCB</option>
+              <option value="IESS">IESS</option>
+            </select>
+            <Button type="submit" style={{backgroundColor:'#236a80', color:'#fff'}} className="btn w-100">
+              Add Manager
+            </Button>
+          </form>
+        </Modal.Body>
+      </Modal>
+      {/* Add Operator Modal */}
+<Modal
+  show={showAddOperatorDialog}
+  onHide={() => setShowAddOperatorDialog(false)}
+  centered
+>
+  <Modal.Header closeButton>
+    <Modal.Title>Add Operator</Modal.Title>
+  </Modal.Header>
+  <Modal.Body>
+   <form onSubmit={handleAddOperator}>
+  <input
+    name="userName"
+    placeholder="Operator ID"
+    value={operatorData.userName}
+    onChange={(e) =>
+      setOperatorData({ ...operatorData, userName: e.target.value })
+    }
+    className="form-control mb-2"
+  />
+  <input
+  name="companyName"
+  placeholder="Company Name"
+  value={operatorData.companyName}
+  onChange={e => setOperatorData({
+    ...operatorData,
+    companyName: e.target.value
+  })}
+  className="form-control mb-2"
+/>
+  <input
+    name="fname"
+    placeholder="Operator Name"
+    value={operatorData.fname}
+    onChange={(e) =>
+      setOperatorData({ ...operatorData, fname: e.target.value })
+    }
+    className="form-control mb-2"
+  />
+  <input
+    name="email"
+    placeholder="Operator Email"
+    type="email"
+    value={operatorData.email}
+    onChange={(e) =>
+      setOperatorData({ ...operatorData, email: e.target.value })
+    }
+    className="form-control mb-2"
+  />
+  <input
+    name="password"
+    placeholder="Operator Password"
+    type="password"
+    value={operatorData.password}
+    onChange={(e) =>
+      setOperatorData({ ...operatorData, password: e.target.value })
+    }
+    className="form-control mb-2"
+  />
+  <select
+    name="adminType"
+    value={operatorData.adminType}
+    onChange={(e) =>
+      setOperatorData({ ...operatorData, adminType: e.target.value })
+    }
+    className="form-control mb-2"
+  >
+    <option value="">Select Admin Type</option>
+    <option value="Genex">Genex</option>
+    <option value="KSPCB">KSPCB</option>
+    <option value="Banka Bio">Banka Bio</option>
+    <option value="IESS">IESS</option>
+  </select>
+  <Button
+    type="submit"
+    style={{ backgroundColor: "#236a80", color: "#fff" }}
+    className="btn w-100"
+  >
+    Add Operator
+  </Button>
+</form>
+
+  </Modal.Body>
+</Modal>
+
     </div>
   );
 };

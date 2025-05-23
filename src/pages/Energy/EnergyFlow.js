@@ -394,7 +394,7 @@ const fetchData = async (userName) => {
         </div>
         <div className="row">
           <div className=" text-center">
-            <b><h3>ENERGY DASHBOARD</h3></b>
+            <b><h5>ENERGY DASHBOARD</h5></b>
           </div>
         </div>
         {/* Carbon Emission Box */}
@@ -456,9 +456,9 @@ const fetchData = async (userName) => {
               {/* EnergyConsumptionCards can be placed here */}
             </div>
             <div className="col-12 justify-content-center align-items-center">
-              <h3 className="text-center">
+             {/*  <h3 className="text-center">
                 {storedUserId === "HH014" || currentUserName === "HH014" ? "Hilton Manyata" : companyName}
-              </h3>
+              </h3> */}
             </div>            
           </div>
         </div>

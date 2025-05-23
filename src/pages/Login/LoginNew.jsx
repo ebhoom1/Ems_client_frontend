@@ -324,6 +324,7 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
                 value={inpval.userType}
                 onChange={handleSelectChange} >
                 <option value="select">Select</option>
+                <option value="super_admin">Super Admin</option>
                 <option value="admin">Admin</option>
                 <option value="user">User</option>
                 <option value="operator">Operator</option> 

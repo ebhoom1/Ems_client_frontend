@@ -234,70 +234,79 @@ function LIveLayout() {
           </div>
         </div>
         
-        {userData?.validUserOne?.userType === "admin" && (
-          <div className="row my-2">
-            <div className="col-md-3">
-              <label>Select User:</label>
-              <select
-                className="form-select"
-                value={selectedUser}
-                onChange={handleUserChange}
-              >
-                {users.map((user) => (
-                  <option key={user.userName} value={user.userName}>
-                    {user.companyName}({user.userName})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        )}
+      
         
+
+        <div>
+
+        </div>
         <div>
           <div className="row" style={{ overflowX: "hidden" }}>
-            <div className="col-12 col-md-12 grid-margin">
-              <div className="col-12 d-flex align-items-center justify-content-center m-2">
-                <h1 className="text-center ">AutoNerve</h1>
-              </div>
+            
+          <div className="row align-items-center" style={{ overflowX: "hidden" }}>
+  {/* 1) Admin selector – col-3 */}
+  <div className="col-md-3">
+    {userData?.validUserOne?.userType === "admin" && (
+      <div>
+        <label>Select User:</label>
+        <select
+          className="form-select"
+          value={selectedUser}
+          onChange={handleUserChange}
+        >
+          {users.map((user) => (
+            <option key={user.userName} value={user.userName}>
+              {user.companyName} ({user.userName})
+            </option>
+          ))}
+        </select>
+      </div>
+    )}
+  </div>
+
+  {/* 2) Title – col-6 centered */}
+  <div className="col-md-6 text-center">
+    <h5><b>AutoNerve</b></h5>
+  </div>
+
+  {/* 3) Stations table – col-3 */}
+  <div className="col-md-3">
+    {stationsList && stationsList.length > 0 ? (
+      <div className="table-responsive">
+        <table className="table table-bordered mb-0">
+          <thead>
+            <tr style={{ backgroundColor: "#236a80", color: "#fff" }}>
+            
+              <th>Station Name</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stationsList.map((station) => (
+              <tr
+                key={station._id}
+                style={{ cursor: "pointer" }}
+                onClick={() =>
+                  handleStationClick({
+                    userName: station.userName,
+                    stationName: station.stationName,
+                  })
+                }
+              >
               
-              <div className="mb-3">
-                {stationsList && stationsList.length > 0 ? (
-                  <div className="box">
-                    <div className="table-responsive">
-                      <table className="table table-bordered">
-                        <thead>
-                          <tr>
-                            <th style={{backgroundColor:'#236a80', color:'#fff'}}>User Name</th>
-                            <th style={{backgroundColor:'#236a80', color:'#fff'}}>Station Name</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {stationsList.map((station) => (
-                            <tr
-                              key={station._id}
-                              style={{ cursor: "pointer" }}
-                              onClick={() =>
-                                handleStationClick({
-                                  userName: station.userName,
-                                  stationName: station.stationName,
-                                })
-                              }
-                            >
-                              <td>{station.userName}</td>
-                              <td>{station.stationName}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-danger">
-                    <h5>No live stations available. Please create one.</h5>
-                  </div>
-                )}
-              </div>
-              
+                <td>{station.stationName}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div className="text-center text-danger">
+        <h5>No live stations available. Please create one.</h5>
+      </div>
+    )}
+  </div>
+</div>
+
               <div className="cardn m-">
                 <div className="card-body">
                   {isEditMode ? (
@@ -410,7 +419,7 @@ function LIveLayout() {
                 </div>
               </div>
               
-            </div>
+       
           </div>
         </div>
       </div>

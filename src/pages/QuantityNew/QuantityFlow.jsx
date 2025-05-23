@@ -436,9 +436,9 @@ useEffect(() => {
             </div>
           </div>
         </div>
-        <div className="row">
+       {/*  <div className="row">
           <div className="text-center"><b><h2>WATER DASHBOARD</h2></b></div>
-        </div>
+        </div> */}
         
         <div className="row align-items-center mb-2" style={{marginTop:'-100px'}}>
           <div className="col-md-4">
@@ -446,7 +446,7 @@ useEffect(() => {
           <div className="">
             <div className="" style={{marginTop:'110px'}}>
             </div> 
-            <div className="col-12 justify-content-center align-items-center">
+           {/*  <div className="col-12 justify-content-center align-items-center">
               <h3 className="text-center">
   { (storedUserId === "HH014" || currentUserName === "HH014")
       ? "Hilton Manyata"
@@ -456,15 +456,15 @@ useEffect(() => {
   }
 </h3>
 
-            </div>            
+            </div>   */}          
           </div>
         </div>
 
         {/* Monthly balancing */}
         <div>
-          <div>
+         {/*  <div>
             <h5 className="text-center"><b>Water Balancing</b></h5>
-          </div>
+          </div> */}
           <div className="row mb-4 mt-4 gap-4 d-flex align-items-center justify-content-center">
             <div
               className="col-md-3 p-4 text-center shadow"

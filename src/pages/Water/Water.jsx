@@ -50,6 +50,7 @@ const Water = () => {
   const { userData,userType } = useSelector((state) => state.user);
   console.log("userdata:",userData);
   const loggedInUser = userData?.validUserOne;
+  const operator = useSelector((state) => state.auth.user);
 
   const selectedUserIdFromRedux = useSelector((state) => state.selectedUser.userId);
   const selectedUserState = useSelector((state) => state.selectedUser);
@@ -475,7 +476,7 @@ const handleDownloadPdf = () => {
         : "operator";
   
       const payload = {
-        username: loggedInUser?.userName,
+        username: operator?.name,
         checkOutTime: new Date().toISOString(),
         userRole
       };
@@ -617,9 +618,9 @@ const handleDownloadPdf = () => {
               <div className="row">
                 
                 <div className="col-lg-12 col-12 mt-2">
-                <h2 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
-         EFFLUENT DASHBOARD
-        </h2>
+                <h5 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
+        <b> EFFLUENT DASHBOARD</b>
+        </h5>
                          {/* operator checkout button */}
                          {isSpecialUser && (
   <div className="d-flex justify-content-end align-items-center px-3 gap-2" style={{ position: 'relative', ...( !allowClicks && { zIndex: 10000 } )  }}>
@@ -703,7 +704,6 @@ const handleDownloadPdf = () => {
                     <li>
   {effluentStacks.length > 0 ? (
     <div className="stack-dropdown">
-      <label htmlFor="stackSelect" className="label-select">Select Station:</label>
       <div className="styled-select-wrapper">
         <select
           id="stackSelect"
@@ -747,7 +747,7 @@ const handleDownloadPdf = () => {
         
                 
         <div className="col-12  justify-content-center align-items-center">
-        <h3 className="text-center">
+        {/* <h3 className="text-center">
   {storedUserId === "HH014" || currentUserName === "HH014"
     ? "Hilton Manyata"
     : ["KSPCB002", "KSPCB005", "KSPCB010", "KSPCB011"].includes(storedUserId) ||
@@ -758,36 +758,36 @@ const handleDownloadPdf = () => {
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ")
     : companyName}
-</h3>
+</h3> */}
 <div className=" justify-content-center">
-<h6 className="text-center text-secondary">
+{/* <h6 className="text-center text-secondary">
   <b>Address:</b> {address ? address.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "Not Available"}
 </h6>
-
-<h6 className="text-center text-secondary"><b>Location:</b> {district}</h6>
-
+ */}
+{/* <h6 className="text-center text-secondary"><b>Location:</b> {district}</h6>
+ */}
 </div>
 
 
                     <div className="color-indicators">
   <div className="d-flex justify-content-center mt-2">
     {/* Parameter Exceed Indicator */}
-    <div className="color-indicator">
+   {/*  <div className="color-indicator">
       <div
         className="color-circle"
         style={{ backgroundColor: exceedanceColor }}
       ></div>
       <span className="color-label me-2">Parameter Exceed</span>
-    </div>
+    </div> */}
 
     {/* Data Interval Indicator */}
-    <div className="color-indicator ml-4">
+ {/*    <div className="color-indicator ml-4">
       <div
         className="color-circle"
         style={{ backgroundColor: timeIntervalColor }}
       ></div>
       <span className="color-label">Data Interval</span>
-    </div>
+    </div> */}
   </div>
 </div>
 

@@ -259,23 +259,23 @@ export default function Geolocation() {
 
   console.log("operator:", operator);
 
-  // within 100m testing
-  // const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
-  //   const toRad = (x) => (x * Math.PI) / 180;
-  //   const R = 6371000; // Earth radius in meters
-  //   const dLat = toRad(lat2 - lat1);
-  //   const dLon = toRad(lon2 - lon1);
-  //   const a =
-  //     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-  //     Math.cos(toRad(lat1)) *
-  //       Math.cos(toRad(lat2)) *
-  //       Math.sin(dLon / 2) *
-  //       Math.sin(dLon / 2);
-  //   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  //   return R * c;
-  // };
+   //within 100m testing
+   const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
+     const toRad = (x) => (x * Math.PI) / 180;
+     const R = 6371000; // Earth radius in meters
+    const dLat = toRad(lat2 - lat1);
+     const dLon = toRad(lon2 - lon1);
+     const a =
+       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+         Math.cos(toRad(lat2)) *
+         Math.sin(dLon / 2) *
+         Math.sin(dLon / 2);
+     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+   };
 
-  const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
+ /*  const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
     const toRad = x => (x * Math.PI) / 180;
     const R = 6371000;
     const dLat = toRad(lat2 - lat1);
@@ -286,7 +286,7 @@ export default function Geolocation() {
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
-  };
+  }; */
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -295,28 +295,28 @@ export default function Geolocation() {
     }
 
     //within 100m testing
-    // const handleSuccess = (position) => {
-    //   // Mock coordinates near the site
-    //   const latitude = userLat + 0.0003; // ~30–40 meters away
-    //   const longitude = userLng + 0.0003;
+    const handleSuccess = (position) => {
+      // Mock coordinates near the site
+      const latitude = userLat + 0.0003; // ~30–40 meters away
+      const longitude = userLng + 0.0003;
 
-    //   setCoords({ lat: latitude, lng: longitude });
+       setCoords({ lat: latitude, lng: longitude });
 
-    //   const dist = getDistanceMeters(userLat, userLng, latitude, longitude);
-    //   console.log("Distance from site:", dist.toFixed(2), "meters");
+      const dist = getDistanceMeters(userLat, userLng, latitude, longitude);
+    console.log("Distance from site:", dist.toFixed(2), "meters");
 
-    //   const isInRadius = dist <= 100;
-    //   setWithinRadius(isInRadius);
-    // };
+      const isInRadius = dist <= 100;
+       setWithinRadius(isInRadius);
+    };
 
-    const handleSuccess = position => {
+  /*   const handleSuccess = position => {
       const { latitude, longitude } = position.coords;
       setCoords({ lat: latitude, lng: longitude });
       if (userLat && userLng) {
         const dist = getDistanceMeters(userLat, userLng, latitude, longitude);
         setWithinRadius(dist <= 100);
       }
-    };
+    }; */
 
     const handleError = (err) => {
       setError(err.message || "Unable to retrieve location");

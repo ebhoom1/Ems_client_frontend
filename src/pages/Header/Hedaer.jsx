@@ -58,10 +58,10 @@ function Header() {
     const fetchUsers = async () => {
       try {
         if (userData?.validUserOne) {
-          const { adminType, isTerritorialManager, _id } = userData.validUserOne;
+          const { adminType, isTerritorialManager, _id } =
+            userData.validUserOne;
 
           if (adminType) {
-
             let url = `${API_URL}/api/get-users-by-adminType/${adminType}`;
 
             // If territorial manager, add query params
@@ -89,7 +89,6 @@ function Header() {
   }, [userData]);
 
   console.log(users);
-  
 
   useEffect(() => {
     const validateUser = async () => {
@@ -216,7 +215,21 @@ function Header() {
                 </span>
               </span>
             </Navbar.Brand>
-            <div className="d-flex">
+            <div className="d-flex align-items-center">
+              {/* ✅ Show selected company name */}
+              {userData?.validUserOne?.userType !== "user" &&
+                sessionStorage.getItem("selectedUserId") && (
+                  <div
+                    className="me-4 mt-2 text-dark fw-semibold"
+                    style={{ fontSize: "20px" }}
+                  >
+                    {users.find(
+                      (u) =>
+                        u.userName === sessionStorage.getItem("selectedUserId")
+                    )?.companyName || ""}
+                  </div>
+                )}
+
               <Nav.Link
                 className="me-3 mt-2"
                 href="#home"

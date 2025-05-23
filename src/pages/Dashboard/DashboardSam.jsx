@@ -253,11 +253,11 @@ function DashboardSam() {
           {/* ✅ Show limited menu for technician or territorial manager */}
 {(userRole === 'technician' || userRole === 'territorialManager') ? (
   <>
-    <li className='list active text-center'>
+    {/* <li className='list active text-center'>
       <a href="/manage-user" style={{ textDecoration: 'none', color: '#ffffff' }}>
         <span className='title'>Manage Users</span>
       </a>
-    </li>
+    </li> */}
     <li className='list active text-center'>
       <a href="/view-notification" style={{ textDecoration: 'none', color: '#ffffff' }}>
         <span className='title'>Notification</span>

@@ -57,10 +57,10 @@ function Maindashboard() {
 
   // Define all possible navigation links
   const allLinks = [
-    { name: "Effluent", path: "/water", key: "effluent" },
+    { name: "Quality", path: "/water", key: "effluent" },
     { name: "Stack Emission", path: "/ambient", key: "emission" },
     { name: "Noise", path: "/noise", key: "noise" },
-    { name: "Effluent Flow", path: "/quantity", key: "effluent_flow" },
+    { name: "Water Quantity", path: "/quantity", key: "effluent_flow" },
     { name: "Energy", path: "/energy", key: "energy" },
     { name: "Waste", path: "/waste", key: "waste" },
     { name: "Fuel", path: "/fuel", key: "fuel" },
@@ -87,7 +87,7 @@ const visibleLinks = allLinks.filter((link) => {
         <div className="flex-grow-1 content bg-light">
           <Navbar
             expand="lg"
-            className="navbg p-3 shadow"
+            className="navbg  shadow"
             style={{ borderRadius: "10px" }}
           >
             <div className="d-flex justify-content-between gap-2 w-100">
