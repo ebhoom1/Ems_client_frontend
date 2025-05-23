@@ -194,19 +194,26 @@ const fetchData = async (userName) => {
     // Always fetch the latest data
     const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
 
-    // Save company info
-    setSearchResult(result);
-    setCompanyName(result.companyName || "Unknown Company");
+    // Save company info from the first item if exists
+    const effluentEntries = result.data?.filter(
+      (entry) => entry.stationType === "effluent"
+    ) || [];
 
-    // **Filter out only the effluent entries**
-    const effluentData = result.stackData
-      .filter(stack => stack.stationType === "effluent");
+    if (effluentEntries.length > 0) {
+      setSearchResult(effluentEntries); // Save only effluent entries
+      setCompanyName(effluentEntries[0].companyName || "Unknown Company");
 
-    // Update dropdown with effluent stack names
-    setEffluentStacks(effluentData.map(stack => stack.stackName));
+      // Collect all stack names from effluent entries
+      const allStacks = effluentEntries.flatMap(entry => entry.stackData || []);
+      const stackNames = allStacks.map(stack => stack.stackName);
 
-    // Show only effluent data until real-time kicks in
-    setRealTimeData(effluentData);
+      setEffluentStacks(stackNames);     // Set for dropdown
+      setRealTimeData(allStacks);        // Set for display
+    } else {
+      setSearchResult(null);
+      setCompanyName("Unknown Company");
+      setSearchError("No effluent data found for this user");
+    }
   } catch (err) {
     console.error("Error fetching data:", err.message);
     setSearchResult(null);
@@ -216,6 +223,7 @@ const fetchData = async (userName) => {
     setLoading(false);
   }
 };
+
 
   
  
@@ -317,66 +325,80 @@ useEffect(() => {
       fetchEffluentStacks(currentUserName); 
     }
   }, [searchTerm, currentUserName, dispatch]); */
+const fetchFallbackEffluentData = async (userName) => {
+  try {
+    const res = await axios.get(`${API_URL}/api/latest/${userName}`);
+    const allData = res.data?.data || [];
 
-   useEffect(() => {
-      const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-    
-      resetColors();
-    
-      // Fetch latest data first
-      fetchData(userName);
-      fetchEffluentStacks(userName);
-    
-      // Join the user's room
-      socket.emit("joinRoom", { userId: userName });
-    
-      const handleStackDataUpdate = async (data) => {
-        console.log(`Real-time data for ${userName}:`, data);
-    
-        if (data.userName === userName) {
-          setExceedanceColor(data.ExceedanceColor || "green"); // Set default color
-          setTimeIntervalColor(data.timeIntervalColor || "green");
-    
-          if (data?.stackData?.length > 0) {
-            const effluentData = data.stackData.filter((item) => item.stationType === "effluent");
-    
-            if (effluentData.length > 0) {
-              // If real-time energy data is available, use it
-              const processedData = effluentData.reduce((acc, item) => {
-                if (item.stackName) {
-                  acc[item.stackName] = item;
-                }
-                return acc;
-              }, {});
-    
-              setRealTimeData(processedData);
-              console.log("Processed Real-Time Energy Data:", processedData);
-            } else {
-              // No real-time energy data, fallback to the latest record from the last 10 minutes
-              console.log("No real-time energy data. Fetching the latest data from the last 10 minutes...");
-              const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
-    
-              // Get the latest record
-              const fallbackData = last10MinData
-                .flatMap((record) =>
-                  record.records.flatMap((stack) => stack.stackData.filter((item) => item.stationType === "effluent"))
-                )
-                .slice(-1); // Take only the latest record
-    
-              setRealTimeData(fallbackData || []);
-              console.log("Fallback Latest 10-Minute Energy Data:", fallbackData);
-            }
-          }
-        }
-      };
-    
-      socket.on("stackDataUpdate", handleStackDataUpdate);
-    
-      return () => {
-        socket.emit("leaveRoom", { userId: userName });
-        socket.off("stackDataUpdate", handleStackDataUpdate);
-      };
-    }, [selectedUserIdFromRedux, currentUserName]);
+    const effluentOnly = allData
+      .filter(entry => entry.stationType === 'effluent')
+      .flatMap(entry => entry.stackData || []);
+
+    const processed = effluentOnly.reduce((acc, item) => {
+      if (item.stackName) acc[item.stackName] = item;
+      return acc;
+    }, {});
+
+    return processed;
+  } catch (err) {
+    console.error("Error fetching fallback effluent data:", err.message);
+    return {};
+  }
+};
+
+const handleStackDataUpdate = async (data) => {
+  const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+  console.log(`Real-time data for ${userName}:`, data);
+
+  if (data.userName !== userName) return;
+
+  setExceedanceColor(data.ExceedanceColor || "green");
+  setTimeIntervalColor(data.timeIntervalColor || "green");
+
+  if (data?.stackData?.length > 0) {
+    const effluentData = data.stackData.filter(item => item.stationType === "effluent");
+    if (effluentData.length > 0) {
+      const processedData = effluentData.reduce((acc, item) => {
+        if (item.stackName) acc[item.stackName] = item;
+        return acc;
+      }, {});
+      setRealTimeData(processedData);
+      return;
+    }
+  }
+
+  // Fallback to latest API if no real-time data
+  console.log("No real-time effluent data. Using fallback...");
+  const fallback = await fetchFallbackEffluentData(userName);
+  setRealTimeData(fallback);
+};
+useEffect(() => {
+  const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+  resetColors();
+
+  fetchData(userName);
+  fetchEffluentStacks(userName);
+
+  socket.emit("joinRoom", { userId: userName });
+  socket.on("stackDataUpdate", handleStackDataUpdate);
+
+  // ⏳ Fallback to latest API after 5s if no real-time data
+  const fallbackTimeout = setTimeout(async () => {
+    if (Object.keys(realTimeData).length === 0) {
+      console.log("⏳ No real-time update received. Using fallback...");
+      const fallback = await fetchFallbackEffluentData(userName);
+      setRealTimeData(fallback);
+    }
+  }, 1000);
+
+  return () => {
+    socket.emit("leaveRoom", { userId: userName });
+    socket.off("stackDataUpdate", handleStackDataUpdate);
+    clearTimeout(fallbackTimeout); // Cleanup fallback timer
+  };
+}, [selectedUserIdFromRedux, currentUserName]);
+
+
     
   
 
@@ -857,18 +879,14 @@ const handleDownloadPdf = () => {
     <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
   )}
 </div>
-
 </div>
-        
-        
                 {showCalibrationPopup && (
                   <CalibrationPopup
                     userName={userData?.validUserOne?.userName}
                     onClose={handleCloseCalibrationPopup}
                   />
                 )}
-              
-        
+
                 <DailyHistoryModal 
           isOpen={showHistoryModal} 
           onRequestClose={() => setShowHistoryModal(false)} 
@@ -948,13 +966,7 @@ const handleDownloadPdf = () => {
     </button>
   </div>
 </Modal>
-
     </div>
-
-/*  */
-
-    
-
   );
 };
 

@@ -9,12 +9,14 @@ import MaintenanceTypeModal from "./MaintenanceTypeModal";
 import { useNavigate } from "react-router-dom";
 import ReportTypeModal from "./ReportTypeModal";
 import MonthSelectionModal from "./MonthSelectionModal"; // New component we'll create
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function EquipmentList() {
   const { userData } = useSelector((state) => state.user);
   const [list, setList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const { validUserOne: type } = userData || {};
+  const technician = userData?.validUserOne?.isTechnician
  const [users, setUsers] = useState([]);               // ← New
   const [selectedUserName, setSelectedUserName] = useState("all");  // ← New
   // modal state
@@ -136,16 +138,41 @@ const filtered = list.filter((e) => {
     setSelectedId(id);
     setShowReportModal(true);
   };
+const deleteEquipment = async (id) => {
+  const confirm = window.confirm("Are you sure you want to delete this equipment?");
+  if (!confirm) return;
+
+  try {
+    const res = await fetch(`${API_URL}/api/equipment/${id}`, {
+      method: "DELETE",
+    });
+
+    const result = await res.json();
+    if (res.ok) {
+      toast.success("Equipment deleted successfully");
+      setList((prev) => prev.filter((item) => item._id !== id));
+    } else {
+      toast.error(result.message || "Failed to delete equipment");
+    }
+  } catch (err) {
+    toast.error("Something went wrong while deleting");
+  }
+};
+
+const editEquipment = (id) => {
+  navigate(`/edit-equipment/${id}`);
+};
 
   return (
     <div className="p-3 border">
-      {showModal && type?.userType === "user" && (
-        <MaintenanceTypeModal
-          equipmentId={selectedId}
-          equipmentName={selectedEquipmentName}
-          onClose={() => setShowModal(false)}
-        />
-      )}
+    {showModal && (type?.userType === "user" || type?.isTechnician === true) && (
+  <MaintenanceTypeModal
+    equipmentId={selectedId}
+    equipmentName={selectedEquipmentName}
+    onClose={() => setShowModal(false)}
+  />
+)}
+
       
       {showReportModal && type?.userType === "admin" && (
         <ReportTypeModal
@@ -162,35 +189,40 @@ const filtered = list.filter((e) => {
       )}
 
       {/* Search bar */}
-      <div className="mb-3 d-flex align-items-between justify-content-between">
-       <select
-  className="form-control me-2"
-  style={{ maxWidth: 300 }}
-  value={selectedUserName}
-  onChange={(e) => setSelectedUserName(e.target.value)}
->
-  <option value="all">All Companies</option>
-  {users.map((u) => (
-    <option key={u._id} value={u.userName}>
-      {u.companyName}
-    </option>
-  ))}
-</select>
-        <div>
-          <button
-            className="btn btn-warning me-2"
-            onClick={() => openMergedReportModal('mechanical')}
-          >
-            <i className="fa-solid fa-download" /> Download Merged Mechanical report
-          </button>
-          <button
-            className="btn btn-warning"
-            onClick={() => openMergedReportModal('electrical')}
-          >
-            <i className="fa-solid fa-download" /> Download Merged Electrical report
-          </button>
-        </div>
-      </div>
+    <div className="mb-3 row align-items-center g-2">
+  {/* Dropdown Column */}
+  <div className="col-12 col-md-4">
+    <select
+      className="form-control"
+      value={selectedUserName}
+      onChange={(e) => setSelectedUserName(e.target.value)}
+    >
+      <option value="all">All Companies</option>
+      {users.map((u) => (
+        <option key={u._id} value={u.userName}>
+          {u.companyName}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  {/* Buttons Column */}
+  <div className="col-12 col-md-8 d-flex flex-wrap justify-content-md-end justify-content-start gap-2 mt-2 mt-md-0">
+    <button
+      className="btn btn-warning"
+      onClick={() => openMergedReportModal("mechanical")}
+    >
+      <i className="fa-solid fa-download" /> Merged Mechanical Report
+    </button>
+    <button
+      className="btn btn-warning"
+      onClick={() => openMergedReportModal("electrical")}
+    >
+      <i className="fa-solid fa-download" /> Merged Electrical Report
+    </button>
+  </div>
+</div>
+
 
       <div style={{ maxHeight: "60vh", overflow: "auto" }}>
         {filtered.length === 0 ? (
@@ -210,6 +242,8 @@ const filtered = list.filter((e) => {
                 <th style={{ background: "#236a80", color: "#fff" }}>QR</th>
                 <th style={{ background: "#236a80", color: "#fff" }}>Download QR</th>
                 <th style={{ background: "#236a80", color: "#fff" }}>Action</th>
+                            
+
               </tr>
             </thead>
             <tbody>
@@ -236,25 +270,63 @@ const filtered = list.filter((e) => {
                       Download
                     </button>
                   </td>
-                  <td>
-                    {type?.userType === "user" ? (
-                      <button
-                        className="btn btn-sm btn-success"
-                        onClick={() => openModal(e._id, e.equipmentName)}
-                      >
-                        Report
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          className="btn btn-sm btn-success me-1"
-                          onClick={() => openReportModal(e._id)}
-                        >
-                          View Report
-                        </button>
-                      </>
-                    )}
-                  </td>
+             <td className="d-flex gap-1">
+  {(type?.userType === "user" || technician === true) ? (
+    <>
+      {/* User or Technician → Show Add Report */}
+      <button
+        className="btn btn-sm btn-success me-1 mt-3"
+        onClick={() => openModal(e._id, e.equipmentName)}
+      >
+        Report
+      </button>
+      <button
+        className="btn btn-sm me-1"
+        style={{ color: "blue" }}
+        title="Edit Equipment"
+        onClick={() => editEquipment(e._id)}
+      >
+        <FaEdit />
+      </button>
+      <button
+        style={{ color: "red" }}
+        className="btn btn-sm"
+        title="Delete Equipment"
+        onClick={() => deleteEquipment(e._id)}
+      >
+        <FaTrash />
+      </button>
+    </>
+  ) : (
+    <>
+      {/* Admin → Show View Report */}
+      <button
+        className="btn btn-sm btn-success me-1 mt-3"
+        onClick={() => openReportModal(e._id)}
+      >
+        View Report
+      </button>
+      <button
+        className="btn btn-sm me-1"
+        style={{ color: "blue" }}
+        title="Edit Equipment"
+        onClick={() => editEquipment(e._id)}
+      >
+        <FaEdit />
+      </button>
+      <button
+        style={{ color: "red" }}
+        className="btn btn-sm"
+        title="Delete Equipment"
+        onClick={() => deleteEquipment(e._id)}
+      >
+        <FaTrash />
+      </button>
+    </>
+  )}
+</td>
+
+
                 </tr>
               ))}
             </tbody>
