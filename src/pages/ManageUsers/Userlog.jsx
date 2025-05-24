@@ -49,6 +49,7 @@ const UsersLog = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { userData } = useSelector((state) => state.user);
+  console.log('userdata', userData )
   const navigate = useNavigate();
   const [sortCategory, setSortCategory] = useState("");
   const [sortOptions, setSortOptions] = useState([]);
@@ -97,6 +98,7 @@ const [operatorData, setOperatorData] = useState({
     territorialManager: "",
     isTerritorialManager: false,
     isTechnician: false,
+    isOperator:false,
   });
 
   const [userName, setUserName] = useState("");
@@ -272,16 +274,17 @@ const validateFields = () => {
   //     ],
   //   }));
   // };
-const currentAdmin = userData?.validUserOne?.adminType?.toLowerCase();
+const currentUserType = userData?.validUserOne?.userType?.toLowerCase();
 let userTypeOptions = [];
 
-if (currentAdmin === "ebhoom") {
+if (currentUserType === "ebhoom") {
   userTypeOptions = ["super_admin", "admin", "user"];
-} else if (currentAdmin === "super_admin") {
+} else if (currentUserType === "super_admin") {
   userTypeOptions = ["admin", "user"];
-} else if (currentAdmin === "admin") {
+} else if (currentUserType === "admin") {
   userTypeOptions = ["user"];
 }
+
   const handleOperatorChange = (idx, e) => {
     const { name, value } = e.target;
     setformData((prev) => {
@@ -762,7 +765,7 @@ const handleAddOperator = async e => {
     cpassword: password,
     userType: "operator",  
     adminType,
-    isOperator: true
+    isOperator: true  // This is the key change
   })).unwrap();
 
   toast.success("Operator added!");
@@ -770,7 +773,6 @@ const handleAddOperator = async e => {
   dispatch(fetchUsers());
   setShowAddOperatorDialog(false);
 };
-
 
   
   return (

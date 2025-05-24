@@ -205,10 +205,10 @@ function Header() {
             <Navbar.Brand href="#home" className="brand-text">
               <span className="d-none d-lg-inline">User ID: </span>
               <span className="text-dark">
-                <b>{userData?.validUserOne?.userName || "Admin Developer"}</b>
+                <b style={{fontSize:'19px'}}>{userData?.validUserOne?.userName || "Admin Developer"}</b>
                 <span className="d-inline ms-2">
                   {onlineStatus === "Online" ? (
-                    <span className="online">Online</span>
+                    <span className="online"   style={{ fontSize: "10px" }}>Online</span>
                   ) : (
                     <span className="offline">Offline</span>
                   )}
@@ -221,12 +221,12 @@ function Header() {
                 sessionStorage.getItem("selectedUserId") && (
                   <div
                     className="me-4 mt-2 text-dark fw-semibold"
-                    style={{ fontSize: "20px" }}
+                    style={{ fontSize: "12px" }}
                   >
-                    {users.find(
+                   <b> {users.find(
                       (u) =>
                         u.userName === sessionStorage.getItem("selectedUserId")
-                    )?.companyName || ""}
+                    )?.companyName || ""}</b>
                   </div>
                 )}
 

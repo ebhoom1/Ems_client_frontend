@@ -491,12 +491,14 @@ const handleDownloadPdf = () => {
     try {
       setCheckoutLoading(true);
   
-      const userRole = loggedInUser?.isTechnician
-        ? "technician"
-        : loggedInUser?.isTerritorialManager
-        ? "territorialManager"
-        : "operator";
-  
+   const userRole = loggedInUser?.isTechnician
+  ? "technician"
+  : loggedInUser?.isTerritorialManager
+  ? "territorialManager"
+  : loggedInUser?.isOperator
+  ? "operator"
+  : "other"; // ✅ Default fallback
+
       const payload = {
         username: operator?.name,
         checkOutTime: new Date().toISOString(),
@@ -556,7 +558,8 @@ const handleDownloadPdf = () => {
 
   
   const isSpecialUser =
-  localStorage.getItem('userType') === 'operator' ||
+  userData?.validUserOne?.isOperator=== true||
+
   userData?.validUserOne?.isTechnician === true ||
   userData?.validUserOne?.isTerritorialManager === true;
 
@@ -938,7 +941,7 @@ const handleDownloadPdf = () => {
 >
 <h3 className="text-center">
   {
-    localStorage.getItem('userType') === 'operator'
+    userData?.validUserOne?.isOperator === true
       ? "Operator Checkout"
       : userData?.validUserOne?.isTechnician === true
       ? "Technician Checkout"

@@ -203,6 +203,8 @@ function DashboardSam() {
     ? 'technician'
     : validUser.isTerritorialManager
     ? 'territorialManager'
+    : validUser.isOperator
+    ? 'operator'
     : 'other';
 
   const [logoUrl, setLogoUrl] = useState(null);
@@ -270,7 +272,25 @@ function DashboardSam() {
     </li>
   </>
 ) : null}
-
+{(userRole === 'operator' ) ? (
+  <>
+    {/* <li className='list active text-center'>
+      <a href="/manage-user" style={{ textDecoration: 'none', color: '#ffffff' }}>
+        <span className='title'>Manage Users</span>
+      </a>
+    </li> */}
+    <li className='list active text-center'>
+      <a href="/view-notification" style={{ textDecoration: 'none', color: '#ffffff' }}>
+        <span className='title'>Notification</span>
+      </a>
+    </li>
+    <li className='list active text-center'>
+      <a href="/inventory" style={{ textDecoration: 'none', color: '#ffffff' }}>
+        <span className='title'>Inventory & Service</span>
+      </a>
+    </li>
+  </>
+) : null}
 {/* ✅ Show full menu for admin or user (non-technician/territorial) */}
 {userRole === 'other' && (
   <>
