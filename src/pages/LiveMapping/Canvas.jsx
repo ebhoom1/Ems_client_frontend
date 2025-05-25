@@ -248,6 +248,14 @@ const newNode = {
 };
 
   setNodes((nds) => nds.concat(newNode));
+  // ⬇️ Notify Sidebar to remove dragged PDF
+  if (parsed.isPDF) {
+    // Inform Sidebar to remove this node immediately
+    const dropEvent = new CustomEvent("pdf-dropped", { detail: parsed.id });
+    window.dispatchEvent(dropEvent);
+  }
+  
+
 }, [
   isEditMode,
   nodes.length,
@@ -529,8 +537,8 @@ const edgeTypes = {
        <div
   ref={reactFlowWrapper}
    className="reactflow-wrapper"
-  style={{ width: "100%", height: "600px" ,minWidth: '1000px', // Minimum width to ensure content doesn't get too squeezed
-        minHeight: '600px'}}>
+  style={{ width: "100%",minWidth: '1000px', // Minimum width to ensure content doesn't get too squeezed
+        height: '800px'}}>
          <ReactFlow
           style={{
           width: '100%',

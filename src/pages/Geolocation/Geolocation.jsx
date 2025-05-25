@@ -254,26 +254,30 @@ export default function Geolocation() {
   const operator = useSelector((state) => state.auth.user);
   console.log("operator:",operator);
   const validUser = userData?.validUserOne || {};
-  const userLat = validUser.latitude;
-  const userLng = validUser.longitude;
+  console.log("validUser:",validUser)
+  const [userLat, setUserLat] = useState(null);
+const [userLng, setUserLng] = useState(null);
+const [siteOptions, setSiteOptions] = useState([]);
+const [selectedSiteIndex, setSelectedSiteIndex] = useState(0);
 
-  console.log("operator:", operator);
+
+  console.log("User site coordinates:", userLat, userLng);
 
    //within 100m testing
-  /*  const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
-     const toRad = (x) => (x * Math.PI) / 180;
-     const R = 6371000; // Earth radius in meters
-    const dLat = toRad(lat2 - lat1);
-     const dLon = toRad(lon2 - lon1);
-     const a =
-       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) *
-         Math.cos(toRad(lat2)) *
-         Math.sin(dLon / 2) *
-         Math.sin(dLon / 2);
-     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-   }; */
+  //   const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
+  //    const toRad = (x) => (x * Math.PI) / 180;
+  //    const R = 6371000; // Earth radius in meters
+  //   const dLat = toRad(lat2 - lat1);
+  //    const dLon = toRad(lon2 - lon1);
+  //    const a =
+  //      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+  //     Math.cos(toRad(lat1)) *
+  //        Math.cos(toRad(lat2)) *
+  //        Math.sin(dLon / 2) *
+  //        Math.sin(dLon / 2);
+  //    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  //   return R * c;
+  //  }; 
 
  const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
     const toRad = x => (x * Math.PI) / 180;
@@ -288,52 +292,52 @@ export default function Geolocation() {
     return R * c;
   }; 
 
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setError("Geolocation not supported.");
-      return;
+
+ 
+
+
+useEffect(() => {
+  if (!siteOptions.length) return;
+
+  const handleSuccess = (position) => {
+    // ✅ PRODUCTION MODE — use real GPS coordinates
+    const latitude = position.coords.latitude;
+    const longitude = position.coords.longitude;
+
+    // ✅ MOCK MODE — simulate near-site for testing
+    // const latitude = siteOptions[0].latitude + 0.0003;
+    // const longitude = siteOptions[0].longitude + 0.0003;
+
+    setCoords({ lat: latitude, lng: longitude });
+
+    // ✅ Check against ALL assigned site locations
+    const matchedSite = siteOptions.find((site) => {
+      const dist = getDistanceMeters(site.latitude, site.longitude, latitude, longitude);
+      console.log(`📍 Distance to ${site.companyName || "site"}: ${dist.toFixed(2)} meters`);
+      return dist <= 100;
+    });
+
+    setWithinRadius(!!matchedSite);
+  };
+
+  const handleError = (err) => {
+    setError(err.message || "Unable to retrieve location");
+  };
+
+  watchId.current = navigator.geolocation.watchPosition(
+    handleSuccess,
+    handleError,
+    { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+  );
+
+  return () => {
+    if (watchId.current !== null) {
+      navigator.geolocation.clearWatch(watchId.current);
+      watchId.current = null;
     }
+  };
+}, [siteOptions]);
 
-    //within 100m testing
-   /*  const handleSuccess = (position) => {
-      // Mock coordinates near the site
-      const latitude = userLat + 0.0003; // ~30–40 meters away
-      const longitude = userLng + 0.0003;
-
-       setCoords({ lat: latitude, lng: longitude });
-
-      const dist = getDistanceMeters(userLat, userLng, latitude, longitude);
-    console.log("Distance from site:", dist.toFixed(2), "meters");
-
-      const isInRadius = dist <= 100;
-       setWithinRadius(isInRadius);
-    }; */
-
-     const handleSuccess = position => {
-      const { latitude, longitude } = position.coords;
-      setCoords({ lat: latitude, lng: longitude });
-      if (userLat && userLng) {
-        const dist = getDistanceMeters(userLat, userLng, latitude, longitude);
-        setWithinRadius(dist <= 150);
-      }
-    }; 
-
-    const handleError = (err) => {
-      setError(err.message || "Unable to retrieve location");
-    };
-
-    watchId.current = navigator.geolocation.watchPosition(
-      handleSuccess,
-      handleError,
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
-    );
-
-    return () => {
-      if (watchId.current) {
-        navigator.geolocation.clearWatch(watchId.current);
-      }
-    };
-  }, [userLat, userLng]);
 
   const handleMarkAttendance = async () => {
     console.log("checkin");
@@ -346,7 +350,7 @@ export default function Geolocation() {
         : "operator";
 
       const payload = {
-        username: operator.name,
+        username: operator.userName,
         companyName: validUser.companyName,
         adminType: validUser.adminType,
         checkInTime: new Date().toISOString(),
@@ -361,7 +365,6 @@ export default function Geolocation() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      console.log("attendance marked:", res.data);
       if (!res.ok) throw new Error("Failed to mark attendance");
 
       setModalOpen(false);
@@ -371,6 +374,41 @@ export default function Geolocation() {
     }
   };
 
+  
+
+  const role = validUser.isTechnician
+  ? "technician"
+  : validUser.isTerritorialManager
+  ? "territorialManager"
+  : "operator";
+
+
+  useEffect(() => {
+    const fetchAllSites = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/get-sites-for-user/${operator._id}/${role}`);
+        if (!res.ok) throw new Error("Unable to fetch site locations");
+
+const data = await res.json();
+if (!data.length) throw new Error("No site locations found");
+
+setSiteOptions(data);
+setSelectedSiteIndex(0);
+setUserLat(data[0].latitude);
+setUserLng(data[0].longitude);
+
+      } catch (err) {
+        console.error("Error fetching site locations:", err);
+        setError("Failed to load site locations.");
+      }
+    };
+  
+    if (operator?._id && role) {
+      fetchAllSites();
+    }
+  }, [operator?._id, role]);
+  
+  
   return (
     <div className="geo-container">
       <div className="geo-card">

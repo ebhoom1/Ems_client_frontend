@@ -1,72 +1,85 @@
-import React, { useEffect, useState , useRef } from "react";
-import {useNavigate,useLocation} from 'react-router-dom';//new useLocation
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect, useState, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom"; //new useLocation
+import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import { logoutUser } from "../../redux/features/user/userSlice";
 import { setSelectedUser } from "../../redux/features/selectedUsers/selectedUserSlice";
 
-import { fetchIotDataByUserName,} from "../../redux/features/iotData/iotDataSlice";
-import { fetchLast10MinDataByUserName, fetchUserLatestByUserName } from "../../redux/features/userLog/userLogSlice";
+import { fetchIotDataByUserName } from "../../redux/features/iotData/iotDataSlice";
+import {
+  fetchLast10MinDataByUserName,
+  fetchUserLatestByUserName,
+} from "../../redux/features/userLog/userLogSlice";
 import { fetchUserById } from "../../redux/features/userLog/userLogSlice"; // Import Redux action
-import WaterGraphPopup from './WaterGraphPopup';
-import CalibrationPopup from '../Calibration/CalibrationPopup';
-import CalibrationExceeded from '../Calibration/CalibrationExceeded';
-import { useOutletContext } from 'react-router-dom';
-import { Oval } from 'react-loader-spinner';
+import WaterGraphPopup from "./WaterGraphPopup";
+import CalibrationPopup from "../Calibration/CalibrationPopup";
+import CalibrationExceeded from "../Calibration/CalibrationExceeded";
+import { useOutletContext } from "react-router-dom";
+import { Oval } from "react-loader-spinner";
 import DailyHistoryModal from "./DailyHIstoryModal";
 import { API_URL } from "../../utils/apiConfig";
-import { io } from 'socket.io-client';
+import { io } from "socket.io-client";
 import Hedaer from "../Header/Hedaer";
-import Maindashboard from '../Maindashboard/Maindashboard';
-import DashboardSam from '../Dashboard/DashboardSam';
-import effluent from '../../assests/images/effluentimage.svg'
-import './water.css'
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import Maindashboard from "../Maindashboard/Maindashboard";
+import DashboardSam from "../Dashboard/DashboardSam";
+import effluent from "../../assests/images/effluentimage.svg";
+import "./water.css";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import DownloadaverageDataModal from "./DownloadaverageDataModal";
 import { fetchUserByUserName } from "../../redux/features/userLog/userLogSlice";
-import Modal from 'react-modal';
-Modal.setAppElement('#root');
-
+import Modal from "react-modal";
+Modal.setAppElement("#root");
 
 // Initialize Socket.IO
-const socket = io(API_URL, { 
-  transports: ['websocket'], 
+const socket = io(API_URL, {
+  transports: ["websocket"],
   reconnectionAttempts: 5,
   reconnectionDelay: 1000, // Retry every second
 });
 
-socket.on('connect', () => console.log('Connected to Socket.IO server'));
-socket.on('connect_error', (error) => console.error('Connection Error:', error));
+socket.on("connect", () => console.log("Connected to Socket.IO server"));
+socket.on("connect_error", (error) =>
+  console.error("Connection Error:", error)
+);
 const Water = () => {
   const location = useLocation(); //new get location state
 
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   // Use useOutletContext if available, otherwise set defaults
   const outletContext = useOutletContext() || {};
-  const { searchTerm = '', searchStatus = '', handleSearch = () => {}, isSearchTriggered = false } = outletContext;
+  const {
+    searchTerm = "",
+    searchStatus = "",
+    handleSearch = () => {},
+    isSearchTriggered = false,
+  } = outletContext;
   const { selectedUser } = useSelector((state) => state.userLog);
   const dispatch = useDispatch();
-  const { userData,userType } = useSelector((state) => state.user);
-  console.log("userdata:",userData);
+  const { userData, userType } = useSelector((state) => state.user);
+  console.log("userdata:", userData);
   const loggedInUser = userData?.validUserOne;
   const operator = useSelector((state) => state.auth.user);
 
-  const selectedUserIdFromRedux = useSelector((state) => state.selectedUser.userId);
+  const selectedUserIdFromRedux = useSelector(
+    (state) => state.selectedUser.userId
+  );
   const selectedUserState = useSelector((state) => state.selectedUser);
-console.log("Full selectedUser state:", selectedUserState);
-const [userId, setUserId] = useState(null);
+  console.log("Full selectedUser state:", selectedUserState);
+  const [userId, setUserId] = useState(null);
 
-  const storedUserId = sessionStorage.getItem('selectedUserId'); // Retrieve userId from session storage
+  const storedUserId = sessionStorage.getItem("selectedUserId"); // Retrieve userId from session storage
   const { latestData, error } = useSelector((state) => state.iotData);
   const [showPopup, setShowPopup] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const [showCalibrationPopup, setShowCalibrationPopup] = useState(false);
   const [searchResult, setSearchResult] = useState(null);
   const [searchError, setSearchError] = useState("");
-  const [currentUserName, setCurrentUserName] = useState(userType === 'admin' ? "KSPCB001" : userData?.validUserOne?.userName);
+  const [currentUserName, setCurrentUserName] = useState(
+    userType === "admin" ? "KSPCB001" : userData?.validUserOne?.userName
+  );
   const [companyName, setCompanyName] = useState("");
- 
+
   const [loading, setLoading] = useState(true); // general loading
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedStack, setSelectedStack] = useState("all");
@@ -76,172 +89,183 @@ const [userId, setUserId] = useState(null);
   const [exceedanceColor, setExceedanceColor] = useState("green"); // Default to 'gray'
   const [timeIntervalColor, setTimeIntervalColor] = useState("green"); // Default to 'gray'
   const [lastEffluentData, setLastEffluentData] = useState({}); // State to store last effluent data
-   // Extract user details
+  // Extract user details
   const [address, setAddress] = useState("No address available");
   const [district, setDistrict] = useState("Unknown District");
 
   //modal state
-  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);//new
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false); //new
 
   const [checkoutLoading, setCheckoutLoading] = useState(false); //new optional loader
 
   const [isCheckedIn, setIsCheckedIn] = useState(false); // new
-const [allowClicks, setAllowClicks] = useState(false); //new for overlay control
-//new
-useEffect(() => {
-  if (location?.state?.checkedIn) {
-    setIsCheckedIn(true); // ✅ Set to true when coming from Check-In success
-    setAllowClicks(true); // ✅ Allow page clicks
-    localStorage.setItem('isCheckedIn', 'true'); // ✅ Save Check-In status
+  const [allowClicks, setAllowClicks] = useState(false); //new for overlay control
+ 
 
-  }
-}, [location]);
-
-useEffect(() => {
-  const isAlreadyCheckedIn = localStorage.getItem('isCheckedIn') === 'true';
-  if (isAlreadyCheckedIn) {
-    setIsCheckedIn(true);
-    setAllowClicks(true);
-  }
-}, []);
-
-
-const handleCheckOut = () => {
-  if (!isCheckedIn) {
-    alert("❌ Please Check-In first before trying to Check-Out.");
-    return;
-  }
-  setCheckoutModalOpen(true);
-};
-
+  useEffect(() => {
+    const checkServerStatus = async () => {
+      const userRole = loggedInUser?.isTechnician
+        ? "technician"
+        : loggedInUser?.isTerritorialManager
+        ? "territorialManager"
+        : loggedInUser?.isOperator
+        ? "operator"
+        : "other";
+  
+      if (!userRole || !loggedInUser?.userName) return;
+  
+      try {
+        const res = await axios.get(`${API_URL}/api/attendance/status/${operator.name}/${userRole}`);
+        if (res.data?.isCheckedIn) {
+          setIsCheckedIn(true);
+          setAllowClicks(true);
+        }
+      } catch (err) {
+        console.error("Error checking server-side isCheckedIn:", err);
+      }
+    };
+  
+    checkServerStatus();
+  }, [loggedInUser]);
   
 
+  const handleCheckOut = () => {
+    if (!isCheckedIn) {
+      alert("❌ Please Check-In first before trying to Check-Out.");
+      return;
+    }
+    setCheckoutModalOpen(true);
+  };
 
- // Function to reset colors and trigger loading state
- const resetColors = () => {
-  setExceedanceColor("loading");
-  setTimeIntervalColor("loading");
-};
+  // Function to reset colors and trigger loading state
+  const resetColors = () => {
+    setExceedanceColor("loading");
+    setTimeIntervalColor("loading");
+  };
 
   /* download average data */
   const [isModalOpen, setIsModalOpen] = useState(false);
   const openModal = () => {
     setIsModalOpen(true);
   };
-  
+
   // Function to close the modal
   const closeModal = () => {
     setIsModalOpen(false);
   };
-  
+
   const graphRef = useRef();
   // Water parameters
   const waterParameters = [
-    { parameter: "pH", value: 'pH', name: 'ph' },
-    { parameter: "TDS", value: 'mg/l', name: 'TDS' },
-    { parameter: "Turbidity", value: 'NTU', name: 'TURB' },
-  { parameter: "Temperature", value: '℃', name: 'Temp' },
-  { parameter: "Temperature", value: '℃', name: 'TEMP' },
+    { parameter: "pH", value: "pH", name: "ph" },
+    { parameter: "TDS", value: "mg/l", name: "TDS" },
+    { parameter: "Turbidity", value: "NTU", name: "TURB" },
+    { parameter: "Temperature", value: "℃", name: "Temp" },
+    { parameter: "Temperature", value: "℃", name: "TEMP" },
 
- //ammonicalNitrogen
- { parameter: "Ammonical Nitrogen", value: 'mg/l', name: 'ammonicalNitrogen' },
- { parameter: "TOC", value: 'mg/L', name: "TOC" },
+    //ammonicalNitrogen
+    {
+      parameter: "Ammonical Nitrogen",
+      value: "mg/l",
+      name: "ammonicalNitrogen",
+    },
+    { parameter: "TOC", value: "mg/L", name: "TOC" },
 
-    { parameter: "BOD", value: 'mg/l', name: 'BOD' },
-    { parameter: "COD", value: 'mg/l', name: 'COD' },
-    { parameter: "TSS", value: 'mg/l', name: 'TSS' },
-    { parameter: "ORP", value: 'mV', name: 'ORP' },
-    { parameter: "Nitrate", value: 'mg/l', name: 'nitrate' },
-    { parameter: "DO", value: 'mg/l', name: 'DO' },
-    { parameter:"Total Flow", value:'m3/Day', name:'Totalizer_Flow'},
-    { parameter: "Chloride", value: 'mmol/l', name: 'chloride' },
-    { parameter: "Colour", value: 'color', name: 'color' },
+    { parameter: "BOD", value: "mg/l", name: "BOD" },
+    { parameter: "COD", value: "mg/l", name: "COD" },
+    { parameter: "TSS", value: "mg/l", name: "TSS" },
+    { parameter: "ORP", value: "mV", name: "ORP" },
+    { parameter: "Nitrate", value: "mg/l", name: "nitrate" },
+    { parameter: "DO", value: "mg/l", name: "DO" },
+    { parameter: "Total Flow", value: "m3/Day", name: "Totalizer_Flow" },
+    { parameter: "Chloride", value: "mmol/l", name: "chloride" },
+    { parameter: "Colour", value: "color", name: "color" },
     { parameter: "Fluoride", value: "mg/Nm3", name: "Fluoride" },
-    { parameter: "Flow", value: 'm3/hr', name: "Flow" },
-
+    { parameter: "Flow", value: "m3/hr", name: "Flow" },
   ];
- // Fetch stack names and filter effluent stationType stacks
- // Fetch stack names and filter effluent stationType stacks
- useEffect(() => {
-  console.log("Selected User ID:", userId); // Debugging line
+  // Fetch stack names and filter effluent stationType stacks
+  // Fetch stack names and filter effluent stationType stacks
+  useEffect(() => {
+    console.log("Selected User ID:", userId); // Debugging line
 
-  if (userId) {
-    dispatch(fetchUserById(userId));
-  }
-}, [userId, dispatch]);
+    if (userId) {
+      dispatch(fetchUserById(userId));
+    }
+  }, [userId, dispatch]);
 
-useEffect(() => {
-  console.log("Redux state - selectedUser:", selectedUserState);
-  console.log("Redux state - userId:", userId);
-}, [selectedUserState, userId]);
+  useEffect(() => {
+    console.log("Redux state - selectedUser:", selectedUserState);
+    console.log("Redux state - userId:", userId);
+  }, [selectedUserState, userId]);
 
- const fetchEffluentStacks = async (userName) => {
-  try {
-    const response = await fetch(`${API_URL}/api/get-stacknames-by-userName/${userName}`);
-    const data = await response.json(); // Make sure to parse the JSON
-    const effluentStacks = data.stackNames
-      .filter(stack => stack.stationType === 'effluent')
-      .map(stack => stack.name); // Use 'name' instead of 'stackName'
-    setEffluentStacks(effluentStacks); 
-  } catch (error) {
-    console.error("Error fetching effluent stacks:", error);
-  }
-};
+  const fetchEffluentStacks = async (userName) => {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/get-stacknames-by-userName/${userName}`
+      );
+      const data = await response.json(); // Make sure to parse the JSON
+      const effluentStacks = data.stackNames
+        .filter((stack) => stack.stationType === "effluent")
+        .map((stack) => stack.name); // Use 'name' instead of 'stackName'
+      setEffluentStacks(effluentStacks);
+    } catch (error) {
+      console.error("Error fetching effluent stacks:", error);
+    }
+  };
   // Fetching data by username
-const fetchData = async (userName) => {
-  setLoading(true);
-  try {
-    // Always fetch the latest data
-    const result = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
+  const fetchData = async (userName) => {
+    setLoading(true);
+    try {
+      // Always fetch the latest data
+      const result = await dispatch(
+        fetchUserLatestByUserName(userName)
+      ).unwrap();
 
-    // Save company info from the first item if exists
-    const effluentEntries = result.data?.filter(
-      (entry) => entry.stationType === "effluent"
-    ) || [];
+      // Save company info from the first item if exists
+      const effluentEntries =
+        result.data?.filter((entry) => entry.stationType === "effluent") || [];
 
-    if (effluentEntries.length > 0) {
-      setSearchResult(effluentEntries); // Save only effluent entries
-      setCompanyName(effluentEntries[0].companyName || "Unknown Company");
+      if (effluentEntries.length > 0) {
+        setSearchResult(effluentEntries); // Save only effluent entries
+        setCompanyName(effluentEntries[0].companyName || "Unknown Company");
 
-      // Collect all stack names from effluent entries
-      const allStacks = effluentEntries.flatMap(entry => entry.stackData || []);
-      const stackNames = allStacks.map(stack => stack.stackName);
+        // Collect all stack names from effluent entries
+        const allStacks = effluentEntries.flatMap(
+          (entry) => entry.stackData || []
+        );
+        const stackNames = allStacks.map((stack) => stack.stackName);
 
-      setEffluentStacks(stackNames);     // Set for dropdown
-      setRealTimeData(allStacks);        // Set for display
-    } else {
+        setEffluentStacks(stackNames); // Set for dropdown
+        setRealTimeData(allStacks); // Set for display
+      } else {
+        setSearchResult(null);
+        setCompanyName("Unknown Company");
+        setSearchError("No effluent data found for this user");
+      }
+    } catch (err) {
+      console.error("Error fetching data:", err.message);
       setSearchResult(null);
       setCompanyName("Unknown Company");
-      setSearchError("No effluent data found for this user");
+      setSearchError(err.message || "No result found for this userID");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Error fetching data:", err.message);
-    setSearchResult(null);
-    setCompanyName("Unknown Company");
-    setSearchError(err.message || "No result found for this userID");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-
-  
- 
-  
   const fetchHistoryData = async (fromDate, toDate) => {
     // Logic to fetch history data based on the date range
-    console.log('Fetching data from:', fromDate, 'to:', toDate);
+    console.log("Fetching data from:", fromDate, "to:", toDate);
     // Example API call:
     // const data = await dispatch(fetchHistoryDataByDate({ fromDate, toDate })).unwrap();
   };
   const downloadHistoryData = (fromDate, toDate) => {
     // Logic to download history data based on the date range
-    console.log('Downloading data from:', fromDate, 'to:', toDate);
+    console.log("Downloading data from:", fromDate, "to:", toDate);
     // Example API call:
     // downloadData({ fromDate, toDate });
   };
   useEffect(() => {
-    if (userData?.validUserOne?.userType === 'user') {
+    if (userData?.validUserOne?.userType === "user") {
       fetchData(userId); // Fetch data only for the current user if userType is 'user'
     } else if (userId) {
       dispatch(fetchIotDataByUserName(userId)); // For other userTypes, fetch data normally
@@ -253,9 +277,9 @@ const fetchData = async (userName) => {
     }
   }, [userId, dispatch]);
   useEffect(() => {
-    const storedUserId = sessionStorage.getItem('selectedUserId');
+    const storedUserId = sessionStorage.getItem("selectedUserId");
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-    
+
     console.log(`Username: ${userName}`);
 
     // Fetch user details by username
@@ -275,15 +299,15 @@ const fetchData = async (userName) => {
     fetchEffluentStacks(userName); // Fetch emission stacks
 
     if (storedUserId) {
-        setCurrentUserName(storedUserId);
+      setCurrentUserName(storedUserId);
     }
-}, [selectedUserIdFromRedux, currentUserName, dispatch]);
+  }, [selectedUserIdFromRedux, currentUserName, dispatch]);
 
-// ✅ New useEffect: Fetch address when userId is available
-useEffect(() => {
+  // ✅ New useEffect: Fetch address when userId is available
+  useEffect(() => {
     if (!userId) {
       console.log("No userId found. Skipping API call.");
-      return; 
+      return;
     }
 
     console.log("Fetching user details for userId:", userId); // Debugging
@@ -294,7 +318,7 @@ useEffect(() => {
         console.log("API Response:", response.data); // Debug API response
         if (response.data.status === 200) {
           const user = response.data.user;
-          setCompanyName(user.companyName || 'unknown conpmay')
+          setCompanyName(user.companyName || "unknown conpmay");
           setAddress(user.address || "No address available");
           setDistrict(user.district || "Unknown District");
         }
@@ -304,9 +328,7 @@ useEffect(() => {
     };
 
     fetchUserDetails();
-}, [userId]); // ✅ Now, it only runs when `userId` is available
-
-
+  }, [userId]); // ✅ Now, it only runs when `userId` is available
 
   /* useEffect(() => {
     const userName = storedUserId || currentUserName;
@@ -316,7 +338,7 @@ useEffect(() => {
     fetchEffluentStacks(userName);
   }, [searchTerm, currentUserName]);
  */
- /*  useEffect(() => {
+  /*  useEffect(() => {
     if (searchTerm) {
       fetchData(searchTerm);
       fetchEffluentStacks(searchTerm); 
@@ -325,91 +347,87 @@ useEffect(() => {
       fetchEffluentStacks(currentUserName); 
     }
   }, [searchTerm, currentUserName, dispatch]); */
-const fetchFallbackEffluentData = async (userName) => {
-  try {
-    const res = await axios.get(`${API_URL}/api/latest/${userName}`);
-    const allData = res.data?.data || [];
+  const fetchFallbackEffluentData = async (userName) => {
+    try {
+      const res = await axios.get(`${API_URL}/api/latest/${userName}`);
+      const allData = res.data?.data || [];
 
-    const effluentOnly = allData
-      .filter(entry => entry.stationType === 'effluent')
-      .flatMap(entry => entry.stackData || []);
+      const effluentOnly = allData
+        .filter((entry) => entry.stationType === "effluent")
+        .flatMap((entry) => entry.stackData || []);
 
-    const processed = effluentOnly.reduce((acc, item) => {
-      if (item.stackName) acc[item.stackName] = item;
-      return acc;
-    }, {});
-
-    return processed;
-  } catch (err) {
-    console.error("Error fetching fallback effluent data:", err.message);
-    return {};
-  }
-};
-
-const handleStackDataUpdate = async (data) => {
-  const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-  console.log(`Real-time data for ${userName}:`, data);
-
-  if (data.userName !== userName) return;
-
-  setExceedanceColor(data.ExceedanceColor || "green");
-  setTimeIntervalColor(data.timeIntervalColor || "green");
-
-  if (data?.stackData?.length > 0) {
-    const effluentData = data.stackData.filter(item => item.stationType === "effluent");
-    if (effluentData.length > 0) {
-      const processedData = effluentData.reduce((acc, item) => {
+      const processed = effluentOnly.reduce((acc, item) => {
         if (item.stackName) acc[item.stackName] = item;
         return acc;
       }, {});
-      setRealTimeData(processedData);
-      return;
+
+      return processed;
+    } catch (err) {
+      console.error("Error fetching fallback effluent data:", err.message);
+      return {};
     }
-  }
-
-  // Fallback to latest API if no real-time data
-  console.log("No real-time effluent data. Using fallback...");
-  const fallback = await fetchFallbackEffluentData(userName);
-  setRealTimeData(fallback);
-};
-useEffect(() => {
-  const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-  resetColors();
-
-  fetchData(userName);
-  fetchEffluentStacks(userName);
-
-  socket.emit("joinRoom", { userId: userName });
-  socket.on("stackDataUpdate", handleStackDataUpdate);
-
-  // ⏳ Fallback to latest API after 5s if no real-time data
-  const fallbackTimeout = setTimeout(async () => {
-    if (Object.keys(realTimeData).length === 0) {
-      console.log("⏳ No real-time update received. Using fallback...");
-      const fallback = await fetchFallbackEffluentData(userName);
-      setRealTimeData(fallback);
-    }
-  }, 1000);
-
-  return () => {
-    socket.emit("leaveRoom", { userId: userName });
-    socket.off("stackDataUpdate", handleStackDataUpdate);
-    clearTimeout(fallbackTimeout); // Cleanup fallback timer
   };
-}, [selectedUserIdFromRedux, currentUserName]);
 
+  const handleStackDataUpdate = async (data) => {
+    const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+    console.log(`Real-time data for ${userName}:`, data);
 
-    
-  
+    if (data.userName !== userName) return;
 
-  
+    setExceedanceColor(data.ExceedanceColor || "green");
+    setTimeIntervalColor(data.timeIntervalColor || "green");
+
+    if (data?.stackData?.length > 0) {
+      const effluentData = data.stackData.filter(
+        (item) => item.stationType === "effluent"
+      );
+      if (effluentData.length > 0) {
+        const processedData = effluentData.reduce((acc, item) => {
+          if (item.stackName) acc[item.stackName] = item;
+          return acc;
+        }, {});
+        setRealTimeData(processedData);
+        return;
+      }
+    }
+
+    // Fallback to latest API if no real-time data
+    console.log("No real-time effluent data. Using fallback...");
+    const fallback = await fetchFallbackEffluentData(userName);
+    setRealTimeData(fallback);
+  };
+  useEffect(() => {
+    const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+    resetColors();
+
+    fetchData(userName);
+    fetchEffluentStacks(userName);
+
+    socket.emit("joinRoom", { userId: userName });
+    socket.on("stackDataUpdate", handleStackDataUpdate);
+
+    // ⏳ Fallback to latest API after 5s if no real-time data
+    const fallbackTimeout = setTimeout(async () => {
+      if (Object.keys(realTimeData).length === 0) {
+        console.log("⏳ No real-time update received. Using fallback...");
+        const fallback = await fetchFallbackEffluentData(userName);
+        setRealTimeData(fallback);
+      }
+    }, 1000);
+
+    return () => {
+      socket.emit("leaveRoom", { userId: userName });
+      socket.off("stackDataUpdate", handleStackDataUpdate);
+      clearTimeout(fallbackTimeout); // Cleanup fallback timer
+    };
+  }, [selectedUserIdFromRedux, currentUserName]);
 
   // Handle card click for displaying graphs
   const handleCardClick = (card, stackName) => {
     const userName = storedUserId || currentUserName; // Ensure the correct username
     setSelectedCard({ ...card, stackName, userName });
   };
-  
+
   const handleClosePopup = () => {
     setShowPopup(false);
     setSelectedCard(null);
@@ -425,96 +443,89 @@ useEffect(() => {
 
   // Pagination to handle user navigation
   const handleNextUser = () => {
-    const userIdNumber = parseInt(currentUserName.replace(/[^\d]/g, ''), 10);
+    const userIdNumber = parseInt(currentUserName.replace(/[^\d]/g, ""), 10);
     if (!isNaN(userIdNumber)) {
-      const newUserId = `KSPCB${String(userIdNumber + 1).padStart(3, '0')}`;
+      const newUserId = `KSPCB${String(userIdNumber + 1).padStart(3, "0")}`;
       setCurrentUserName(newUserId);
     }
   };
 
   const handlePrevUser = () => {
-    const userIdNumber = parseInt(currentUserName.replace(/[^\d]/g, ''), 10);
+    const userIdNumber = parseInt(currentUserName.replace(/[^\d]/g, ""), 10);
     if (!isNaN(userIdNumber) && userIdNumber > 1) {
-      const newUserId = `KSPCB${String(userIdNumber - 1).padStart(3, '0')}`;
+      const newUserId = `KSPCB${String(userIdNumber - 1).padStart(3, "0")}`;
       setCurrentUserName(newUserId);
     }
   };
-/* graph as pdf  */
-const handleDownloadPdf = () => {
-  const input = graphRef.current;
+  /* graph as pdf  */
+  const handleDownloadPdf = () => {
+    const input = graphRef.current;
 
-  // Use html2canvas to capture the content of the graph container
-  html2canvas(input, {
-    backgroundColor: null, // Makes the background transparent
-    scale: 2, // Improves resolution (optional)
-  }).then((canvas) => {
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('landscape', 'mm', 'a4');
+    // Use html2canvas to capture the content of the graph container
+    html2canvas(input, {
+      backgroundColor: null, // Makes the background transparent
+      scale: 2, // Improves resolution (optional)
+    }).then((canvas) => {
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("landscape", "mm", "a4");
 
-    // Calculate dimensions based on the graph content
-    const imgWidth = 150; // Adjust scaling for better fit
-    const imgHeight = (canvas.height / canvas.width) * imgWidth; // Maintain aspect ratio
+      // Calculate dimensions based on the graph content
+      const imgWidth = 150; // Adjust scaling for better fit
+      const imgHeight = (canvas.height / canvas.width) * imgWidth; // Maintain aspect ratio
 
-    // Calculate positions to center the image
-    const xOffset = (pdf.internal.pageSize.getWidth() - imgWidth) / 2; // Center horizontally
-    const yOffset = (pdf.internal.pageSize.getHeight() - imgHeight) / 2; // Center vertically
+      // Calculate positions to center the image
+      const xOffset = (pdf.internal.pageSize.getWidth() - imgWidth) / 2; // Center horizontally
+      const yOffset = (pdf.internal.pageSize.getHeight() - imgHeight) / 2; // Center vertically
 
-    // Add the image to the PDF centered on the page
-    pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
-    pdf.save('graph.pdf');
-  });
-};
-
-
-
-
-
+      // Add the image to the PDF centered on the page
+      pdf.addImage(imgData, "PNG", xOffset, yOffset, imgWidth, imgHeight);
+      pdf.save("graph.pdf");
+    });
+  };
 
   /* stack */
   const handleStackChange = (event) => {
     setSelectedStack(event.target.value);
   };
 
-  const filteredData = selectedStack === "all"
-  ? Object.values(realTimeData).length > 0
-    ? Object.values(realTimeData)
-    : lastEffluentData.stackName
-    ? [lastEffluentData]
-    : []
-  : Object.values(realTimeData).filter((data) => data.stackName === selectedStack);
-
-  
-
-  
+  const filteredData =
+    selectedStack === "all"
+      ? Object.values(realTimeData).length > 0
+        ? Object.values(realTimeData)
+        : lastEffluentData.stackName
+        ? [lastEffluentData]
+        : []
+      : Object.values(realTimeData).filter(
+          (data) => data.stackName === selectedStack
+        );
 
   const confirmCheckOut = async () => {
     try {
       setCheckoutLoading(true);
-  
-   const userRole = loggedInUser?.isTechnician
-  ? "technician"
-  : loggedInUser?.isTerritorialManager
-  ? "territorialManager"
-  : loggedInUser?.isOperator
-  ? "operator"
-  : "other"; // ✅ Default fallback
+
+      const userRole = loggedInUser?.isTechnician
+        ? "technician"
+        : loggedInUser?.isTerritorialManager
+        ? "territorialManager"
+        : loggedInUser?.isOperator
+        ? "operator"
+        : "other"; // ✅ Default fallback
 
       const payload = {
         username: operator?.name,
         checkOutTime: new Date().toISOString(),
-        userRole
+        userRole,
       };
-  
+
       const res = await fetch(`${API_URL}/api/attendance/checkout`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
-  
+
       if (!res.ok) throw new Error("Failed to mark checkout");
-  console.log("checkout success")
+      console.log("checkout success");
       alert("✅ Checked out successfully.");
-      localStorage.removeItem('isCheckedIn');
       setIsCheckedIn(false);
       setAllowClicks(false);
     } catch (err) {
@@ -525,254 +536,271 @@ const handleDownloadPdf = () => {
       setCheckoutModalOpen(false);
     }
   };
-  
-  
 
   //browser
   useEffect(() => {
     const preventNavigation = (e) => {
-      const isCheckedIn = localStorage.getItem('isCheckedIn') === 'true';
+      const isCheckedIn = localStorage.getItem("isCheckedIn") === "true";
       if (!isCheckedIn) {
-        alert('❌ You cannot navigate before Check-In!');
+        alert("❌ You cannot navigate before Check-In!");
         window.history.pushState(null, null, window.location.href); // Force stay at current page
       }
     };
-  
+
     const handleBeforeUnload = (e) => {
-      const isCheckedIn = localStorage.getItem('isCheckedIn') === 'true';
+      const isCheckedIn = localStorage.getItem("isCheckedIn") === "true";
       if (!isCheckedIn) {
         e.preventDefault();
-        e.returnValue = '';
+        e.returnValue = "";
       }
     };
-  
+
     // When page loads, add pushState so history stack is controlled
     window.history.pushState(null, null, window.location.href);
-    window.addEventListener('popstate', preventNavigation); // For back/forward button
-  
+    window.addEventListener("popstate", preventNavigation); // For back/forward button
+
     return () => {
-      window.removeEventListener('popstate', preventNavigation);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("popstate", preventNavigation);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, []);
 
-  
   const isSpecialUser =
-  userData?.validUserOne?.isOperator=== true||
+    userData?.validUserOne?.isOperator === true ||
+    userData?.validUserOne?.isTechnician === true ||
+    userData?.validUserOne?.isTerritorialManager === true;
 
-  userData?.validUserOne?.isTechnician === true ||
-  userData?.validUserOne?.isTerritorialManager === true;
-
-  
   return (
-<div>
-  {/**overlay-block click-new */}
-{isSpecialUser && !allowClicks && (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'rgba(255, 255, 255, 0.3)'	, // semi-transparent white
-        zIndex: 9999,
-        pointerEvents: 'auto',
-        backdropFilter: 'blur(2px)', // slight blur effect (optional, looks professional)
-      }}
-    >
-    </div>
-  )}
-      {/* Show loader while loading */}
+    <div>
+      {/**overlay-block click-new */}
+      {isSpecialUser && !allowClicks && (
+  <div
+    style={{
+      position: "fixed",
+      top: "70px", // ⬅️ Offset to start below the header
+      left: 0,
+      width: "100%",
+      height: "calc(100% - 70px)", // ⬅️ Adjust height to not overlap header
+      backgroundColor: 'rgba(255, 255, 255, 0.3)',
+      zIndex: 999, // ⬅️ Lower than Header (1000)
+      pointerEvents: 'auto',
+      backdropFilter: 'blur(2px)',
+    }}
+  />
+)}
+    {/* Show loader while loading */}
       {loading ? (
-         <div className="loader-container">
-         <div className="dot-spinner">
-           <div className="dot-spinner__dot"></div>
-           <div className="dot-spinner__dot"></div>
-           <div className="dot-spinner__dot"></div>
-           <div className="dot-spinner__dot"></div>
-           <div className="dot-spinner__dot"></div>
-           <div className="dot-spinner__dot"></div>
-           <div className="dot-spinner__dot"></div>
-           <div className="dot-spinner__dot"></div>
-         </div>
-       </div>
+        <div className="loader-container">
+          <div className="dot-spinner">
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+          </div>
+        </div>
       ) : (
         <div>
-        <div className="container-fluid">
-            <div className="row" >
-            <div className="col-lg-3 d-none d-lg-block ">
-                            <DashboardSam />
-                        </div>
-           
+          <div className="container-fluid">
+            <div className="row">
+              <div className="col-lg-3 d-none d-lg-block ">
+                <DashboardSam />
+              </div>
+
               <div className="col-lg-9 col-12 ">
                 <div className="row1 ">
-                  <div className="col-12  " >
-                  <div className="headermain">
-            <Hedaer />
-          </div>
-                  </div>
-                </div>
-        
-            
-              </div>
-              
-        
-            </div>
-          </div>
-        
-          <div className="container-fluid">
-              <div className="row">
-             
-                <div className="col-lg-3 d-none d-lg-block">
-               
-                </div>
-             
-                <div className="col-lg-9 col-12">
-                  <div className="row">
-                    <div className="col-12">
-                      
+                  <div className="col-12  ">
+                    <div className="headermain" style={{ zIndex: "10001" }}>
+                      <Hedaer />
                     </div>
                   </div>
-                  <div className="maindashboard" >
-                  <Maindashboard/>
-                  </div>
-                
-                
-         <div className="container-fluid water">
-              <div className="row">
-                
-                <div className="col-lg-12 col-12 mt-2">
-                <h5 className={`text-center ${userData?.validUserOne?.userType === 'user' ? 'mt-5' : 'mt-3'}`}>
-        <b> EFFLUENT DASHBOARD</b>
-        </h5>
-                         {/* operator checkout button */}
-                         {isSpecialUser && (
-  <div className="d-flex justify-content-end align-items-center px-3 gap-2" style={{ position: 'relative', ...( !allowClicks && { zIndex: 10000 } )  }}>
-   <button
-  onClick={() => {
-    if (!isCheckedIn) {  // ✅ Only allow if NOT checked in
-      navigate('/geolocation');
-    } else {
-      alert("✅ You are already Checked-In. Please Check-Out first."); // optional alert
-    }
-  }}
-  className="btn btn-success mb-3"
-  disabled={isCheckedIn} // ✅ Disable button if already checked-in
-  style={{
-    backgroundColor: isCheckedIn ? '#6c757d' : '#28a745',  // ✅ Gray out the button if disabled
-    color: 'white',
-    cursor: isCheckedIn ? 'not-allowed' : 'pointer', // ✅ Update cursor
-    opacity: isCheckedIn ? 0.7 : 1, // ✅ Slightly transparent when disabled
-  }}
->
-  ✅ Check-In
-</button>
+                </div>
+              </div>
+            </div>
+          </div>
 
+          <div className="container-fluid">
+            <div className="row">
+              <div className="col-lg-3 d-none d-lg-block"></div>
 
-    <button
-      onClick={handleCheckOut}
-      className="btn btn-danger mb-3"
-      style={{ backgroundColor: '#dc3545', color: 'white' }}
-    >
-      🔁 Check-Out
-    </button>
-  </div>
-)}
+              <div className="col-lg-9 col-12">
+                <div className="row">
+                  <div className="col-12"></div>
+                </div>
+                <div className="maindashboard">
+                  <Maindashboard />
+                </div>
 
+                <div className="container-fluid water">
+                  <div className="row">
+                    <div className="col-lg-12 col-12 mt-2">
+                      <h5
+                        className={`text-center ${
+                          userData?.validUserOne?.userType === "user"
+                            ? "mt-5"
+                            : "mt-3"
+                        }`}
+                      >
+                        <b> EFFLUENT DASHBOARD</b>
+                      </h5>
+                      {/* operator checkout button */}
+                      {isSpecialUser && (
+                        <div
+                          className="d-flex justify-content-end align-items-center px-3 gap-2"
+                          style={{
+                            position: "relative",
+                            ...(!allowClicks && { zIndex: 10000 }),
+                          }}
+                        >
+                          <button
+                            onClick={() => {
+                              if (!isCheckedIn) {
+                                // ✅ Only allow if NOT checked in
+                                navigate("/geolocation");
+                              } else {
+                                alert(
+                                  "✅ You are already Checked-In. Please Check-Out first."
+                                ); // optional alert
+                              }
+                            }}
+                            className="btn btn-success mb-3"
+                            disabled={isCheckedIn} // ✅ Disable button if already checked-in
+                            style={{
+                              backgroundColor: isCheckedIn
+                                ? "#6c757d"
+                                : "#28a745", // ✅ Gray out the button if disabled
+                              color: "white",
+                              cursor: isCheckedIn ? "not-allowed" : "pointer", // ✅ Update cursor
+                              opacity: isCheckedIn ? 0.7 : 1, // ✅ Slightly transparent when disabled
+                            }}
+                          >
+                            ✅ Check-In
+                          </button>
 
+                          <button
+                            onClick={handleCheckOut}
+                            className="btn btn-danger mb-3"
+                            style={{
+                              backgroundColor: "#dc3545",
+                              color: "white",
+                            }}
+                          >
+                            🔁 Check-Out
+                          </button>
+                        </div>
+                      )}
 
+                      {/* Check if no data is available */}
+                      {/* Check if no data is available for stationType == 'effluent' */}
+                      {/* Check if effluentStacks are empty */}
+                      {effluentStacks.length === 0 && (
+                        <div className="text-center mt-3">
+                          <h5 className="text-danger">
+                            <b>
+                              No data available for Effluent/Sewage . Please
+                              Check Stack Emission Dashboard .
+                            </b>
+                          </h5>
+                        </div>
+                      )}
 
-                  {/* Check if no data is available */}
-                 {/* Check if no data is available for stationType == 'effluent' */}
-                {/* Check if effluentStacks are empty */}
-      {effluentStacks.length === 0 && (
-        <div className="text-center mt-3">
-          <h5 className='text-danger'><b>No data available for Effluent/Sewage . Please Check Stack Emission Dashboard .</b></h5>
-        </div>
-      )}
-
-
-
-                  
-               
-                <div className="d-flex justify-content-between">
-        
-                      {/* <ul className="quick-links ml-auto ">
+                      <div className="d-flex justify-content-between">
+                        {/* <ul className="quick-links ml-auto ">
                         <button className="btn  mb-2 mt-2 " style={{backgroundColor:'#236a80' , color:'white'}} onClick={() => setShowHistoryModal(true)}>
                           Daily History
                         </button>
                       </ul> */}
-                     
-        
-                      {/* stac */}
-        
-                     
-                     
-                </div>
-                <div className="d-flex justify-content-between">
-                {userData?.validUserOne && userData.validUserOne.userType === 'user' && (
+
+                        {/* stac */}
+                      </div>
+                      <div className="d-flex justify-content-between">
+                        {userData?.validUserOne &&
+                          userData.validUserOne.userType === "user" && (
+                            <ul className="quick-links ml-auto">
+                              <button
+                                type="submit"
+                                onClick={handleOpenCalibrationPopup}
+                                className="btn  mb-2 mt-2"
+                                style={{
+                                  backgroundColor: "#236a80",
+                                  color: "white",
+                                }}
+                              >
+                                {" "}
+                                Calibration{" "}
+                              </button>
+                            </ul>
+                          )}
                         <ul className="quick-links ml-auto">
-                          <button type="submit" onClick={handleOpenCalibrationPopup} className="btn  mb-2 mt-2" style={{backgroundColor:'#236a80' , color:'white'}}> Calibration </button>
+                          {userData?.validUserOne &&
+                            userData.validUserOne.userType === "user" && (
+                              <h5>
+                                Data Interval:{" "}
+                                <span className="span-class">
+                                  {userData.validUserOne.dataInteval}
+                                </span>
+                              </h5>
+                            )}
                         </ul>
+                      </div>
+                      <div>
+                        <div className="row align-items-center">
+                          <div className="col-md-4">
+                            <ul style={{ listStyleType: "none" }}>
+                              <li>
+                                {effluentStacks.length > 0 ? (
+                                  <div className="stack-dropdown">
+                                    <div className="styled-select-wrapper">
+                                      <select
+                                        id="stackSelect"
+                                        className="form-select styled-select"
+                                        value={selectedStack}
+                                        onChange={handleStackChange}
+                                      >
+                                        <option value="all">All Stacks</option>
+                                        {effluentStacks.map(
+                                          (stackName, index) => (
+                                            <option
+                                              key={index}
+                                              value={stackName || "Unknown"}
+                                            >
+                                              {stackName || "Unknown Station"}
+                                            </option>
+                                          )
+                                        )}
+                                      </select>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <h5 className="text-center">
+                                    No stations available
+                                  </h5>
+                                )}
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      {loading && (
+                        <div className="spinner-container">
+                          <Oval
+                            height={40}
+                            width={40}
+                            color="#236A80"
+                            ariaLabel="Fetching details"
+                            secondaryColor="#e0e0e0"
+                            strokeWidth={2}
+                            strokeWidthSecondary={2}
+                          />
+                        </div>
                       )}
-                             <ul className="quick-links ml-auto">
-                        {userData?.validUserOne && userData.validUserOne.userType === 'user' && (
-                          <h5>Data Interval: <span className="span-class">{userData.validUserOne.dataInteval}</span></h5>
-                        )}
-                      </ul>
-                </div>
-                <div>
-                  <div className="row align-items-center">
-                  <div className="col-md-4">
-                    <ul style={{ listStyleType: 'none' }}>
-                    <li>
-  {effluentStacks.length > 0 ? (
-    <div className="stack-dropdown">
-      <div className="styled-select-wrapper">
-        <select
-          id="stackSelect"
-          className="form-select styled-select"
-          value={selectedStack}
-          onChange={handleStackChange}
-        >
-          <option value="all">All Stacks</option>
-          {effluentStacks.map((stackName, index) => (
-            <option key={index} value={stackName || "Unknown"}>
-              {stackName || "Unknown Station"}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  ) : (
-    <h5 className="text-center">No stations available</h5>
-  )}
-</li>
-                    </ul>
-               
-                  </div>
-                  </div>
-                  </div>
-                 
-                 
-                  {loading && (
-                    <div className="spinner-container">
-                      <Oval
-                        height={40}
-                        width={40}
-                        color="#236A80"
-                        ariaLabel="Fetching details"
-                        secondaryColor="#e0e0e0"
-                        strokeWidth={2}
-                        strokeWidthSecondary={2}
-                      />
-                    </div>
-                  )}
-        
-                
-        <div className="col-12  justify-content-center align-items-center">
-        {/* <h3 className="text-center">
+
+                      <div className="col-12  justify-content-center align-items-center">
+                        {/* <h3 className="text-center">
   {storedUserId === "HH014" || currentUserName === "HH014"
     ? "Hilton Manyata"
     : ["KSPCB002", "KSPCB005", "KSPCB010", "KSPCB011"].includes(storedUserId) ||
@@ -784,20 +812,19 @@ const handleDownloadPdf = () => {
         .join(" ")
     : companyName}
 </h3> */}
-<div className=" justify-content-center">
-{/* <h6 className="text-center text-secondary">
+                        <div className=" justify-content-center">
+                          {/* <h6 className="text-center text-secondary">
   <b>Address:</b> {address ? address.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "Not Available"}
 </h6>
  */}
-{/* <h6 className="text-center text-secondary"><b>Location:</b> {district}</h6>
- */}
-</div>
+                          {/* <h6 className="text-center text-secondary"><b>Location:</b> {district}</h6>
+                           */}
+                        </div>
 
-
-                    <div className="color-indicators">
-  <div className="d-flex justify-content-center mt-2">
-    {/* Parameter Exceed Indicator */}
-   {/*  <div className="color-indicator">
+                        <div className="color-indicators">
+                          <div className="d-flex justify-content-center mt-2">
+                            {/* Parameter Exceed Indicator */}
+                            {/*  <div className="color-indicator">
       <div
         className="color-circle"
         style={{ backgroundColor: exceedanceColor }}
@@ -805,172 +832,200 @@ const handleDownloadPdf = () => {
       <span className="color-label me-2">Parameter Exceed</span>
     </div> */}
 
-    {/* Data Interval Indicator */}
- {/*    <div className="color-indicator ml-4">
+                            {/* Data Interval Indicator */}
+                            {/*    <div className="color-indicator ml-4">
       <div
         className="color-circle"
         style={{ backgroundColor: timeIntervalColor }}
       ></div>
       <span className="color-label">Data Interval</span>
     </div> */}
-  </div>
-</div>
-
-                  </div>
-                  <div className="row mb-5">
-                  <div
-  className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
-  style={{ height: "65vh", overflowY: "scroll", borderRadius: "15px" }}
->
-  {!loading && Object.values(realTimeData).length > 0 ? (
-    Object.values(realTimeData).map((stack, stackIndex) => (
-      <div key={stackIndex} className="col-12 mb-4">
-        <div className="stack-box">
-          <h4 className="text-center">
-            {stack.stackName} <img src={effluent} alt="energy image" width="100px" />
-          </h4>
-          <div className="row">
-            {waterParameters.map((item, index) => {
-              const value = stack[item.name];
-              return value && value !== "N/A" ? (
-                <div className="col-12 col-md-4 grid-margin" key={index}>
-                  <div
-                    className="card mb-3"
-                    style={{ border: "none", cursor: "pointer" }} // Added cursor pointer for better UX
-                    onClick={() => handleCardClick({ title: item.name }, stack.stackName)}
-                    // Trigger handleCardClick on click
-                  >
-                    <div className="card-body">
-                      <h5 className="text-light">{item.parameter}</h5>
-                      <p className="text-light">
-                        <strong
-                          className="text-light"
-                          style={{ color: "#236A80", fontSize: "24px" }}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="row mb-5">
+                        <div
+                          className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
+                          style={{
+                            height: "65vh",
+                            overflowY: "scroll",
+                            borderRadius: "15px",
+                          }}
                         >
-                         {parseFloat(value).toFixed(2)} {/* Changed to limit value to 2 decimal places */}
-                        </strong>{" "}
-                        {item.value}
-                      </p>
+                          {!loading &&
+                          Object.values(realTimeData).length > 0 ? (
+                            Object.values(realTimeData).map(
+                              (stack, stackIndex) => (
+                                <div key={stackIndex} className="col-12 mb-4">
+                                  <div className="stack-box">
+                                    <h4 className="text-center">
+                                      {stack.stackName}{" "}
+                                      <img
+                                        src={effluent}
+                                        alt="energy image"
+                                        width="100px"
+                                      />
+                                    </h4>
+                                    <div className="row">
+                                      {waterParameters.map((item, index) => {
+                                        const value = stack[item.name];
+                                        return value && value !== "N/A" ? (
+                                          <div
+                                            className="col-12 col-md-4 grid-margin"
+                                            key={index}
+                                          >
+                                            <div
+                                              className="card mb-3"
+                                              style={{
+                                                border: "none",
+                                                cursor: "pointer",
+                                              }} // Added cursor pointer for better UX
+                                              onClick={() =>
+                                                handleCardClick(
+                                                  { title: item.name },
+                                                  stack.stackName
+                                                )
+                                              }
+                                              // Trigger handleCardClick on click
+                                            >
+                                              <div className="card-body">
+                                                <h5 className="text-light">
+                                                  {item.parameter}
+                                                </h5>
+                                                <p className="text-light">
+                                                  <strong
+                                                    className="text-light"
+                                                    style={{
+                                                      color: "#236A80",
+                                                      fontSize: "24px",
+                                                    }}
+                                                  >
+                                                    {parseFloat(value).toFixed(
+                                                      2
+                                                    )}{" "}
+                                                    {/* Changed to limit value to 2 decimal places */}
+                                                  </strong>{" "}
+                                                  {item.value}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : null;
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            )
+                          ) : (
+                            <div className="col-12">
+                              <h5 className="text-center mt-5">
+                                Waiting for real-time data ...
+                              </h5>
+                            </div>
+                          )}
+                        </div>
+
+                        <div
+                          className="col-md-12 col-lg-12 col-sm-12 mb-2 graphdiv border bg-light shadow"
+                          style={{
+                            height: "70vh",
+                            borderRadius: "15px",
+                            position: "relative",
+                          }}
+                          ref={graphRef}
+                        >
+                          {selectedCard ? (
+                            <WaterGraphPopup
+                              parameter={selectedCard.title}
+                              userName={selectedCard.userName}
+                              stackName={selectedCard.stackName}
+                            />
+                          ) : (
+                            <h5 className="text-center mt-5">
+                              Select a parameter to view its graph
+                            </h5>
+                          )}
+                        </div>
+                      </div>
+                      {showCalibrationPopup && (
+                        <CalibrationPopup
+                          userName={userData?.validUserOne?.userName}
+                          onClose={handleCloseCalibrationPopup}
+                        />
+                      )}
+
+                      <DailyHistoryModal
+                        isOpen={showHistoryModal}
+                        onRequestClose={() => setShowHistoryModal(false)}
+                      />
                     </div>
                   </div>
+                  <div>
+                    <CalibrationExceeded />
+                  </div>
+
+                  <footer className="footer">
+                    <div className="container-fluid clearfix">
+                      <span className="text-muted d-block text-center text-sm-left d-sm-inline-block"></span>
+                      <span className="float-none float-sm-right d-block mt-1 mt-sm-0 text-center">
+                        {" "}
+                        Ebhoom Control and Monitor System <br />©{" "}
+                        <a href="" target="_blank">
+                          Ebhoom Solutions LLP
+                        </a>{" "}
+                        2023
+                      </span>
+                    </div>
+                  </footer>
                 </div>
-              ) : null;
-            })}
+              </div>
+            </div>
+            <DailyHistoryModal
+              isOpen={showHistoryModal}
+              onRequestClose={() => setShowHistoryModal(false)}
+              fetchData={fetchHistoryData}
+              downloadData={downloadHistoryData}
+            />
           </div>
         </div>
-      </div>
-    ))
-  ) : (
-    <div className="col-12">
-      <h5 className="text-center mt-5">Waiting for real-time data ...</h5>
-    </div>
-  )}
-</div>
-
-  <div
-  className="col-md-12 col-lg-12 col-sm-12 mb-2 graphdiv border bg-light shadow"
-  style={{ height: '70vh', borderRadius: '15px', position: 'relative' }}
-  ref={graphRef}
->
-  {selectedCard ? (
-    <WaterGraphPopup
-      parameter={selectedCard.title}
-      userName={selectedCard.userName}
-      stackName={selectedCard.stackName}
-    />
-  ) : (
-    <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-  )}
-</div>
-</div>
-                {showCalibrationPopup && (
-                  <CalibrationPopup
-                    userName={userData?.validUserOne?.userName}
-                    onClose={handleCloseCalibrationPopup}
-                  />
-                )}
-
-                <DailyHistoryModal 
-          isOpen={showHistoryModal} 
-          onRequestClose={() => setShowHistoryModal(false)} 
-        />
-        
-                </div>
-              </div>
-              <div>
-                <CalibrationExceeded/>
-              </div>
-        
-        
-              <footer className="footer">
-                <div className="container-fluid clearfix">
-                  <span className="text-muted d-block text-center text-sm-left d-sm-inline-block">
-                  
-                  </span>
-                  <span className="float-none float-sm-right d-block mt-1 mt-sm-0 text-center">
-                    {" "}  Ebhoom Control and Monitor System <br />
-                    ©{" "}
-                    <a href="" target="_blank">
-                      Ebhoom Solutions LLP
-                    </a>{" "}
-                    2023
-                  </span>
-                </div>
-              </footer>
-            </div>
-        
-                </div>
-              </div>
-              <DailyHistoryModal
-                isOpen={showHistoryModal}
-                onRequestClose={() => setShowHistoryModal(false)}
-                fetchData={fetchHistoryData}
-                downloadData={downloadHistoryData}
-              />
-        
-            </div>
-            
-        
-            </div>
       )}
       <Modal
-  isOpen={checkoutModalOpen}
-  onRequestClose={() => setCheckoutModalOpen(false)}
-  className="geo-modal"
-  overlayClassName="geo-modal-overlay"
->
-<h3 className="text-center">
-  {
-    userData?.validUserOne?.isOperator === true
-      ? "Operator Checkout"
-      : userData?.validUserOne?.isTechnician === true
-      ? "Technician Checkout"
-      : userData?.validUserOne?.isTerritorialManager === true
-      ? "Territorial Manager Checkout"
-      : "User Checkout"
-  }
-</h3>
+        isOpen={checkoutModalOpen}
+        onRequestClose={() => setCheckoutModalOpen(false)}
+        className="geo-modal"
+        overlayClassName="geo-modal-overlay"
+      >
+        <h3 className="text-center">
+          {userData?.validUserOne?.isOperator === true
+            ? "Operator Checkout"
+            : userData?.validUserOne?.isTechnician === true
+            ? "Technician Checkout"
+            : userData?.validUserOne?.isTerritorialManager === true
+            ? "Territorial Manager Checkout"
+            : "User Checkout"}
+        </h3>
 
-  <p className="text-center mt-3">Are you sure you want to check out?</p>
+        <p className="text-center mt-3">Are you sure you want to check out?</p>
 
-  <div className="d-flex justify-content-center gap-3 mt-4">
-    <button 
-      onClick={confirmCheckOut} 
-      className="btn btn-danger"
-      disabled={checkoutLoading}
-    >
-      {checkoutLoading ? "Processing..." : "✅ Yes, Check-Out"}
-    </button>
-    <button 
-      onClick={() => setCheckoutModalOpen(false)} 
-      className="btn btn-secondary"
-    >
-      ❌ Cancel
-    </button>
-  </div>
-</Modal>
+        <div className="d-flex justify-content-center gap-3 mt-4">
+          <button
+            onClick={confirmCheckOut}
+            className="btn btn-danger"
+            disabled={checkoutLoading}
+          >
+            {checkoutLoading ? "Processing..." : "✅ Yes, Check-Out"}
+          </button>
+          <button
+            onClick={() => setCheckoutModalOpen(false)}
+            className="btn btn-secondary"
+          >
+            ❌ Cancel
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 };
 
-export default Water; 
+export default Water;

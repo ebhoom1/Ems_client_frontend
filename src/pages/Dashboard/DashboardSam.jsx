@@ -1,4 +1,3 @@
-
 // import React, { useEffect, useState } from 'react';
 // import { useSelector } from 'react-redux'; // Import useSelector to access Redux store
 // import './dashboard.css';
@@ -41,12 +40,9 @@
 //         console.warn("AdminType is undefined or empty."); // Warn if adminType is not provided
 //       }
 //     };
-  
+
 //     fetchLogo();
 //   }, [adminType]);
-  
-  
-  
 
 //   // Default heading based on adminType
 //   const heading = adminType || 'EBHOOM'; // Fallback to 'EBHOOM' if adminType is not defined
@@ -82,7 +78,7 @@
 //           </li>
 //           {userType === 'admin' && (
 //             <>
-            
+
 //               <li className='list active text-center'>
 //                 <a href="/manage-user" style={{ textDecoration: 'none', color: '#ffffff' }}>
 //                   <span className='title'>Manage Users</span>
@@ -103,7 +99,7 @@
 //               <span className='title'>Inventory & Service</span>
 //             </a>
 //           </li>
-          
+
 //               <li className='list active text-center'>
 //                 <a href="/live-station" style={{ textDecoration: 'none', color: '#ffffff' }}>
 //                   <span className='title'>AutoNerve</span>
@@ -131,8 +127,7 @@
 //               <span className='title'>Account</span>
 //             </a>
 //           </li>
-          
-         
+
 //           {userType === 'user' && (
 //             <>
 //               <li className='list active text-center'>
@@ -185,14 +180,13 @@
 
 // export default DashboardSam;
 
-
-import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import './dashboard.css';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import "./dashboard.css";
+import axios from "axios";
 import { toast } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
-import { API_URL } from '../../utils/apiConfig';
+import "react-toastify/dist/ReactToastify.css";
+import { API_URL } from "../../utils/apiConfig";
 
 function DashboardSam() {
   const { userData, userType } = useSelector((state) => state.user);
@@ -200,12 +194,12 @@ function DashboardSam() {
   const adminType = validUser?.adminType;
 
   const userRole = validUser.isTechnician
-    ? 'technician'
+    ? "technician"
     : validUser.isTerritorialManager
-    ? 'territorialManager'
+    ? "territorialManager"
     : validUser.isOperator
-    ? 'operator'
-    : 'other';
+    ? "operator"
+    : "other";
 
   const [logoUrl, setLogoUrl] = useState(null);
 
@@ -215,7 +209,9 @@ function DashboardSam() {
         try {
           const response = await axios.get(`${API_URL}/api/logo/${adminType}`);
           if (response.data?.data?.length > 0) {
-            const sorted = response.data.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            const sorted = response.data.data.sort(
+              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
             setLogoUrl(sorted[0].logoUrl);
           }
         } catch (error) {
@@ -228,163 +224,229 @@ function DashboardSam() {
     fetchLogo();
   }, [adminType]);
 
-  const heading = adminType || 'EBHOOM';
+  const heading = adminType || "EBHOOM";
 
   return (
-    <div className='dashboard-sam'>
-      <div className='navdash'>
-        <ul className='menu'>
+    <div className="dashboard-sam">
+      <div className="navdash">
+        <ul className="menu">
           <div className="text-center">
             {logoUrl ? (
               <img
                 src={logoUrl}
                 alt={`${adminType} Logo`}
-                style={{ maxWidth: '120px', maxHeight: '120px', marginBottom: '10px' }}
+                style={{
+                  maxWidth: "120px",
+                  maxHeight: "120px",
+                  marginBottom: "10px",
+                }}
               />
             ) : (
               <span>Loading logo...</span>
             )}
           </div>
 
-          <li className='list active text-center'>
-            <a href="/water" style={{ textDecoration: 'none', color: '#ffffff' }}>
-              <span className='title'>Dashboard</span>
+          <li className="list active text-center">
+            <a
+              href="/water"
+              style={{ textDecoration: "none", color: "#ffffff" }}
+            >
+              <span className="title">Dashboard</span>
             </a>
           </li>
 
           {/* ✅ Show limited menu for technician or territorial manager */}
-{(userRole === 'technician' || userRole === 'territorialManager') ? (
-  <>
-    {/* <li className='list active text-center'>
+          {userRole === "technician" || userRole === "territorialManager" ? (
+            <>
+              {/* <li className='list active text-center'>
       <a href="/manage-user" style={{ textDecoration: 'none', color: '#ffffff' }}>
         <span className='title'>Manage Users</span>
       </a>
     </li> */}
-    <li className='list active text-center'>
-      <a href="/view-notification" style={{ textDecoration: 'none', color: '#ffffff' }}>
-        <span className='title'>Notification</span>
-      </a>
-    </li>
-    <li className='list active text-center'>
-      <a href="/inventory" style={{ textDecoration: 'none', color: '#ffffff' }}>
-        <span className='title'>Inventory & Service</span>
-      </a>
-    </li>
-  </>
-) : null}
-{(userRole === 'operator' ) ? (
-  <>
-    {/* <li className='list active text-center'>
+              <li className="list active text-center">
+                <a
+                  href="/view-notification"
+                  style={{ textDecoration: "none", color: "#ffffff" }}
+                >
+                  <span className="title">Notification</span>
+                </a>
+              </li>
+              <li className="list active text-center">
+                <a
+                  href="/inventory"
+                  style={{ textDecoration: "none", color: "#ffffff" }}
+                >
+                  <span className="title">Inventory & Service</span>
+                </a>
+              </li>
+            </>
+          ) : null}
+          {userRole === "operator" ? (
+            <>
+              {/* <li className='list active text-center'>
       <a href="/manage-user" style={{ textDecoration: 'none', color: '#ffffff' }}>
         <span className='title'>Manage Users</span>
       </a>
     </li> */}
-    <li className='list active text-center'>
-      <a href="/view-notification" style={{ textDecoration: 'none', color: '#ffffff' }}>
-        <span className='title'>Notification</span>
-      </a>
-    </li>
-    <li className='list active text-center'>
-      <a href="/inventory" style={{ textDecoration: 'none', color: '#ffffff' }}>
-        <span className='title'>Inventory & Service</span>
-      </a>
-    </li>
-  </>
-) : null}
-{/* ✅ Show full menu for admin or user (non-technician/territorial) */}
-{userRole === 'other' && (
-  <>
-    {userType === 'admin' && (
-      <>
-        <li className='list active text-center'>
-          <a href="/manage-user" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Manage Users</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/view-notification" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Notification</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/chat" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Chat</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/inventory" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Inventory & Service</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/live-station" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>AutoNerve</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/attendence" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Attendence</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/live-emmision" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Live Emission Video</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/subscribe" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Subscribe</span>
-          </a>
-        </li>
-      </>
-    )}
+              <li className="list active text-center">
+                <a
+                  href="/view-notification"
+                  style={{ textDecoration: "none", color: "#ffffff" }}
+                >
+                  <span className="title">Notification</span>
+                </a>
+              </li>
+              <li className="list active text-center">
+                <a
+                  href="/inventory"
+                  style={{ textDecoration: "none", color: "#ffffff" }}
+                >
+                  <span className="title">Inventory & Service</span>
+                </a>
+              </li>
+            </>
+          ) : null}
+          {/* ✅ Show full menu for admin or user (non-technician/territorial) */}
+          {userRole === "other" && (
+            <>
+              {(userType === "admin" || userType === "super_admin") && (
+                <>
+                  <li className="list active text-center">
+                    <a
+                      href="/manage-user"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Manage Users</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/view-notification"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Notification</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/chat"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Chat</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/inventory"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Inventory & Service</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/live-station"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">AutoNerve</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/attendence"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Attendence</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/live-emmision"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Live Emission Video</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/subscribe"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Subscribe</span>
+                    </a>
+                  </li>
+                </>
+              )}
 
-    {userType === 'user' && (
-      <>
-        <li className='list active text-center'>
-          <a href="/view-report" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Report</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/download" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Download</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/live-station" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>AutoNerve</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/chat" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Chat</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/inventory" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Inventory & Service</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/transactions" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Payment</span>
-          </a>
-        </li>
-        <li className='list active text-center'>
-          <a href="/live-emmision" style={{ textDecoration: 'none', color: '#ffffff' }}>
-            <span className='title'>Live Emission Video</span>
-          </a>
-        </li>
-      </>
-    )}
-  </>
-)}
+              {userType === "user" && (
+                <>
+                  <li className="list active text-center">
+                    <a
+                      href="/view-report"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Report</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/download"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Download</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/live-station"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">AutoNerve</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/chat"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Chat</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/inventory"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Inventory & Service</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/transactions"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Payment</span>
+                    </a>
+                  </li>
+                  <li className="list active text-center">
+                    <a
+                      href="/live-emmision"
+                      style={{ textDecoration: "none", color: "#ffffff" }}
+                    >
+                      <span className="title">Live Emission Video</span>
+                    </a>
+                  </li>
+                </>
+              )}
+            </>
+          )}
 
-
-          <li className='list active text-center'>
-            <a href="/account" style={{ textDecoration: 'none', color: '#ffffff' }}>
-              <span className='title'>Account</span>
+          <li className="list active text-center">
+            <a
+              href="/account"
+              style={{ textDecoration: "none", color: "#ffffff" }}
+            >
+              <span className="title">Account</span>
             </a>
           </li>
         </ul>

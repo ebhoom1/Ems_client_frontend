@@ -130,6 +130,7 @@ function App() {
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
     const userType = localStorage.getItem("userType");
+    console.log(userType);
 
     // Check if user is logged in and not already on the intended route
     if (isLoggedIn && userType && location.pathname === "/") {
@@ -312,8 +313,14 @@ function App() {
                     path="/maintenance/electrical/:equipmentId"
                     element={<ElectricalMaintenance />}
                   />
-                                  <Route path="/report/electrical/download/:year?/:month?" element={<MergedElectricalReport />} />
-                                  <Route path="/report/mechanical/download/:year?/:month?" element={<MergedMechanicalReport />} />
+                  <Route
+                    path="/report/electrical/download/:year?/:month?"
+                    element={<MergedElectricalReport />}
+                  />
+                  <Route
+                    path="/report/mechanical/download/:year?/:month?"
+                    element={<MergedMechanicalReport />}
+                  />
                   <Route path="/dailylog" element={<DailyLog />} />
                   <Route path="/geolocation" element={<Geolocation />} />
                 </Route>

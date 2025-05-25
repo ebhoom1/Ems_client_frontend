@@ -141,7 +141,34 @@ const fetchData = async (userName) => {
   }
 };
 
-  
+  const fetchLatestFallbackData = async (userName) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/latest/${userName}`);
+    const latestArray = response.data?.data || [];
+
+    const energyData = latestArray.find(entry => entry.stationType === "energy");
+
+    if (!energyData || !energyData.stackData?.length) {
+      console.warn("No fallback energy data found.");
+      return;
+    }
+
+    const fallbackData = {};
+    energyData.stackData.forEach(item => {
+      fallbackData[item.stackName] = {
+        ...item,
+        timestamp: energyData.timestamp || "N/A"
+      };
+    });
+
+    console.log("Fallback: Latest API /latest/:userName energy data:", fallbackData);
+    setRealTimeData(fallbackData);
+
+  } catch (error) {
+    console.error("Error fetching fallback latest data:", error.message);
+  }
+};
+
   // Fetch initial energy data from API
   const fetchEnergyDifferenceData = async (userName) => {
     try {
@@ -190,65 +217,54 @@ const fetchData = async (userName) => {
     fetchPrimaryStation(userName);
   }, [storedUserId, currentUserName]);
 
-  useEffect(() => {
-    const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-    resetColors();
-    fetchData(userName);
-    fetchEnergyStacks(userName);
-    socket.emit("joinRoom", { userId: userName });
-    const handleStackDataUpdate = async (data) => {
-      console.log(`Real-time data for ${userName}:`, data);
-      console.log("timestamp", data.timestamp);
-      if (data.userName === userName) {
-        setExceedanceColor(data.ExceedanceColor || "green");
-        setTimeIntervalColor(data.timeIntervalColor || "green");
-        if (data?.stackData?.length > 0) {
-          const energyData = data.stackData.filter((item) => item.stationType === "energy");
-          if (energyData.length > 0) {
-            // Process real-time data as an object keyed by stackName
-            const processedData = energyData.reduce((acc, item) => {
-              if (item.stackName) {
-                acc[item.stackName] = { ...item, timestamp: data.timestamp };
-              }
-              return acc;
-            }, {});
-            setRealTimeData(processedData);
-            console.log("Processed Real-Time Energy Data:", processedData);
-          } else {
-            console.log("No real-time energy data. Fetching the latest data from the last 10 minutes...");
-            const last10MinData = await dispatch(fetchLast10MinDataByUserName(userName)).unwrap();
-            const fallbackData = last10MinData
-              .flatMap((record) =>
-                record.records.flatMap((stack) =>
-                  stack.stackData.filter((item) => item.stationType === "energy")
-                )
-              )
-              .slice(-1);
-            if (fallbackData.length > 0) {
-              const updatedFallbackData = {};
-              fallbackData.forEach((item) => {
-                updatedFallbackData[item.stackName] = {
-                  ...item,
-                  timestamp: last10MinData[last10MinData.length - 1]?.timestamp || "N/A",
-                };
-              });
-              setRealTimeData(updatedFallbackData);
-              console.log("Fallback Latest 10-Minute Energy Data:", updatedFallbackData);
-            } else {
-              setRealTimeData({});
-            }
+ useEffect(() => {
+  const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+  resetColors();
+  fetchData(userName);
+  fetchEnergyStacks(userName);
+  socket.emit("joinRoom", { userId: userName });
+
+  const handleStackDataUpdate = async (data) => {
+    console.log(`Real-time data for ${userName}:`, data);
+    if (data.userName === userName) {
+      setExceedanceColor(data.ExceedanceColor || "green");
+      setTimeIntervalColor(data.timeIntervalColor || "green");
+
+      const energyData = data.stackData?.filter(item => item.stationType === "energy") || [];
+
+      if (energyData.length > 0) {
+        const processedData = energyData.reduce((acc, item) => {
+          if (item.stackName) {
+            acc[item.stackName] = { ...item, timestamp: data.timestamp };
           }
-        }
+          return acc;
+        }, {});
+        setRealTimeData(processedData);
+        console.log("Processed Real-Time Energy Data:", processedData);
+      } else {
+        console.warn("No real-time energy data. Falling back to /api/latest/");
+        fetchLatestFallbackData(userName);
       }
-    };
-  
-    socket.on("stackDataUpdate", handleStackDataUpdate);
-  
-    return () => {
-      socket.emit("leaveRoom", { userId: userName });
-      socket.off("stackDataUpdate", handleStackDataUpdate);
-    };
-  }, [selectedUserIdFromRedux, currentUserName]);
+    }
+  };
+
+  socket.on("stackDataUpdate", handleStackDataUpdate);
+
+  // ⏳ Fallback if no socket data arrives in 10s
+  const fallbackTimeout = setTimeout(() => {
+    if (!Object.keys(realTimeData || {}).length) {
+      console.warn("Socket data delayed. Triggering fallback latest fetch.");
+      fetchLatestFallbackData(userName);
+    }
+  }, 1000);
+
+  return () => {
+    socket.emit("leaveRoom", { userId: userName });
+    socket.off("stackDataUpdate", handleStackDataUpdate);
+    clearTimeout(fallbackTimeout);
+  };
+}, [selectedUserIdFromRedux, currentUserName]);
+
   
   const handleCardClick = (stack, parameter) => {
     if (parameter.name !== "energy") {

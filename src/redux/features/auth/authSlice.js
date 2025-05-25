@@ -12,23 +12,16 @@ export const loginUser = createAsyncThunk(
         password,
         userType
       });
+
       const data = response.data;
-      // The backend returns either:
-      //  • { result: { userValid, token }, ... }  for normal users/admins
-      //  • { operator: {...}, token, ... }        for operators
-      let user, token;
-      if (data.result?.operator) {
-        user = data.result.operator;
-        token = data.result.token || data.token;
-      } else if (data.result) {
-        user  = data.result.userValid || data.result.user;
-        token = data.result.token || data.token;
-      } else {
-        // fallback just in case
-        throw new Error('Unexpected login response');
+
+      const user  = data.result?.user || null;
+      const token = data.result?.token || data.token || null;
+
+      if (!user || !token) {
+        throw new Error("Login failed: Missing user or token");
       }
 
-      // Persist token
       localStorage.setItem('userdatatoken', token);
       return { user, token };
     } catch (err) {
@@ -39,6 +32,7 @@ export const loginUser = createAsyncThunk(
     }
   }
 );
+
 
 const authSlice = createSlice({
   name: 'auth',

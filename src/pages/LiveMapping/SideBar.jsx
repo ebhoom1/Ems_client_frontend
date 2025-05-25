@@ -51,23 +51,31 @@ function Sidebar() {
     const loadServerImages = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/list-uploaded-files`);
-        const serverShapes = res.data.map((filename, index) => {
-          const extension = filename.split('.').pop().toLowerCase();
-          const isImage = ['svg', 'png', 'jpg', 'jpeg'].includes(extension);
-          return {
-            id: `server_${index}`,
-            label: filename.replace(/\.[^/.]+$/, ''),
-            isSVG: extension === 'svg',
-            isImage: isImage && extension !== 'svg',
-            isPDF: extension === 'pdf',
-            filePath: `${API_URL}/uploads/${filename}`,
-          };
-        });
+        const removedPDFs = JSON.parse(localStorage.getItem("removedPDFs") || "[]");
+    
+        const serverShapes = res.data
+          .map((filename, index) => {
+            const extension = filename.split('.').pop().toLowerCase();
+            const isImage = ['svg', 'png', 'jpg', 'jpeg'].includes(extension);
+            const id = `server_${index}`;
+    
+            return {
+              id,
+              label: filename.replace(/\.[^/.]+$/, ''),
+              isSVG: extension === 'svg',
+              isImage: isImage && extension !== 'svg',
+              isPDF: extension === 'pdf',
+              filePath: `${API_URL}/uploads/${filename}`,
+            };
+          })
+          .filter(shape => !removedPDFs.includes(shape.id)); // 🚫 skip removed
+    
         setShapes((prev) => [...prev, ...serverShapes]);
       } catch (err) {
         console.error('Failed to load server files:', err);
       }
     };
+    
     loadServerImages();
   }, []);
 
@@ -190,6 +198,24 @@ function Sidebar() {
     );
   };
 
+  useEffect(() => {
+    const handlePDFDrop = (e) => {
+      const idToRemove = e.detail;
+  
+      // Save removed ID to localStorage
+      const removed = JSON.parse(localStorage.getItem("removedPDFs") || "[]");
+      localStorage.setItem("removedPDFs", JSON.stringify([...removed, idToRemove]));
+  
+      // Remove from current state
+      setShapes((prevShapes) =>
+        prevShapes.filter((shape) => shape.id !== idToRemove)
+      );
+    };
+  
+    window.addEventListener("pdf-dropped", handlePDFDrop);
+    return () => window.removeEventListener("pdf-dropped", handlePDFDrop);
+  }, []);
+  
   return (
     <div className="sidebar-container">
       <aside>

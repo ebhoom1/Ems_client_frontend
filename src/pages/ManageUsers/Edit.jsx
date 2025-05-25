@@ -11,14 +11,15 @@ import Header from "../Header/Hedaer";
 import HeaderSim from "../Header/HeaderSim";
 
 function Edit() {
-  const { userId } = useParams(); // Get the userId from the route parameters
+   const { userId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { selectedUser, loading, error } = useSelector(
     (state) => state.userLog
-  ); // Fetch the selectedUser from the Redux store
-
+  );
+  const { users } = useSelector((state) => state.userLog);
   const [adminList, setAdminList] = useState([]);
+  const [operatorList, setOperatorList] = useState([]);
 
   const [userData, setUserData] = useState({
     userName: "",
@@ -26,12 +27,10 @@ function Edit() {
     modelName: "",
     fname: "",
     email: "",
-    additionalEmails: [""], // Changed from a single email to an array
+    additionalEmails: [""],
     mobileNumber: "",
-    /*   password: '',
-    cpassword: '', */
     subscriptionDate: "",
-    subscriptionPlan: "", // <-- New subscription field
+    subscriptionPlan: "",
     userType: "",
     industryType: "",
     dataInteval: "",
@@ -78,8 +77,7 @@ function Edit() {
     }
   }, [dispatch, userId]);
 
-  // Set form data when selectedUser is updated.
-  // If the fetched user has additionalEmails, use them; otherwise, fallback to an array containing the single additionalEmail.
+  // Set form data when selectedUser is updated
   useEffect(() => {
     if (selectedUser) {
       setUserData((prevData) => ({
@@ -92,22 +90,28 @@ function Edit() {
             ? selectedUser.additionalEmails
             : selectedUser.additionalEmail
             ? [selectedUser.additionalEmail]
-            : [""], // Ensure at least one input is rendered
+            : [""],
       }));
     }
   }, [selectedUser]);
 
+  // Fetch territory managers and operators
   useEffect(() => {
-    const fetchAdmins = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get(`${API_URL}/api/get-territory-mangers`);
-        setAdminList(res.data.admins); // store all territory managers list
+        // Fetch territory managers
+        const territoryRes = await axios.get(`${API_URL}/api/get-territory-mangers`);
+        setAdminList(territoryRes.data.admins);
+        
+        // Fetch all operators
+        const operatorsRes = await axios.get(`${API_URL}/api/get-operators`);
+        setOperatorList(operatorsRes.data.users || []);
       } catch (error) {
-        console.error("Error fetching admin users:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
-    fetchAdmins();
+    fetchData();
   }, []);
 
   const handleChange = (e) => {
@@ -124,31 +128,6 @@ function Edit() {
     newEmails[index] = value;
     setUserData({ ...userData, additionalEmails: newEmails });
   };
-  const handleAddOperator = () => {
-    setUserData((prev) => ({
-      ...prev,
-      operators: [
-        ...prev.operators,
-        { name: "", email: "", password: "", userType: "operator" },
-      ],
-    }));
-  };
-
-  const handleOperatorChange = (idx, e) => {
-    const { name, value } = e.target;
-    setUserData((prev) => {
-      const ops = [...prev.operators];
-      ops[idx] = { ...ops[idx], [name]: value };
-      return { ...prev, operators: ops };
-    });
-  };
-
-  const handleRemoveOperator = (idx) => {
-    setUserData((prev) => ({
-      ...prev,
-      operators: prev.operators.filter((_, i) => i !== idx),
-    }));
-  };
 
   // Add a new additional email field
   const handleAddAdditionalEmail = () => {
@@ -156,6 +135,24 @@ function Edit() {
       ...userData,
       additionalEmails: [...userData.additionalEmails, ""],
     });
+  };
+
+  // Assign operator to the user
+  const handleAssignOperator = (operatorId) => {
+    if (!userData.operators.includes(operatorId)) {
+      setUserData(prev => ({
+        ...prev,
+        operators: [...prev.operators, operatorId]
+      }));
+    }
+  };
+
+  // Remove operator from the user
+  const handleRemoveOperator = (operatorId) => {
+    setUserData(prev => ({
+      ...prev,
+      operators: prev.operators.filter(id => id !== operatorId)
+    }));
   };
 
   const handleSaveUser = async (e) => {
@@ -551,7 +548,7 @@ function Edit() {
                         </div>
 
                         {/* Territorial Manager */}
-                        <div className="col-lg-6 col-md-6 mb-4">
+                     <div className="col-lg-6 col-md-6 mb-4">
                           <div className="form-group">
                             <label
                               htmlFor="territorialManager"
@@ -583,69 +580,66 @@ function Edit() {
                           </div>
                         </div>
 
-                        {userData.userType === "user" && (
-  <div className="mb-4">
-    <h5>Operators</h5>
 
-    {userData.operators.map((op, i) => (
-      <div key={i} className="row gx-2 gy-2 align-items-center mb-3">
-        {/* Operator Name */}
-        <div className="col-12 col-md-3">
-          <input
-            name="name"
-            value={op.name}
-            onChange={e => handleOperatorChange(i, e)}
-            placeholder="Operator Name"
-            className="form-control py-3"
-          />
-        </div>
+                      {userData.userType === "user" && (
+                          <div className="col-12 mb-4">
+                            <div className="form-group">
+                              <label className="form-label text-light">
+                                Assign Operator(s)
+                              </label>
+                              <div className="input-group mb-3">
+                                <select
+                                  className="form-control"
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      handleAssignOperator(e.target.value);
+                                    }
+                                  }}
+                                  style={{
+                                    padding: "15px",
+                                    borderRadius: "10px",
+                                  }}
+                                >
+                                  <option value="">Select Operator</option>
+                                  {operatorList
+                                    .filter(op => !userData.operators.includes(op._id))
+                                    .map((op) => (
+                                      <option key={op._id} value={op._id}>
+                                        {op.fname} ({op.userName})
+                                      </option>
+                                    ))}
+                                </select>
+                              </div>
 
-        {/* Operator Email */}
-        <div className="col-12 col-md-4">
-          <input
-            name="email"
-            type="email"
-            value={op.email}
-            onChange={e => handleOperatorChange(i, e)}
-            placeholder="Operator Email"
-            className="form-control py-3"
-          />
-        </div>
-
-        {/* Operator Password */}
-        <div className="col-12 col-md-4">
-          <input
-            name="password"
-            type="password"
-            value={op.password}
-            onChange={e => handleOperatorChange(i, e)}
-            placeholder="Operator Password"
-            className="form-control py-3"
-          />
-        </div>
-
-        {/* Remove button */}
-        <div className="col-12 col-md-auto">
-          <button
-            type="button"
-            className="btn btn-sm btn-danger w-100 w-md-auto"
-            onClick={() => handleRemoveOperator(i)}
-          >
-            &times;
-          </button>
-        </div>
-      </div>
-    ))}
-
-    <button
-      type="button"
-      className="btn btn-sm btn-secondary"
-      onClick={handleAddOperator}
-    >
-      + Add Operator
-    </button>
-  </div>
-)}
+                              {/* Display assigned operators */}
+                              <div className="mt-2">
+                                {userData.operators.map((operatorId) => {
+                                  const operator = operatorList.find(
+                                    (op) => op._id === operatorId
+                                  );
+                                  return operator ? (
+                                    <span
+                                      key={operatorId}
+                                      className="badge bg-primary me-2 mb-2 p-2"
+                                    >
+                                      {operator.fname} ({operator.userName})
+                                      <button
+                                        type="button"
+                                        className="btn-close btn-close-white ms-2"
+                                        aria-label="Remove"
+                                        onClick={() => handleRemoveOperator(operatorId)}
+                                        style={{
+                                          fontSize: "0.5rem",
+                                          padding: "0.25rem",
+                                        }}
+                                      ></button>
+                                    </span>
+                                  ) : null;
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         <div className="col-lg-6 col-md-6 mb-4">
                           <div className="form-group">

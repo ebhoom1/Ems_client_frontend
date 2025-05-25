@@ -34,6 +34,7 @@ import "./userlog.css";
 import Admins from "./Admins";
 import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
+
 const UsersLog = () => {
   const dispatch = useDispatch();
   const {
@@ -49,7 +50,6 @@ const UsersLog = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { userData } = useSelector((state) => state.user);
-  console.log('userdata', userData )
   const navigate = useNavigate();
   const [sortCategory, setSortCategory] = useState("");
   const [sortOptions, setSortOptions] = useState([]);
@@ -64,13 +64,17 @@ const UsersLog = () => {
   const [showTerritoryModal, setShowTerritoryModal] = useState(false);
   const [territoryManagers, setTerritoryManagers] = useState([]);
   const [showAddOperatorDialog, setShowAddOperatorDialog] = useState(false);
-  const operatorList = users.filter(u => u.userType === "operator");
+  const operatorList = users.filter((u) => u.userType === "operator");
 
-// after
-const [operatorData, setOperatorData] = useState({
-  userName: "", fname: "", email: "", password: "", adminType: "", companyName: ""
-});
-
+  // after
+  const [operatorData, setOperatorData] = useState({
+    userName: "",
+    fname: "",
+    email: "",
+    password: "",
+    adminType: "",
+    companyName: "",
+  });
 
   const [formData, setformData] = useState({
     userName: "",
@@ -98,7 +102,7 @@ const [operatorData, setOperatorData] = useState({
     territorialManager: "",
     isTerritorialManager: false,
     isTechnician: false,
-    isOperator:false,
+    isOperator: false,
   });
 
   const [userName, setUserName] = useState("");
@@ -146,20 +150,21 @@ const [operatorData, setOperatorData] = useState({
 
   // Fetch users filtered by adminType or show all if no adminType
   // Fetch users filtered by adminType or show all if adminType is Ebhoom
-const handleAssignOperatorsChange = (e) => {
-  const { value } = e.target;
-  setformData(prev => ({
-    ...prev,
-    operators: Array.isArray(prev.operators) 
-      ? [...prev.operators, value]
-      : [value]
-  }));
-};
+  const handleAssignOperatorsChange = (e) => {
+    const { value } = e.target;
+    setformData((prev) => ({
+      ...prev,
+      operators: Array.isArray(prev.operators)
+        ? [...prev.operators, value]
+        : [value],
+    }));
+  };
   const fetchUsersData = async () => {
     try {
       const response = await dispatch(fetchUsers()).unwrap(); // Fetch all users
+      const currentUser = userData?.validUserOne;
 
-      if (userData?.validUserOne?.adminType === "EBHOOM") {
+      if (currentUser.adminType === "EBHOOM") {
         // Filter users based on != isTechnician & isTerritorialManager
         const filtered = response.filter(
           (user) =>
@@ -178,34 +183,53 @@ const handleAssignOperatorsChange = (e) => {
         const filteredTerritoryManager = response.filter(
           (user) => user.isTerritorialManager === true
         );
+
         dispatch(setTerritoryManagerUsers(filteredTerritoryManager));
-
-        // Show all users if adminType is Ebhoom
-        // dispatch(setFilteredUsers(response));
-      } else if (userData?.validUserOne?.adminType) {
-        // Filter users based on adminType and exclude admins
-        const filtered = response.filter(
+      } else if (currentUser.userType === "super_admin") {
+        // Get admins created by the super admin
+        const myAdmins = response.filter(
           (user) =>
-            user.adminType === userData.validUserOne.adminType &&
-            user.userType === "user"
+            user.createdBy === currentUser._id && user.userType === "admin"
         );
-        dispatch(setFilteredUsers(filtered));
 
-        // Filter user based on isTechnician
-        const filteredTechnician = response.filter(
-          (user) =>
-            user.isTechnician === true &&
-            user.adminType == userData.validUserOne.adminType
-        );
-        dispatch(setTechnicianUsers(filteredTechnician));
+        const myAdminIds = myAdmins.map((admin) => admin._id.toString());
 
-        // Filter user based on isTerritorialManager
-        const filteredTerritoryManager = response.filter(
+        // Get users created by the super admin or by admins
+        const users = response.filter(
           (user) =>
-            user.isTerritorialManager === true &&
-            user.adminType == userData.validUserOne.adminType
+            user.createdBy === currentUser._id ||
+            myAdminIds.includes(user.createdBy)
         );
-        dispatch(setTerritoryManagerUsers(filteredTerritoryManager));
+
+        dispatch(
+          setFilteredUsers(
+            users.filter(
+              (user) =>
+                user.isTechnician !== true && user.isTerritorialManager !== true
+            )
+          )
+        );
+        dispatch(setTechnicianUsers(users.filter((user) => user.isTechnician)));
+        dispatch(
+          setTerritoryManagerUsers(
+            users.filter((user) => user.isTerritorialManager)
+          )
+        );
+      } else if (currentUser.userType === "admin") {
+      
+        const myUsers = response.filter(
+          (user) => user.createdBy === userData.validUserOne._id
+        );
+
+        dispatch(
+          setFilteredUsers(myUsers.filter((u) => u.userType === "user"))
+        );
+        dispatch(setTechnicianUsers(myUsers.filter((u) => u.isTechnician)));
+        dispatch(
+          setTerritoryManagerUsers(
+            myUsers.filter((u) => u.isTerritorialManager)
+          )
+        );
       } else {
         // Fallback in case no adminType is available
         dispatch(setFilteredUsers([]));
@@ -242,27 +266,27 @@ const handleAssignOperatorsChange = (e) => {
     }));
   };
 
-const validateFields = () => {
-  const {
-    userName,
-    companyName,
-    password,
-    cpassword,
-    userType,
-    adminType,
-    email,
-  } = formData;
+  const validateFields = () => {
+    const {
+      userName,
+      companyName,
+      password,
+      cpassword,
+      userType,
+      adminType,
+      email,
+    } = formData;
 
-  return (
-    !!userName &&
-    !!companyName &&
-    !!password &&
-    !!cpassword &&
-    !!userType &&
-    !!adminType &&
-    !!email
-  );
-};
+    return (
+      !!userName &&
+      !!companyName &&
+      !!password &&
+      !!cpassword &&
+      !!userType &&
+      !!adminType &&
+      !!email
+    );
+  };
 
   // inside component:
   // const handleAddOperator = () => {
@@ -274,17 +298,18 @@ const validateFields = () => {
   //     ],
   //   }));
   // };
-const currentUserType = userData?.validUserOne?.userType?.toLowerCase();
-let userTypeOptions = [];
 
-if (currentUserType === "ebhoom") {
-  userTypeOptions = ["super_admin", "admin", "user"];
-} else if (currentUserType === "super_admin") {
-  userTypeOptions = ["admin", "user"];
-} else if (currentUserType === "admin") {
-  userTypeOptions = ["user"];
-}
+  const currentUserType = userData?.validUserOne?.userType?.toLowerCase();
+  const currentAdminType = userData?.validUserOne?.adminType;
+  let userTypeOptions = [];
 
+  if (currentUserType === "super_admin") {
+    userTypeOptions = ["admin", "user"];
+  } else if (currentAdminType === "EBHOOM") {
+    userTypeOptions = ["super_admin", "admin", "user"];
+  } else if (currentUserType === "admin") {
+    userTypeOptions = ["user"];
+  }
   const handleOperatorChange = (idx, e) => {
     const { name, value } = e.target;
     setformData((prev) => {
@@ -321,6 +346,7 @@ if (currentUserType === "ebhoom") {
           userType: "admin",
           adminType, // ← now dynamic
           isTechnician: true,
+          createdBy: userData?.validUserOne?._id || null, // Add createdBy field
         })
       ).unwrap();
       toast.success("Technician added successfully", {
@@ -389,6 +415,7 @@ if (currentUserType === "ebhoom") {
           userType: "admin",
           adminType, // ← now dynamic
           isTerritorialManager: true,
+          createdBy: userData?.validUserOne?._id || null, // Add createdBy field
         })
       ).unwrap();
       toast.success("Territory Manager added successfully", {
@@ -450,10 +477,16 @@ if (currentUserType === "ebhoom") {
       return;
     }
 
+    const filteredAdditionalEmails = formData.additionalEmails
+      .map((e) => e.trim())
+      .filter((e) => e.length > 0);
+
     try {
       const payload = {
         ...formData,
-        territorialManager: formData.territorialManager || null, // ✅ Make sure it's either ObjectId or null
+        additionalEmails: filteredAdditionalEmails,
+        territorialManager: formData.territorialManager || null,
+        createdBy: userData?.validUserOne?._id || null,
       };
       // send everything, including formData.operators
       await dispatch(addUser(payload)).unwrap();
@@ -487,7 +520,9 @@ if (currentUserType === "ebhoom") {
         territorialManager: "",
       });
 
-      dispatch(fetchUsers());
+      // dispatch(fetchUsers());
+      await fetchUsersData();
+      // dispatch(fetchUsers());
     } catch (error) {
       console.log("Error in AddUser:", error);
       toast.error("An error occurred. Please try again.", {
@@ -750,31 +785,54 @@ if (currentUserType === "ebhoom") {
       });
     }
   };
-const handleAddOperator = async e => {
-  e.preventDefault();
-  const { userName, fname, email, password, adminType, companyName } = operatorData;
-  if ([userName, fname, email, password, adminType, companyName].some(v => !v))
-    return toast.error("Please fill all operator fields");
+  const handleAddOperator = async (e) => {
+    e.preventDefault();
+    const { userName, fname, email, password, adminType, companyName } =
+      operatorData;
+    if (
+      [userName, fname, email, password, adminType, companyName].some((v) => !v)
+    )
+      return toast.error("Please fill all operator fields");
 
-  await dispatch(addUser({
-    userName,
-    companyName,
-    fname,
-    email,
-    password,
-    cpassword: password,
-    userType: "operator",  
-    adminType,
-    isOperator: true  // This is the key change
-  })).unwrap();
+    await dispatch(
+      addUser({
+        userName,
+        companyName,
+        fname,
+        email,
+        password,
+        cpassword: password,
+        userType: "operator",
+        adminType,
+        isOperator: true, // This is the key change
+      })
+    ).unwrap();
 
-  toast.success("Operator added!");
-  setOperatorData({ userName:"", fname:"", email:"", password:"", adminType:"", companyName:"" });
-  dispatch(fetchUsers());
-  setShowAddOperatorDialog(false);
+    toast.success("Operator added!");
+    setOperatorData({
+      userName: "",
+      fname: "",
+      email: "",
+      password: "",
+      adminType: "",
+      companyName: "",
+    });
+    dispatch(fetchUsers());
+    setShowAddOperatorDialog(false);
+  };
+const handleDeleteOperator = async (id) => {
+  const confirmed = window.confirm("Are you sure you want to delete this Operator?");
+  if (!confirmed) return;
+  try {
+    await axios.delete(`${API_URL}/api/delete-operator/${id}`);
+    toast.success("Operator deleted successfully", { position: "top-center" });
+    dispatch(fetchUsers());
+  } catch (err) {
+    console.error("Error deleting operator:", err);
+    toast.error("Failed to delete operator", { position: "top-center" });
+  }
 };
 
-  
   return (
     <div className="container-fluid">
       <div className="row">
@@ -1043,72 +1101,74 @@ const handleAddOperator = async e => {
               )}
             </div>
           </div>
-{/* Operator List */}
-<div className="d-flex justify-content-between align-items-center m-3">
-  <h1 className="text-center mt-3"> Operators List </h1>
-  <div>
-    Add Operator
-    <FaPlusCircle
-      onClick={() => setShowAddOperatorDialog(true)}
-      style={{
-        cursor: "pointer",
-        color: "#236A80",
-        fontSize: "24px",
-      }}
-      title="Add Operator"
-    />
-  </div>
-</div>
-<div className="card mt-4">
-  <div className="card-body">
-    {loading && (
-      <div className="">
-        <div>Loading ...</div>
-      </div>
-    )}
-    {error && (
-      <p>Error fetching users: {error.message || JSON.stringify(error)}</p>
-    )}
+          {/* Operator List */}
+          <div className="d-flex justify-content-between align-items-center m-3">
+            <h1 className="text-center mt-3"> Operators List </h1>
+            <div>
+              Add Operator
+              <FaPlusCircle
+                onClick={() => setShowAddOperatorDialog(true)}
+                style={{
+                  cursor: "pointer",
+                  color: "#236A80",
+                  fontSize: "24px",
+                }}
+                title="Add Operator"
+              />
+            </div>
+          </div>
+          <div className="card mt-4">
+            <div className="card-body">
+              {loading && (
+                <div className="">
+                  <div>Loading ...</div>
+                </div>
+              )}
+              {error && (
+                <p>
+                  Error fetching users: {error.message || JSON.stringify(error)}
+                </p>
+              )}
 
-    {!loading && !error && (
-      <div className="user-list-container">
-        <table className="userlog-table">
-          <thead>
-            <tr>
-              <th className="userlog-head">User Name</th>
-              <th className="userlog-head">Full Name</th>
-              <th className="userlog-head">Email</th>
-              <th className="userlog-head">Admin</th>
-              <th className="userlog-head">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users
-              .filter((user) => user.userType === "operator")
-              .map((user) => (
-                <tr
-                  key={user._id}
-                  onClick={() => handleUserClick(user.userName)}
-                >
-                  <td className="userlog-head">{user.userName}</td>
-                  <td className="userlog-head">{user.fname}</td>
-                  <td className="userlog-head">{user.email}</td>
-                  <td className="userlog-head">{user.adminType}</td>
-                  <td className="userlog-head">
-                    <FaTrashAlt
-                      onClick={() => handleDeleteUser(user._id)}
-                      style={{ cursor: "pointer", color: "red" }}
-                      title="Delete Operator"
-                    />
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-  </div>
+              {!loading && !error && (
+                <div className="user-list-container">
+                  <table className="userlog-table">
+                    <thead>
+                      <tr>
+                        <th className="userlog-head">User Name</th>
+                        <th className="userlog-head">Full Name</th>
+                        <th className="userlog-head">Email</th>
+                        <th className="userlog-head">Admin</th>
+                        <th className="userlog-head">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users
+                        .filter((user) => user.userType === "operator")
+                        .map((user) => (
+                          <tr
+                            key={user._id}
+                            onClick={() => handleUserClick(user.userName)}
+                          >
+                            <td className="userlog-head">{user.userName}</td>
+                            <td className="userlog-head">{user.fname}</td>
+                            <td className="userlog-head">{user.email}</td>
+                            <td className="userlog-head">{user.adminType}</td>
+                            <td className="userlog-head">
+                             <FaTrashAlt
+                              onClick={() => handleDeleteOperator(user._id)}
+                                style={{ cursor: "pointer", color: "red" }}
+                                title="Delete Operator"
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
           {/* Add User Form */}
           <div className="row" style={{ overflowX: "hidden" }}>
             <div className="col-12 col-md-12 grid-margin">
@@ -1152,7 +1212,7 @@ const handleAddOperator = async e => {
                             htmlFor="companyName"
                             className="form-label  text-light"
                           >
-                            Company Name{" "} *
+                            Company Name *
                           </label>
                           <input
                             type="text"
@@ -1177,7 +1237,7 @@ const handleAddOperator = async e => {
                             htmlFor="firstName"
                             className="form-label  text-light"
                           >
-                            First Name{" "}*
+                            First Name *
                           </label>
                           <input
                             id="firstName"
@@ -1201,7 +1261,7 @@ const handleAddOperator = async e => {
                             htmlFor="email"
                             className="form-label  text-light"
                           >
-                            Email{" "}*
+                            Email *
                           </label>
                           <input
                             id="email"
@@ -1355,7 +1415,7 @@ const handleAddOperator = async e => {
                             className="form-label text-light"
                           >
                             {" "}
-                            Password{" "}*
+                            Password *
                           </label>
                           <div style={{ position: "relative" }}>
                             <input
@@ -1396,7 +1456,7 @@ const handleAddOperator = async e => {
                             className="form-label text-light"
                           >
                             {" "}
-                            Confirm Password{" "}*
+                            Confirm Password *
                           </label>
                           <div style={{ position: "relative" }}>
                             <input
@@ -1491,26 +1551,35 @@ const handleAddOperator = async e => {
                       </div>
                       {/* User Type */}
                       <div className="col-lg-6 col-md-6 mb-4">
-                      <div className="form-group">
-  <label htmlFor="userType" className="form-label text-light">
-    User Type *
-  </label>
-  <select
-    id="userType"
-    name="userType"
-    className="form-control"
-    value={formData.userType}
-    onChange={handleInputChange}
-    style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
-  >
-    <option value="">Select</option>
-    {userTypeOptions.map((type) => (
-      <option key={type} value={type}>
-        {type.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}
-      </option>
-    ))}
-  </select>
-</div>
+                        <div className="form-group">
+                          <label
+                            htmlFor="userType"
+                            className="form-label text-light"
+                          >
+                            User Type *
+                          </label>
+                          <select
+                            id="userType"
+                            name="userType"
+                            className="form-control"
+                            value={formData.userType}
+                            onChange={handleInputChange}
+                            style={{
+                              width: "100%",
+                              padding: "15px",
+                              borderRadius: "10px",
+                            }}
+                          >
+                            <option value="">Select</option>
+                            {userTypeOptions.map((type) => (
+                              <option key={type} value={type}>
+                                {type
+                                  .replace("_", " ")
+                                  .replace(/\b\w/g, (c) => c.toUpperCase())}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
 
                       {/* User Type */}
@@ -1535,8 +1604,8 @@ const handleAddOperator = async e => {
                             }}
                           >
                             <option value="select">Select</option>
-                                                  <option value="KSPCB">Test</option>
-      
+                            <option value="Test">Test</option>
+
                             <option value="KSPCB">KSPCB</option>
                             <option value="Genex">Genex</option>
                             <option value="Banka_bio">Banka Bio</option>
@@ -1546,73 +1615,85 @@ const handleAddOperator = async e => {
                           </select>
                         </div>
                       </div>
-<div className="col-lg-6 col-md-6 mb-4">
-  <div className="form-group">
-    <label htmlFor="operators" className="form-label text-light">
-      Assign Operator(s)
-    </label>
-    <div className="input-group">
-      <select
-        id="operators"
-        name="operators"
-        className="form-control"
-        value=""
-        style={{
-                              width: "100%",
-                              padding: "15px",
-                              borderRadius: "10px",
-                            }}
-        onChange={(e) => {
-          if (e.target.value) {
-            handleAssignOperatorsChange({
-              target: {
-                name: "operators",
-                value: e.target.value
-              }
-            });
-          }
-        }}
-      >
-        <option value="">Select Operator</option>
-        {operatorList
-          .filter(op => !formData.operators?.includes(op._id))
-          .map(op => (
-            <option key={op._id} value={op._id}>
-              {op.fname} ({op.userName})
-            </option>
-          ))}
-      </select>
-      
-    </div>
+                      <div className="col-lg-6 col-md-6 mb-4">
+                        <div className="form-group">
+                          <label
+                            htmlFor="operators"
+                            className="form-label text-light"
+                          >
+                            Assign Operator(s)
+                          </label>
+                          <div className="input-group">
+                            <select
+                              id="operators"
+                              name="operators"
+                              className="form-control"
+                              value=""
+                              style={{
+                                width: "100%",
+                                padding: "15px",
+                                borderRadius: "10px",
+                              }}
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  handleAssignOperatorsChange({
+                                    target: {
+                                      name: "operators",
+                                      value: e.target.value,
+                                    },
+                                  });
+                                }
+                              }}
+                            >
+                              <option value="">Select Operator</option>
+                              {operatorList
+                                .filter(
+                                  (op) => !formData.operators?.includes(op._id)
+                                )
+                                .map((op) => (
+                                  <option key={op._id} value={op._id}>
+                                    {op.fname} ({op.userName})
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
 
-    {/* Display selected operators */}
-    <div className="mt-2">
-      {formData.operators?.map(operatorId => {
-        const operator = operatorList.find(op => op._id === operatorId);
-        return operator ? (
-          <span key={operatorId} className="badge bg-primary me-2 mb-2">
-            {operator.fname} ({operator.userName})
-            <button
-              type="button"
-              className="btn-close btn-close-white ms-2"
-              aria-label="Remove"
-              onClick={() => {
-                setformData(prev => ({
-                  ...prev,
-                  operators: prev.operators?.filter(id => id !== operatorId) || []
-                }));
-              }}
-              style={{
-                fontSize: "0.5rem",
-                padding: "0.25rem"
-              }}
-            ></button>
-          </span>
-        ) : null;
-      })}
-    </div>
-  </div>
-</div>
+                          {/* Display selected operators */}
+                          <div className="mt-2">
+                            {formData.operators?.map((operatorId) => {
+                              const operator = operatorList.find(
+                                (op) => op._id === operatorId
+                              );
+                              return operator ? (
+                                <span
+                                  key={operatorId}
+                                  className="badge bg-primary me-2 mb-2"
+                                >
+                                  {operator.fname} ({operator.userName})
+                                  <button
+                                    type="button"
+                                    className="btn-close btn-close-white ms-2"
+                                    aria-label="Remove"
+                                    onClick={() => {
+                                      setformData((prev) => ({
+                                        ...prev,
+                                        operators:
+                                          prev.operators?.filter(
+                                            (id) => id !== operatorId
+                                          ) || [],
+                                      }));
+                                    }}
+                                    style={{
+                                      fontSize: "0.5rem",
+                                      padding: "0.25rem",
+                                    }}
+                                  ></button>
+                                </span>
+                              ) : null;
+                            })}
+                          </div>
+                        </div>
+                      </div>
 
                       {/* Territorial Manager */}
                       <div className="col-lg-6 col-md-6 mb-4">
@@ -1645,7 +1726,7 @@ const handleAddOperator = async e => {
                         </div>
                       </div>
 
-                   {/*    {formData.userType === "user" && (
+                      {/*    {formData.userType === "user" && (
                         <div className="mb-4">
                           <h5 className="text-light">Operators</h5>
                           {formData.operators.map((op, i) => (
@@ -2588,97 +2669,101 @@ const handleAddOperator = async e => {
               <option value="KSPCB">KSPCB</option>
               <option value="IESS">IESS</option>
             </select>
-            <Button type="submit" style={{backgroundColor:'#236a80', color:'#fff'}} className="btn w-100">
+            <Button
+              type="submit"
+              style={{ backgroundColor: "#236a80", color: "#fff" }}
+              className="btn w-100"
+            >
               Add Manager
             </Button>
           </form>
         </Modal.Body>
       </Modal>
       {/* Add Operator Modal */}
-<Modal
-  show={showAddOperatorDialog}
-  onHide={() => setShowAddOperatorDialog(false)}
-  centered
->
-  <Modal.Header closeButton>
-    <Modal.Title>Add Operator</Modal.Title>
-  </Modal.Header>
-  <Modal.Body>
-   <form onSubmit={handleAddOperator}>
-  <input
-    name="userName"
-    placeholder="Operator ID"
-    value={operatorData.userName}
-    onChange={(e) =>
-      setOperatorData({ ...operatorData, userName: e.target.value })
-    }
-    className="form-control mb-2"
-  />
-  <input
-  name="companyName"
-  placeholder="Company Name"
-  value={operatorData.companyName}
-  onChange={e => setOperatorData({
-    ...operatorData,
-    companyName: e.target.value
-  })}
-  className="form-control mb-2"
-/>
-  <input
-    name="fname"
-    placeholder="Operator Name"
-    value={operatorData.fname}
-    onChange={(e) =>
-      setOperatorData({ ...operatorData, fname: e.target.value })
-    }
-    className="form-control mb-2"
-  />
-  <input
-    name="email"
-    placeholder="Operator Email"
-    type="email"
-    value={operatorData.email}
-    onChange={(e) =>
-      setOperatorData({ ...operatorData, email: e.target.value })
-    }
-    className="form-control mb-2"
-  />
-  <input
-    name="password"
-    placeholder="Operator Password"
-    type="password"
-    value={operatorData.password}
-    onChange={(e) =>
-      setOperatorData({ ...operatorData, password: e.target.value })
-    }
-    className="form-control mb-2"
-  />
-  <select
-    name="adminType"
-    value={operatorData.adminType}
-    onChange={(e) =>
-      setOperatorData({ ...operatorData, adminType: e.target.value })
-    }
-    className="form-control mb-2"
-  >
-    <option value="">Select Admin Type</option>
-    <option value="Genex">Genex</option>
-    <option value="KSPCB">KSPCB</option>
-    <option value="Banka Bio">Banka Bio</option>
-    <option value="IESS">IESS</option>
-  </select>
-  <Button
-    type="submit"
-    style={{ backgroundColor: "#236a80", color: "#fff" }}
-    className="btn w-100"
-  >
-    Add Operator
-  </Button>
-</form>
-
-  </Modal.Body>
-</Modal>
-
+      <Modal
+        show={showAddOperatorDialog}
+        onHide={() => setShowAddOperatorDialog(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Add Operator</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <form onSubmit={handleAddOperator}>
+            <input
+              name="userName"
+              placeholder="Operator ID"
+              value={operatorData.userName}
+              onChange={(e) =>
+                setOperatorData({ ...operatorData, userName: e.target.value })
+              }
+              className="form-control mb-2"
+            />
+            <input
+              name="companyName"
+              placeholder="Company Name"
+              value={operatorData.companyName}
+              onChange={(e) =>
+                setOperatorData({
+                  ...operatorData,
+                  companyName: e.target.value,
+                })
+              }
+              className="form-control mb-2"
+            />
+            <input
+              name="fname"
+              placeholder="Operator Name"
+              value={operatorData.fname}
+              onChange={(e) =>
+                setOperatorData({ ...operatorData, fname: e.target.value })
+              }
+              className="form-control mb-2"
+            />
+            <input
+              name="email"
+              placeholder="Operator Email"
+              type="email"
+              value={operatorData.email}
+              onChange={(e) =>
+                setOperatorData({ ...operatorData, email: e.target.value })
+              }
+              className="form-control mb-2"
+            />
+            <input
+              name="password"
+              placeholder="Operator Password"
+              type="password"
+              value={operatorData.password}
+              onChange={(e) =>
+                setOperatorData({ ...operatorData, password: e.target.value })
+              }
+              className="form-control mb-2"
+            />
+            <select
+              name="adminType"
+              value={operatorData.adminType}
+              onChange={(e) =>
+                setOperatorData({ ...operatorData, adminType: e.target.value })
+              }
+              className="form-control mb-2"
+            >
+              <option value="">Select Admin Type</option>
+              <option value="Genex">Genex</option>
+              <option value="KSPCB">KSPCB</option>
+              <option value="Banka Bio">Banka Bio</option>
+              <option value="IESS">IESS</option>
+            </select>
+            <Button
+              type="submit"
+              style={{ backgroundColor: "#236a80", color: "#fff" }}
+              className="btn w-100"
+            >
+              Add Operator
+            </Button>
+          </form>
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };

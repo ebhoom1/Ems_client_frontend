@@ -236,7 +236,7 @@ useEffect(() => {
     if (userType === "admin") {
       return (
         <div>
-        <div className="d-flex align-items-center justify-content-center mt-5">
+        <div className="d-flex align-items-center justify-content-center">
   <button onClick={() => navigate("/inventory")} className="w-25 btn btn-outline-success me-2">
     Inventory
   </button>

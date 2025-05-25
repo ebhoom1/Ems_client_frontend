@@ -54,39 +54,31 @@ function Header() {
   };
 
   // Fetch users data.
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        if (userData?.validUserOne) {
-          const { adminType, isTerritorialManager, _id } =
-            userData.validUserOne;
+useEffect(() => {
+  const fetchUsers = async () => {
+    try {
+      const currentUser = userData?.validUserOne;
+      if (!currentUser) return;
 
-          if (adminType) {
-            let url = `${API_URL}/api/get-users-by-adminType/${adminType}`;
+      let response;
 
-            // If territorial manager, add query params
-            if (isTerritorialManager) {
-              url += `?territorialManagerId=${_id}&isTerritorialManager=true`;
-            }
-
-            const response = await axios.get(url);
-            setUsers(response.data.users || []);
-          } else {
-            console.log("No adminType found, fetching all users");
-            const response = await axios.get(`${API_URL}/api/getallusers`);
-            setUsers(response.data.users || []);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        setUsers([]);
+      if (currentUser.adminType === "EBHOOM") {
+        response = await axios.get(`${API_URL}/api/getallusers`);
+      } else {
+        const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
+        response = await axios.get(url);
       }
-    };
 
-    if (userData?.validUserOne) {
-      fetchUsers();
+      setUsers(response.data.users || []);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setUsers([]);
     }
-  }, [userData]);
+  };
+
+  fetchUsers();
+}, [userData]);
+
 
   console.log(users);
 
@@ -269,7 +261,15 @@ function Header() {
                 </Dropdown.Toggle>
                 <Dropdown.Menu
                   align="end"
-                  style={{ right: 0, minWidth: "150px", overflow: "visible" }}
+                  style={{
+                    zIndex: 1100,
+                    position: "absolute",
+                    right: 0,
+                    minWidth: "150px",
+                    overflow: "visible",
+                  }}
+                  className="user-dropdown-menu"
+
                 >
                   <Dropdown.Item>
                     <img
