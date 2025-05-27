@@ -264,7 +264,7 @@ const [selectedSiteIndex, setSelectedSiteIndex] = useState(0);
   console.log("User site coordinates:", userLat, userLng);
 
    //within 100m testing
-     const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
+     /* const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
       const toRad = (x) => (x * Math.PI) / 180;
       const R = 6371000; // Earth radius in meters
      const dLat = toRad(lat2 - lat1);
@@ -278,8 +278,8 @@ const [selectedSiteIndex, setSelectedSiteIndex] = useState(0);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
      return R * c;
     }; 
-
- /* const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
+ */
+const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
     const toRad = x => (x * Math.PI) / 180;
     const R = 6371000;
     const dLat = toRad(lat2 - lat1);
@@ -290,7 +290,7 @@ const [selectedSiteIndex, setSelectedSiteIndex] = useState(0);
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
-  };  */
+  };  
 
 
  
