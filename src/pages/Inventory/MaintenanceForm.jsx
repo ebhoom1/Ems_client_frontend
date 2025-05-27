@@ -5,196 +5,187 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { API_URL } from "../../utils/apiConfig";
 
-// ——— Full mechanicalConfig ———
+const standardPumpChecklist = [
+  { id: 1, category: "Pump Type", description: "Coupled / Monoblock" },
+  { id: 2, category: "Check for safety Guards", description: "" },
+  { id: 3, category: "Check for alignment of the pump", description: "" },
+  { id: 4, category: "Direction of rotation", description: "" },
+  { id: 5, category: "Impeller sound", description: "" },
+  { id: 6, category: "Check if the Pump is running smoothly", description: "" },
+  { id: 7, category: "Check for oil, Grease & water leakage", description: "" },
+  { id: 8, category: "Check for Star bush & coupling damage", description: "" },
+  { id: 9, category: "Check for Bearing sound & damage", description: "" },
+  { id: 10, category: "Check for Valve & pipe line blockage", description: "" },
+  { id: 11, category: "Check for Vibration", description: "" },
+  { id: 12, category: "Check for terminal loose connection", description: "" },
+  { id: 13, category: "Check for discharge pressure", description: "" },
+  { id: 14, category: "Check for the NRV working condition", description: "" },
+  { id: 15, category: "Check for coupler safety guard", description: "" },
+  { id: 16, category: "Check for coupler condition", description: "" },
+  { id: 17, category: "Other observation if any", description: "" }
+];
+
+const blowerChecklist = [
+  { id: 1, category: "Check for safety Guards", description: "" },
+  { id: 2, category: "Noise level in dB", description: "" },
+  { id: 3, category: "Direction of rotation", description: "" },
+  { id: 4, category: "Check for Vibration", description: "" },
+  { id: 5, category: "Check if the blower is running smoothly", description: "" },
+  { id: 6, category: "Check if motor is running smoothly", description: "" },
+  { id: 7, category: "Check for oil & Grease leakage", description: "" },
+  { id: 8, category: "Check if greasing is done", description: "" },
+  { id: 9, category: "Check for blower Bearing sound & damage", description: "" },
+  { id: 10, category: "Check for motor Bearing sound & damage", description: "" },
+  { id: 11, category: "Check for Valve & pipe line & Damage", description: "" },
+  { id: 12, category: "Check the discharge pressures in Kg/cm2", description: "" },
+  { id: 13, category: "Check for pressure relief valves", description: "" },
+  { id: 14, category: "Check for Air filter cleaning", description: "" },
+  { id: 15, category: "Check for pulley alignment", description: "" },
+  { id: 16, category: "Check for V-belt condition", description: "" },
+  { id: 17, category: "Check for base support", description: "" },
+  { id: 18, category: "Check for motor cooling fan condition", description: "" },
+  { id: 19, category: "Other observations if any", description: "" }
+];
+
 const mechanicalConfig = {
-    "bar-screen": {
-      columns: ["Process Status"],
-      rows: [
-        { id: 1, category: "Material Type", description: "" },
-        { id: 2, category: "Check for any damages", description: "" },
-        { id: 3, category: "Fixed/Removable", description: "" },
-        { id: 4, category: "Other observations if any", description: "" },
-      ]
-    },
-    "oil-skimmer": {
-      columns: ["Process Status"],
-      rows: [
-        { id: 1, category: "Check for safety Guards", description: "" },
-        { id: 2, category: "Direction of rotation", description: "" },
-        { id: 3, category: "Check for Gear box sound", description: "" },
-        { id: 4, category: "Check for Motor Condition", description: "" },
-        { id: 5, category: "Check belt quality", description: "" },
-        { id: 6, category: "Check for Star bush & coupling damage", description: "" },
-        { id: 7, category: "Check for Bearing sound & damage", description: "" },
-        { id: 8, category: "Check for Oil collection tray", description: "" },
-        { id: 9, category: "Check for pulley condition", description: "" },
-        { id: 10, category: "Check for base support", description: "" },
-        { id: 11, category: "Other observations if any", description: "" },
-      ]
-    },
-    "raw-sewage-pump": {
-      columns: ["Pump 1"],
-      rows: [
-        { id: 1, category: "Type of Pump", description: "Submersible / Centrifugal pump" },
-        { id: 2, category: "Check for safety Guards", description: "" },
-        { id: 3, category: "Direction of rotation", description: "" },
-        { id: 4, category: "Check for Impeller sound", description: "" },
-        { id: 5, category: "Check if the Pump is running smoothly", description: "" },
-        { id: 6, category: "Check for oil, Grease & water leakage", description: "" },
-        { id: 7, category: "Check for Star bush & coupling damage", description: "" },
-        { id: 8, category: "Check for Bearing sound & damage", description: "" },
-        { id: 9, category: "Check for Valve & pipe line blockage", description: "" },
-        { id: 10, category: "Check for Vibration", description: "" },
-        { id: 11, category: "Check for terminal loose connection", description: "" },
-        { id: 12, category: "Check for discharge pressure", description: "" },
-        { id: 13, category: "Check if the NRV is in working condition", description: "" },
-        { id: 14, category: "Other observations if any", description: "" },
-      ]
-    },
-    "ET&AT AIR BLOWER 2": {
-      columns: ["Blower 1"],
-      rows: [
-        { id: 1, category: "Check for safety Guards", description: "" },
-        { id: 2, category: "Noise level in dB", description: "" },
-        { id: 3, category: "Direction of rotation", description: "" },
-        { id: 4, category: "Check for Vibration", description: "" },
-        { id: 5, category: "Check if the blower is running smoothly", description: "" },
-        { id: 6, category: "Check if motor is running smoothly", description: "" },
-        { id: 7, category: "Check for oil & Grease leakage", description: "" },
-        { id: 8, category: "Check if greasing is done", description: "" },
-        { id: 9, category: "Check for blower Bearing sound & damage", description: "" },
-        { id: 10, category: "Check for motor Bearing sound & damage", description: "" },
-        { id: 11, category: "Check for Valve & pipe line & Damage", description: "" },
-        { id: 12, category: "Check the discharge pressures in Kg/cm2", description: "" },
-        { id: 13, category: "Check for pressure relief valves", description: "" },
-        { id: 14, category: "Check for Air filter cleaning", description: "" },
-        { id: 15, category: "Check for pulley alignment", description: "" },
-        { id: 16, category: "Check for V-belt condition", description: "" },
-        { id: 17, category: "Check for base support", description: "" },
-        { id: 18, category: "Check for motor cooling fan condition", description: "" },
-        { id: 19, category: "Other observations if any", description: "" }
-      ]
-    },
-    "mbr-air-blower-3-4": {
-      columns: ["Blower 3"],
-      rows: [
-        { id: 1, category: "Check for safety Guards", description: "" },
-        { id: 2, category: "Noise level in dB", description: "" },
-        { id: 3, category: "Direction of rotation", description: "" },
-        { id: 4, category: "Check for Vibration", description: "" },
-        { id: 5, category: "Check if the blower is running smoothly", description: "" },
-        { id: 6, category: "Check if motor is running smoothly", description: "" },
-        { id: 7, category: "Check for oil & Grease leakage", description: "" },
-        { id: 8, category: "Check if greasing is done", description: "" },
-        { id: 9, category: "Check for blower Bearing sound & damage", description: "" },
-        { id: 10, category: "Check for motor Bearing sound & damage", description: "" },
-        { id: 11, category: "Check for Valve & pipe line & Damage", description: "" },
-        { id: 12, category: "Check the discharge pressures in Kg/cm2", description: "" },
-        { id: 13, category: "Check for pressure relief valves", description: "" },
-        { id: 14, category: "Check for Air filter cleaning", description: "" },
-        { id: 15, category: "Check for pulley alignment", description: "" },
-        { id: 16, category: "Check for V-belt condition", description: "" },
-        { id: 17, category: "Check for base support", description: "" },
-        { id: 18, category: "Check for motor cooling fan condition", description: "" },
-        { id: 19, category: "Other observations if any", description: "" }
-      ]
-    },
-    "RAS PUMP A": {
-      columns: ["Pump 1"],
-      rows: [
-        { id: 1, category: "Pump Type", description: "Coupled / Monoblock" },
-        { id: 2, category: "Check for safety Guards", description: "" },
-        { id: 3, category: "Check for alignment of the pump", description: "" },
-        { id: 4, category: "Direction of rotation", description: "" },
-        { id: 5, category: "Impeller sound", description: "" },
-        { id: 6, category: "Check if the Pump is running smoothly", description: "" },
-        { id: 7, category: "Check for oil, Grease & water leakage", description: "" },
-        { id: 8, category: "Check for Star bush & coupling damage", description: "" },
-        { id: 9, category: "Check for Bearing sound & damage", description: "" },
-        { id: 10, category: "Check for Valve & pipe line blockage", description: "" },
-        { id: 11, category: "Check for Vibration", description: "" },
-        { id: 12, category: "Check for terminal loose connection", description: "" },
-        { id: 13, category: "Check for discharge pressure", description: "" },
-        { id: 14, category: "Check for the NRV working condition", description: "" },
-        { id: 15, category: "Check for coupler safety guard", description: "" },
-        { id: 16, category: "Check for coupler condition", description: "" },
-        { id: 17, category: "Other observation if any", description: "" },
-      ]
-    },
-    ...[
-      "mbr-permeate-pump",
-      "cip-pump",
-      "treated-water-pump-c-block",
-      "treated-water-pump-m-block",
-      "dosing-pump",
-      "drain-pump"
-    ].reduce((acc, id) => {
-      acc[id] = {
-        columns: ["Pump 1"],
-        rows: [
-          { id: 1, category: "Pump Type", description: "Coupled / Monoblock / Vertical multi-stage pumps" },
-          ...Array.from({ length: 16 }, (_, i) => ({
-            id: i + 2,
-            category: `Check item ${i + 2}`,
-            description: ""
-          })),
-          { id: 18, category: "Other observation if any", description: "" }
-        ]
-      };
-      return acc;
-    }, {}),
-    "filter-press-unit": {
-      columns: ["Process Status"],
-      rows: [
-        { id: 1, category: "Check for the filter press cloth condition", description: "" },
-        { id: 2, category: "Check for all connected valves", description: "" },
-        { id: 3, category: "Check for all the pressure gauges working condition", description: "" },
-        { id: 4, category: "Check for the hydraulic unit", description: "" },
-        { id: 5, category: "Other observation if any", description: "" }
-      ]
-    },
-    "agitator-mechanism": {
-      columns: ["Process Status"],
-      rows: [
-        { id: 1, category: "Type of the Mechanism", description: "Direct Coupled / Chain driven / Belt Driven" },
-        { id: 2, category: "Check for safety Guards", description: "" },
-        { id: 3, category: "Direction of rotation", description: "" },
-        { id: 4, category: "Check for Gear Box sound", description: "" },
-        { id: 5, category: "Check if the Motor is running smoothly or not", description: "" },
-        { id: 6, category: "Check the oil level", description: "" },
-        { id: 7, category: "Check for Star bush & coupling damage (Size)", description: "" },
-        { id: 8, category: "Check for Bearing sound & damage", description: "" },
-        { id: 9, category: "Check if Oil replacement is done", description: "" },
-        { id: 10, category: "Check for the Vibration", description: "" },
-        { id: 11, category: "Other observation if any", description: "" }
-      ]
-    }
-  };
+  "shared-standard-pump": {
+    columns: ["Pump 1"],
+    rows: standardPumpChecklist
+  },
+  "bar-screen": {
+    columns: ["Process Status"],
+    rows: [
+      { id: 1, category: "Material Type", description: "" },
+      { id: 2, category: "Check for any damages", description: "" },
+      { id: 3, category: "Fixed/Removable", description: "" },
+      { id: 4, category: "Other observations if any", description: "" }
+    ]
+  },
+  "oil-skimmer": {
+    columns: ["Process Status"],
+    rows: [
+      { id: 1, category: "Check for safety Guards", description: "" },
+      { id: 2, category: "Direction of rotation", description: "" },
+      { id: 3, category: "Check for Gear box sound", description: "" },
+      { id: 4, category: "Check for Motor Condition", description: "" },
+      { id: 5, category: "Check belt quality", description: "" },
+      { id: 6, category: "Check for Star bush & coupling damage", description: "" },
+      { id: 7, category: "Check for Bearing sound & damage", description: "" },
+      { id: 8, category: "Check for Oil collection tray", description: "" },
+      { id: 9, category: "Check for pulley condition", description: "" },
+      { id: 10, category: "Check for base support", description: "" },
+      { id: 11, category: "Other observations if any", description: "" }
+    ]
+  },
+  "raw-sewage-pump": {
+    columns: ["Pump 1"],
+    rows: [
+      { id: 1, category: "Type of Pump", description: "Submersible / Centrifugal pump" },
+      { id: 2, category: "Check for safety Guards", description: "" },
+      { id: 3, category: "Direction of rotation", description: "" },
+      { id: 4, category: "Check for Impeller sound", description: "" },
+      { id: 5, category: "Check if the Pump is running smoothly", description: "" },
+      { id: 6, category: "Check for oil, Grease & water leakage", description: "" },
+      { id: 7, category: "Check for Star bush & coupling damage", description: "" },
+      { id: 8, category: "Check for Bearing sound & damage", description: "" },
+      { id: 9, category: "Check for Valve & pipe line blockage", description: "" },
+      { id: 10, category: "Check for Vibration", description: "" },
+      { id: 11, category: "Check for terminal loose connection", description: "" },
+      { id: 12, category: "Check for discharge pressure", description: "" },
+      { id: 13, category: "Check if the NRV is in working condition", description: "" },
+      { id: 14, category: "Other observations if any", description: "" }
+    ]
+  },
+  "mbr-air-blower-3-4": {
+    columns: ["Blower 3"],
+    rows: blowerChecklist
+  },
+  "ET&AT AIR BLOWER 2": {
+    columns: ["Blower 1"],
+    rows: blowerChecklist
+  },
+  "filter-press-unit": {
+    columns: ["Process Status"],
+    rows: [
+      { id: 1, category: "Check for the filter press cloth condition", description: "" },
+      { id: 2, category: "Check for all connected valves", description: "" },
+      { id: 3, category: "Check for all the pressure gauges working condition", description: "" },
+      { id: 4, category: "Check for the hydraulic unit", description: "" },
+      { id: 5, category: "Other observation if any", description: "" }
+    ]
+  },
+  "agitator-mechanism": {
+    columns: ["Process Status"],
+    rows: [
+      { id: 1, category: "Type of the Mechanism", description: "Direct Coupled / Chain driven / Belt Driven" },
+      { id: 2, category: "Check for safety Guards", description: "" },
+      { id: 3, category: "Direction of rotation", description: "" },
+      { id: 4, category: "Check for Gear Box sound", description: "" },
+      { id: 5, category: "Check if the Motor is running smoothly or not", description: "" },
+      { id: 6, category: "Check the oil level", description: "" },
+      { id: 7, category: "Check for Star bush & coupling damage (Size)", description: "" },
+      { id: 8, category: "Check for Bearing sound & damage", description: "" },
+      { id: 9, category: "Check if Oil replacement is done", description: "" },
+      { id: 10, category: "Check for the Vibration", description: "" },
+      { id: 11, category: "Other observation if any", description: "" }
+    ]
+  }
+};
 
 export default function MaintenanceForm() {
   const { type, equipmentId: dbId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+const [capacity, setCapacity] = useState("");
+const [userName, setUserName] = useState("");
 
-  // slug = the config key you passed in via state
-  const slug = location.state?.equipmentName;
-  const originalCfg = mechanicalConfig[slug] || { columns: [], rows: [] };
-  
+  // Helper function to determine checklist key based on partial matches
+  const getMatchingChecklistKey = (name) => {
+    if (!name) return null;
+    
+    const keywordMap = [
+      { keyword: "ras pump", key: "shared-standard-pump" },
+      { keyword: "filter feed", key: "shared-standard-pump" },
+      { keyword: "permeate", key: "shared-standard-pump" },
+      { keyword: "sludge transfer", key: "shared-standard-pump" },
+      { keyword: "sludge re-circulation", key: "shared-standard-pump" },
+      { keyword: "softner feed", key: "shared-standard-pump" },
+      { keyword: "cip", key: "shared-standard-pump" },
+      { keyword: "uf feed", key: "shared-standard-pump" },
+      { keyword: "mbr blower", key: "mbr-air-blower-3-4" },
+      { keyword: "raw-sewage", key: "raw-sewage-pump" },
+      { keyword: "et&at air blower", key: "ET&AT AIR BLOWER 2" },
+      { keyword: "bar screen", key: "bar-screen" },
+      { keyword: "oil skimmer", key: "oil-skimmer" },
+      { keyword: "agitator", key: "agitator-mechanism" },
+      { keyword: "filter press", key: "filter-press-unit" },
+            { keyword: "screw pump", key: "filter-press-unit" },
+              { keyword: "sludge pump", key: "filter-press-unit" },
+              { keyword: "dosing pump", key: "filter-press-unit" }
+            // sludge pump
+//dosing pump
+    ];
+
+    const lowerName = name.toLowerCase();
+    const match = keywordMap.find(item => lowerName.includes(item.keyword));
+    return match ? match.key : null;
+  };
+
+  const slug = location.state?.equipmentName?.toLowerCase()?.trim();
+  const matchedKey = getMatchingChecklistKey(slug);
+  const originalCfg = matchedKey ? mechanicalConfig[matchedKey] : { columns: [], rows: [] };
+
   // State for additional columns (Pump 2/Blower 2)
   const [additionalColumns, setAdditionalColumns] = useState([]);
   const [cfg, setCfg] = useState(originalCfg);
 
   // technician from backend
   const [technician, setTechnician] = useState(null);
-  // locally saved tech info
-  const [tech, setTech] = useState(null);
-  const [editingTech, setEditingTech] = useState(true);
-  const [techForm, setTechForm] = useState({ name: "", designation: "", email: "" });
   const [answers, setAnswers] = useState({});
 
   // Check if equipment is a pump or blower
-  const isPump = slug?.toLowerCase().includes('pump');
-  const isBlower = slug?.toLowerCase().includes('blower');
+  const isPump = matchedKey?.includes('pump');
+  const isBlower = matchedKey?.includes('blower');
 
   // fetch technician record once
   useEffect(() => {
@@ -210,45 +201,22 @@ export default function MaintenanceForm() {
     })();
   }, []);
 
-  // load local techInfo + init answers when slug changes
+  // Initialize answers when cfg changes
   useEffect(() => {
-    const saved = localStorage.getItem("techInfo");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setTech(parsed);
-      setTechForm(parsed);
-      setEditingTech(false);
-    }
     const init = {};
-    originalCfg.rows.forEach(row => {
+    cfg.rows.forEach(row => {
       init[row.id] = { 
-        checks: Array(originalCfg.columns.length).fill(""), 
+        checks: Array(cfg.columns.length).fill(""), 
         remarks: "" 
       };
     });
     setAnswers(init);
-    setAdditionalColumns([]);
-    setCfg(originalCfg);
-  }, [slug, originalCfg.rows, originalCfg.columns.length]);
+  }, [cfg]);
 
   const addAdditionalColumn = () => {
-    if (isPump) {
-      const newColumn = `Pump ${cfg.columns.length + 1}`;
-      setAdditionalColumns([...additionalColumns, newColumn]);
-      
-      // Update cfg with the new column
-      const newColumns = [...cfg.columns, newColumn];
-      setCfg({...cfg, columns: newColumns});
-      
-      // Update answers to include the new column for each row
-      const updatedAnswers = {...answers};
-      Object.keys(updatedAnswers).forEach(rowId => {
-        updatedAnswers[rowId].checks.push("");
-      });
-      setAnswers(updatedAnswers);
-    } else if (isBlower) {
-      const newColumn = `Blower ${cfg.columns.length + 1}`;
-      setAdditionalColumns([...additionalColumns, newColumn]);
+    if (isPump || isBlower) {
+      const prefix = isPump ? "Pump" : "Blower";
+      const newColumn = `${prefix} ${cfg.columns.length + 1}`;
       
       // Update cfg with the new column
       const newColumns = [...cfg.columns, newColumn];
@@ -261,44 +229,6 @@ export default function MaintenanceForm() {
       });
       setAnswers(updatedAnswers);
     }
-  };
-
-  const startEditTech = () => {
-    setTechForm({
-      name: technician?.name || "",
-      designation: technician?.designation || "",
-      email: technician?.email || ""
-    });
-    setEditingTech(true);
-  };
-
-  const cancelEditTech = () => {
-    if (tech) {
-      setTechForm(tech);
-    } else if (technician) {
-      setTechForm({
-        name: technician.name,
-        designation: technician.designation,
-        email: technician.email
-      });
-    } else {
-      setTechForm({ name: "", designation: "", email: "" });
-    }
-    setEditingTech(false);
-  };
-
-  const saveTech = () => {
-    if (!techForm.name || !techForm.designation || !techForm.email) {
-      return toast.error("Please fill all technician fields");
-    }
-    localStorage.setItem("techInfo", JSON.stringify(techForm));
-    setTech(techForm);
-    setEditingTech(false);
-  };
-
-  const handleTechChange = e => {
-    const { name, value } = e.target;
-    setTechForm(f => ({ ...f, [name]: value }));
   };
 
   const onCheck = (rowId, idx, val) => {
@@ -317,22 +247,28 @@ export default function MaintenanceForm() {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!tech) {
-      return toast.error("Provide technician info first");
+  
+    if (!technician) {
+      toast.error("Technician information is required");
+      return;
     }
+
     const payload = {
-      equipmentId:   dbId,
+      equipmentId: dbId,
       equipmentName: slug,
-      columns: cfg.columns,     
-      technician:    tech,
-      entries:       cfg.rows.map(row => ({
-        id:          row.id,
-        category:    row.category,
+      userName,
+         // set this from earlier API or input
+      capacity,    
+      columns: cfg.columns,
+      technician: technician,
+      entries: cfg.rows.map(row => ({
+        id: row.id,
+        category: row.category,
         description: row.description,
-        checks:      answers[row.id].checks,
-        remarks:     answers[row.id].remarks
+        checks: answers[row.id]?.checks || [],
+        remarks: answers[row.id]?.remarks || ""
       })),
-      timestamp:     new Date().toISOString()
+      timestamp: new Date().toISOString()
     };
 
     try {
@@ -342,7 +278,7 @@ export default function MaintenanceForm() {
       );
       if (data.success) {
         toast.success("Report submitted!");
-        navigate("/");  // or wherever you want
+        navigate("/");
       } else {
         toast.error(data.message || "Failed to submit report");
       }
@@ -358,302 +294,107 @@ export default function MaintenanceForm() {
         {type.charAt(0).toUpperCase() + type.slice(1)} Maintenance –{" "}
         {slug?.replace(/-/g, " ")}
       </h3>
+{/* Capacity Input */}
+{/* User Name Input */}
+<div className="mb-3">
+  <label htmlFor="userName" className="form-label"><strong>User Name</strong></label>
+  <input
+    type="text"
+    id="userName"
+    className="form-control"
+    placeholder="Enter user name (e.g., HH014)"
+    value={userName}
+    onChange={(e) => setUserName(e.target.value)}
+    required
+  />
+</div>
+
+{/* Capacity Input */}
+<div className="mb-3">
+  <label htmlFor="capacity" className="form-label"><strong>Capacity of Treatment Plant (e.g., 150 KLD)</strong></label>
+  <input
+    type="text"
+    id="capacity"
+    className="form-control"
+    placeholder="Enter treatment plant capacity"
+    value={capacity}
+    onChange={(e) => setCapacity(e.target.value)}
+    required
+  />
+</div>
 
       {/* Technician Info Card */}
-      <div className="p-3 mb-4 shadow">
-        {!editingTech && technician ? (
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <strong>Technician:</strong> {technician.name} —{" "}
-              {technician.designation} (
-              <a href={`mailto:${technician.email}`}>{technician.email}</a>)
-            </div>
-            <button
-              style={{ backgroundColor: '#236a80', color: '#fff' }}
-              className="btn"
-              onClick={startEditTech}
-            >
-              Change
-            </button>
+      <div className="p-3 mb-4 shadow bg-light">
+        {technician ? (
+          <div>
+            <strong>Technician:</strong> {technician.name} — {technician.designation} (
+            <a href={`mailto:${technician.email}`}>{technician.email}</a>)
           </div>
         ) : (
-          <form onSubmit={e => { e.preventDefault(); saveTech(); }}>
-            <div className="row g-3">
-              <div className="col-md-4">
-                <input
-                  type="text" name="name"
-                  className="form-control"
-                  placeholder="Name"
-                  value={techForm.name}
-                  onChange={handleTechChange}
-                />
-              </div>
-              <div className="col-md-4">
-                <input
-                  type="text" name="designation"
-                  className="form-control"
-                  placeholder="Designation"
-                  value={techForm.designation}
-                  onChange={handleTechChange}
-                />
-              </div>
-              <div className="col-md-4">
-                <input
-                  type="email" name="email"
-                  className="form-control"
-                  placeholder="Email"
-                  value={techForm.email}
-                  onChange={handleTechChange}
-                />
-              </div>
-              <div className="col-12 text-end">
-                <button
-                  type="button"
-                  className="btn btn-outline-danger me-2"
-                  onClick={cancelEditTech}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-success">
-                  Save
-                </button>
-              </div>
-            </div>
-          </form>
+          <div className="text-danger">Technician data not available</div>
         )}
       </div>
 
       {/* Maintenance Table */}
-      {!editingTech && (
-        <form onSubmit={submit}>
-          <div className="table-responsive mb-4">
-            <table className="table table-bordered">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Category</th>
-                  <th>Description</th>
-                  {cfg.columns.map(col => (
-                    <th key={col}>{col}</th>
-                  ))}
-                  <th>Remarks</th>
-                  {(isPump || isBlower) && (
-  <th>
-    <button 
-      type="button" 
-      className="btn btn-sm btn-success"
-      onClick={addAdditionalColumn}
-    >
-      +
-    </button>
-  </th>
-)}
-
-                </tr>
-              </thead>
-              <tbody>
-                {cfg.rows.map((row, idx) => (
-                  <tr key={row.id}>
-                    <td>{idx + 1}</td>
-                    <td>Mechanical</td>
-                    <td>{row.category}</td>
-                    {cfg.columns.map((col, cidx) => (
-                      <td key={cidx}>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={answers[row.id]?.checks[cidx] || ""}
-                          onChange={e => onCheck(row.id, cidx, e.target.value)}
-                          required
-                        />
-                      </td>
-                    ))}
-                    <td>
+      <form onSubmit={submit}>
+        <div className="table-responsive mb-4">
+          <table className="table table-bordered">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Category</th>
+                <th>Description</th>
+                {cfg.columns.map(col => (
+                  <th key={col}>{col}</th>
+                ))}
+                <th>Remarks</th>
+                {(isPump || isBlower) && (
+                  <th>
+                    <button 
+                      type="button" 
+                      className="btn btn-sm btn-success"
+                      onClick={addAdditionalColumn}
+                    >
+                      +
+                    </button>
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {cfg.rows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>{idx + 1}</td>
+                  <td>Mechanical</td>
+                  <td>{row.category}</td>
+                  {cfg.columns.map((col, cidx) => (
+                    <td key={cidx}>
                       <input
+                        type="text"
                         className="form-control"
-                        value={answers[row.id]?.remarks || ""}
-                        onChange={e => onRemarks(row.id, e.target.value)}
+                        value={answers[row.id]?.checks[cidx] || ""}
+                        onChange={e => onCheck(row.id, cidx, e.target.value)}
+                        required
                       />
                     </td>
-                    {(isPump || isBlower) && (
-  <td></td>
-)}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button type="submit" className="btn btn-primary">
-            Submit Report
-          </button>
-        </form>
-      )}
+                  ))}
+                  <td>
+                    <input
+                      className="form-control"
+                      value={answers[row.id]?.remarks || ""}
+                      onChange={e => onRemarks(row.id, e.target.value)}
+                    />
+                  </td>
+                  {(isPump || isBlower) && <td></td>}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button type="submit" style={{backgroundColor:'#236a80' , color :'#fff'}} className="btn ">
+          Submit Report
+        </button>
+      </form>
     </div>
   );
 }
-
-
-/* const mechanicalConfig = {
-  "bar-screen": {
-    columns: [],
-    rows: [
-      { id: 1, category: "Material Type", description: "" },
-      { id: 2, category: "Check for any damages", description: "" },
-      { id: 3, category: "Fixed/Removable", description: "" },
-      { id: 4, category: "Other observations if any", description: "" },
-    ]
-  },
-  "oil-skimmer": {
-    columns: [],
-    rows: [
-      { id: 1, category: "Check for safety Guards", description: "" },
-      { id: 2, category: "Direction of rotation", description: "" },
-      { id: 3, category: "Check for Gear box sound", description: "" },
-      { id: 4, category: "Check for Motor Condition", description: "" },
-      { id: 5, category: "Check belt quality", description: "" },
-      { id: 6, category: "Check for Star bush & coupling damage", description: "" },
-      { id: 7, category: "Check for Bearing sound & damage", description: "" },
-      { id: 8, category: "Check for Oil collection tray", description: "" },
-      { id: 9, category: "Check for pulley condition", description: "" },
-      { id: 10, category: "Check for base support", description: "" },
-      { id: 11, category: "Other observations if any", description: "" },
-    ]
-  },
-  "raw-sewage-pump": {
-    columns: ["Pump 1", "Pump 2"],
-    rows: [
-      { id: 1, category: "Type of Pump", description: "Submersible / Centrifugal pump" },
-      { id: 2, category: "Check for safety Guards", description: "" },
-      { id: 3, category: "Direction of rotation", description: "" },
-      { id: 4, category: "Check for Impeller sound", description: "" },
-      { id: 5, category: "Check if the Pump is running smoothly", description: "" },
-      { id: 6, category: "Check for oil, Grease & water leakage", description: "" },
-      { id: 7, category: "Check for Star bush & coupling damage", description: "" },
-      { id: 8, category: "Check for Bearing sound & damage", description: "" },
-      { id: 9, category: "Check for Valve & pipe line blockage", description: "" },
-      { id: 10, category: "Check for Vibration", description: "" },
-      { id: 11, category: "Check for terminal loose connection", description: "" },
-      { id: 12, category: "Check for discharge pressure", description: "" },
-      { id: 13, category: "Check if the NRV is in working condition", description: "" },
-      { id: 14, category: "Other observations if any", description: "" },
-    ]
-  },
-  "mbr-air-blower-1-2": {
-    columns: ["Blower 1", "Blower 2"],
-    rows: [
-      { id: 1, category: "Check for safety Guards", description: "" },
-      { id: 2, category: "Noise level in dB", description: "" },
-      { id: 3, category: "Direction of rotation", description: "" },
-      { id: 4, category: "Check for Vibration", description: "" },
-      { id: 5, category: "Check if the blower is running smoothly", description: "" },
-      { id: 6, category: "Check if motor is running smoothly", description: "" },
-      { id: 7, category: "Check for oil & Grease leakage", description: "" },
-      { id: 8, category: "Check if greasing is done", description: "" },
-      { id: 9, category: "Check for blower Bearing sound & damage", description: "" },
-      { id: 10, category: "Check for motor Bearing sound & damage", description: "" },
-      { id: 11, category: "Check for Valve & pipe line & Damage", description: "" },
-      { id: 12, category: "Check the discharge pressures in Kg/cm2", description: "" },
-      { id: 13, category: "Check for pressure relief valves", description: "" },
-      { id: 14, category: "Check for Air filter cleaning", description: "" },
-      { id: 15, category: "Check for pulley alignment", description: "" },
-      { id: 16, category: "Check for V-belt condition", description: "" },
-      { id: 17, category: "Check for base support", description: "" },
-      { id: 18, category: "Check for motor cooling fan condition", description: "" },
-      { id: 19, category: "Other observations if any", description: "" }
-    ]
-  },
-  "mbr-air-blower-3-4": {
-    columns: ["Blower 3", "Blower 4"],
-    rows: [
-      { id: 1, category: "Check for safety Guards", description: "" },
-      { id: 2, category: "Noise level in dB", description: "" },
-      { id: 3, category: "Direction of rotation", description: "" },
-      { id: 4, category: "Check for Vibration", description: "" },
-      { id: 5, category: "Check if the blower is running smoothly", description: "" },
-      { id: 6, category: "Check if motor is running smoothly", description: "" },
-      { id: 7, category: "Check for oil & Grease leakage", description: "" },
-      { id: 8, category: "Check if greasing is done", description: "" },
-      { id: 9, category: "Check for blower Bearing sound & damage", description: "" },
-      { id: 10, category: "Check for motor Bearing sound & damage", description: "" },
-      { id: 11, category: "Check for Valve & pipe line & Damage", description: "" },
-      { id: 12, category: "Check the discharge pressures in Kg/cm2", description: "" },
-      { id: 13, category: "Check for pressure relief valves", description: "" },
-      { id: 14, category: "Check for Air filter cleaning", description: "" },
-      { id: 15, category: "Check for pulley alignment", description: "" },
-      { id: 16, category: "Check for V-belt condition", description: "" },
-      { id: 17, category: "Check for base support", description: "" },
-      { id: 18, category: "Check for motor cooling fan condition", description: "" },
-      { id: 19, category: "Other observations if any", description: "" }
-    ]
-  },
-  "RAS PUMP A": {
-    columns: ["Pump 1", "Pump 2"],
-    rows: [
-      { id: 1, category: "Pump Type", description: "Coupled / Monoblock" },
-      { id: 2, category: "Check for safety Guards", description: "" },
-      { id: 3, category: "Check for alignment of the pump", description: "" },
-      { id: 4, category: "Direction of rotation", description: "" },
-      { id: 5, category: "Impeller sound", description: "" },
-      { id: 6, category: "Check if the Pump is running smoothly", description: "" },
-      { id: 7, category: "Check for oil, Grease & water leakage", description: "" },
-      { id: 8, category: "Check for Star bush & coupling damage", description: "" },
-      { id: 9, category: "Check for Bearing sound & damage", description: "" },
-      { id: 10, category: "Check for Valve & pipe line blockage", description: "" },
-      { id: 11, category: "Check for Vibration", description: "" },
-      { id: 12, category: "Check for terminal loose connection", description: "" },
-      { id: 13, category: "Check for discharge pressure", description: "" },
-      { id: 14, category: "Check for the NRV working condition", description: "" },
-      { id: 15, category: "Check for coupler safety guard", description: "" },
-      { id: 16, category: "Check for coupler condition", description: "" },
-      { id: 17, category: "Other observation if any", description: "" },
-    ]
-  },
-  ...[
-    "mbr-permeate-pump",
-    "cip-pump",
-    "treated-water-pump-c-block",
-    "treated-water-pump-m-block",
-    "dosing-pump",
-    "drain-pump"
-  ].reduce((acc, id) => {
-    acc[id] = {
-      columns: ["Pump 1", "Pump 2"],
-      rows: [
-        { id: 1, category: "Pump Type", description: "Coupled / Monoblock / Vertical multi-stage pumps" },
-        ...Array.from({ length: 16 }, (_, i) => ({
-          id: i + 2,
-          category: `Check item ${i + 2}`,
-          description: ""
-        })),
-        { id: 18, category: "Other observation if any", description: "" }
-      ]
-    };
-    return acc;
-  }, {}),
-  "filter-press-unit": {
-    columns: [],
-    rows: [
-      { id: 1, category: "Check for the filter press cloth condition", description: "" },
-      { id: 2, category: "Check for all connected valves", description: "" },
-      { id: 3, category: "Check for all the pressure gauges working condition", description: "" },
-      { id: 4, category: "Check for the hydraulic unit", description: "" },
-      { id: 5, category: "Other observation if any", description: "" }
-    ]
-  },
-  "agitator-mechanism": {
-    columns: [],
-    rows: [
-      { id: 1, category: "Type of the Mechanism", description: "Direct Coupled / Chain driven / Belt Driven" },
-      { id: 2, category: "Check for safety Guards", description: "" },
-      { id: 3, category: "Direction of rotation", description: "" },
-      { id: 4, category: "Check for Gear Box sound", description: "" },
-      { id: 5, category: "Check if the Motor is running smoothly or not", description: "" },
-      { id: 6, category: "Check the oil level", description: "" },
-      { id: 7, category: "Check for Star bush & coupling damage (Size)", description: "" },
-      { id: 8, category: "Check for Bearing sound & damage", description: "" },
-      { id: 9, category: "Check if Oil replacement is done", description: "" },
-      { id: 10, category: "Check for the Vibration", description: "" },
-      { id: 11, category: "Other observation if any", description: "" }
-    ]
-  }
-}; */

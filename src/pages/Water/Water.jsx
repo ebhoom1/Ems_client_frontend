@@ -567,10 +567,10 @@ const res = await axios.get(`${API_URL}/api/attendance/status/${operator.userNam
   }, []);
 
   const isSpecialUser =
-    userData?.validUserOne?.isOperator === true ||
-    userData?.validUserOne?.isTechnician === true ||
+    userData?.validUserOne?.isOperator === true ;
+   /*  userData?.validUserOne?.isTechnician === true ||
     userData?.validUserOne?.isTerritorialManager === true;
-
+ */
   return (
     <div>
       {/**overlay-block click-new */}
@@ -1000,10 +1000,10 @@ const res = await axios.get(`${API_URL}/api/attendance/status/${operator.userNam
         <h3 className="text-center">
           {userData?.validUserOne?.isOperator === true
             ? "Operator Checkout"
-            : userData?.validUserOne?.isTechnician === true
+           /*  : userData?.validUserOne?.isTechnician === true
             ? "Technician Checkout"
             : userData?.validUserOne?.isTerritorialManager === true
-            ? "Territorial Manager Checkout"
+            ? "Territorial Manager Checkout" */
             : "User Checkout"}
         </h3>
 

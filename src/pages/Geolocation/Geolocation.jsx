@@ -264,22 +264,22 @@ const [selectedSiteIndex, setSelectedSiteIndex] = useState(0);
   console.log("User site coordinates:", userLat, userLng);
 
    //within 100m testing
-  //   const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
-  //    const toRad = (x) => (x * Math.PI) / 180;
-  //    const R = 6371000; // Earth radius in meters
-  //   const dLat = toRad(lat2 - lat1);
-  //    const dLon = toRad(lon2 - lon1);
-  //    const a =
-  //      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-  //     Math.cos(toRad(lat1)) *
-  //        Math.cos(toRad(lat2)) *
-  //        Math.sin(dLon / 2) *
-  //        Math.sin(dLon / 2);
-  //    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  //   return R * c;
-  //  }; 
+     const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
+      const toRad = (x) => (x * Math.PI) / 180;
+      const R = 6371000; // Earth radius in meters
+     const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+       Math.cos(toRad(lat1)) *
+          Math.cos(toRad(lat2)) *
+         Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+     return R * c;
+    }; 
 
- const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
+ /* const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
     const toRad = x => (x * Math.PI) / 180;
     const R = 6371000;
     const dLat = toRad(lat2 - lat1);
@@ -290,7 +290,7 @@ const [selectedSiteIndex, setSelectedSiteIndex] = useState(0);
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
-  }; 
+  };  */
 
 
  
@@ -303,7 +303,8 @@ useEffect(() => {
     // ✅ PRODUCTION MODE — use real GPS coordinates
     const latitude = position.coords.latitude;
     const longitude = position.coords.longitude;
-
+//8.864167
+//76.681111
     // ✅ MOCK MODE — simulate near-site for testing
     // const latitude = siteOptions[0].latitude + 0.0003;
     // const longitude = siteOptions[0].longitude + 0.0003;

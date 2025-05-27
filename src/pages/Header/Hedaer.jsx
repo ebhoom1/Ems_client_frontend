@@ -195,7 +195,7 @@ useEffect(() => {
         >
           <div className="w-100 px-2 d-flex align-items-center justify-content-between">
             <Navbar.Brand href="#home" className="brand-text">
-              <span className="d-none d-lg-inline">User ID: </span>
+              <span className="d-none d-lg-inline">Username: </span>
               <span className="text-dark">
                 <b style={{fontSize:'19px'}}>{userData?.validUserOne?.userName || "Admin Developer"}</b>
                 <span className="d-inline ms-2">

@@ -15,6 +15,57 @@ export default function MechanicalReport() {
   const [loading, setLoading] = useState(true);
   const [logoUrl, setLogoUrl] = useState('');
   const adminType = useSelector(s => s.user.userData?.validUserOne?.adminType);
+const [userName, setUserName] = useState(null);
+const [companyName, setCompanyName] = useState(null);
+
+useEffect(() => {
+  const equipmentApiUrl = `${API_URL}/api/equiment/${equipmentId}`;
+  console.log("📡 Fetching equipment from:", equipmentApiUrl);
+
+  axios.get(equipmentApiUrl)
+    .then(res => {
+      console.log("✅ Equipment API Response:", res.data);
+      const equipment = res.data?.equipment;
+
+      if (equipment) {
+        console.log("👤 Extracted userName:", equipment.userName);
+        setUserName(equipment.userName);
+      } else {
+        console.warn("⚠️ Equipment found but no userName present");
+      }
+    })
+    .catch(err => {
+      console.error("❌ Error fetching equipment info:", err);
+    });
+}, [equipmentId]);
+
+
+useEffect(() => {
+  if (!userName) return;
+
+  const userApiUrl = `${API_URL}/api/get-user-by-userName/${userName}`;
+  console.log("📡 Fetching user from:", userApiUrl);
+
+  axios.get(userApiUrl)
+    .then(res => {
+      console.log("✅ User API Response:", res.data);
+
+      const user = res.data?.user;
+      if (user && user.companyName) {
+        console.log("🏢 companyName is:", user.companyName);
+        setCompanyName(user.companyName);
+      } else {
+        console.warn("⚠️ User found but no companyName present");
+      }
+    })
+    .catch(err => {
+      console.error("❌ Error fetching company name:", err);
+    });
+}, [userName]);
+
+console.log("📍 userName is:", userName);
+console.log("🏢 companyName is:", companyName);
+
 
   // fetch mechanical report
   useEffect(() => {
@@ -125,18 +176,21 @@ export default function MechanicalReport() {
         </div>
 
         {/* Equipment & Technician Info */}
-        <table style={{ width:'100%', border:'1px solid #000', borderCollapse:'collapse', marginBottom:12 }}>
-          <tbody>
-            {[
-              ["Service Engineer", `${technician.name} — ${technician.designation}`],
-              ["Equipment Name", equipmentName]
-            ].map(([label, value]) => (
-              <tr key={label}>
-                <th style={thStyle}>{label}</th>
-                <td style={tdStyle}>{value}</td>
-              </tr>
-            ))}
-          </tbody>
+        <table style={{ width:'100%', border:'1px solid', borderCollapse:'collapse', marginBottom:12 }}>
+         <tbody >
+  {[
+    ["Service Engineer", `${technician.name} — ${technician.designation}`],
+    ["Equipment Name", equipmentName],
+   /*  ["Client/User Name", userName || "—"], */
+    ["Company Name", companyName || "—"] // ✅ Added
+  ].map(([label, value]) => (
+    <tr key={label}>
+      <th  style={thStyle}>{label}</th>
+      <td style={tdStyle}>{value}</td>
+    </tr>
+  ))}
+</tbody>
+
         </table>
 
         {/* Maintenance entries */}
@@ -144,7 +198,7 @@ export default function MechanicalReport() {
           <thead>
             <tr>
               <th style={thStyle}>SL. NO</th>
-              <th style={thStyle}>CATEGORY</th>
+             
               <th style={thStyle}>WORK DESCRIPTION</th>
               {columns.map((col,i)=>(
                 <th key={i} style={thStyle}>{col}</th>
@@ -156,7 +210,7 @@ export default function MechanicalReport() {
             {entries.map((entry, idx)=>(
               <tr key={entry._id || idx}>
                 <td style={tdStyle}>{idx+1}</td>
-                <td style={tdStyle}>Mechanical</td>
+               
                 <td style={tdStyle}>{entry.category}</td>
                 {entry.checks.map((chk,i)=>(
                   <td key={i} style={tdStyleCenter}>{chk.value || '—'}</td>
@@ -175,7 +229,7 @@ export default function MechanicalReport() {
 const thStyle = {
   border:'1px solid #000',
   padding:4,
-  background:'#eee',
+  background:'#effbfc',
   textAlign:'center',
   fontSize:12
 };
