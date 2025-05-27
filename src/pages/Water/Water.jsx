@@ -115,7 +115,7 @@ const Water = () => {
       if (!userRole || !loggedInUser?.userName) return;
   
       try {
-        const res = await axios.get(`${API_URL}/api/attendance/status/${operator.name}/${userRole}`);
+const res = await axios.get(`${API_URL}/api/attendance/status/${operator.userName}/${userRole}`);
         if (res.data?.isCheckedIn) {
           setIsCheckedIn(true);
           setAllowClicks(true);
@@ -512,7 +512,8 @@ const Water = () => {
         : "other"; // ✅ Default fallback
 
       const payload = {
-        username: operator?.name,
+       username: operator?.userName,
+
         checkOutTime: new Date().toISOString(),
         userRole,
       };
