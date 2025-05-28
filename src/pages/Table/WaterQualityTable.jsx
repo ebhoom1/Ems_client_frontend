@@ -312,9 +312,11 @@ setQuantityData(quantityData);
       console.log(`🔍 Fetching Min-Max Data for: ${username}, Stack: ${stack}, From: ${formattedFromDate}, To: ${formattedToDate}`);
   
       // ✅ Construct API URL with user-selected dates
-      const response = await axios.get(
-        `${API_URL}/api/maxmin/${username}/${stack}?fromDate=${formattedFromDate}&toDate=${formattedToDate}`
-      );
+   const url = `${API_URL}/api/maxmin/${username}/${stack}?fromDate=${formattedFromDate}&toDate=${formattedToDate}`;
+console.log("📡 API URL:", url);
+
+const response = await axios.get(url);
+
   
       if (response.data.success) {
         const apiData = response.data.data.find(item => item.stackName === stack);

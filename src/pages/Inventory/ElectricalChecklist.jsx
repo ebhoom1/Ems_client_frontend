@@ -289,7 +289,8 @@ export default function ElectricalChecklist({
 const th = {
   border: '1px solid #000',
   padding: 6,
-  backgroundColor: '#DFDFDF',
+  backgroundColor: '#236a80',
+  color:'#fff',
   
   textAlign: 'center'
 };

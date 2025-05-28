@@ -17,28 +17,28 @@ export default function MechanicalReport() {
   const adminType = useSelector(s => s.user.userData?.validUserOne?.adminType);
 const [userName, setUserName] = useState(null);
 const [companyName, setCompanyName] = useState(null);
-
+const [equipmentInfo, setEquipmentInfo] = useState({});
 useEffect(() => {
   const equipmentApiUrl = `${API_URL}/api/equiment/${equipmentId}`;
   console.log("📡 Fetching equipment from:", equipmentApiUrl);
 
   axios.get(equipmentApiUrl)
     .then(res => {
-      console.log("✅ Equipment API Response:", res.data);
       const equipment = res.data?.equipment;
-
       if (equipment) {
-        console.log("👤 Extracted userName:", equipment.userName);
+        console.log("👤 Equipment Data:", equipment);
         setUserName(equipment.userName);
-      } else {
-        console.warn("⚠️ Equipment found but no userName present");
+        setEquipmentInfo({
+          capacity: equipment.capacity || '—',
+          model: equipment.modelSerial || '—',
+          rateLoad: equipment.ratedLoad || '—'
+        });
       }
     })
     .catch(err => {
       console.error("❌ Error fetching equipment info:", err);
     });
 }, [equipmentId]);
-
 
 useEffect(() => {
   if (!userName) return;
@@ -177,15 +177,17 @@ console.log("🏢 companyName is:", companyName);
 
         {/* Equipment & Technician Info */}
         <table style={{ width:'100%', border:'1px solid', borderCollapse:'collapse', marginBottom:12 }}>
-         <tbody >
+<tbody>
   {[
     ["Service Engineer", `${technician.name} — ${technician.designation}`],
     ["Equipment Name", equipmentName],
-   /*  ["Client/User Name", userName || "—"], */
-    ["Company Name", companyName || "—"] // ✅ Added
+    ["Capacity", equipmentInfo.capacity],
+    ["Model", equipmentInfo.model],
+    ["Rated Load", equipmentInfo.rateLoad],
+    ["Company Name", companyName || "—"]
   ].map(([label, value]) => (
     <tr key={label}>
-      <th  style={thStyle}>{label}</th>
+      <th style={thStyle}>{label}</th>
       <td style={tdStyle}>{value}</td>
     </tr>
   ))}

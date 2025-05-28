@@ -14,6 +14,8 @@ export default function ElectricalReport() {
   const [loading, setLoading] = useState(true);
   const [logoUrl, setLogoUrl] = useState('');
   const adminType = useSelector(s => s.user.userData?.validUserOne?.adminType);
+const [userName, setUserName] = useState(null);
+const [companyName, setCompanyName] = useState(null);
 
   const phases = ['RY','YB','BR'];
   const checklist = [
@@ -37,6 +39,39 @@ export default function ElectricalReport() {
       .catch(() => toast.error('Failed to load report'))
       .finally(() => setLoading(false));
   }, [equipmentId]);
+useEffect(() => {
+  const equipmentApiUrl = `${API_URL}/api/equiment/${equipmentId}`;
+  console.log("📡 Fetching equipment from:", equipmentApiUrl);
+  
+  axios.get(equipmentApiUrl)
+    .then(res => {
+      const equipment = res.data?.equipment;
+      if (equipment?.userName) {
+        console.log("👤 userName fetched:", equipment.userName);
+        setUserName(equipment.userName);
+      }
+    })
+    .catch(err => console.error("❌ Error fetching equipment:", err));
+}, [equipmentId]);
+
+
+useEffect(() => {
+  if (!userName) return;
+
+  const userApiUrl = `${API_URL}/api/get-user-by-userName/${userName}`;
+  console.log("📡 Fetching user from:", userApiUrl);
+
+  axios.get(userApiUrl)
+    .then(res => {
+      const user = res.data?.user;
+      if (user?.companyName) {
+        console.log("🏢 companyName fetched:", user.companyName); // ✅ log companyName here
+        setCompanyName(user.companyName);
+      }
+    })
+    .catch(err => console.error("❌ Error fetching user/company:", err));
+}, [userName]);
+
 
   // fetch logo
  // at top: import useEffect, useState
@@ -145,22 +180,24 @@ export default function ElectricalReport() {
         <div style={{ marginBottom: 8 }}><strong>Date:</strong> {new Date(createdAt).toLocaleDateString()}</div>
 
         {/* Equipment info */}
-        <table style={{ width:'100%', border:'1px solid #000', borderCollapse:'collapse', marginBottom:12 }}>
-          <tbody>
-            {[
-              ["Service Engineer's Name", `${technician.name} — ${technician.designation}`],
-              ["Equipment Name", equipment.name],
-              ["Model", equipment.model],
-              ["Capacity in HP/KW", equipment.capacity],
-              ["Rated Load in Amps", equipment.ratedLoad]
-            ].map(([label,value]) => (
-              <tr key={label}>
-                <th style={{ border:'1px solid #000', padding:4, textAlign:'left', fontWeight:'normal' }}>{label}</th>
-                <td style={{ border:'1px solid #000', padding:4 }}>{value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+<table style={{ width:'100%', border:'1px solid #000', borderCollapse:'collapse', marginBottom:12 }}>
+  <tbody>
+    {[
+      ["Service Engineer's Name", `${technician.name} — ${technician.designation}`],
+      ["Company Name", companyName || "—"], // ✅ Added below engineer
+      ["Equipment Name", equipment.name],
+      ["Model", equipment.model],
+      ["Capacity in HP/KW", equipment.capacity],
+      ["Rated Load in Amps", equipment.ratedLoad]
+    ].map(([label,value]) => (
+      <tr key={label}>
+        <th style={{ border:'1px solid #000', padding:4, textAlign:'left', fontWeight:'normal' }}>{label}</th>
+        <td style={{ border:'1px solid #000', padding:4 }}>{value}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
 
         {/* Checklist table */}
         <table style={{ width:'100%', border:'1px solid #000', borderCollapse:'collapse' }}>

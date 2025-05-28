@@ -136,13 +136,13 @@ export default function MaintenanceForm() {
   const { type, equipmentId: dbId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-const [capacity, setCapacity] = useState("");
-const [userName, setUserName] = useState("");
+  const [capacity, setCapacity] = useState("");
+  const [userName, setUserName] = useState("");
 
   // Helper function to determine checklist key based on partial matches
   const getMatchingChecklistKey = (name) => {
     if (!name) return null;
-    
+
     const keywordMap = [
       { keyword: "ras pump", key: "shared-standard-pump" },
       { keyword: "filter feed", key: "shared-standard-pump" },
@@ -159,11 +159,9 @@ const [userName, setUserName] = useState("");
       { keyword: "oil skimmer", key: "oil-skimmer" },
       { keyword: "agitator", key: "agitator-mechanism" },
       { keyword: "filter press", key: "filter-press-unit" },
-            { keyword: "screw pump", key: "filter-press-unit" },
-              { keyword: "sludge pump", key: "filter-press-unit" },
-              { keyword: "dosing pump", key: "filter-press-unit" }
-            // sludge pump
-//dosing pump
+      { keyword: "screw pump", key: "filter-press-unit" },
+      { keyword: "sludge pump", key: "filter-press-unit" },
+      { keyword: "dosing pump", key: "filter-press-unit" }
     ];
 
     const lowerName = name.toLowerCase();
@@ -186,6 +184,37 @@ const [userName, setUserName] = useState("");
   // Check if equipment is a pump or blower
   const isPump = matchedKey?.includes('pump');
   const isBlower = matchedKey?.includes('blower');
+  const [isWorking, setIsWorking] = useState("yes");
+  const [comments, setComments] = useState("");
+  const [photos, setPhotos] = useState([null]);
+
+  const handlePhotoChange = (index, file) => {
+    const newPhotos = [...photos];
+    newPhotos[index] = file;
+    setPhotos(newPhotos);
+  };
+
+  const addPhotoField = () => {
+    setPhotos([...photos, null]);
+  };
+
+  useEffect(() => {
+    if (!dbId) return;
+
+    const fetchEquipment = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/equiment/${dbId}`);
+        const equipment = res.data?.equipment;
+        if (equipment?.userName) {
+          setUserName(equipment.userName);
+        }
+      } catch (err) {
+        console.error("❌ Error fetching equipment for userName:", err);
+      }
+    };
+
+    fetchEquipment();
+  }, [dbId]);
 
   // fetch technician record once
   useEffect(() => {
@@ -205,9 +234,9 @@ const [userName, setUserName] = useState("");
   useEffect(() => {
     const init = {};
     cfg.rows.forEach(row => {
-      init[row.id] = { 
-        checks: Array(cfg.columns.length).fill(""), 
-        remarks: "" 
+      init[row.id] = {
+        checks: Array(cfg.columns.length).fill(""),
+        remarks: ""
       };
     });
     setAnswers(init);
@@ -217,13 +246,13 @@ const [userName, setUserName] = useState("");
     if (isPump || isBlower) {
       const prefix = isPump ? "Pump" : "Blower";
       const newColumn = `${prefix} ${cfg.columns.length + 1}`;
-      
+
       // Update cfg with the new column
       const newColumns = [...cfg.columns, newColumn];
-      setCfg({...cfg, columns: newColumns});
-      
+      setCfg({ ...cfg, columns: newColumns });
+
       // Update answers to include the new column for each row
-      const updatedAnswers = {...answers};
+      const updatedAnswers = { ...answers };
       Object.keys(updatedAnswers).forEach(rowId => {
         updatedAnswers[rowId].checks.push("");
       });
@@ -245,40 +274,55 @@ const [userName, setUserName] = useState("");
     }));
   };
 
-  const submit = async (e) => {
+const submit = async (e) => {
     e.preventDefault();
-  
+
     if (!technician) {
       toast.error("Technician information is required");
       return;
     }
 
-    const payload = {
-      equipmentId: dbId,
-      equipmentName: slug,
-      userName,
-         // set this from earlier API or input
-      capacity,    
-      columns: cfg.columns,
-      technician: technician,
-      entries: cfg.rows.map(row => ({
+    const payload = new FormData();
+    payload.append("equipmentId", dbId);
+    payload.append("equipmentName", slug);
+    payload.append("userName", userName);
+    payload.append("capacity", capacity);
+    payload.append("isWorking", isWorking);
+    payload.append("comments", comments);
+    payload.append("technician", JSON.stringify(technician));
+
+    photos.filter(Boolean).forEach((photo) => {
+      payload.append(`photos`, photo);
+    });
+
+    if (isWorking === "yes") {
+      payload.append("columns", JSON.stringify(cfg.columns));
+      payload.append("entries", JSON.stringify(cfg.rows.map(row => ({
         id: row.id,
         category: row.category,
         description: row.description,
         checks: answers[row.id]?.checks || [],
         remarks: answers[row.id]?.remarks || ""
-      })),
-      timestamp: new Date().toISOString()
-    };
+      }))));
+    }
+
+    payload.append("timestamp", new Date().toISOString());
 
     try {
       const { data } = await axios.post(
         `${API_URL}/api/add-mechanicalreport`,
-        payload
+        payload,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
       );
       if (data.success) {
-        toast.success("Report submitted!");
-        navigate("/");
+        // --- CHANGES HERE ---
+        toast.success("Report submitted successfully!"); // Show success toast
+        navigate("/services"); // Redirect to the /services page
+        // --- END CHANGES ---
       } else {
         toast.error(data.message || "Failed to submit report");
       }
@@ -294,104 +338,165 @@ const [userName, setUserName] = useState("");
         {type.charAt(0).toUpperCase() + type.slice(1)} Maintenance –{" "}
         {slug?.replace(/-/g, " ")}
       </h3>
-{/* Capacity Input */}
-{/* User Name Input */}
-<div className="mb-3">
-  <label htmlFor="userName" className="form-label"><strong>User Name</strong></label>
-  <input
-    type="text"
-    id="userName"
-    className="form-control"
-    placeholder="Enter user name (e.g., HH014)"
-    value={userName}
-    onChange={(e) => setUserName(e.target.value)}
-    required
-  />
-</div>
+      <div className="row">
+        {/* User Name */}
+        <div className="col-md-6 col-12 mb-3">
+          <label htmlFor="userName" className="form-label">
+            <strong>User Name</strong>
+          </label>
+          <input
+            type="text"
+            id="userName"
+            className="form-control"
+            value={userName}
+            readOnly
+          />
+        </div>
 
-{/* Capacity Input */}
-<div className="mb-3">
-  <label htmlFor="capacity" className="form-label"><strong>Capacity of Treatment Plant (e.g., 150 KLD)</strong></label>
-  <input
-    type="text"
-    id="capacity"
-    className="form-control"
-    placeholder="Enter treatment plant capacity"
-    value={capacity}
-    onChange={(e) => setCapacity(e.target.value)}
-    required
-  />
-</div>
-
-      {/* Technician Info Card */}
-      <div className="p-3 mb-4 shadow bg-light">
-        {technician ? (
-          <div>
-            <strong>Technician:</strong> {technician.name} — {technician.designation} (
-            <a href={`mailto:${technician.email}`}>{technician.email}</a>)
+        {/* Technician Info */}
+        <div className="col-md-6 col-12 mb-3">
+          <label className="form-label">
+            <strong>Technician</strong>
+          </label>
+          <div className="p-2 shadow bg-light rounded text-success">
+            {technician ? (
+              <div className="text-success" >
+                {technician.name} — {technician.designation} (
+                <a className="text-success" href={`mailto:${technician.email}`}>{technician.email}</a>)
+              </div>
+            ) : (
+              <div className="text-danger">Technician data not available</div>
+            )}
           </div>
-        ) : (
-          <div className="text-danger">Technician data not available</div>
-        )}
+        </div>
       </div>
 
-      {/* Maintenance Table */}
-      <form onSubmit={submit}>
-        <div className="table-responsive mb-4">
-          <table className="table table-bordered">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Category</th>
-                <th>Description</th>
-                {cfg.columns.map(col => (
-                  <th key={col}>{col}</th>
-                ))}
-                <th>Remarks</th>
-                {(isPump || isBlower) && (
-                  <th>
-                    <button 
-                      type="button" 
-                      className="btn btn-sm btn-success"
-                      onClick={addAdditionalColumn}
-                    >
-                      +
-                    </button>
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {cfg.rows.map((row, idx) => (
-                <tr key={row.id}>
-                  <td>{idx + 1}</td>
-                  <td>Mechanical</td>
-                  <td>{row.category}</td>
-                  {cfg.columns.map((col, cidx) => (
-                    <td key={cidx}>
+      <form onSubmit={submit}> {/* Wrap the entire form in a <form> tag */}
+        <div className="mb-4">
+          <label className="form-label"><strong>Is the Equipment Working?</strong></label>
+          <div>
+            <div className="form-check form-check-inline">
+              <input
+                className="form-check-input"
+                type="radio"
+                name="equipmentStatus"
+                id="workingYes"
+                value="yes"
+                checked={isWorking === "yes"}
+                onChange={() => setIsWorking("yes")}
+              />
+              <label className="form-check-label" htmlFor="workingYes">
+                Yes
+              </label>
+            </div>
+            <div className="form-check form-check-inline">
+              <input
+                className="form-check-input"
+                type="radio"
+                name="equipmentStatus"
+                id="workingNo"
+                value="no"
+                checked={isWorking === "no"}
+                onChange={() => setIsWorking("no")}
+              />
+              <label className="form-check-label" htmlFor="workingNo">
+                No
+              </label>
+            </div>
+          </div>
+        </div>
+        <div className="mb-3">
+          <label className="form-label"><strong>Comments</strong></label>
+          <textarea
+            className="form-control"
+            rows="3"
+            placeholder="Enter any comments about the equipment..."
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="form-label"><strong>Upload Photos</strong></label>
+          {photos.map((file, idx) => (
+            <div key={idx} className="mb-2">
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => handlePhotoChange(idx, e.target.files[0])}
+                className="form-control"
+              />
+            </div>
+          ))}
+          <button
+            type="button"
+            className="btn btn-outline-primary btn-sm"
+            onClick={addPhotoField}
+          >
+            + Add Photo
+          </button>
+        </div>
+
+        {isWorking === "yes" && (
+          <div className="table-responsive mb-4">
+            <table className="table table-bordered">
+              <thead>
+                <tr>
+                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>#</th>
+                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Category</th>
+                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Description</th>
+                  {cfg.columns.map(col => (
+                    <th style={{ backgroundColor: '#236a80', color: '#fff' }} key={col}>{col}</th>
+                  ))}
+                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Remarks</th>
+                  {(isPump || isBlower) && (
+                    <th>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-success"
+                        onClick={addAdditionalColumn}
+                      >
+                        +
+                      </button>
+                    </th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {cfg.rows.map((row, idx) => (
+                  <tr key={row.id}>
+                    <td>{idx + 1}</td>
+                    <td>Mechanical</td>
+                    <td>{row.category}</td>
+                    {cfg.columns.map((col, cidx) => (
+                      <td key={cidx}>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={answers[row.id]?.checks[cidx] || ""}
+                          onChange={e => onCheck(row.id, cidx, e.target.value)}
+                          // Only make required if equipment is working
+                          required={isWorking === "yes"}
+                        />
+                      </td>
+                    ))}
+                    <td>
                       <input
-                        type="text"
                         className="form-control"
-                        value={answers[row.id]?.checks[cidx] || ""}
-                        onChange={e => onCheck(row.id, cidx, e.target.value)}
-                        required
+                        value={answers[row.id]?.remarks || ""}
+                        onChange={e => onRemarks(row.id, e.target.value)}
                       />
                     </td>
-                  ))}
-                  <td>
-                    <input
-                      className="form-control"
-                      value={answers[row.id]?.remarks || ""}
-                      onChange={e => onRemarks(row.id, e.target.value)}
-                    />
-                  </td>
-                  {(isPump || isBlower) && <td></td>}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <button type="submit" style={{backgroundColor:'#236a80' , color :'#fff'}} className="btn ">
+                    {(isPump || isBlower) && <td></td>}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <button type="submit" style={{ backgroundColor: '#236a80', color: '#fff' }} className="btn ">
           Submit Report
         </button>
       </form>

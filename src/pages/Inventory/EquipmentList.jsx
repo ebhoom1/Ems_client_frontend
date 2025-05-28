@@ -278,7 +278,7 @@ const editEquipment = (id) => {
         className="btn btn-sm btn-success me-1 mt-3"
         onClick={() => openModal(e._id, e.equipmentName)}
       >
-        Report
+       Add Report
       </button>
       <button
         className="btn btn-sm me-1"
