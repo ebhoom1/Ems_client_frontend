@@ -64,7 +64,14 @@ const UsersLog = () => {
   const [showTerritoryModal, setShowTerritoryModal] = useState(false);
   const [territoryManagers, setTerritoryManagers] = useState([]);
   const [showAddOperatorDialog, setShowAddOperatorDialog] = useState(false);
-  const operatorList = users.filter((u) => u.userType === "operator");
+  const currentUser = userData?.validUserOne;
+
+  const operatorList = users.filter(
+    (u) =>
+      (u.userType === "operator" &&
+        u.adminType === userData?.validUserOne?.adminType) ||
+      currentUser?.adminType === "EBHOOM"
+  );
 
   // after
   const [operatorData, setOperatorData] = useState({
@@ -162,13 +169,13 @@ const UsersLog = () => {
   const fetchUsersData = async () => {
     try {
       const response = await dispatch(fetchUsers()).unwrap(); // Fetch all users
-      const currentUser = userData?.validUserOne;
-
       if (currentUser.adminType === "EBHOOM") {
         // Filter users based on != isTechnician & isTerritorialManager
         const filtered = response.filter(
           (user) =>
-            user.isTechnician !== true && user.isTerritorialManager !== true
+            user.isTechnician !== true &&
+            user.isTerritorialManager !== true &&
+            user.isOperator !== true
         );
 
         dispatch(setFilteredUsers(filtered));
@@ -205,7 +212,9 @@ const UsersLog = () => {
           setFilteredUsers(
             users.filter(
               (user) =>
-                user.isTechnician !== true && user.isTerritorialManager !== true
+                user.isTechnician !== true &&
+                user.isTerritorialManager !== true &&
+                user.isOperator !== true
             )
           )
         );
@@ -216,7 +225,6 @@ const UsersLog = () => {
           )
         );
       } else if (currentUser.userType === "admin") {
-      
         const myUsers = response.filter(
           (user) => user.createdBy === userData.validUserOne._id
         );
@@ -249,7 +257,12 @@ const UsersLog = () => {
     const fetchAdmins = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/get-territory-mangers`);
-        setAdminList(res.data.admins); // store all territory managers list
+        const managers = res.data.admins.filter(
+          (admin) =>
+            admin.adminType === userData?.validUserOne?.adminType ||
+            currentUser?.adminType === "EBHOOM"
+        );
+        setAdminList(managers); // store all territory managers list
       } catch (error) {
         console.error("Error fetching admin users:", error);
       }
@@ -264,6 +277,16 @@ const UsersLog = () => {
       ...prevFormData,
       [name]: value,
     }));
+  };
+
+  const handleAssignTechniciansChange = (e) => {
+    const { name, value } = e.target;
+    if (value) {
+      setformData((prev) => ({
+        ...prev,
+        [name]: [...(prev[name] || []), value],
+      }));
+    }
   };
 
   const validateFields = () => {
@@ -543,10 +566,15 @@ const UsersLog = () => {
     setTerritorialData((prev) => ({ ...prev, [name]: value }));
   };
   const handleDeleteUser = async (userId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this User?"
+    );
+    if (!confirmed) return;
     try {
       await dispatch(deleteUser(userId)).unwrap();
       toast.success("User deleted successfully!");
-      dispatch(fetchUsers());
+      // dispatch(fetchUsers());
+      await fetchUsersData();
     } catch (error) {
       toast.error(
         "Failed to delete user: " + (error.message || error.toString())
@@ -687,8 +715,6 @@ const UsersLog = () => {
       user.longitude // Ensure valid coordinates
   );
 
-  console.log("Admin Filtered Users:", adminFilteredUsers);
-
   /* logo handle */
   /* Logo handle */
   const handleLogoUpload = async () => {
@@ -805,6 +831,7 @@ const UsersLog = () => {
         userType: "operator",
         adminType,
         isOperator: true, // This is the key change
+        createdBy: userData?.validUserOne?._id || null,
       })
     ).unwrap();
 
@@ -817,21 +844,25 @@ const UsersLog = () => {
       adminType: "",
       companyName: "",
     });
-    dispatch(fetchUsers());
+    await fetchUsersData();
     setShowAddOperatorDialog(false);
   };
-const handleDeleteOperator = async (id) => {
-  const confirmed = window.confirm("Are you sure you want to delete this Operator?");
-  if (!confirmed) return;
-  try {
-    await axios.delete(`${API_URL}/api/delete-operator/${id}`);
-    toast.success("Operator deleted successfully", { position: "top-center" });
-    dispatch(fetchUsers());
-  } catch (err) {
-    console.error("Error deleting operator:", err);
-    toast.error("Failed to delete operator", { position: "top-center" });
-  }
-};
+  const handleDeleteOperator = async (id) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this Operator?"
+    );
+    if (!confirmed) return;
+    try {
+      await axios.delete(`${API_URL}/api/delete-operator/${id}`);
+      toast.success("Operator deleted successfully", {
+        position: "top-center",
+      });
+      await fetchUsersData();
+    } catch (err) {
+      console.error("Error deleting operator:", err);
+      toast.error("Failed to delete operator", { position: "top-center" });
+    }
+  };
 
   return (
     <div className="container-fluid">
@@ -873,7 +904,7 @@ const handleDeleteOperator = async (id) => {
           </div>
           <div className="card mt-4">
             <div className="card-body">
-              <div className="sort-dropdown">
+              {/* <div className="sort-dropdown">
                 <label>Sort by: </label>
                 <select
                   onChange={(e) => handleSortCategoryChange(e.target.value)}
@@ -894,7 +925,7 @@ const handleDeleteOperator = async (id) => {
                     ))}
                   </select>
                 )}
-              </div>
+              </div> */}
 
               {loading /* From Uiverse.io by boryanakrasteva */ && (
                 <div class="">
@@ -1144,7 +1175,12 @@ const handleDeleteOperator = async (id) => {
                     </thead>
                     <tbody>
                       {users
-                        .filter((user) => user.userType === "operator")
+                        .filter(
+                          (user) =>
+                            user.userType === "operator" &&
+                            (currentUser?.adminType === "EBHOOM" || // show all operators if EBHOOM
+                              user.createdBy === userData?.validUserOne?._id) // else show only those created by this user
+                        )
                         .map((user) => (
                           <tr
                             key={user._id}
@@ -1155,8 +1191,8 @@ const handleDeleteOperator = async (id) => {
                             <td className="userlog-head">{user.email}</td>
                             <td className="userlog-head">{user.adminType}</td>
                             <td className="userlog-head">
-                             <FaTrashAlt
-                              onClick={() => handleDeleteOperator(user._id)}
+                              <FaTrashAlt
+                                onClick={() => handleDeleteOperator(user._id)}
                                 style={{ cursor: "pointer", color: "red" }}
                                 title="Delete Operator"
                               />
@@ -1723,6 +1759,90 @@ const handleDeleteOperator = async (id) => {
                               </option>
                             ))}
                           </select>
+                        </div>
+                      </div>
+
+                      {/** assign technicians */}
+                      <div className="col-lg-6 col-md-6 mb-4">
+                        <div className="form-group">
+                          <label
+                            htmlFor="technicians"
+                            className="form-label text-light"
+                          >
+                            Assign Technician(s)
+                          </label>
+                          <div className="input-group">
+                            <select
+                              id="technicians"
+                              name="technicians"
+                              className="form-control"
+                              value=""
+                              style={{
+                                width: "100%",
+                                padding: "15px",
+                                borderRadius: "10px",
+                              }}
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  handleAssignTechniciansChange({
+                                    target: {
+                                      name: "technicians",
+                                      value: e.target.value,
+                                    },
+                                  });
+                                }
+                              }}
+                            >
+                              <option value="">Select Technician</option>
+                              {technicianUsers
+                                .filter(
+                                  (tech) =>
+                                    !formData.technicians?.includes(tech._id) &&
+                                    (currentUser.adminType === "EBHOOM" ||
+                                      tech.adminType === currentUser.adminType)
+                                )
+                                .map((tech) => (
+                                  <option key={tech._id} value={tech._id}>
+                                    {tech.fname} ({tech.userName})
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+
+                          {/* Display selected technicians */}
+                          <div className="mt-2">
+                            {formData.technicians?.map((technicianId) => {
+                              const technician = technicianUsers.find(
+                                (tech) => tech._id === technicianId
+                              );
+                              return technician ? (
+                                <span
+                                  key={technicianId}
+                                  className="badge bg-success me-2 mb-2"
+                                >
+                                  {technician.fname} ({technician.userName})
+                                  <button
+                                    type="button"
+                                    className="btn-close btn-close-white ms-2"
+                                    aria-label="Remove"
+                                    onClick={() => {
+                                      setformData((prev) => ({
+                                        ...prev,
+                                        technicians:
+                                          prev.technicians?.filter(
+                                            (id) => id !== technicianId
+                                          ) || [],
+                                      }));
+                                    }}
+                                    style={{
+                                      fontSize: "0.5rem",
+                                      padding: "0.25rem",
+                                    }}
+                                  ></button>
+                                </span>
+                              ) : null;
+                            })}
+                          </div>
                         </div>
                       </div>
 

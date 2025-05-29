@@ -174,7 +174,7 @@ export default function MaintenanceForm() {
   const originalCfg = matchedKey ? mechanicalConfig[matchedKey] : { columns: [], rows: [] };
 
   // State for additional columns (Pump 2/Blower 2)
-  const [additionalColumns, setAdditionalColumns] = useState([]);
+  const [additionalColumns, setAdditionalColumns] = useState([]); // This state is not directly used after the update to `cfg` state
   const [cfg, setCfg] = useState(originalCfg);
 
   // technician from backend
@@ -186,7 +186,7 @@ export default function MaintenanceForm() {
   const isBlower = matchedKey?.includes('blower');
   const [isWorking, setIsWorking] = useState("yes");
   const [comments, setComments] = useState("");
-  const [photos, setPhotos] = useState([null]);
+  const [photos, setPhotos] = useState([null]); // State to hold file objects for upload
 
   const handlePhotoChange = (index, file) => {
     const newPhotos = [...photos];
@@ -195,7 +195,7 @@ export default function MaintenanceForm() {
   };
 
   const addPhotoField = () => {
-    setPhotos([...photos, null]);
+    setPhotos([...photos, null]); // Add a new null to the array to render another file input
   };
 
   useEffect(() => {
@@ -274,7 +274,7 @@ export default function MaintenanceForm() {
     }));
   };
 
-const submit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
 
     if (!technician) {
@@ -291,8 +291,10 @@ const submit = async (e) => {
     payload.append("comments", comments);
     payload.append("technician", JSON.stringify(technician));
 
+    // Append each selected photo to the FormData object
+    // .filter(Boolean) ensures that null values (from empty photo slots) are skipped
     photos.filter(Boolean).forEach((photo) => {
-      payload.append(`photos`, photo);
+      payload.append(`photos`, photo); // The key 'photos' must match `photoUpload.array('photos', 10)` in the backend
     });
 
     if (isWorking === "yes") {
@@ -314,15 +316,13 @@ const submit = async (e) => {
         payload,
         {
           headers: {
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'multipart/form-data' // Essential for sending FormData
           }
         }
       );
       if (data.success) {
-        // --- CHANGES HERE ---
-        toast.success("Report submitted successfully!"); // Show success toast
-        navigate("/services"); // Redirect to the /services page
-        // --- END CHANGES ---
+        toast.success("Report submitted successfully!");
+        navigate("/services"); // Redirect to the /services page on success
       } else {
         toast.error(data.message || "Failed to submit report");
       }
@@ -416,6 +416,7 @@ const submit = async (e) => {
           />
         </div>
 
+        {/* Photo Upload Section */}
         <div className="mb-4">
           <label className="form-label"><strong>Upload Photos</strong></label>
           {photos.map((file, idx) => (
@@ -423,7 +424,7 @@ const submit = async (e) => {
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
+                capture="environment" // Suggests using the device's camera for input
                 onChange={(e) => handlePhotoChange(idx, e.target.files[0])}
                 className="form-control"
               />
@@ -470,16 +471,31 @@ const submit = async (e) => {
                     <td>Mechanical</td>
                     <td>{row.category}</td>
                     {cfg.columns.map((col, cidx) => (
-                      <td key={cidx}>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={answers[row.id]?.checks[cidx] || ""}
-                          onChange={e => onCheck(row.id, cidx, e.target.value)}
-                          // Only make required if equipment is working
-                          required={isWorking === "yes"}
-                        />
-                      </td>
+                    <td key={cidx} style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+  <button
+    type="button"
+    className={`btn btn-sm me-1 ${
+      answers[row.id]?.checks[cidx] === "ok"
+        ? "btn-success"
+        : "btn-outline-secondary"
+    }`}
+    onClick={() => onCheck(row.id, cidx, "ok")}
+  >
+    ✓
+  </button>
+  <button
+    type="button"
+    className={`btn btn-sm ${
+      answers[row.id]?.checks[cidx] === "fail"
+        ? "btn-danger"
+        : "btn-outline-secondary"
+    }`}
+    onClick={() => onCheck(row.id, cidx, "fail")}
+  >
+    ✕
+  </button>
+</td>
+
                     ))}
                     <td>
                       <input

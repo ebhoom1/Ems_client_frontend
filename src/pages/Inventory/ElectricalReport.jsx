@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import html2pdf from 'html2pdf.js';
 import { API_URL } from '../../utils/apiConfig';
+import genexlogo from '../../assests/images/logonewgenex.png'
 
 export default function ElectricalReport() {
   const { equipmentId } = useParams();
@@ -148,28 +149,24 @@ useEffect(() => {
         }}
       >
         {/* Header */}
-        <div
-          className="d-flex align-items-center mb-2"
-          style={{ background: '#236a80', color: '#fff', padding: '10px' }}
-        >
-          {logoUrl ? (
-    <img
-      src={logoUrl}
-      alt={`${adminType} Logo`}
-      style={{ maxWidth: '120px', maxHeight: '120px', marginBottom: '10px' }}
-    />
-  ) : (
-    <span>Loading logo...</span> // Optional loading indicator
-  )}
-
-          <div className="text-center flex-grow-1">
-            <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
-              <i>Genex</i> Utility Management Pvt Ltd
-            </div>
-            <div>No:04, Suraj Nilaya, Sahyadri Layout, Shettihalli, Jalahalli West, Bangalore - 560015</div>
-            <div>Phone: +91-92436-02152</div>
-          </div>
-        </div>
+ <div
+   className="d-flex align-items-center mb-2"
+   style={{ background: '#236a80', color: '#fff', padding: '10px' }}
+ >
+   <img
+     crossOrigin="anonymous"
+     src={genexlogo}
+     alt="Genex logo"
+     style={{ maxWidth: 120, maxHeight: 120 }}
+   />
+   <div className="text-center flex-grow-1">
+     <div style={{ fontSize:14, fontWeight:'bold' }}>
+       <i>Genex</i> Utility Management Pvt Ltd
+     </div>
+     <div>No:04, Suraj Nilaya, Sahyadri Layout, Shettihalli, Jalahalli West, Bangalore - 560015</div>
+     <div>Phone: +91-92436-02152</div>
+   </div>
+ </div>
 
         {/* Title */}
         <div style={{ textAlign:'center', margin:'10px 0', fontSize:'12px', fontWeight:'bold', borderTop:'2px solid #000', borderBottom:'2px solid #000', padding:'4px 0' }}>

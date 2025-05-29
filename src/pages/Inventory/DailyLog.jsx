@@ -4,21 +4,48 @@ import { useSelector } from "react-redux";
 import { API_URL } from "../../utils/apiConfig";
 
 const times = [
-  "7.00","8.00","9.00","10.00","11.00","12.00",
-  "13.00","14.00","15.00","16.00","17.00","18.00",
-  "19.00","20.00","21.00","22.00","23.00","24.00",
-  "1.00","2.00","3.00","4.00","5.00","6.00"
+  "7.00",
+  "8.00",
+  "9.00",
+  "10.00",
+  "11.00",
+  "12.00",
+  "13.00",
+  "14.00",
+  "15.00",
+  "16.00",
+  "17.00",
+  "18.00",
+  "19.00",
+  "20.00",
+  "21.00",
+  "22.00",
+  "23.00",
+  "24.00",
+  "1.00",
+  "2.00",
+  "3.00",
+  "4.00",
+  "5.00",
+  "6.00",
 ];
 
-const initialTreatedWaterParams = ["Quality","Color","Odour","P.H","MLSS","Hardness"];
-const initialChemicals = ["NaOCl","NaCl","Lime Powder"];
-const backwashItems = ["PSF-","ASF-","Softener-"];
+const initialTreatedWaterParams = [
+  "Quality",
+  "Color",
+  "Odour",
+  "P.H",
+  "MLSS",
+  "Hardness",
+];
+const initialChemicals = ["NaOCl", "NaCl", "Lime Powder"];
+const backwashItems = ["PSF-", "ASF-", "Softener-"];
 const runningHours = [
   "MBR Permeate Pump Main →",
   "MBR Permeate Pump Standby →",
   "MBR Back wash Pump →",
   "MBR Chemical Cleaning Pump →",
-  "Filter Press Operating Time →"
+  "Filter Press Operating Time →",
 ];
 
 export default function DailyLog() {
@@ -29,9 +56,13 @@ export default function DailyLog() {
   const [msg, setMsg] = useState("");
   const [equipmentList, setEquipmentList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [treatedWaterParams, setTreatedWaterParams] = useState(initialTreatedWaterParams);
+  const [treatedWaterParams, setTreatedWaterParams] = useState(
+    initialTreatedWaterParams
+  );
   const [chemicals, setChemicals] = useState(initialChemicals);
   const containerRef = useRef();
+  const [statusTimes, setStatusTimes] = useState({});
+  const [capacity, setCapacity] = useState("");
 
   // Fetch equipment list on component mount
   useEffect(() => {
@@ -40,7 +71,8 @@ export default function DailyLog() {
         const res = await fetch(`${API_URL}/api/user/${validUser.userName}`);
         if (!res.ok) throw new Error("Failed to fetch equipment");
         const data = await res.json();
-        setEquipmentList(data.equipment.map(item => item.equipmentName));
+        console.log("equipement list", data);
+        setEquipmentList(data.equipment.map((item) => item.equipmentName));
       } catch (err) {
         console.error("Error fetching equipment:", err);
         setMsg("Failed to load equipment list");
@@ -88,19 +120,30 @@ export default function DailyLog() {
 
     // 2) Time entries
     const mainRows = Array.from(
-          root.querySelectorAll("table.main-log > tbody > tr")
-      );   
-       const timeEntries = mainRows.map(row => {
+      root.querySelectorAll("table.main-log > tbody > tr")
+    );
+    const timeEntries = mainRows.map((row) => {
       const time = row.cells[0]?.innerText.trim() || "";
       const statuses = equipmentList.map((eq, idx) => {
-        const onCell = row.cells[1 + idx*2];
-        const offCell = row.cells[1 + idx*2 + 1];
-        const onRadio = onCell?.querySelector('input[type="radio"][value="on"]');
-        const offRadio = offCell?.querySelector('input[type="radio"][value="off"]');
-        let status = "off";           // default off
+        const onCell = row.cells[1 + idx * 2];
+        const offCell = row.cells[1 + idx * 2 + 1];
+        const timeKey = `${time}-${idx}`;
+        const times = statusTimes[timeKey] || {};
+        const onRadio = onCell?.querySelector(
+          'input[type="radio"][value="on"]'
+        );
+        const offRadio = offCell?.querySelector(
+          'input[type="radio"][value="off"]'
+        );
+        let status = "off"; // default off
         if (onRadio?.checked) status = "on";
         else if (offRadio?.checked) status = "off";
-        return { equipment: eq, status };
+        return {
+          equipment: eq,
+          status,
+          onTime: times.onTime || null,
+          offTime: times.offTime || null,
+        };
       });
       return { time, statuses };
     });
@@ -108,47 +151,54 @@ export default function DailyLog() {
     const treatedRows = Array.from(
       root.querySelectorAll("table.treated-water tbody tr")
     );
-    const treatedWater = treatedRows.map(tr => ({
-      key: tr.cells[0]?.querySelector("input")?.value || tr.cells[0]?.innerText.trim() || "",
-      value: tr.cells[1]?.querySelector("input")?.value || ""
+    const treatedWater = treatedRows.map((tr) => ({
+      key:
+        tr.cells[0]?.querySelector("input")?.value ||
+        tr.cells[0]?.innerText.trim() ||
+        "",
+      value: tr.cells[1]?.querySelector("input")?.value || "",
     }));
 
     const remarks = root.querySelector("textarea.remarks-area")?.value || "";
 
     const chemicalConsumption = Array.from(
       root.querySelectorAll("table.chemical tbody tr")
-    ).map(tr => ({
-      key: tr.cells[0]?.querySelector("input")?.value || tr.cells[0]?.innerText.trim() || "",
-      value: tr.cells[1]?.querySelector("input")?.value || ""
+    ).map((tr) => ({
+      key:
+        tr.cells[0]?.querySelector("input")?.value ||
+        tr.cells[0]?.innerText.trim() ||
+        "",
+      value: tr.cells[1]?.querySelector("input")?.value || "",
     }));
 
     const backwashTimings = Array.from(
       root.querySelectorAll("table.backwash tbody tr")
-    ).map(tr => ({
+    ).map((tr) => ({
       stage: tr.cells[0]?.innerText.trim() || "",
-      time: tr.cells[1]?.querySelector("input")?.value || ""
+      time: tr.cells[1]?.querySelector("input")?.value || "",
     }));
 
     const runningHoursReading = Array.from(
       root.querySelectorAll("table.running-hours tbody tr")
-    ).map(tr => ({
+    ).map((tr) => ({
       equipment: tr.cells[0]?.innerText.trim() || "",
-      hours: tr.cells[1]?.querySelector("input")?.value || ""
+      hours: tr.cells[1]?.querySelector("input")?.value || "",
     }));
 
     const signOff = Array.from(
       root.querySelectorAll("table.sign-off tbody tr")
-    ).map(tr => ({
+    ).map((tr) => ({
       shift: tr.cells[0]?.innerText.trim() || "",
       engineerSign: tr.cells[1]?.querySelector("input")?.value || "",
       remarks: tr.cells[2]?.querySelector("input")?.value || "",
       operatorName: tr.cells[3]?.querySelector("input")?.value || "",
-      sign: tr.cells[4]?.querySelector("input")?.value || ""
+      sign: tr.cells[4]?.querySelector("input")?.value || "",
     }));
 
     // Assemble payload
     const payload = {
       date,
+      capacity,
       username: validUser.userName || "",
       companyName: validUser.companyName || "",
       timeEntries,
@@ -157,14 +207,14 @@ export default function DailyLog() {
       chemicalConsumption,
       backwashTimings,
       runningHoursReading,
-      signOff
+      signOff,
     };
 
     try {
       const res = await fetch(`${API_URL}/api/add-dailylog`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(await res.text());
       setMsg("Log added successfully!");
@@ -175,20 +225,50 @@ export default function DailyLog() {
     setTimeout(() => setMsg(""), 3000);
   };
 
+  const handleTimeStamp = (timeKey, status) => {
+    const now = new Date().toLocaleTimeString("en-In", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    setStatusTimes((prev) => ({
+      ...prev,
+      [timeKey]: {
+        ...prev[timeKey],
+        status,
+        [`${status}Time`]: now,
+      },
+    }));
+  };
+
   if (loading) {
     return <div className="text-center py-5">Loading equipment list...</div>;
   }
 
   return (
-    <div ref={containerRef} className="daily-log py-3" style={{ fontSize: "0.75rem" }}>
+    <div
+      ref={containerRef}
+      className="daily-log py-3"
+      style={{ fontSize: "0.75rem" }}
+    >
       {/* HEADER */}
       <div className="text-center mb-3">
-        <h4>350 KLD SEWAGE TREATMENT PLANT – {validUser.companyName}</h4>
+        <h4>{validUser.companyName}</h4>
         <p>
           STP Operation &amp; Maintenance By{" "}
           <strong>{validUser.adminType} Utility Management Pvt Ltd</strong>
         </p>
-        <label className="me-2">DATE:</label>
+        <label className="me-2">CAPACITY:</label>
+        <input
+          id="capacity"
+          type="number"
+          className="form-control form-control-sm d-inline-block"
+          style={{ width: "80px" }}
+          value={capacity}
+          onChange={(e) => setCapacity(e.target.value)}
+          placeholder="Enter capacity"
+          disabled={!isUser}
+        />
+        <label className="me-2 ms-4">DATE:</label>
         <input
           id="log-date"
           type="date"
@@ -198,33 +278,86 @@ export default function DailyLog() {
       </div>
 
       {/* MESSAGE */}
-      {msg && <div className={`alert ${msg.includes("success") ? "alert-success" : "alert-danger"} text-center`}>{msg}</div>}
+      {msg && (
+        <div
+          className={`alert ${
+            msg.includes("success") ? "alert-success" : "alert-danger"
+          } text-center`}
+        >
+          {msg}
+        </div>
+      )}
 
       {/* MAIN EQUIPMENT LOG */}
-      <div style={{ overflowX:"auto", maxHeight:"70vh", border:"1px solid #ddd", padding:"0.5rem" }}>
-        <table className="table table-bordered table-sm mb-4 main-log" style={{ minWidth:"1200px" }}>
+      <div
+        style={{
+          overflowX: "auto",
+          maxHeight: "70vh",
+          border: "1px solid #ddd",
+          padding: "0.5rem",
+        }}
+      >
+        <table
+          className="table table-bordered table-sm mb-4 main-log"
+          style={{ minWidth: "1200px", tableLayout: "fixed" }}
+        >
+          {/* 1. EXPLICIT COLGROUP FOR FIXED WIDTHS */}
+          <colgroup>
+            {/* Time */}
+            <col style={{ width: "80px" }} />
+
+            {/* ON / OFF for each equipment */}
+            {equipmentList
+              .slice()
+              .reverse()
+              .map((_, i) => (
+                <React.Fragment key={i}>
+                  <col style={{ width: "60px" }} />
+                  <col style={{ width: "60px" }} />
+                </React.Fragment>
+              ))}
+
+            {/* Remarks */}
+            <col style={{ width: "200px" }} />
+          </colgroup>
+
           <thead className="text-center align-middle">
             <tr>
               <th rowSpan="2">Time</th>
-              {equipmentList.map(eq => <th key={eq} colSpan="2">{eq}</th>)}
+              {equipmentList
+                .slice() // make a copy
+                .reverse() // reverse that copy
+                .map((eq) => (
+                  <th key={eq} colSpan="2">
+                    {eq}
+                  </th>
+                ))}
               <th rowSpan="2">Remarks</th>
             </tr>
             <tr>
-              {equipmentList.map(eq => (
-                <React.Fragment key={`${eq}-header`}>
-                  <th>ON</th><th>OFF</th>
-                </React.Fragment>
-              ))}
+              {equipmentList
+                .slice()
+                .reverse()
+                .map((eq) => (
+                  <React.Fragment key={`${eq}-header`}>
+                    <th>ON</th>
+                    <th>OFF</th>
+                  </React.Fragment>
+                ))}
             </tr>
           </thead>
+
           <tbody>
-            {times.map(t => {
+            {times.map((t) => {
               let remarksCell = null;
-              if (t==="7.00") {
+              if (t === "7.00") {
                 remarksCell = (
                   <td rowSpan={6} className="p-0">
                     <table className="table table-sm table-bordered mb-0 treated-water text-center">
-                      <colgroup><col style={{width:"40%"}}/><col style={{width:"60%"}}/></colgroup>
+                      <colgroup>
+                        <col style={{ width: "60%" }} />
+                        <col style={{ width: "60%" }} />
+                      </colgroup>
                       <thead>
                         <tr>
                           <th colSpan="2">TREATED WATER</th>
@@ -234,7 +367,6 @@ export default function DailyLog() {
                         {treatedWaterParams.map((p, index) => (
                           // <tr key={`${p}-${index}`}>
                           <tr key={index}>
-
                             <td className="text-start">
                               {index < initialTreatedWaterParams.length ? (
                                 p
@@ -243,16 +375,21 @@ export default function DailyLog() {
                                   type="text"
                                   className="form-control form-control-sm"
                                   value={p}
-                                  onChange={(e) => handleTreatedWaterParamChange(index, e.target.value)}
+                                  onChange={(e) =>
+                                    handleTreatedWaterParamChange(
+                                      index,
+                                      e.target.value
+                                    )
+                                  }
                                   disabled={!isUser}
                                   placeholder="Enter parameter"
                                 />
                               )}
                             </td>
                             <td>
-                              <input 
-                                type="text" 
-                                className="form-control form-control-sm" 
+                              <input
+                                type="text"
+                                className="form-control form-control-sm"
                                 disabled={!isUser}
                               />
                             </td>
@@ -261,10 +398,12 @@ export default function DailyLog() {
                         {isUser && (
                           <tr>
                             <td colSpan="2" className="text-center">
-                              <button 
+                              <button
                                 className="btn btn-sm"
-                                style={{backgroundColor:'#236a80', color:'#fff'}}
-
+                                style={{
+                                  backgroundColor: "#236a80",
+                                  color: "#fff",
+                                }}
                                 onClick={handleAddTreatedWaterParam}
                               >
                                 + Add Parameter
@@ -277,25 +416,32 @@ export default function DailyLog() {
                   </td>
                 );
               }
-              if (t==="13.00") {
+              if (t === "13.00") {
                 remarksCell = (
                   <td rowSpan={6} className="p-0">
                     <textarea
                       className="form-control form-control-sm remarks-area"
                       rows={6}
                       placeholder="Enter remarks…"
-                      style={{ resize:"none", border:0, height:"100%" }}
+                      style={{ resize: "none", border: 0, height: "100%" }}
                       disabled={!isUser}
                     />
                   </td>
                 );
               }
-              if (t==="20.00") {
+              if (t === "20.00") {
                 remarksCell = (
                   <td rowSpan={4} className="p-0">
                     <table className="table table-sm table-bordered mb-0 chemical text-center">
-                      <colgroup><col style={{width:"40%"}}/><col style={{width:"60%"}}/></colgroup>
-                      <thead><tr><th colSpan="2">Chemical Consumption</th></tr></thead>
+                      <colgroup>
+                        <col style={{ width: "40%" }} />
+                        <col style={{ width: "60%" }} />
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th colSpan="2">Chemical Consumption</th>
+                        </tr>
+                      </thead>
                       <tbody>
                         {chemicals.map((c, index) => (
                           <tr key={`${c}-${index}`}>
@@ -307,16 +453,18 @@ export default function DailyLog() {
                                   type="text"
                                   className="form-control form-control-sm"
                                   value={c}
-                                  onChange={(e) => handleChemicalChange(index, e.target.value)}
+                                  onChange={(e) =>
+                                    handleChemicalChange(index, e.target.value)
+                                  }
                                   disabled={!isUser}
                                   placeholder="Enter chemical"
                                 />
                               )}
                             </td>
                             <td>
-                              <input 
-                                type="text" 
-                                className="form-control form-control-sm" 
+                              <input
+                                type="text"
+                                className="form-control form-control-sm"
                                 disabled={!isUser}
                               />
                             </td>
@@ -325,9 +473,12 @@ export default function DailyLog() {
                         {isUser && (
                           <tr>
                             <td colSpan="2" className="text-center">
-                              <button 
+                              <button
                                 className="btn btn-sm"
-                                style={{backgroundColor:'#236a80', color:'#fff'}}
+                                style={{
+                                  backgroundColor: "#236a80",
+                                  color: "#fff",
+                                }}
                                 onClick={handleAddChemical}
                               >
                                 + Add Chemical
@@ -340,17 +491,26 @@ export default function DailyLog() {
                   </td>
                 );
               }
-              if (t==="24.00") {
+              if (t === "24.00") {
                 remarksCell = (
                   <td rowSpan={4} className="p-0">
                     <table className="table table-sm table-bordered mb-0 backwash text-center">
-                      <thead><tr><th>Back wash timings:</th></tr></thead>
+                      <thead>
+                        <tr>
+                          <th>Back wash timings:</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        {backwashItems.map(b=>(
+                        {backwashItems.map((b) => (
                           <tr key={b}>
                             <td className="text-start">{b}</td>
                             <td>
-                              <input type="text" className="form-control form-control-sm" placeholder="hh:mm" disabled={!isUser}/>
+                              <input
+                                type="text"
+                                className="form-control form-control-sm"
+                                placeholder="hh:mm"
+                                disabled={!isUser}
+                              />
                             </td>
                           </tr>
                         ))}
@@ -362,28 +522,50 @@ export default function DailyLog() {
               return (
                 <tr key={t}>
                   <td>{t}</td>
-                  {equipmentList.map((eq, i)=>(
-                    <React.Fragment key={`${t}-${eq}`}>
-                      <td className="text-center">
-                        <input 
-                          type="radio" 
-                          name={`onoff-${t}-${i}`} 
-                          value="on" 
-                          className="form-check-input m-0" 
-                          disabled={!isUser}
-                        />
-                      </td>
-                      <td className="text-center">
-                        <input 
-                          type="radio" 
-                          name={`onoff-${t}-${i}`} 
-                          value="off" 
-                          className="form-check-input m-0" 
-                          disabled={!isUser}
-                        />
-                      </td>
-                    </React.Fragment>
-                  ))}
+                  {equipmentList.map((eq, i) => {
+                    const timeKey = `${t}-${i}`; // unique key per cell
+                    const times = statusTimes[timeKey] || {};
+
+                    return (
+                      <React.Fragment key={`${t}-${eq}`}>
+                        {/* ON radio */}
+                        <td className="text-center">
+                          <input
+                            type="radio"
+                            name={`onoff-${timeKey}`}
+                            value="on"
+                            className="form-check-input m-0"
+                            checked={times.status === "on"}
+                            disabled={!isUser}
+                            onChange={() => handleTimeStamp(timeKey, "on")}
+                          />
+                          {/* only show onTime when status==='on' */}
+                          <div style={{ fontSize: "0.6rem", marginTop: "2px" }}>
+                            {times.status === "on" ? times.onTime : ""}
+                          </div>
+                        </td>
+
+                        {/* OFF radio */}
+                        <td className="text-center">
+                          <input
+                            type="radio"
+                            name={`onoff-${timeKey}`}
+                            value="off"
+                            className="form-check-input m-0"
+                            checked={times.status === "off"}
+                            disabled={!isUser}
+                            onChange={() => handleTimeStamp(timeKey, "off")}
+                          />
+                          {/* only show offTime when status==='off' */}
+                          <div style={{ fontSize: "0.6rem", marginTop: "2px" }}>
+                            {times.status === "off" ? times.offTime : ""}
+                          </div>
+                        </td>
+
+                        {/* {remarksCell} */}
+                      </React.Fragment>
+                    );
+                  })}
                   {remarksCell}
                 </tr>
               );
@@ -394,12 +576,22 @@ export default function DailyLog() {
 
       {/* RUNNING HOURS */}
       <table className="table table-bordered table-sm w-75 mx-auto mt-3 running-hours">
-        <thead className="text-center"><tr><th colSpan="2">RUNNING HOURS READING</th></tr></thead>
+        <thead className="text-center">
+          <tr>
+            <th colSpan="2">RUNNING HOURS READING</th>
+          </tr>
+        </thead>
         <tbody>
-          {runningHours.map(r=>(
+          {runningHours.map((r) => (
             <tr key={r}>
               <td className="text-start">{r}</td>
-              <td><input type="text" className="form-control form-control-sm" disabled={!isUser}/></td>
+              <td>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  disabled={!isUser}
+                />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -409,14 +601,26 @@ export default function DailyLog() {
       <table className="table table-bordered table-sm w-75 mx-auto mt-2 sign-off">
         <thead className="text-center">
           <tr>
-            <th>Shift</th><th>Shift Engineer Sign</th><th>Remarks</th><th>Operator's Name</th><th>Sign</th>
+            <th>Shift</th>
+            <th>Shift Engineer Sign</th>
+            <th>Remarks</th>
+            <th>Operator's Name</th>
+            <th>Sign</th>
           </tr>
         </thead>
         <tbody>
-          {["Shift 1","Shift 2","Shift 3"].map(s=>(
+          {["Shift 1", "Shift 2", "Shift 3"].map((s) => (
             <tr key={s}>
               <td>{s}</td>
-              {[...Array(4)].map((_, j)=>(<td key={j}><input type="text" className="form-control form-control-sm" disabled={!isUser}/></td>))}
+              {[...Array(4)].map((_, j) => (
+                <td key={j}>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    disabled={!isUser}
+                  />
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
@@ -424,7 +628,9 @@ export default function DailyLog() {
 
       {isUser && (
         <div className="text-center mt-3">
-          <button className="btn btn-success" onClick={handleAddLog}>Add Log</button>
+          <button className="btn btn-success" onClick={handleAddLog}>
+            Add Log
+          </button>
         </div>
       )}
     </div>
