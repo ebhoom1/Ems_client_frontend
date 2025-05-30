@@ -170,7 +170,7 @@ export default function MaintenanceForm() {
   };
 
   const slug = location.state?.equipmentName?.toLowerCase()?.trim();
-  const matchedKey = getMatchingChecklistKey(slug);
+  const matchedKey = slug ? getMatchingChecklistKey(slug) : null;
   const originalCfg = matchedKey ? mechanicalConfig[matchedKey] : { columns: [], rows: [] };
 
   // State for additional columns (Pump 2/Blower 2)
@@ -270,8 +270,27 @@ export default function MaintenanceForm() {
   const onRemarks = (rowId, val) => {
     setAnswers(a => ({
       ...a,
-      [rowId]: { ...a[rowId], remarks: val }
+      [rowId]: { ...a[rowId], remarks: val } // Corrected: Was `a[row.id]`
     }));
+  };
+
+  // Helper function to determine the color of the remarks input
+  const getRemarksColor = (rowId) => {
+    const rowAnswers = answers[rowId]?.checks;
+    if (!rowAnswers || rowAnswers.length === 0) {
+      return ""; // Default color if no checks are made
+    }
+
+    // If any check is 'fail', the remarks should be red
+    if (rowAnswers.some(check => check === "fail")) {
+      return "text-danger";
+    }
+    // If all checks are 'ok' (and there's at least one check), remarks should be green
+    if (rowAnswers.every(check => check === "ok")) {
+      return "text-success";
+    }
+
+    return ""; // Default if mixed or no definitive status
   };
 
   const submit = async (e) => {
@@ -471,35 +490,34 @@ export default function MaintenanceForm() {
                     <td>Mechanical</td>
                     <td>{row.category}</td>
                     {cfg.columns.map((col, cidx) => (
-                    <td key={cidx} style={{ textAlign: "center", whiteSpace: "nowrap" }}>
-  <button
-    type="button"
-    className={`btn btn-sm me-1 ${
-      answers[row.id]?.checks[cidx] === "ok"
-        ? "btn-success"
-        : "btn-outline-secondary"
-    }`}
-    onClick={() => onCheck(row.id, cidx, "ok")}
-  >
-    ✓
-  </button>
-  <button
-    type="button"
-    className={`btn btn-sm ${
-      answers[row.id]?.checks[cidx] === "fail"
-        ? "btn-danger"
-        : "btn-outline-secondary"
-    }`}
-    onClick={() => onCheck(row.id, cidx, "fail")}
-  >
-    ✕
-  </button>
-</td>
-
+                      <td key={cidx} style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                        <button
+                          type="button"
+                          className={`btn btn-sm me-1 ${
+                            answers[row.id]?.checks[cidx] === "ok"
+                              ? "btn-success"
+                              : "btn-outline-secondary"
+                          }`}
+                          onClick={() => onCheck(row.id, cidx, "ok")}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn btn-sm ${
+                            answers[row.id]?.checks[cidx] === "fail"
+                              ? "btn-danger"
+                              : "btn-outline-secondary"
+                          }`}
+                          onClick={() => onCheck(row.id, cidx, "fail")}
+                        >
+                          ✕
+                        </button>
+                      </td>
                     ))}
                     <td>
                       <input
-                        className="form-control"
+                        className={`form-control ${getRemarksColor(row.id)}`}
                         value={answers[row.id]?.remarks || ""}
                         onChange={e => onRemarks(row.id, e.target.value)}
                       />

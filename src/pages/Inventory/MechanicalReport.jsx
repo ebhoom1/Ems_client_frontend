@@ -239,39 +239,55 @@ const downloadPDF = async () => {
                 <th style={thStyle}>REMARKS</th>
               </tr>
             </thead>
-           <tbody>
-  {entries.map((entry, idx) => (
-    <tr key={entry._id || idx}>
-      <td style={tdStyle}>{idx + 1}</td>
-      <td style={tdStyle}>{entry.category}</td>
+          <tbody>
+  {entries.map((entry, idx) => {
+    // determine if any check failed or passed
+    const hasFail = entry.checks?.some(chk => chk.value === 'fail');
+    const hasOk   = entry.checks?.some(chk => chk.value === 'ok');
 
-      {entry.checks && entry.checks.length > 0 ? (
-        entry.checks.map((chk, i) => {
-          let content = '—';
-          let extraStyle = {};
+    // build the style for the remarks cell
+    const remarksStyle = {
+      ...tdStyle,
+      color: hasFail ? 'red' : hasOk ? 'green' : tdStyle.color
+    };
 
-          if (chk.value === 'ok') {
-            content = '✓';
-            extraStyle.color = 'green';
-          } else if (chk.value === 'fail') {
-            content = '✕';
-            extraStyle.color = 'red';
-          }
+    return (
+      <tr key={entry._id || idx}>
+        <td style={tdStyle}>{idx + 1}</td>
+        <td style={tdStyle}>{entry.category}</td>
 
-          return (
-            <td key={i} style={{ ...tdStyleCenter, ...extraStyle }}>
-              {content}
-            </td>
-          );
-        })
-      ) : (
-        <td style={tdStyleCenter} colSpan={reportColumns.length}>—</td>
-      )}
+        {entry.checks && entry.checks.length > 0 ? (
+          entry.checks.map((chk, i) => {
+            let content = '—';
+            let extraStyle = {};
 
-      <td style={tdStyle}>{entry.remarks || '—'}</td>
-    </tr>
-  ))}
+            if (chk.value === 'ok') {
+              content = '✓';
+              extraStyle.color = 'green';
+            } else if (chk.value === 'fail') {
+              content = '✕';
+              extraStyle.color = 'red';
+            }
+
+            return (
+              <td key={i} style={{ ...tdStyleCenter, ...extraStyle }}>
+                {content}
+              </td>
+            );
+          })
+        ) : (
+          <td style={tdStyleCenter} colSpan={reportColumns.length}>—</td>
+        )}
+
+        {/* REMARKS column, now colored */}
+        <td style={remarksStyle}>
+          {entry.remarks || '—'}
+        </td>
+      </tr>
+    );
+  })}
 </tbody>
+
 
           </table>
         ) : (
