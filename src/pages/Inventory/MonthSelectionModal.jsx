@@ -5,18 +5,19 @@ import { useSelector } from 'react-redux';
 import { API_URL } from '../../utils/apiConfig';
 import { useNavigate } from 'react-router-dom';
 
-export default function MonthSelectionModal({ onClose, onSelect }) {
+export default function MonthSelectionModal({ onClose, reportType }) {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const navigate = useNavigate(); // Initialize useNavigate
-  // Pull adminType from Redux (validUserOne.adminType)
+  const navigate = useNavigate();
+
+  // get adminType from Redux to fetch user list
   const { validUserOne } = useSelector((state) => state.user.userData || {});
   const adminType = validUserOne?.adminType;
 
   useEffect(() => {
-    if (!adminType) return; // wait until we have adminType
+    if (!adminType) return;
 
     (async () => {
       try {
@@ -26,7 +27,6 @@ export default function MonthSelectionModal({ onClose, onSelect }) {
         const data = await res.json();
         const list = data.users || [];
         setUsers(list);
-
         if (list.length) {
           setSelectedUser(list[0].userName);
         }
@@ -39,9 +39,13 @@ export default function MonthSelectionModal({ onClose, onSelect }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Use navigate to go to the MergedMechanicalReport route
-    navigate(`/mechanical-report/${selectedUser}/${year}/${month}`);
-    onClose(); // Optionally close the modal after submission
+
+    if (reportType === 'electrical') {
+      navigate(`/report/electrical/download/${selectedUser}/${year}/${month}`);
+    } else if (reportType === 'mechanical') {
+      navigate(`/mechanical-report/${selectedUser}/${year}/${month}`);
+    }
+    onClose();
   };
 
   return (
@@ -53,7 +57,7 @@ export default function MonthSelectionModal({ onClose, onSelect }) {
         <div className="modal-content">
 
           <div className="modal-header">
-            <h5 className="modal-title">Select User, Month & Year</h5>
+            <h5 className="modal-title">Select User, Month &amp; Year</h5>
             <button type="button" className="btn-close" onClick={onClose} />
           </div>
 
@@ -77,7 +81,7 @@ export default function MonthSelectionModal({ onClose, onSelect }) {
                   </option>
                   {users.map((u) => (
                     <option key={u._id} value={u.userName}>
-                      {u.userName}-{u.companyName}
+                      {u.userName} – {u.companyName}
                     </option>
                   ))}
                 </select>
@@ -142,7 +146,6 @@ export default function MonthSelectionModal({ onClose, onSelect }) {
                   Submit
                 </button>
               </div>
-
             </form>
           </div>
 

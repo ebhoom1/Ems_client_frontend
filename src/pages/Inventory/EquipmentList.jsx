@@ -183,9 +183,9 @@ const editEquipment = (id) => {
       
       {showMonthModal && (
         <MonthSelectionModal
-          onClose={() => setShowMonthModal(false)}
-          onSelect={handleMonthSelected}
-        />
+    reportType={reportType}                      // ← PASS this in
+    onClose={() => setShowMonthModal(false)}
+  />
       )}
 
       {/* Search bar */}

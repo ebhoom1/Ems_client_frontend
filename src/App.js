@@ -232,8 +232,11 @@ function App() {
     <Route path="/maintenance/electrical/:equipmentId" element={<ElectricalMaintenance onClose={() => navigate(-1)} />} />
     <Route path="/report/electrical/:equipmentId" element={<ElectricalReport />} />
     <Route path="/report/mechanical/:equipmentId" element={<MechanicalReport />} />
-    <Route path="/report/electrical/download/:year?/:month?" element={<MergedElectricalReport />} />
- <Route path="/mechanical-report/:userName/:year/:month" element={<MergedMechanicalReport />} />
+ <Route
+              path="/report/electrical/download/:userName/:year/:month"
+              element={<MergedElectricalReport />}
+            />
+             <Route path="/mechanical-report/:userName/:year/:month" element={<MergedMechanicalReport />} />
     <Route path="/dailylog" element={<DailyLog />} />
     <Route path="/admin/report/:username" element={<AdminReport />} />
     <Route path="/edit-equipment/:id" element={<EditEquipment />} />
@@ -317,10 +320,10 @@ function App() {
                     path="/report/electrical/download/:year?/:month?"
                     element={<MergedElectricalReport />}
                   />
-                  <Route
+               {/*    <Route
                     path="/report/mechanical/download/:year?/:month?"
                     element={<MergedMechanicalReport />}
-                  />
+                  /> */}
                   <Route path="/dailylog" element={<DailyLog />} />
                   <Route path="/geolocation" element={<Geolocation />} />
                 </Route>
