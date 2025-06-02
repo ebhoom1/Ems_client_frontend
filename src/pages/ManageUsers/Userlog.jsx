@@ -2732,7 +2732,7 @@ const UsersLog = () => {
               <option value="KSPCB">KSPCB</option>
               <option value="IESS">IESS</option>
             </select>
-            <Button type="submit" className="btn btn-primary w-100">
+            <Button type="submit" style={{backgroundColor:'#236a80', color:'#fff'}} className="btn  w-100">
               Add Technician
             </Button>
           </form>

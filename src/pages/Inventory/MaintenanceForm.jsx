@@ -4,6 +4,7 @@ import axios from "axios";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import { API_URL } from "../../utils/apiConfig";
+import { useSelector } from "react-redux";
 
 const standardPumpChecklist = [
   { id: 1, category: "Pump Type", description: "Coupled / Monoblock" },
@@ -151,9 +152,15 @@ export default function MaintenanceForm() {
       { keyword: "sludge re-circulation", key: "shared-standard-pump" },
       { keyword: "softner feed", key: "shared-standard-pump" },
       { keyword: "cip", key: "shared-standard-pump" },
+      { keyword: "air blower - 2", key: "ET&AT AIR BLOWER 2" },
+        { keyword: "air blower 2", key: "ET&AT AIR BLOWER 2" },
+      { keyword: "air blower 1", key: "ET&AT AIR BLOWER 2" },
+       { keyword: "air blower - 1", key: "ET&AT AIR BLOWER 2" },
+      //air blower - 1
       { keyword: "uf feed", key: "shared-standard-pump" },
       { keyword: "mbr blower", key: "mbr-air-blower-3-4" },
-      { keyword: "raw-sewage", key: "raw-sewage-pump" },
+      { keyword: "raw sewage pump 1", key: "raw-sewage-pump" },
+      { keyword: "raw sewage pump - 2", key: "raw-sewage-pump" },
       { keyword: "et&at air blower", key: "ET&AT AIR BLOWER 2" },
       { keyword: "bar screen", key: "bar-screen" },
       { keyword: "oil skimmer", key: "oil-skimmer" },
@@ -161,7 +168,8 @@ export default function MaintenanceForm() {
       { keyword: "filter press", key: "filter-press-unit" },
       { keyword: "screw pump", key: "filter-press-unit" },
       { keyword: "sludge pump", key: "filter-press-unit" },
-      { keyword: "dosing pump", key: "filter-press-unit" }
+      { keyword: "dosing pump", key: "filter-press-unit" },
+      { keyword: "out side bypass pump", key: "filter-press-unit" },
     ];
 
     const lowerName = name.toLowerCase();
@@ -172,21 +180,19 @@ export default function MaintenanceForm() {
   const slug = location.state?.equipmentName?.toLowerCase()?.trim();
   const matchedKey = slug ? getMatchingChecklistKey(slug) : null;
   const originalCfg = matchedKey ? mechanicalConfig[matchedKey] : { columns: [], rows: [] };
+  const { userData } = useSelector((state) => state.user);
 
-  // State for additional columns (Pump 2/Blower 2)
-  const [additionalColumns, setAdditionalColumns] = useState([]); // This state is not directly used after the update to `cfg` state
+  const [additionalColumns, setAdditionalColumns] = useState([]);
   const [cfg, setCfg] = useState(originalCfg);
-
-  // technician from backend
-  const [technician, setTechnician] = useState(null);
+  const [technician, setTechnician] = useState(null); // State for technician data
   const [answers, setAnswers] = useState({});
 
-  // Check if equipment is a pump or blower
   const isPump = matchedKey?.includes('pump');
   const isBlower = matchedKey?.includes('blower');
   const [isWorking, setIsWorking] = useState("yes");
   const [comments, setComments] = useState("");
-  const [photos, setPhotos] = useState([null]); // State to hold file objects for upload
+  const [photos, setPhotos] = useState([null]);
+console.log('userData in mainatnene form', userData);
 
   const handlePhotoChange = (index, file) => {
     const newPhotos = [...photos];
@@ -195,8 +201,50 @@ export default function MaintenanceForm() {
   };
 
   const addPhotoField = () => {
-    setPhotos([...photos, null]); // Add a new null to the array to render another file input
+    setPhotos([...photos, null]);
   };
+
+  // --- START: Technician data from localStorage ---
+  useEffect(() => {
+    try {
+       // Make sure this key matches your app's key
+      if (userData?.validUserOne?.isTechnician== true) {
+        const validUserOne = userData.validUserOne || userData; // Adjust if user_data itself is validUserOne
+        
+        if (validUserOne && validUserOne.isTechnician) {
+          setTechnician({
+            name: validUserOne.fname, // Use fname for the display name
+            email: validUserOne.email,
+            // If your userData has a 'designation' field, you can add it here too:
+            // designation: validUserOne.designation || "",
+          });
+        } else {
+          console.warn("Logged-in user is not a technician or user data structure is incorrect.");
+          setTechnician(null);
+          toast.warn("You are not authorized as a technician to submit reports.");
+        }
+      } else {
+        console.warn("No user data found in local storage.");
+        setTechnician(null);
+        toast.error("Please log in to submit reports.");
+      }
+    } catch (error) {
+      console.error("Error parsing user data from local storage:", error);
+      setTechnician(null);
+      toast.error("Error loading user data.");
+    }
+  }, []); // Empty dependency array means this runs once on component mount
+  // --- END: Technician data from localStorage ---
+
+
+  useEffect(() => {
+    const slug = location.state?.equipmentName?.toLowerCase()?.trim();
+    console.log("Current slug:", slug);
+    const matchedKey = slug ? getMatchingChecklistKey(slug) : null;
+    console.log("Matched key:", matchedKey);
+    const originalCfg = matchedKey ? mechanicalConfig[matchedKey] : { columns: [], rows: [] };
+    setCfg(originalCfg);
+  }, [location.state?.equipmentName]);
 
   useEffect(() => {
     if (!dbId) return;
@@ -216,19 +264,20 @@ export default function MaintenanceForm() {
     fetchEquipment();
   }, [dbId]);
 
-  // fetch technician record once
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await axios.get(`${API_URL}/api/technician`);
-        if (data.success && data.technician) {
-          setTechnician(data.technician);
-        }
-      } catch (err) {
-        console.error("Failed to fetch technician", err);
-      }
-    })();
-  }, []);
+  // IMPORTANT: REMOVE THIS useEffect block. It's causing the overwrite.
+  // useEffect(() => {
+  //   (async () => {
+  //     try {
+  //       const { data } = await axios.get(`${API_URL}/api/technician`);
+  //       if (data.success && data.technician) {
+  //         setTechnician(data.technician);
+  //       }
+  //     } catch (err) {
+  //       console.error("Failed to fetch technician", err);
+  //     }
+  //   })();
+  // }, []);
+
 
   // Initialize answers when cfg changes
   useEffect(() => {
@@ -247,11 +296,9 @@ export default function MaintenanceForm() {
       const prefix = isPump ? "Pump" : "Blower";
       const newColumn = `${prefix} ${cfg.columns.length + 1}`;
 
-      // Update cfg with the new column
       const newColumns = [...cfg.columns, newColumn];
       setCfg({ ...cfg, columns: newColumns });
 
-      // Update answers to include the new column for each row
       const updatedAnswers = { ...answers };
       Object.keys(updatedAnswers).forEach(rowId => {
         updatedAnswers[rowId].checks.push("");
@@ -270,27 +317,22 @@ export default function MaintenanceForm() {
   const onRemarks = (rowId, val) => {
     setAnswers(a => ({
       ...a,
-      [rowId]: { ...a[rowId], remarks: val } // Corrected: Was `a[row.id]`
+      [rowId]: { ...a[rowId], remarks: val }
     }));
   };
 
-  // Helper function to determine the color of the remarks input
   const getRemarksColor = (rowId) => {
     const rowAnswers = answers[rowId]?.checks;
     if (!rowAnswers || rowAnswers.length === 0) {
-      return ""; // Default color if no checks are made
+      return "";
     }
-
-    // If any check is 'fail', the remarks should be red
     if (rowAnswers.some(check => check === "fail")) {
       return "text-danger";
     }
-    // If all checks are 'ok' (and there's at least one check), remarks should be green
     if (rowAnswers.every(check => check === "ok")) {
       return "text-success";
     }
-
-    return ""; // Default if mixed or no definitive status
+    return "";
   };
 
   const submit = async (e) => {
@@ -308,12 +350,17 @@ export default function MaintenanceForm() {
     payload.append("capacity", capacity);
     payload.append("isWorking", isWorking);
     payload.append("comments", comments);
-    payload.append("technician", JSON.stringify(technician));
 
-    // Append each selected photo to the FormData object
-    // .filter(Boolean) ensures that null values (from empty photo slots) are skipped
+    // Use the 'technician' state which is now populated from userData
+    payload.append("technician", JSON.stringify({
+      name: technician.name,
+      email: technician.email,
+      // Add other properties if needed for submission, e.g.,
+      // designation: technician.designation || "Technician"
+    }));
+
     photos.filter(Boolean).forEach((photo) => {
-      payload.append(`photos`, photo); // The key 'photos' must match `photoUpload.array('photos', 10)` in the backend
+      payload.append(`photos`, photo);
     });
 
     if (isWorking === "yes") {
@@ -335,13 +382,13 @@ export default function MaintenanceForm() {
         payload,
         {
           headers: {
-            'Content-Type': 'multipart/form-data' // Essential for sending FormData
+            'Content-Type': 'multipart/form-data'
           }
         }
       );
       if (data.success) {
         toast.success("Report submitted successfully!");
-        navigate("/services"); // Redirect to the /services page on success
+        navigate("/services");
       } else {
         toast.error(data.message || "Failed to submit report");
       }
@@ -377,20 +424,21 @@ export default function MaintenanceForm() {
           <label className="form-label">
             <strong>Technician</strong>
           </label>
-          <div className="p-2 shadow bg-light rounded text-success">
+          <div className="p-2 shadow bg-light rounded">
             {technician ? (
               <div className="text-success" >
-                {technician.name} — {technician.designation} (
-                <a className="text-success" href={`mailto:${technician.email}`}>{technician.email}</a>)
+                {technician.name}
+                {technician.designation ? ` — ${technician.designation}` : ''}
+                {" "} (<a className="text-success" href={`mailto:${technician.email}`}>{technician.email}</a>)
               </div>
             ) : (
-              <div className="text-danger">Technician data not available</div>
+              <div className="text-danger">Technician data not available or not logged in as a technician.</div>
             )}
           </div>
         </div>
       </div>
 
-      <form onSubmit={submit}> {/* Wrap the entire form in a <form> tag */}
+      <form onSubmit={submit}>
         <div className="mb-4">
           <label className="form-label"><strong>Is the Equipment Working?</strong></label>
           <div>
@@ -435,7 +483,6 @@ export default function MaintenanceForm() {
           />
         </div>
 
-        {/* Photo Upload Section */}
         <div className="mb-4">
           <label className="form-label"><strong>Upload Photos</strong></label>
           {photos.map((file, idx) => (
@@ -443,7 +490,7 @@ export default function MaintenanceForm() {
               <input
                 type="file"
                 accept="image/*"
-                capture="environment" // Suggests using the device's camera for input
+                capture="environment"
                 onChange={(e) => handlePhotoChange(idx, e.target.files[0])}
                 className="form-control"
               />
