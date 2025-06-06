@@ -80,7 +80,7 @@ export default function PDFNode({ id, data, selected }) {
             style={{
               border: 'none',
               backgroundColor: '#fff',
-              pointerEvents: 'none',
+             /*  pointerEvents: 'none', */
             }}
             title={`pdf-node-${id}`}
           />

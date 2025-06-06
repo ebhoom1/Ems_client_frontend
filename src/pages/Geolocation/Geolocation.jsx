@@ -231,185 +231,284 @@
 //   );
 // }
 
-
 // src/pages/OperatorGeo.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Modal from "react-modal";
-import { API_URL } from "../../utils/apiConfig";
-import "./Geolocation.css";
+import { API_URL } from "../../utils/apiConfig"; // Ensure this path is correct
+import "./Geolocation.css"; // Ensure this path is correct
 
 Modal.setAppElement("#root");
 
 export default function Geolocation() {
+  // ─── 1) DEVICE (USER) COORDINATES ──────────────────────────────────────────────
   const [coords, setCoords] = useState({ lat: null, lng: null });
   const [error, setError] = useState("");
   const [withinRadius, setWithinRadius] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-
   const watchId = useRef(null);
   const navigate = useNavigate();
-  const { userData } = useSelector((state) => state.user);
+
+  // ─── 2) SITE COORDINATES (FETCHED FROM DB) ────────────────────────────────────
+  const [siteOptions, setSiteOptions] = useState([]);
+  const [firstSiteLat, setFirstSiteLat] = useState(null);
+  const [firstSiteLng, setFirstSiteLng] = useState(null);
+
+  // ─── 3) REDUX SELECTORS & USER ROLE ───────────────────────────────────────────
+  // `operator` from auth may not contain all fields; we’ll use validUser for the ID.
   const operator = useSelector((state) => state.auth.user);
-  console.log("operator:",operator);
+  const { userData } = useSelector((state) => state.user);
   const validUser = userData?.validUserOne || {};
-  console.log("validUser:",validUser)
-  const [userLat, setUserLat] = useState(null);
-const [userLng, setUserLng] = useState(null);
-const [siteOptions, setSiteOptions] = useState([]);
-const [selectedSiteIndex, setSelectedSiteIndex] = useState(0);
 
+  const role = validUser.isTechnician
+    ? "technician"
+    : validUser.isTerritorialManager
+    ? "territorialManager"
+    : "operator";
 
-  console.log("User site coordinates:", userLat, userLng);
-
-   //within 100m testing
-     /*  const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
-      const toRad = (x) => (x * Math.PI) / 180;
-      const R = 6371000; // Earth radius in meters
-     const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-    const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-       Math.cos(toRad(lat1)) *
-          Math.cos(toRad(lat2)) *
-         Math.sin(dLon / 2) *
-          Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-     return R * c;
-    };  */
-
-const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
-    const toRad = x => (x * Math.PI) / 180;
+  // ─── 4) HAVERSINE (DISTANCE) FORMULA ───────────────────────────────────────────
+  const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
+    const toRad = (x) => (x * Math.PI) / 180;
     const R = 6371000;
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
-  };  
+  };
 
+  // ─── 5) WATCH USER GPS POSITION ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setError("Geolocation not supported in this browser.");
+      return;
+    }
 
- 
+    const handleSuccess = (position) => {
+      // For testing, we’re hardcoding Korlam Hospital Kollam coordinates:
+   /*    const latitude = 8.864167;
+      const longitude = 76.681111; */
+      // In production, uncomment the next two lines:
+       const { latitude, longitude } = position.coords;
+      // setCoords({ lat: latitude, lng: longitude });
+      setCoords({ lat: latitude, lng: longitude });
+    };
 
+    const handleError = (err) => {
+      setError(err.message || "Unable to retrieve location");
+    };
 
-useEffect(() => {
-  if (!siteOptions.length) return;
+    watchId.current = navigator.geolocation.watchPosition(
+      handleSuccess,
+      handleError,
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 5000,
+      }
+    );
 
-  const handleSuccess = (position) => {
-    // ✅ PRODUCTION MODE — use real GPS coordinates
-    const latitude = position.coords.latitude;
-    const longitude = position.coords.longitude;
-//8.864167
-//76.681111
-    // ✅ MOCK MODE — simulate near-site for testing
-    // const latitude = siteOptions[0].latitude + 0.0003;
-    // const longitude = siteOptions[0].longitude + 0.0003;
+    return () => {
+      if (watchId.current !== null) {
+        navigator.geolocation.clearWatch(watchId.current);
+        watchId.current = null;
+      }
+    };
+  }, []);
 
-    setCoords({ lat: latitude, lng: longitude });
+  // ─── 6) FETCH ASSIGNED SITES FOR THE USER ─────────────────────────────────────
+  useEffect(() => {
+    // Now we use validUser._id (not operator._id)
+    if (!validUser?._id || !role) {
+      console.warn(
+        "⚠️ Skipping site fetch: validUser._id or role is falsy.",
+        "validUser._id =",
+        validUser?._id,
+        "role =",
+        role
+      );
+      return;
+    }
 
-    // ✅ Check against ALL assigned site locations
+    const fetchAllSites = async () => {
+      try {
+        console.log(
+          `📡 Fetching sites for user ID: ${validUser._id}, role: ${role}`
+        );
+        const res = await fetch(
+          `${API_URL}/api/get-sites-for-user/${validUser._id}/${role}`
+        );
+        console.log("🟢 HTTP status from sites endpoint:", res.status);
+
+        if (!res.ok) {
+          const errorBody = await res.text();
+          throw new Error(
+            `Unable to fetch site locations (status ${res.status}): ${errorBody}`
+          );
+        }
+
+        const data = await res.json();
+        console.log("🗺️ Sites API returned:", data);
+
+        if (!Array.isArray(data) || data.length === 0) {
+          console.warn("⚠️ API returned an empty array or non-array for sites.");
+          setError("No site locations found for your account.");
+          setSiteOptions([]);
+          setFirstSiteLat(null);
+          setFirstSiteLng(null);
+          return;
+        }
+
+        // Determine whether the objects use { latitude, longitude } or { lat, lng }:
+        const firstSite = data[0];
+        let resolvedLat, resolvedLng;
+
+        if (
+          typeof firstSite.latitude === "number" &&
+          typeof firstSite.longitude === "number"
+        ) {
+          resolvedLat = firstSite.latitude;
+          resolvedLng = firstSite.longitude;
+        } else if (
+          typeof firstSite.lat === "number" &&
+          typeof firstSite.lng === "number"
+        ) {
+          resolvedLat = firstSite.lat;
+          resolvedLng = firstSite.lng;
+        } else {
+          throw new Error(
+            "First site object lacks valid latitude/longitude (or lat/lng) fields."
+          );
+        }
+
+        setSiteOptions(data);
+        setFirstSiteLat(resolvedLat);
+        setFirstSiteLng(resolvedLng);
+        setError("");
+      } catch (err) {
+        console.error("❌ Error fetching site locations:", err);
+        setError(`Failed to load site data: ${err.message}`);
+        setSiteOptions([]);
+        setFirstSiteLat(null);
+        setFirstSiteLng(null);
+      }
+    };
+
+    fetchAllSites();
+  }, [validUser?._id, role]);
+
+  // ─── 7) CALCULATE 'withinRadius' ──────────────────────────────────────────────
+  useEffect(() => {
+    if (
+      coords.lat === null ||
+      coords.lng === null ||
+      siteOptions.length === 0
+    ) {
+      setWithinRadius(false);
+      return;
+    }
+
     const matchedSite = siteOptions.find((site) => {
-      const dist = getDistanceMeters(site.latitude, site.longitude, latitude, longitude);
-      console.log(`📍 Distance to ${site.companyName || "site"}: ${dist.toFixed(2)} meters`);
+      let siteLat, siteLng;
+
+      if (
+        typeof site.latitude === "number" &&
+        typeof site.longitude === "number"
+      ) {
+        siteLat = site.latitude;
+        siteLng = site.longitude;
+      } else if (
+        typeof site.lat === "number" &&
+        typeof site.lng === "number"
+      ) {
+        siteLat = site.lat;
+        siteLng = site.lng;
+      } else {
+        console.warn(`Site ${site.companyName || site._id} has invalid coordinates.`);
+        return false;
+      }
+
+      const dist = getDistanceMeters(siteLat, siteLng, coords.lat, coords.lng);
+      console.log(
+        `📍 Distance from device to ${site.companyName || "site"}: ${dist.toFixed(2)} meters`
+      );
       return dist <= 100;
     });
 
-    setWithinRadius(!!matchedSite);
-  };
+    setWithinRadius(Boolean(matchedSite));
+  }, [coords, siteOptions]);
 
-  const handleError = (err) => {
-    setError(err.message || "Unable to retrieve location");
-  };
+  // ─── 8) DEBUG LOGS (Optional) ──────────────────────────────────────────────────
+  useEffect(() => {
+    console.log("↪️ Current device coords:", coords.lat, coords.lng);
+    console.log("↪️ First fetched site coords:", firstSiteLat, firstSiteLng);
+    console.log("↪️ User role:", role);
+    console.log("↪️ Is within radius:", withinRadius);
+    console.log("↪️ Operator data (auth):", operator);
+    console.log("↪️ Valid user data:", validUser);
+    console.log("↪️ All site options:", siteOptions);
+  }, [coords, firstSiteLat, firstSiteLng, role, withinRadius, operator, validUser, siteOptions]);
 
-  watchId.current = navigator.geolocation.watchPosition(
-    handleSuccess,
-    handleError,
-    { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
-  );
-
-  return () => {
-    if (watchId.current !== null) {
-      navigator.geolocation.clearWatch(watchId.current);
-      watchId.current = null;
-    }
-  };
-}, [siteOptions]);
-
-
+  // ─── 9) HANDLE CHECK‐IN (MARK ATTENDANCE) ─────────────────────────────────────
   const handleMarkAttendance = async () => {
-    console.log("checkin");
     try {
       const checkInMethod = "Location Verified";
-      const userRole = validUser.isTechnician
-        ? "technician"
-        : validUser.isTerritorialManager
-        ? "territorialManager"
-        : "operator";
-
       const payload = {
-        username: operator.userName,
-        companyName: validUser.companyName,
-        adminType: validUser.adminType,
+        username: validUser.userName, // operator’s userName from validUser
+        companyName: validUser.companyName || "N/A",
+        adminType: validUser.adminType || validUser.userType || "N/A",
         checkInTime: new Date().toISOString(),
         checkInMethod,
         latitude: coords.lat,
         longitude: coords.lng,
-        userRole,
+        userRole: role,
+        isCheckedIn: true,
       };
+
+      if (!payload.username || !payload.latitude || !payload.longitude || !payload.userRole) {
+        throw new Error("Missing essential attendance data (username, coordinates, or role).");
+      }
+
+      console.log("📨 Sending POST request to /api/attendance with payload:", payload);
 
       const res = await fetch(`${API_URL}/api/attendance`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to mark attendance");
 
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(
+          "❌ Attendance POST request failed:",
+          res.status,
+          res.statusText,
+          errorText
+        );
+        let errorMessage = "Failed to mark attendance. Please try again.";
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorMessage;
+        } catch (e) {}
+        throw new Error(errorMessage);
+      }
+
+      console.log("🎉 Attendance marked successfully!");
       setModalOpen(false);
       navigate("/water", { state: { checkedIn: true } });
     } catch (err) {
-      alert("Error marking attendance: " + err.message);
+      console.error("⚠️ Error marking attendance:", err);
+      alert(`Error marking attendance: ${err.message}`);
     }
   };
 
-  
-
-  const role = validUser.isTechnician
-  ? "technician"
-  : validUser.isTerritorialManager
-  ? "territorialManager"
-  : "operator";
-
-
-  useEffect(() => {
-    const fetchAllSites = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/get-sites-for-user/${operator._id}/${role}`);
-        if (!res.ok) throw new Error("Unable to fetch site locations");
-
-const data = await res.json();
-if (!data.length) throw new Error("No site locations found");
-
-setSiteOptions(data);
-setSelectedSiteIndex(0);
-setUserLat(data[0].latitude);
-setUserLng(data[0].longitude);
-
-      } catch (err) {
-        console.error("Error fetching site locations:", err);
-        setError("Failed to load site locations.");
-      }
-    };
-  
-    if (operator?._id && role) {
-      fetchAllSites();
-    }
-  }, [operator?._id, role]);
-  
-  
+  // ─── 10) RENDER UI ─────────────────────────────────────────────────────────────
   return (
     <div className="geo-container">
       <div className="geo-card">
@@ -422,49 +521,60 @@ setUserLng(data[0].longitude);
         </h2>
 
         {error && <p className="geo-error">{error}</p>}
+
         {!error && coords.lat === null && <p>Locating you, please wait…</p>}
 
         {coords.lat !== null && (
-  <div>
-    <p>
-      <strong>Your Location:</strong> {coords.lat.toFixed(6)},{" "}
-      {coords.lng.toFixed(6)}
-    </p>
+          <div>
+            <p>
+              <strong>Your Location:</strong> {coords.lat.toFixed(6)},{" "}
+              {coords.lng.toFixed(6)}
+            </p>
 
-    {validUser.isTechnician || validUser.isTerritorialManager ? (
-      coords.lat && coords.lng ? (
-        <>
-          <p className="geo-info">📍 Location captured.</p>
-          <button
-            onClick={() => setModalOpen(true)}
-            className="geo-button"
-          >
-            ✅ Proceed to Check-In
-          </button>
-        </>
-      ) : (
-        <p className="geo-warning">
-          ⚠ Unable to capture your location. Please ensure GPS is enabled.
-        </p>
-      )
-    ) : withinRadius ? (
-      <>
-        <p className="geo-success">✅ You are within 100m of the site.</p>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="geo-button"
-        >
-          ✅ Proceed to Check-In
-        </button>
-      </>
-    ) : (
-      <p className="geo-warning">
-        ⚠ You are outside the 100m radius. Please move closer to the site to check-in.
-      </p>
-    )}
-  </div>
-)}
+            {validUser.isTechnician || validUser.isTerritorialManager ? (
+              coords.lat && coords.lng ? (
+                <>
+                  <p className="geo-info">📍 Location captured.</p>
+                  <button
+                    onClick={() => setModalOpen(true)}
+                    className="geo-button"
+                  >
+                    ✅ Proceed to Check-In
+                  </button>
+                </>
+              ) : (
+                <p className="geo-warning">
+                  ⚠ Unable to capture your location. Please enable GPS.
+                </p>
+              )
+            ) : (
+              withinRadius ? (
+                <>
+                  <p className="geo-success">
+                    ✅ You are within 100m of the site.
+                  </p>
+                  <button
+                    onClick={() => setModalOpen(true)}
+                    className="geo-button"
+                  >
+                    ✅ Proceed to Check-In
+                  </button>
+                </>
+              ) : (
+                <p className="geo-warning">
+                  ⚠ You are outside the 100m radius. Please move closer to the
+                  site to check in.
+                </p>
+              )
+            )}
 
+            {firstSiteLat && firstSiteLng && (
+              <p className="geo-site-info">
+                Nearest Site Location: {firstSiteLat.toFixed(6)}, {firstSiteLng.toFixed(6)}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <Modal

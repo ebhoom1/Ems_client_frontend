@@ -182,16 +182,18 @@ export default function ElectricalReport() {
             alt="Genex logo"
             style={{ maxWidth: 120, maxHeight: 120 }}
           />
-          <div className="text-center flex-grow-1">
-            <div style={{ fontSize: 14, fontWeight: 'bold' }}>
-              <i>Genex</i> Utility Management Pvt Ltd
-            </div>
-            <div>
-              No:04, Suraj Nilaya, Sahyadri Layout, Shettihalli, Jalahalli West,
-              Bangalore - 560015
-            </div>
-            <div>Phone: +91-92436-02152</div>
-          </div>
+     <div className="text-center flex-grow-1" style={{ fontFamily: 'Century Gothic, sans-serif' }}>
+    <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+      <i style={{ fontFamily: '"Comic Sans MS", cursive',fontSize: 24, }}>Genex</i>{' '}
+      Utility Management Pvt Ltd
+    </div>
+    <div style={{ fontSize: 14 }}>
+      No:04, Suraj Nilaya, Sahyadri Layout, Shettihalli, Jalahalli West, Bangalore - 560015
+    </div>
+    <div style={{ fontSize: 14 }}>
+      Phone: +91-92436-02152
+    </div>
+  </div>
         </div>
 
         {/* Title */}

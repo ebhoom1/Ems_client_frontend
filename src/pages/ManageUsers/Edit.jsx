@@ -20,7 +20,8 @@ function Edit() {
   const { users } = useSelector((state) => state.userLog);
   const [adminList, setAdminList] = useState([]);
   const [operatorList, setOperatorList] = useState([]);
-
+const [technicianList, setTechnicianList] = useState([]);
+ const [assignedTechnicians, setAssignedTechnicians] = useState([]);
   const [userData, setUserData] = useState({
     userName: "",
     companyName: "",
@@ -42,6 +43,7 @@ function Edit() {
     adminType: "",
     operators: [],
     territorialManager: "",
+    technicians: [],
   });
 
   const industryType = [
@@ -91,7 +93,9 @@ function Edit() {
             : selectedUser.additionalEmail
             ? [selectedUser.additionalEmail]
             : [""],
+             technicians: selectedUser.technicians || [],
       }));
+      setAssignedTechnicians(selectedUser.technicians || []);
     }
   }, [selectedUser]);
 
@@ -106,6 +110,12 @@ function Edit() {
         // Fetch all operators
         const operatorsRes = await axios.get(`${API_URL}/api/get-operators`);
         setOperatorList(operatorsRes.data.users || []);
+
+        //fetch technician 
+        const techRes = await axios.get(`${API_URL}/api/getAll-technicians`);
+
+      const technicians = techRes.data.users.filter(user => user.isTechnician);
+setTechnicianList(technicians);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -136,7 +146,24 @@ function Edit() {
       additionalEmails: [...userData.additionalEmails, ""],
     });
   };
-
+ // Assign technician to the user
+ const handleAssignTechnician = (techId) => {
+  if (!userData.technicians.includes(techId)) {
+    setUserData(prev => ({
+      ...prev,
+      technicians: [...prev.technicians, techId]
+    }));
+    setAssignedTechnicians(prev => [...prev, techId]);
+  }
+};
+// Remove technician from the user
+const handleRemoveTechnician = (techId) => {
+  setUserData(prev => ({
+    ...prev,
+    technicians: prev.technicians.filter(id => id !== techId)
+  }));
+  setAssignedTechnicians(prev => prev.filter(id => id !== techId));
+};
   // Assign operator to the user
   const handleAssignOperator = (operatorId) => {
     if (!userData.operators.includes(operatorId)) {
@@ -579,6 +606,62 @@ function Edit() {
                             </select>
                           </div>
                         </div>
+
+<div className="col-lg-6 col-md-6 mb-4">
+  <div className="form-group">
+    <label className="form-label text-light">
+      Assign Technician(s)
+    </label>
+    <div className="input-group mb-3">
+      <select
+        className="form-control"
+        onChange={(e) => {
+          if (e.target.value) {
+            handleAssignTechnician(e.target.value);
+          }
+        }}
+        style={{
+          padding: "15px",
+          borderRadius: "10px",
+        }}
+      >
+        <option value="">Select Technician</option>
+        {technicianList
+          .filter((tech) => !userData.technicians.includes(tech._id))
+          .map((tech) => (
+            <option key={tech._id} value={tech._id}>
+              {tech.fname} ({tech.userName})
+            </option>
+          ))}
+      </select>
+    </div>
+
+    {/* Display assigned technicians */}
+    <div className="mt-2">
+      {assignedTechnicians.map((techId) => {
+        const tech = technicianList.find((t) => t._id === techId);
+        return tech ? (
+          <span
+            key={techId}
+            className="badge bg-success me-2 mb-2 p-2"
+          >
+            {tech.fname} ({tech.userName})
+            <button
+              type="button"
+              className="btn-close btn-close-white ms-2"
+              aria-label="Remove"
+              onClick={() => handleRemoveTechnician(techId)}
+              style={{
+                fontSize: "0.5rem",
+                padding: "0.25rem",
+              }}
+            ></button>
+          </span>
+        ) : null;
+      })}
+    </div>
+  </div>
+</div>
 
 
                       {userData.userType === "user" && (

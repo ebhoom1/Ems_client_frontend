@@ -13,6 +13,7 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function EquipmentList() {
   const { userData } = useSelector((state) => state.user);
+  const userType = userData?.validUserOne?.userType
   const [list, setList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const { validUserOne: type } = userData || {};
@@ -306,6 +307,9 @@ const editEquipment = (id) => {
       >
         View Report
       </button>
+      
+    {type?.userType === "admin" && (
+    <>
       <button
         className="btn btn-sm me-1"
         style={{ color: "blue" }}
@@ -322,6 +326,8 @@ const editEquipment = (id) => {
       >
         <FaTrash />
       </button>
+    </>
+  )}
     </>
   )}
 </td>

@@ -190,51 +190,56 @@ function LIveLayout() {
   //   }
   // };
 
-  const fetchStationsList = async () => {
-    try {
-      let targetUserName = "";
-      const currentUser = userData?.validUserOne;
+const fetchStationsList = async () => {
+  try {
+    let targetUserName = "";
+    const currentUser = userData?.validUserOne;
 
-      if (!currentUser) return;
+    if (!currentUser) return;
 
-      if (currentUser.userType === "admin") {
-        targetUserName =
-          selectedUser || sessionStorage.getItem("selectedUserId") || "";
-      } else if (currentUser.userType === "operator" && currentUser.createdBy) {
-        try {
-          const creatorRes = await dispatch(
-            fetchUserById(currentUser.createdBy)
-          ).unwrap();
-          console.log("creatorRes:", creatorRes);
-          targetUserName = creatorRes?.userName;
-          console.log(
-            "Fetched creator's userName for operator:",
-            targetUserName
-          );
-        } catch (err) {
-          console.warn(
-            "Failed to fetch creator for operator. Falling back to current user."
-          );
-          targetUserName = currentUser?.userName;
-        }
-      } else {
+    if (currentUser.userType === "admin") {
+      targetUserName =
+        selectedUser || sessionStorage.getItem("selectedUserId") || "";
+    } else if (currentUser.userType === "operator" && currentUser.createdBy) {
+      try {
+        const creatorRes = await dispatch(
+          fetchUserById(currentUser.createdBy)
+        ).unwrap();
+
+        // Log the parent user object
+        console.log("Parent user object (creatorRes):", creatorRes);
+
+        targetUserName = creatorRes?.userName;
+        console.log("Fetched creator’s userName for operator:", targetUserName);
+      } catch (err) {
+        console.warn(
+          "Failed to fetch creator for operator. Falling back to current user."
+        );
         targetUserName = currentUser?.userName;
       }
-
-      if (!targetUserName) {
-        console.error("No valid userName found to fetch stations.");
-        return;
-      }
-
-      const response = await axios.get(
-        `${API_URL}/api/live-stations/${targetUserName}`
-      );
-      setStationsList(response.data.data || []);
-      console.log("Live stations fetched for:", targetUserName);
-    } catch (error) {
-      console.error("Error fetching stations list:", error);
+    } else {
+      targetUserName = currentUser?.userName;
     }
-  };
+
+    if (!targetUserName) {
+      console.error("No valid userName found to fetch stations.");
+      return;
+    }
+
+    const response = await axios.get(
+      `${API_URL}/api/live-stations/${targetUserName}`
+    );
+
+    // Log the raw array of station objects
+    console.log("Stations array payload:", response.data.data);
+
+    setStationsList(response.data.data || []);
+    console.log("Live stations fetched for:", targetUserName);
+  } catch (error) {
+    console.error("Error fetching stations list:", error);
+  }
+};
+
 
   useEffect(() => {
     if (userData?.validUserOne?.userType === "admin") {

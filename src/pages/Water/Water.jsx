@@ -102,7 +102,7 @@ const Water = () => {
   const [allowClicks, setAllowClicks] = useState(false); //new for overlay control
  
 
-  useEffect(() => {
+ useEffect(() => {
     const checkServerStatus = async () => {
       const userRole = loggedInUser?.isTechnician
         ? "technician"
@@ -110,12 +110,13 @@ const Water = () => {
         ? "territorialManager"
         : loggedInUser?.isOperator
         ? "operator"
-        : "other";
-  
+        : null;
       if (!userRole || !loggedInUser?.userName) return;
-  
+
       try {
-const res = await axios.get(`${API_URL}/api/attendance/status/${operator.userName}/${userRole}`);
+        const res = await axios.get(
+          `${API_URL}/api/attendance/status/${loggedInUser.userName}/${userRole}`
+        );
         if (res.data?.isCheckedIn) {
           setIsCheckedIn(true);
           setAllowClicks(true);
@@ -124,7 +125,7 @@ const res = await axios.get(`${API_URL}/api/attendance/status/${operator.userNam
         console.error("Error checking server-side isCheckedIn:", err);
       }
     };
-  
+
     checkServerStatus();
   }, [loggedInUser]);
   
@@ -499,44 +500,62 @@ const res = await axios.get(`${API_URL}/api/attendance/status/${operator.userNam
           (data) => data.stackName === selectedStack
         );
 
-  const confirmCheckOut = async () => {
-    try {
-      setCheckoutLoading(true);
+const confirmCheckOut = async () => {
+  try {
+    setCheckoutLoading(true);
 
-      const userRole = loggedInUser?.isTechnician
-        ? "technician"
-        : loggedInUser?.isTerritorialManager
-        ? "territorialManager"
-        : loggedInUser?.isOperator
-        ? "operator"
-        : "other"; // ✅ Default fallback
+    // 1) Pick the same "valid user" object you used for check-in:
+    //    loggedInUser = userData.validUserOne
+    const userRole = loggedInUser?.isTechnician
+      ? "technician"
+      : loggedInUser?.isTerritorialManager
+      ? "territorialManager"
+      : loggedInUser?.isOperator
+      ? "operator"
+      : null;
 
-      const payload = {
-       username: operator?.userName,
-
-        checkOutTime: new Date().toISOString(),
-        userRole,
-      };
-
-      const res = await fetch(`${API_URL}/api/attendance/checkout`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error("Failed to mark checkout");
-      console.log("checkout success");
-      alert("✅ Checked out successfully.");
-      setIsCheckedIn(false);
-      setAllowClicks(false);
-    } catch (err) {
-      console.error(err.message);
-      alert("❌ Checkout failed. Please try again.");
-    } finally {
-      setCheckoutLoading(false);
-      setCheckoutModalOpen(false);
+    if (!userRole || !loggedInUser?.userName) {
+      throw new Error("Cannot determine userRole or userName for checkout.");
     }
-  };
+
+    // 2) Build payload with loggedInUser.userName (not operator.userName)
+    const payload = {
+      username: loggedInUser.userName,
+      checkOutTime: new Date().toISOString(),
+      userRole,
+    };
+
+    console.log("🚀 Sending checkout payload:", payload);
+
+    const res = await fetch(`${API_URL}/api/attendance/checkout`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    // 3) If non-2xx, print out the server's response text so you can see why it failed
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(
+        `❌ Checkout failed (status ${res.status}). Server response:\n`,
+        text
+      );
+      throw new Error(`Server returned ${res.status}`);
+    }
+
+    console.log("✅ Checkout succeeded");
+    alert("✅ Checked out successfully.");
+    setIsCheckedIn(false);
+    setAllowClicks(false);
+  } catch (err) {
+    console.error("🔴 confirmCheckOut Error:", err);
+    alert("❌ Checkout failed. See console for details.");
+  } finally {
+    setCheckoutLoading(false);
+    setCheckoutModalOpen(false);
+  }
+};
+
 
   //browser
   useEffect(() => {
@@ -571,24 +590,26 @@ const res = await axios.get(`${API_URL}/api/attendance/status/${operator.userNam
    /*  userData?.validUserOne?.isTechnician === true ||
     userData?.validUserOne?.isTerritorialManager === true;
  */
+const isOperator =
+    userData?.validUserOne?.isOperator === true;
   return (
     <div>
       {/**overlay-block click-new */}
-      {isSpecialUser && !allowClicks && (
-  <div
-    style={{
-      position: "fixed",
-      top: "70px", // ⬅️ Offset to start below the header
-      left: 0,
-      width: "100%",
-      height: "calc(100% - 70px)", // ⬅️ Adjust height to not overlap header
-      backgroundColor: 'rgba(255, 255, 255, 0.3)',
-      zIndex: 999, // ⬅️ Lower than Header (1000)
-      pointerEvents: 'auto',
-      backdropFilter: 'blur(2px)',
-    }}
-  />
-)}
+       {isOperator && !isCheckedIn && (
+        <div
+          style={{
+            position: "fixed",
+            top: "70px",                           // push down below your header
+            left: 0,
+            width: "100%",
+            height: "calc(100% - 70px)",
+            backgroundColor: "rgba(255, 255, 255, 0.3)",
+            zIndex: 999,                           // keep it above everything else
+            pointerEvents: "auto",                // block clicks underneath
+            backdropFilter: "blur(2px)",          // optional blurred look
+          }}
+        />
+      )}
     {/* Show loader while loading */}
       {loading ? (
         <div className="loader-container">
@@ -656,41 +677,27 @@ const res = await axios.get(`${API_URL}/api/attendance/status/${operator.userNam
                             ...(!allowClicks && { zIndex: 10000 }),
                           }}
                         >
-                          <button
-                            onClick={() => {
-                              if (!isCheckedIn) {
-                                // ✅ Only allow if NOT checked in
-                                navigate("/geolocation");
-                              } else {
-                                alert(
-                                  "✅ You are already Checked-In. Please Check-Out first."
-                                ); // optional alert
-                              }
-                            }}
-                            className="btn btn-success mb-3"
-                            disabled={isCheckedIn} // ✅ Disable button if already checked-in
-                            style={{
-                              backgroundColor: isCheckedIn
-                                ? "#6c757d"
-                                : "#28a745", // ✅ Gray out the button if disabled
-                              color: "white",
-                              cursor: isCheckedIn ? "not-allowed" : "pointer", // ✅ Update cursor
-                              opacity: isCheckedIn ? 0.7 : 1, // ✅ Slightly transparent when disabled
-                            }}
-                          >
-                            ✅ Check-In
-                          </button>
+                      <button
+          onClick={() => {
+            if (!isCheckedIn) {
+              navigate("/geolocation");
+            } else {
+              alert("✅ You are already Checked‐In. Please Check‐Out first.");
+            }
+          }}
+          className="btn btn-success mb-3"
+          disabled={isCheckedIn} // Disable once checked in
+        >
+          ✅ Check‐In
+        </button>
+        <button
+          onClick={handleCheckOut}
+          className="btn btn-danger mb-3"
+        >
+          🔁 Check‐Out
+        </button>
 
-                          <button
-                            onClick={handleCheckOut}
-                            className="btn btn-danger mb-3"
-                            style={{
-                              backgroundColor: "#dc3545",
-                              color: "white",
-                            }}
-                          >
-                            🔁 Check-Out
-                          </button>
+                        
                         </div>
                       )}
 

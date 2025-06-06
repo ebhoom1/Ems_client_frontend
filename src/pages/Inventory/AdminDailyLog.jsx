@@ -33,7 +33,7 @@ export default function AdminReport() {
 
     // fetch all logs
     axios
-      .get(`${API_URL}/api/getdailylogByUsername/${username}`)
+      .get(`${API_URL}/api/dailyLog/getdailylogByUsername/${username}`)
       .then((r) => {
         const data = r.data;
         if (data.message) throw new Error(data.message);
@@ -70,16 +70,32 @@ export default function AdminReport() {
 
   const downloadPDF = async () => {
     if (!reportRef.current || !selectedLog) return;
+
+    // Wait for all images in the container to load
+    const imgs = reportRef.current.querySelectorAll("img");
+    await Promise.all(
+      Array.from(imgs).map(
+        (img) =>
+          new Promise((resolve) => {
+            if (img.complete) resolve();
+            else img.onload = img.onerror = resolve;
+          })
+      )
+    );
+
+    // Now take screenshot
     const canvas = await html2canvas(reportRef.current, {
       scale: 2,
       useCORS: true,
     });
+
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({
       orientation: "landscape",
       unit: "pt",
       format: "a4",
     });
+
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
@@ -87,6 +103,7 @@ export default function AdminReport() {
     const imgH = canvas.height * ratio;
     const xOffset = (pdfWidth - imgW) / 2;
     const yOffset = (pdfHeight - imgH) / 2;
+
     pdf.addImage(imgData, "PNG", xOffset, yOffset, imgW, imgH);
     pdf.save(`DailyLog_${username}_${selectedLog.date.slice(0, 10)}.pdf`);
   };
@@ -172,6 +189,12 @@ export default function AdminReport() {
 
   // Detail view
   const log = selectedLog;
+  const flowReadings = log.flowReadings || [];
+  const flowTotals = log.flowTotals || {};
+  const inlet = flowTotals.inlet || {};
+  const outlet = flowTotals.outlet || {};
+  const images = selectedLog.images || [];
+
   return (
     <div className="container py-3">
       {/* top controls */}
@@ -328,11 +351,15 @@ export default function AdminReport() {
                         </tbody> */}
                         <tbody>
                           {log.treatedWater
-                            .filter(
-                              (tw) =>
-                                tw.key &&
-                                tw.key.toLowerCase() !== "+ add parameter"
-                            ) // prevent empty or accidental '+ Add Parameter'
+                            .filter((tw) => {
+                              const key = (tw.key || "").toLowerCase().trim();
+                              return (
+                                key !== "+ add parameter" &&
+                                key !== "+ add image" &&
+                                !key.includes("fakepath") &&
+                                key !== ""
+                              );
+                            })
                             .map((tw) => (
                               <tr key={tw.key}>
                                 <td
@@ -552,46 +579,98 @@ export default function AdminReport() {
           </tbody>
         </table>
 
-        {/* SIGN-OFF */}
+        {/* FLOW READINGS TABLE */}
         <table
-          className="table table-bordered table-sm w-75 mx-auto mt-2"
+          className="table table-bordered table-sm w-100 mx-auto mt-3"
           style={{ borderCollapse: "collapse" }}
         >
-          <thead className="text-center">
+          <thead className="text-center align-middle">
             <tr>
-              <th style={{ border: "1px solid #000", padding: 4 }}>Shift</th>
-              <th style={{ border: "1px solid #000", padding: 4 }}>
-                Engineer Sign
-              </th>
-              <th style={{ border: "1px solid #000", padding: 4 }}>Remarks</th>
-              <th style={{ border: "1px solid #000", padding: 4 }}>
-                Operator's Name
-              </th>
-              <th style={{ border: "1px solid #000", padding: 4 }}>Sign</th>
+              <th rowSpan="2">Shift</th>
+              <th rowSpan="2">Operator’s Name</th>
+              <th colSpan="3">Inlet Flow</th>
+              <th colSpan="3">Outlet Flow</th>
+            </tr>
+            <tr>
+              <th>Initial</th>
+              <th>Final</th>
+              <th>Total L</th>
+              <th>Initial</th>
+              <th>Final</th>
+              <th>Total L</th>
             </tr>
           </thead>
           <tbody>
-            {log.signOff.map((so) => (
-              <tr key={so.shift}>
-                <td style={{ border: "1px solid #000", padding: 4 }}>
-                  {so.shift}
-                </td>
-                <td style={{ border: "1px solid #000", padding: 4 }}>
-                  {so.engineerSign}
-                </td>
-                <td style={{ border: "1px solid #000", padding: 4 }}>
-                  {so.remarks}
-                </td>
-                <td style={{ border: "1px solid #000", padding: 4 }}>
-                  {so.operatorName}
-                </td>
-                <td style={{ border: "1px solid #000", padding: 4 }}>
-                  {so.sign}
-                </td>
+            {flowReadings.map((r) => (
+              <tr key={r.shift}>
+                <td>{r.shift}</td>
+                <td>{r.operatorName || "—"}</td>
+                <td>{r.inlet?.initial || "—"}</td>
+                <td>{r.inlet?.final || "—"}</td>
+                <td>{r.inlet?.total || "—"}</td>
+                <td>{r.outlet?.initial || "—"}</td>
+                <td>{r.outlet?.final || "—"}</td>
+                <td>{r.outlet?.total || "—"}</td>
               </tr>
             ))}
+
+            {(inlet.initial ||
+              inlet.final ||
+              outlet.initial ||
+              outlet.final) && (
+              <tr className="fw-bold text-center bg-light">
+                <td colSpan={2}>TOTAL</td>
+                <td>{inlet.initial || "—"}</td>
+                <td>{inlet.final || "—"}</td>
+                <td>{inlet.total || "—"}</td>
+                <td>{outlet.initial || "—"}</td>
+                <td>{outlet.final || "—"}</td>
+                <td>{outlet.total || "—"}</td>
+              </tr>
+            )}
           </tbody>
         </table>
+
+        {/* Uploaded Images */}
+        {images.length > 0 ? (
+          <div className="mt-3">
+            <h6 className="text-center mb-2">Water Quality Uploaded Images</h6>
+            <div className="d-flex flex-wrap justify-content-center">
+              {images.map((url, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    border: "1px solid #ccc",
+                    margin: "5px",
+                    padding: "4px",
+                    width: "140px",
+                    height: "140px",
+                    overflow: "hidden",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <img
+                    src={url}
+                    alt={`Uploaded-${idx}`}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => window.open(url, "_blank")}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center mt-2 text-muted">
+            No images uploaded for this log
+          </div>
+        )}
       </div>
     </div>
   );
