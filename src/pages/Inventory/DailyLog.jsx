@@ -275,35 +275,59 @@ export default function DailyLog() {
   //   };
   // }, [flowReadings]);
 
-  const handleFlowChange = (index, field, value) => {
-    setFlowReadings((prev) => {
-      const updated = [...prev];
-      const reading = { ...updated[index] };
+const handleFlowChange = (index, field, value) => {
+  setFlowReadings((prev) => {
+    const updated = [...prev];
+    const reading = { ...updated[index] };
 
-      if (field === "operatorName") {
-        reading.operatorName = value;
-      } else if (field.startsWith("inlet")) {
-        reading.inlet = {
-          ...reading.inlet,
-          [field === "inletInitial" ? "initial" : "final"]: value,
-        };
-        const i = parseFloat(reading.inlet.initial || 0);
-        const f = parseFloat(reading.inlet.final || 0);
-        reading.inlet.total = isNaN(i) || isNaN(f) ? "" : (f - i).toString();
-      } else if (field.startsWith("outlet")) {
-        reading.outlet = {
-          ...reading.outlet,
-          [field === "outletInitial" ? "initial" : "final"]: value,
-        };
-        const i = parseFloat(reading.outlet.initial || 0);
-        const f = parseFloat(reading.outlet.final || 0);
-        reading.outlet.total = isNaN(i) || isNaN(f) ? "" : (f - i).toString();
+    // 1) Update the current shift:
+    if (field === "operatorName") {
+      reading.operatorName = value;
+
+    } else if (field === "inletInitial" || field === "inletFinal") {
+      // Determine which side changed
+      const side = field === "inletInitial" ? "initial" : "final";
+      reading.inlet = { ...reading.inlet, [side]: value };
+
+      // Recalculate total for this shift
+      const i = parseFloat(reading.inlet.initial || 0);
+      const f = parseFloat(reading.inlet.final   || 0);
+      reading.inlet.total = isNaN(i) || isNaN(f) ? "" : (f - i).toString();
+
+      // If final changed, propagate into next shift's initial
+      if (side === "final" && index + 1 < updated.length) {
+        const next = { ...updated[index + 1] };
+        next.inlet = { ...next.inlet, initial: value };
+        const ni = parseFloat(next.inlet.initial || 0);
+        const nf = parseFloat(next.inlet.final   || 0);
+        next.inlet.total = isNaN(ni) || isNaN(nf) ? "" : (nf - ni).toString();
+        updated[index + 1] = next;
       }
 
-      updated[index] = reading;
-      return updated;
-    });
-  };
+    } else if (field === "outletInitial" || field === "outletFinal") {
+      const side = field === "outletInitial" ? "initial" : "final";
+      reading.outlet = { ...reading.outlet, [side]: value };
+
+      const i = parseFloat(reading.outlet.initial || 0);
+      const f = parseFloat(reading.outlet.final   || 0);
+      reading.outlet.total = isNaN(i) || isNaN(f) ? "" : (f - i).toString();
+
+      if (side === "final" && index + 1 < updated.length) {
+        const next = { ...updated[index + 1] };
+        next.outlet = { ...next.outlet, initial: value };
+        const ni = parseFloat(next.outlet.initial || 0);
+        const nf = parseFloat(next.outlet.final   || 0);
+        next.outlet.total = isNaN(ni) || isNaN(nf) ? "" : (nf - ni).toString();
+        updated[index + 1] = next;
+      }
+    }
+
+    // 2) Commit change for this shift
+    updated[index] = reading;
+    return updated;
+  });
+};
+
 
   // const handleAddLog = async () => {
   //   if (loading) {
@@ -751,8 +775,8 @@ export default function DailyLog() {
       {/* MAIN EQUIPMENT LOG */}
       <div
         style={{
-          overflowX: "auto",
-          maxHeight: "70vh",
+         /*  overflowX: "auto",
+          maxHeight: "100vh", */
           border: "1px solid #ddd",
           padding: "0.5rem",
         }}
@@ -1272,11 +1296,11 @@ export default function DailyLog() {
           ) && (
             <tr className="fw-bold text-center bg-light">
               <td colSpan={2}>TOTAL</td>
-              <td>{inletInitialTotal}</td>
-              <td>{inletFinalTotal}</td>
+              <td></td>
+              <td></td>
               <td>{inletTotalTotal}</td>
-              <td>{outletInitialTotal}</td>
-              <td>{outletFinalTotal}</td>
+              <td></td>
+              <td></td>
               <td>{outletTotalTotal}</td>
             </tr>
           )}

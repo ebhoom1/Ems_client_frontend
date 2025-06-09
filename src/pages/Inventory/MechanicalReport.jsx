@@ -141,7 +141,7 @@ const downloadPDF = async () => {
   const reportColumns = columns && columns.length > 0 ? columns : ["Status/Details"];
 
   return (
-    <div className="container py-3">
+    <div className="container py-3" >
       <div className="d-flex justify-content-between mb-3">
         <button className="btn btn-secondary" onClick={()=>navigate(-1)}>
           ← Back

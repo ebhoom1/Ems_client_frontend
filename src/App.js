@@ -324,7 +324,7 @@ function App() {
                     path="/report/mechanical/download/:year?/:month?"
                     element={<MergedMechanicalReport />}
                   /> */}
-                  <Route path="/dailylog" element={<DailyLog />} />
+                  <Route path="/dailylogs" element={<DailyLog />} />
                   <Route path="/geolocation" element={<Geolocation />} />
                 </Route>
               )}
@@ -393,7 +393,7 @@ function App() {
                   />
                                   <Route path="/report/electrical/download/:year?/:month?" element={<MergedElectricalReport />} />
 {/*                                   <Route path="/report/mechanical/download/:year?/:month?" element={<MergedMechanicalReport />} />
- */}                  <Route path="/dailylog" element={<DailyLog />} />
+ */}                  <Route path="/dailylogs" element={<DailyLog />} />
                   <Route path="/geolocation" element={<Geolocation />} />
                 </Route>
               )}

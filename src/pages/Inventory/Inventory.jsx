@@ -217,6 +217,26 @@ const Inventory = () => {
   const [equipmentList, setEquipmentList] = useState([]); // Add this line
     const [activeTab, setActiveTab] = useState(userType === "admin" ? "admin" : "add");
   const navigate = useNavigate();
+  //nnew for modal
+   const [showModal, setShowModal] = useState(false);
+  const [modalUsers, setModalUsers] = useState([]);
+  const [selectedModalUser, setSelectedModalUser] = useState("");
+  const adminType =userData?.validUserOne?.adminType;
+  useEffect(() => {
+    if (userType === "admin") {
+      (async () => {
+        try {
+          const res = await fetch(
+            `${API_URL}/api/get-users-by-adminType/${adminType}`
+          );
+          const body = await res.json();
+          setModalUsers(body.users || []);
+        } catch (err) {
+          toast.error("Error fetching user list");
+        }
+      })();
+    }
+  }, [userType, adminType]);
 useEffect(() => {
   const fetchEquipmentList = async () => {
     try {
@@ -232,103 +252,30 @@ useEffect(() => {
 }, [currentUserName]);
 
   // Render tab navigation based on user type
-  const renderTabs = () => {
+ const renderTabs = () => (
+    <div className="d-flex align-items-center justify-content-center">
+      <button onClick={() => navigate("/inventory")} className="w-25 btn btn-outline-success me-2">
+        Inventory
+      </button>
+      <button onClick={() => navigate("/services")} className="w-25 btn btn-outline-success me-2">
+        Services
+      </button>
+     <button
+     className="w-25 btn btn-outline-success me-2"
+  onClick={() => {
     if (userType === "admin") {
-      return (
-        <div>
-        <div className="d-flex align-items-center justify-content-center">
-  <button onClick={() => navigate("/inventory")} className="w-25 btn btn-outline-success me-2">
-    Inventory
-  </button>
-  <button onClick={() => navigate("/services")} className="w-25 btn btn-outline-success me-2">
-    Services
-  </button>
-  <button
-    onClick={() =>
-      userType === "admin"
-        ? navigate(`/admin/report/HH014`)
-        : navigate("/dailylogs")
+      setShowModal(true);
+    } else if (userType === "user" || userType==="operator") {
+      navigate("/dailylogs");
     }
-    className="w-25 btn btn-outline-success me-2"
-  >
-    Daily Log
-  </button>
-</div>
-        </div>
-      );
-    } else {
-      return (
-        <div>
-          <div className="d-flex align-items-center justify-content-center">
-            <button onClick={() => navigate("/inventory")} className="w-25 btn btn-outline-success me-2">
-              Inventory
-            </button>
-            <button onClick={() => navigate("/services")} className="w-25 btn btn-outline-success me-2">
-              Services
-            </button>
-            <button
-    onClick={() =>
-      userType === "admin"
-        ? navigate(`/admin/report/HH014`)
-        : navigate("/dailylog")
-    }
-    className="w-25 btn btn-outline-success me-2"
-  >
-    Daily Log
-  </button>
-          </div>
-          <ul className="nav nav-tabs mb-3 mt-3">
-            <li className="nav-item">
-              <button
-                style={activeTab === "add" ? { color: "#236a80", fontWeight: "bold" } : { color: "black" }}
-                className={`nav-link ${activeTab === "add" ? "active" : ""}`}
-                onClick={() => setActiveTab("add")}
-              >
-                Add Inventory
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                style={activeTab === "use" ? { color: "#236a80", fontWeight: "bold" } : { color: "black" }}
-                className={`nav-link ${activeTab === "use" ? "active" : ""}`}
-                onClick={() => setActiveTab("use")}
-              >
-                Use Inventory
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                style={activeTab === "addedlist" ? { color: "#236a80", fontWeight: "bold" } : { color: "black" }}
-                className={`nav-link ${activeTab === "addedlist" ? "active" : ""}`}
-                onClick={() => setActiveTab("addedlist")}
-              >
-                Added Inventory List
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                style={activeTab === "request" ? { color: "#236a80", fontWeight: "bold" } : { color: "black" }}
-                className={`nav-link ${activeTab === "request" ? "active" : ""}`}
-                onClick={() => setActiveTab("request")}
-              >
-                Request Inventory
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                style={activeTab === "requestHistory" ? { color: "#236a80", fontWeight: "bold" } : { color: "black" }}
-                className={`nav-link ${activeTab === "requestHistory" ? "active" : ""}`}
-                onClick={() => setActiveTab("requestHistory")}
-              >
-                Request History
-              </button>
-            </li>
-          </ul>
-        </div>
-      );
-    }
-  };
+  }}
+  
+>
+  Daily Log
+</button>
 
+    </div>
+  );
   // Render content based on active tab and user type
   const renderContent = () => {
     if (userType === "admin") {
@@ -725,6 +672,59 @@ const handleRequestInventory = (e) => {
            
             <div className="col-12 m-3">{renderTabs()}</div>
             <div className="col-12">{renderContent()}</div>
+             {showModal && (
+        <div
+          className="modal show"
+          tabIndex={-1}
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Select User for Daily Log</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowModal(false)}
+                />
+              </div>
+              <div className="modal-body">
+                <select
+                  className="form-select"
+                  value={selectedModalUser}
+                  onChange={(e) => setSelectedModalUser(e.target.value)}
+                >
+                  <option value="">-- Select a user --</option>
+                  {modalUsers.map((u) => (
+                    <option key={u.userName} value={u.userName}>
+                      {u.userName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="btn btn-danger"
+                  onClick={() => setShowModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                style={{backgroundColor:'#236a80', color:'#fff'}}
+                  className="btn "
+                  disabled={!selectedModalUser}
+                  onClick={() => {
+                    navigate(`/admin/report/${selectedModalUser}`);
+                    setShowModal(false);
+                  }}
+                >
+                  Go
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
           </div>
         </div>
       </div>

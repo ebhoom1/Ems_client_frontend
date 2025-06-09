@@ -599,42 +599,56 @@ const response = await axios.get(url);
               <th>Exceedence Limits</th>
             </tr>
           </thead>
-          <tbody>
-            {Object.entries(table.parameters).map(([key, value], i) => {
-              const exceedenceValue = calibrationExceed[key]
-                ? parseFloat(calibrationExceed[key])
-                : null;
-              const avgValue = parseFloat(value);
-              const isExceeded =
-                exceedenceValue !== null && avgValue > exceedenceValue;
-              return (
-                <tr key={i}>
-                  <td>{key}</td>
-                  <td
-                    style={{
-                      color: isExceeded ? "red" : "black",
-                      fontWeight: isExceeded ? "bold" : "normal",
-                    }}
-                  >
-                    {value}
-                  </td>
-                  <td>
-                    {minMaxData.minValues[key] !== undefined
-                      ? parseFloat(minMaxData.minValues[key]).toFixed(2)
-                      : "N/A"}
-                  </td>
-                  <td>
-                    {minMaxData.maxValues[key] !== undefined
-                      ? parseFloat(minMaxData.maxValues[key]).toFixed(2)
-                      : "N/A"}
-                  </td>
-                  <td>
-                    {exceedenceValue !== null ? exceedenceValue : "N/A"}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
+        <tbody>
+  {Object.entries(table.parameters)
+    // ← add this filter
+    .filter(([key]) =>
+      ![
+        "cumulatingFlow",
+        "flowRate",
+        "energy",
+        "voltage",
+        "current",
+        "power",
+        "weight",
+      ].includes(key)
+    )
+    .map(([key, value], i) => {
+      const exceedenceValue = calibrationExceed[key]
+        ? parseFloat(calibrationExceed[key])
+        : null;
+      const avgValue = parseFloat(value);
+      const isExceeded =
+        exceedenceValue !== null && avgValue > exceedenceValue;
+      return (
+        <tr key={i}>
+          <td>{key}</td>
+          <td
+            style={{
+              color: isExceeded ? "red" : "black",
+              fontWeight: isExceeded ? "bold" : "normal",
+            }}
+          >
+            {value}
+          </td>
+          <td>
+            {minMaxData.minValues[key] !== undefined
+              ? parseFloat(minMaxData.minValues[key]).toFixed(2)
+              : "N/A"}
+          </td>
+          <td>
+            {minMaxData.maxValues[key] !== undefined
+              ? parseFloat(minMaxData.maxValues[key]).toFixed(2)
+              : "N/A"}
+          </td>
+          <td>
+            {exceedenceValue !== null ? exceedenceValue : "N/A"}
+          </td>
+        </tr>
+      );
+    })}
+</tbody>
+
         </table>
       ))
     ) : (

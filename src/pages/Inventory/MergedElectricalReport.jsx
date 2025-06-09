@@ -7,21 +7,29 @@ import { API_URL } from '../../utils/apiConfig';
 import { useParams } from 'react-router-dom';
 import genexlogo from '../../assests/images/logonewgenex.png';
 
+// Recharts imports for bar charts
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
+
 export default function MergedElectricalReport() {
-  // Now we expect URL parameters: /report/electrical/download/:userName/:year/:month
   const { userName, year, month } = useParams();
-  const [reports, setReports] = useState([]);
-  const [logoMetaUrl, setLogoMetaUrl] = useState('');
-  const [logoDataUrl, setLogoDataUrl] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const reportRef = useRef();
-const [companyName, setCompanyName]= useState('')
   const adminType = useSelector(
     (s) => s.user.userData?.validUserOne?.adminType
   );
 
-  // (A) static checklist definition
+  const [reports, setReports] = useState([]);
+  const [companyName, setCompanyName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const reportRef = useRef();
+
   const phases = ['RY', 'YB', 'BR'];
   const checklist = [
     { id: 1, label: 'Voltage (V)' },
@@ -34,17 +42,11 @@ const [companyName, setCompanyName]= useState('')
     { id: 8, label: 'Examine exposed cables, joints & bus bars' },
   ];
 
-  // 1️⃣ Fetch all electrical reports filtered by userName/year/month
+  // Load merged reports
   useEffect(() => {
-    if (!userName || !year || !month) {
-      setLoading(false);
-      return;
-    }
-
     const url = `${API_URL}/api/electricalreports/user/${encodeURIComponent(
       userName
     )}/${year}/${month}`;
-
     axios
       .get(url)
       .then((res) => {
@@ -52,106 +54,24 @@ const [companyName, setCompanyName]= useState('')
           setReports(res.data.reports);
         }
       })
-      .catch((err) => {
-        console.error('Error fetching merged electrical reports:', err);
-      })
+      .catch(console.error)
       .finally(() => setLoading(false));
   }, [userName, year, month]);
-useEffect(() => {
-  if (!userName) return;
-  axios
-    .get(`${API_URL}/api/get-user-by-userName/${encodeURIComponent(userName)}`)
-    .then(res => {
-      const user = res.data.user;
-      setCompanyName(user?.companyName || '—');
-    })
-    .catch(err => {
-      console.error('Error fetching company:', err);
-      setCompanyName('—');
-    });
-}, [userName]);
 
-  // 2️⃣ Fetch logo metadata (for embedded PDF)
+  // Load company name
   useEffect(() => {
-    if (!adminType) return;
-
+    if (!userName) return;
     axios
-      .get(`${API_URL}/api/logo/${adminType}`)
-      .then((res) => {
-        const logos = res.data?.data || [];
-        if (logos.length) {
-          const latest = logos.sort(
-            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-          )[0];
-          setLogoMetaUrl(latest.logoUrl);
-        }
-      })
-      .catch((_) => {
-        /* silently ignore */
-      });
-  }, [adminType]);
-
-  // 3️⃣ Convert `logoMetaUrl` into a Base64 Data URL (so html2pdf can embed)
-  useEffect(() => {
-    if (!logoMetaUrl) return;
-    fetch(logoMetaUrl)
-      .then((r) => r.blob())
-      .then((blob) => {
-        const reader = new FileReader();
-        reader.onloadend = () => setLogoDataUrl(reader.result);
-        reader.readAsDataURL(blob);
-      })
-      .catch((_) => {
-        /* silently ignore */
-      });
-  }, [logoMetaUrl]);
+      .get(`${API_URL}/api/get-user-by-userName/${encodeURIComponent(userName)}`)
+      .then((res) => setCompanyName(res.data.user?.companyName || '—'))
+      .catch(() => setCompanyName('—'));
+  }, [userName]);
 
   if (loading) return <p>Loading…</p>;
 
-  // (B) Helper: Decide color of a measurement cell based on “Actual”
-  const getMeasurementColor = (rowId, phaseKey, respMap) => {
-    const measured = parseFloat(respMap[rowId]?.[phaseKey] || '');
-    const actual = parseFloat(respMap[rowId]?.actual || '');
-    if (isNaN(measured) || isNaN(actual)) return 'black';
-    return measured > actual ? 'red' : 'green';
-  };
-
-  // (C) Helper: Render ✓ or ✕ in “Process Status” cell, based on remarkStatus
-  const renderStatusSymbol = (rowId, respMap) => {
-    const status = respMap[rowId]?.remarkStatus;
-    if (status === 'pass') {
-      return <span style={{ color: 'green' }}>✓</span>;
-    }
-    if (status === 'fail') {
-      return <span style={{ color: 'red' }}>✕</span>;
-    }
-    return '—';
-  };
-
-  // (D) Helper: Return CSS class for remark text (green if pass, red if fail)
-  const getRemarkColorClass = (rowId, respMap) => {
-    const status = respMap[rowId]?.remarkStatus;
-    if (status === 'pass') return 'text-success';
-    if (status === 'fail') return 'text-danger';
-    return '';
-  };
-
-  // (E) Filter by equipment name / technician name / date string
-  const filtered = reports.filter((r) => {
-    const t = searchTerm.toLowerCase();
-    const date = new Date(r.createdAt || r.timestamp || '').toLocaleDateString(
-      'en-GB'
-    );
-    return (
-      (r.equipment?.name || '').toLowerCase().includes(t) ||
-      (r.technician?.name || '').toLowerCase().includes(t) ||
-      date.includes(t)
-    );
-  });
-
-  // (F) Group by equipment.name, then pick only the latest per equipment
-  const grouped = Object.values(
-    filtered.reduce((acc, r) => {
+  // pick latest per equipment
+  const latestByEquipment = Object.values(
+    reports.reduce((acc, r) => {
       const key = r.equipment?.name || 'Unknown';
       if (!acc[key] || new Date(r.createdAt) > new Date(acc[key].createdAt)) {
         acc[key] = r;
@@ -160,14 +80,52 @@ useEffect(() => {
     }, {})
   );
 
-  // 5️⃣ html2pdf download handler
+  // Helpers for ticks & coloring
+  const getMeasurementColor = (rowId, phaseKey, resp) => {
+    const measured = parseFloat(resp[rowId]?.[phaseKey] || '');
+    const actual = parseFloat(resp[rowId]?.actual || '');
+    if (isNaN(measured) || isNaN(actual)) return 'black';
+    return measured > actual ? 'red' : 'green';
+  };
+  const renderStatusSymbol = (rowId, resp) => {
+    const status = resp[rowId]?.remarkStatus;
+    if (status === 'pass') return <span style={{ color: 'green' }}>✓</span>;
+    if (status === 'fail') return <span style={{ color: 'red' }}>✕</span>;
+    return '—';
+  };
+  const getRemarkColorClass = (rowId, resp) => {
+    const status = resp[rowId]?.remarkStatus;
+    if (status === 'pass') return 'text-success';
+    if (status === 'fail') return 'text-danger';
+    return '';
+  };
+
+  // Build chart data
+  const buildVoltageData = (resp) => [
+    {
+      name: 'Voltage',
+      RY: Number(resp[1]?.RY || 0),
+      YB: Number(resp[1]?.YB || 0),
+      BR: Number(resp[1]?.BR || 0),
+    },
+  ];
+  const buildCurrentData = (resp) => [
+    {
+      name: 'Current',
+      R: Number(resp[2]?.R || 0),
+      Y: Number(resp[2]?.Y || 0),
+      B: Number(resp[2]?.B || 0),
+    },
+  ];
+
+  // PDF export
   const downloadPDF = () => {
     html2pdf()
       .set({
         margin: [10, 10, 10, 10],
         filename: `Merged_Electrical_Report_${userName}_${year}_${month}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+        html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
       })
       .from(reportRef.current)
@@ -187,49 +145,56 @@ useEffect(() => {
 
   return (
     <div className="container py-3">
-      {/* Search + Download */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        
+      <div className="d-flex justify-content-end mb-3">
         <button className="btn btn-success" onClick={downloadPDF}>
           ⬇ Download PDF
         </button>
       </div>
 
-      {/* ---------- begin PDF container ---------- */}
       <div
         ref={reportRef}
         style={{ background: '#fff', padding: 10, border: '1px solid #000' }}
       >
-        {/* — single header with logo — */}
-       <div
-             className="d-flex align-items-center mb-2"
-             style={{ background: '#236a80', color: '#fff', padding: 10 }}
-           >
-             <img
-               crossOrigin="anonymous"
-               src={genexlogo}
-               alt="Genex logo"
-               style={{ maxWidth: 120, maxHeight: 120 }}
-             />
-             <div className="text-center flex-grow-1" style={{ fontFamily: 'Century Gothic, sans-serif' }}>
-    <div style={{ fontSize: 20, fontWeight: 'bold' }}>
-      <i style={{ fontFamily: '"Comic Sans MS", cursive',fontSize: 24, }}>Genex</i>{' '}
-      Utility Management Pvt Ltd
-    </div>
-    <div style={{ fontSize: 14 }}>
-      No:04, Suraj Nilaya, Sahyadri Layout, Shettihalli, Jalahalli West, Bangalore - 560015
-    </div>
-    <div style={{ fontSize: 14 }}>
-      Phone: +91-92436-02152
-    </div>
-  </div>
-           </div>
-<h6 className='text-center'>Merged Report of  {companyName && ` — ${companyName}`}&nbsp;— Reports for{' '}
-  ({userName})
- 
-  {new Date(year, month - 1).toLocaleString('default', { month: 'long' })} {year}
-</h6>
-        {/* — title below header — */}
+        {/* Single merged header */}
+        <div
+          className="d-flex align-items-center mb-2"
+          style={{ background: '#236a80', color: '#fff', padding: 10 }}
+        >
+          <img
+            src={genexlogo}
+            crossOrigin="anonymous"
+            alt="Genex logo"
+            style={{ maxWidth: 120, maxHeight: 120 }}
+          />
+          <div
+            className="text-center flex-grow-1"
+            style={{ fontFamily: 'Century Gothic, sans-serif' }}
+          >
+            <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+              <i
+                style={{
+                  fontFamily: '"Comic Sans MS", cursive',
+                  fontSize: 24,
+                }}
+              >
+                Genex
+              </i>{' '}
+              Utility Management Pvt Ltd
+            </div>
+            <div style={{ fontSize: 14 }}>
+              No:04, Suraj Nilaya, Sahyadri Layout, Shettihalli, Jalahalli West,
+              Bangalore – 560015
+            </div>
+            <div style={{ fontSize: 14 }}>Phone: +91-92436-02152</div>
+          </div>
+        </div>
+        <h6 className="text-center">
+          Merged Report — {companyName} — ({userName}){' '}
+          {new Date(year, month - 1).toLocaleString('default', {
+            month: 'long',
+          })}{' '}
+          {year}
+        </h6>
         <div
           style={{
             textAlign: 'center',
@@ -244,19 +209,18 @@ useEffect(() => {
           Electrical Engineer Report
         </div>
 
-        {/* — loop through each “latest by equipment” — */}
-        {grouped.map((report) => {
-          const { technician, equipment, responses, createdAt } = report;
-          const dateStr = new Date(createdAt).toLocaleDateString('en-GB');
+        {latestByEquipment.map((r) => {
+          const dateStr = new Date(r.createdAt).toLocaleDateString('en-GB');
+          const resp = r.responses || {};
 
           return (
-            <div key={equipment?.name} style={{ marginBottom: 24 }}>
+            <div key={r.equipment.name} style={{ marginBottom: 32 }}>
               {/* Date */}
-              <div style={{ marginBottom: 8, fontSize: 12 }}>
+              <div style={{ marginBottom: 8 }}>
                 <strong>Date:</strong> {dateStr}
               </div>
 
-              {/* Equipment info table */}
+              {/* Equipment info */}
               <table
                 style={{
                   width: '100%',
@@ -269,12 +233,12 @@ useEffect(() => {
                   {[
                     [
                       "Service Engineer's Name",
-                      `${technician?.name} — ${technician?.designation}`,
+                      `${r.technician.name} — ${r.technician.designation}`,
                     ],
-                    ['Equipment Name', equipment?.name],
-                    ['Model', equipment?.model],
-                    ['Capacity in HP/KW', equipment?.capacity],
-                    ['Rated Load in Amps', equipment?.ratedLoad],
+                    ['Equipment Name', r.equipment.name],
+                    ['Model', r.equipment.model],
+                    ['Capacity in HP/KW', r.equipment.capacity],
+                    ['Rated Load in Amps', r.equipment.ratedLoad],
                   ].map(([lbl, val]) => (
                     <tr key={lbl}>
                       <th
@@ -293,7 +257,48 @@ useEffect(() => {
                 </tbody>
               </table>
 
-              {/* Checklist table for THIS equipment */}
+              {/* — inline bar charts — */}
+              <div style={{ display: 'flex', gap: '4%', marginBottom: 16 }}>
+                {/* Voltage chart */}
+                <div style={{ width: '48%', height: 180 }}>
+                  <h6 style={{ textAlign: 'center', marginBottom: 4 }}>
+                    Voltage (V)
+                  </h6>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={buildVoltageData(resp)}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend verticalAlign="top" height={24} />
+                      <Bar dataKey="RY" name="RY" fill="#1f77b4" />
+                      <Bar dataKey="YB" name="YB" fill="#d62728" />
+                      <Bar dataKey="BR" name="BR" fill="#2ca02c" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Current chart */}
+                <div style={{ width: '48%', height: 180 }}>
+                  <h6 style={{ textAlign: 'center', marginBottom: 4 }}>
+                    Current (A)
+                  </h6>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={buildCurrentData(resp)}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend verticalAlign="top" height={24} />
+                      <Bar dataKey="R" name="R" fill="#d62728" />
+                      <Bar dataKey="Y" name="Y" fill="#ffbf00" />
+                      <Bar dataKey="B" name="B" fill="#1f77b4" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Checklist table */}
               <table
                 style={{
                   width: '100%',
@@ -314,29 +319,23 @@ useEffect(() => {
                   </tr>
                   <tr>
                     <th style={th} colSpan={3}></th>
-                    {phases.map((p) => (
-                      <th key={p} style={th}>
-                        {p}
-                      </th>
-                    ))}
+                   
                     <th style={th}></th>
                     <th style={th}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {checklist.map((item) => {
-                    const respMap = responses || {};
-                    const resp = respMap[item.id] || {};
+                    const rresp = resp[item.id] || {};
 
-                    // Rows 1–3 get two‐row format
+                    // Rows 1–3: two-row format
                     if (item.id <= 3) {
-                      const headerRow =
+                      const headers =
                         item.id === 1
-                          ? ['', '', '']
+                          ? phases
                           : item.id === 2
                           ? ['R', 'Y', 'B']
                           : ['', '', ''];
-
                       return (
                         <React.Fragment key={item.id}>
                           <tr>
@@ -347,37 +346,30 @@ useEffect(() => {
                               {item.label}
                             </td>
                             <td rowSpan={2} style={tdC}>
-                              {resp.actual || '—'}
+                              {rresp.actual ?? '—'}
                             </td>
-                            {headerRow.map((h, i) => (
+                            {headers.map((h, i) => (
                               <td key={i} style={tdC}>
                                 <b>{h}</b>
                               </td>
                             ))}
                             <td rowSpan={2} style={tdC}>
-                              {renderStatusSymbol(item.id, respMap)}
+                              {renderStatusSymbol(item.id, resp)}
                             </td>
                             <td rowSpan={2} style={td}>
-                              <span
-                                className={getRemarkColorClass(item.id, respMap)}
-                              >
-                                {resp.remark || '—'}
+                              <span className={getRemarkColorClass(item.id, resp)}>
+                                {rresp.remark ?? '—'}
                               </span>
                             </td>
                           </tr>
                           <tr>
                             {phases.map((p) => {
-                              // Determine which key is used: for row 2 map RY→R, YB→Y, BR→B
-                              const phaseKey =
+                              const key =
                                 item.id === 2
                                   ? { RY: 'R', YB: 'Y', BR: 'B' }[p]
                                   : p;
-                              const val = resp[phaseKey] ?? '—';
-                              const color = getMeasurementColor(
-                                item.id,
-                                phaseKey,
-                                respMap
-                              );
+                              const val = rresp[key] ?? '—';
+                              const color = getMeasurementColor(item.id, key, resp);
                               return (
                                 <td key={p} style={tdC}>
                                   <span style={{ color }}>{val}</span>
@@ -389,21 +381,17 @@ useEffect(() => {
                       );
                     }
 
-                    // Rows 4–8 get single‐row format
+                    // Rows 4–8: single-row format
                     return (
                       <tr key={item.id}>
                         <td style={tdC}>{item.id}</td>
                         <td style={td} colSpan={phases.length + 2}>
                           {item.label}
                         </td>
-                        <td style={tdC}>
-                          {renderStatusSymbol(item.id, respMap)}
-                        </td>
+                        <td style={tdC}>{renderStatusSymbol(item.id, resp)}</td>
                         <td style={td}>
-                          <span
-                            className={getRemarkColorClass(item.id, respMap)}
-                          >
-                            {resp.remark || '—'}
+                          <span className={getRemarkColorClass(item.id, resp)}>
+                            {rresp.remark ?? '—'}
                           </span>
                         </td>
                       </tr>
@@ -415,7 +403,6 @@ useEffect(() => {
           );
         })}
       </div>
-      {/* ---------- end PDF container ---------- */}
     </div>
   );
 }

@@ -5,6 +5,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import html2pdf from 'html2pdf.js';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 import { API_URL } from '../../utils/apiConfig';
 import genexlogo from '../../assests/images/logonewgenex.png';
 
@@ -12,6 +22,7 @@ export default function ElectricalReport() {
   const { equipmentId } = useParams();
   const navigate = useNavigate();
   const reportRef = useRef();
+
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [logoUrl, setLogoUrl] = useState('');
@@ -19,7 +30,7 @@ export default function ElectricalReport() {
   const [userName, setUserName] = useState(null);
   const [companyName, setCompanyName] = useState(null);
 
-  // The 8 steps/checks in the Electrical checklist
+  // phases & checklist definitions
   const phases = ['RY', 'YB', 'BR'];
   const checklist = [
     { id: 1, label: 'Voltage (V)' },
@@ -32,125 +43,120 @@ export default function ElectricalReport() {
     { id: 8, label: 'Examine exposed cables, joints & bus bars' },
   ];
 
-  // 1) Fetch the saved report from backend
-  useEffect(() => {
-    axios
-      .get(`${API_URL}/api/get-electricalreport/${equipmentId}`)
-      .then((r) => {
-        if (r.data.success) {
-          setReport(r.data.report);
-        } else {
-          toast.error('Report not found');
-        }
-      })
-      .catch(() => toast.error('Failed to load report'))
-      .finally(() => setLoading(false));
-  }, [equipmentId]);
+  // helper: build chart data
+  const buildVoltageData = () => [
+    {
+      name: 'Voltage',
+      RY: Number(report.responses[1]?.RY || 0),
+      YB: Number(report.responses[1]?.YB || 0),
+      BR: Number(report.responses[1]?.BR || 0),
+    },
+  ];
+  const buildCurrentData = () => [
+    {
+      name: 'Current',
+      R: Number(report.responses[2]?.R || 0),
+      Y: Number(report.responses[2]?.Y || 0),
+      B: Number(report.responses[2]?.B || 0),
+    },
+  ];
 
-  // 2) Fetch the equipment to get userName
-  useEffect(() => {
-    const equipmentApiUrl = `${API_URL}/api/equiment/${equipmentId}`;
-    axios
-      .get(equipmentApiUrl)
-      .then((res) => {
-        const equipment = res.data?.equipment;
-        if (equipment?.userName) {
-          setUserName(equipment.userName);
-        }
-      })
-      .catch((err) => console.error('Error fetching equipment:', err));
-  }, [equipmentId]);
-
-  // 3) Fetch the user to get companyName
-  useEffect(() => {
-    if (!userName) return;
-    const userApiUrl = `${API_URL}/api/get-user-by-userName/${userName}`;
-    axios
-      .get(userApiUrl)
-      .then((res) => {
-        const user = res.data?.user;
-        if (user?.companyName) {
-          setCompanyName(user.companyName);
-        }
-      })
-      .catch((err) => console.error('Error fetching user/company:', err));
-  }, [userName]);
-
-  // 4) Fetch logo based on adminType
-  useEffect(() => {
-    const fetchLogo = async () => {
-      if (!adminType) {
-        console.warn('AdminType is undefined or empty.');
-        return;
-      }
-      try {
-        const response = await axios.get(`${API_URL}/api/logo/${adminType}`);
-        if (response.data?.data?.length > 0) {
-          // Sort logos by createdAt descending, take the latest
-          const sortedLogos = response.data.data.sort(
-            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-          );
-          setLogoUrl(sortedLogos[0].logoUrl);
-        }
-      } catch (error) {
-        console.error('Error fetching logo:', error);
-        toast.error('Failed to fetch logo. Please try again later.', {
-          position: 'top-center',
-        });
-      }
-    };
-    fetchLogo();
-  }, [adminType]);
-
-  // 5) PDF download
-  const downloadPDF = () => {
-    const opt = {
-      margin: [10, 10, 10, 10],
-      filename: `Electrical_Report_${equipmentId}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
-    };
-    html2pdf().from(reportRef.current).set(opt).save();
-  };
-
-  if (loading) return <p>Loading report…</p>;
-  if (!report) return <p>No report available.</p>;
-
-  const { technician, equipment, responses, createdAt } = report;
-
-  // Helper: return text color for a given measurement cell
+  // color helpers for measurements & remarks
   const getMeasurementColor = (rowId, phaseKey) => {
-    const val = parseFloat(responses[rowId]?.[phaseKey] ?? '');
-    const actual = parseFloat(responses[rowId]?.actual ?? '');
+    const val = parseFloat(report.responses[rowId]?.[phaseKey] ?? '');
+    const actual = parseFloat(report.responses[rowId]?.actual ?? '');
     if (isNaN(val) || isNaN(actual)) return 'black';
     return val > actual ? 'red' : 'green';
   };
-
-  // Helper: return a colored ✓ or ✕ based on remarkStatus
   const renderStatusSymbol = (rowId) => {
-    const status = responses[rowId]?.remarkStatus;
-    if (status === 'pass') {
-      return <span style={{ color: 'green' }}>✓</span>;
-    }
-    if (status === 'fail') {
-      return <span style={{ color: 'red' }}>✕</span>;
-    }
+    const status = report.responses[rowId]?.remarkStatus;
+    if (status === 'pass') return <span style={{ color: 'green' }}>✓</span>;
+    if (status === 'fail') return <span style={{ color: 'red' }}>✕</span>;
     return '—';
   };
-
-  // Helper: return CSS class for remarks cell (green text if pass, red if fail)
   const getRemarkTextColor = (rowId) => {
-    const status = responses[rowId]?.remarkStatus;
+    const status = report.responses[rowId]?.remarkStatus;
     if (status === 'pass') return 'text-success';
     if (status === 'fail') return 'text-danger';
     return '';
   };
 
+  // 1) fetch report
+  useEffect(() => {
+    axios
+      .get(`${API_URL}/api/get-electricalreport/${equipmentId}`)
+      .then((r) => {
+        if (r.data.success) setReport(r.data.report);
+        else toast.error('Report not found');
+      })
+      .catch(() => toast.error('Failed to load report'))
+      .finally(() => setLoading(false));
+  }, [equipmentId]);
+
+  // 2) fetch equipment → userName
+  useEffect(() => {
+    axios
+      .get(`${API_URL}/api/equiment/${equipmentId}`)
+      .then((r) => {
+        const u = r.data.equipment?.userName;
+        if (u) setUserName(u);
+      })
+      .catch(console.error);
+  }, [equipmentId]);
+
+  // 3) fetch user → companyName
+  useEffect(() => {
+    if (!userName) return;
+    axios
+      .get(`${API_URL}/api/get-user-by-userName/${userName}`)
+      .then((r) => {
+        const c = r.data.user?.companyName;
+        if (c) setCompanyName(c);
+      })
+      .catch(console.error);
+  }, [userName]);
+
+  // 4) fetch logo
+ /*  useEffect(() => {
+    if (!adminType) return;
+    axios
+      .get(`${API_URL}/api/logo/${adminType}`)
+      .then((r) => {
+        const arr = r.data.data || [];
+        if (arr.length) {
+          arr.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          setLogoUrl(arr[0].logoUrl);
+        }
+      })
+      .catch(console.error);
+  }, [adminType]);
+ */
+  // 5) export PDF
+  const downloadPDF = () => {
+    html2pdf()
+      .from(reportRef.current)
+      .set({
+        margin: [10, 10, 10, 10],
+        filename: `Electrical_Report_${equipmentId}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+      })
+      .save();
+  };
+
+  if (loading) return <p>Loading report…</p>;
+  if (!report) return <p>No report available.</p>;
+
+  const { technician, equipment, createdAt } = report;
+
   return (
     <div className="container py-3">
       <div className="d-flex justify-content-between mb-3">
-        <button className="btn btn-secondary" onClick={() => navigate('/services')}>
+        <button
+          className="btn btn-secondary"
+          onClick={() => navigate('/services')}
+        >
           ← Back
         </button>
         <button className="btn btn-success" onClick={downloadPDF}>
@@ -158,12 +164,11 @@ export default function ElectricalReport() {
         </button>
       </div>
 
-      {/* ---------- PDF CONTENT WRAPPER ---------- */}
       <div
         ref={reportRef}
         style={{
-          fontFamily: 'Arial, sans-serif',
-          fontSize: '12px',
+          fontFamily: 'Century Gothic, sans-serif',
+          fontSize: 12,
           lineHeight: 1.2,
           color: '#000',
           background: '#fff',
@@ -176,24 +181,33 @@ export default function ElectricalReport() {
           className="d-flex align-items-center mb-2"
           style={{ background: '#236a80', color: '#fff', padding: 10 }}
         >
-          <img
-            crossOrigin="anonymous"
-            src={genexlogo}
-            alt="Genex logo"
-            style={{ maxWidth: 120, maxHeight: 120 }}
-          />
-     <div className="text-center flex-grow-1" style={{ fontFamily: 'Century Gothic, sans-serif' }}>
-    <div style={{ fontSize: 20, fontWeight: 'bold' }}>
-      <i style={{ fontFamily: '"Comic Sans MS", cursive',fontSize: 24, }}>Genex</i>{' '}
-      Utility Management Pvt Ltd
-    </div>
-    <div style={{ fontSize: 14 }}>
-      No:04, Suraj Nilaya, Sahyadri Layout, Shettihalli, Jalahalli West, Bangalore - 560015
-    </div>
-    <div style={{ fontSize: 14 }}>
-      Phone: +91-92436-02152
-    </div>
-  </div>
+         <img
+    crossOrigin="anonymous"
+    src={genexlogo}
+    alt="Genex logo"
+    style={{ maxWidth: 120, maxHeight: 120 }}
+  />
+          <div
+            className="text-center flex-grow-1"
+            style={{ fontFamily: 'Century Gothic, sans-serif' }}
+          >
+            <div style={{ fontSize: 20, fontWeight: 'bold' }}>
+              <i
+                style={{
+                  fontFamily: '"Comic Sans MS", cursive',
+                  fontSize: 24,
+                }}
+              >
+                Genex
+              </i>{' '}
+              Utility Management Pvt Ltd
+            </div>
+            <div style={{ fontSize: 14 }}>
+              No:04, Suraj Nilaya, Sahyadri Layout, Shettihalli, Jalahalli
+              West, Bangalore - 560015
+            </div>
+            <div style={{ fontSize: 14 }}>Phone: +91-92436-02152</div>
+          </div>
         </div>
 
         {/* Title */}
@@ -201,7 +215,6 @@ export default function ElectricalReport() {
           style={{
             textAlign: 'center',
             margin: '10px 0',
-            fontSize: '12px',
             fontWeight: 'bold',
             borderTop: '2px solid #000',
             borderBottom: '2px solid #000',
@@ -213,7 +226,8 @@ export default function ElectricalReport() {
 
         {/* Date */}
         <div style={{ marginBottom: 8 }}>
-          <strong>Date:</strong> {new Date(createdAt).toLocaleDateString()}
+          <strong>Date:</strong>{' '}
+          {new Date(createdAt).toLocaleDateString()}
         </div>
 
         {/* Equipment & Technician Info */}
@@ -227,31 +241,38 @@ export default function ElectricalReport() {
         >
           <tbody>
             {[
-              ["Service Engineer's Name", `${technician.name} — ${technician.designation}`],
+              [
+                "Service Engineer's Name",
+                `${technician.name} — ${technician.designation}`,
+              ],
               ['Company Name', companyName || '—'],
               ['Equipment Name', equipment.name],
               ['Model', equipment.model],
               ['Capacity in HP/KW', equipment.capacity],
               ['Rated Load in Amps', equipment.ratedLoad],
-            ].map(([label, value]) => (
+            ].map(([label, val]) => (
               <tr key={label}>
                 <th
                   style={{
                     border: '1px solid #000',
                     padding: 4,
                     textAlign: 'left',
-                    fontWeight: 'normal',
                   }}
                 >
                   {label}
                 </th>
-                <td style={{ border: '1px solid #000', padding: 4 }}>{value}</td>
+                <td style={{ border: '1px solid #000', padding: 4 }}>
+                  {val}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* ---------- Checklist Table ---------- */}
+        {/* Charts Row */}
+      
+
+        {/* Checklist Table */}
         <table
           style={{
             width: '100%',
@@ -271,29 +292,22 @@ export default function ElectricalReport() {
               <th style={thStyle}>Remarks</th>
             </tr>
             <tr>
-              {/* Empty headers under Sl.no, Category, ACTUAL */}
               <th style={thStyle} colSpan={3}></th>
-            
               <th style={thStyle}></th>
               <th style={thStyle}></th>
             </tr>
           </thead>
           <tbody>
             {checklist.map((item) => {
-              const resp = responses[item.id] || {};
-
-              // Rows 1–3: double‐row format
+              const resp = report.responses[item.id] || {};
+              // rows 1–3: two lines
               if (item.id <= 3) {
-                // For row 1 (Voltage): label "RY"/"YB"/"BR" in the header of the second row
-                // For row 2 (Current): map RY→R, YB→Y, BR→B
-                // For row 3 (Power): just display computed values
                 const subHeaders =
                   item.id === 1
                     ? phases.slice()
                     : item.id === 2
                     ? phases.map((p, i) => ['R', 'Y', 'B'][i])
                     : ['', '', ''];
-
                 return (
                   <React.Fragment key={item.id}>
                     <tr>
@@ -312,7 +326,6 @@ export default function ElectricalReport() {
                         </td>
                       ))}
                       <td rowSpan={2} style={tdCenter}>
-                        {/* Row 1–3 has no Process Status */}
                         &mdash;
                       </td>
                       <td rowSpan={2} style={td}>
@@ -321,10 +334,12 @@ export default function ElectricalReport() {
                     </tr>
                     <tr>
                       {phases.map((p) => {
-                        // Decide which key to read: for row 2 use R/Y/B; else use RY/YB/BR
-                        const phaseKey = item.id === 2 ? { RY: 'R', YB: 'Y', BR: 'B' }[p] : p;
-                        const val = resp[phaseKey] ?? '—';
-                        const color = getMeasurementColor(item.id, phaseKey);
+                        const key =
+                          item.id === 2
+                            ? { RY: 'R', YB: 'Y', BR: 'B' }[p]
+                            : p;
+                        const val = resp[key] ?? '—';
+                        const color = getMeasurementColor(item.id, key);
                         return (
                           <td key={p} style={tdCenter}>
                             <span style={{ color }}>{val}</span>
@@ -335,8 +350,7 @@ export default function ElectricalReport() {
                   </React.Fragment>
                 );
               }
-
-              // Rows 4–8: single row, with “Process Status” and “Remarks”
+              // rows 4–8: single line
               return (
                 <tr key={item.id}>
                   <td style={tdCenter}>{item.id}</td>
@@ -344,7 +358,7 @@ export default function ElectricalReport() {
                     {item.label}
                   </td>
                   <td style={tdCenter}>{renderStatusSymbol(item.id)}</td>
-                  <td style={{ ...td, ...{ color: getRemarkTextColor(item.id) ? undefined : 'black' } }}>
+                  <td style={td}>
                     <span className={getRemarkTextColor(item.id)}>
                       {resp.remark ?? '—'}
                     </span>
@@ -354,25 +368,159 @@ export default function ElectricalReport() {
             })}
           </tbody>
         </table>
+
+          <div style={{ display: 'flex', gap: '4%', marginBottom: 16 }}>
+          <div style={{ width: '48%', height: 180 }}>
+            <h6 style={{ textAlign: 'center', marginBottom: 4 }}>
+              Voltage (V)
+            </h6>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={buildVoltageData()}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend verticalAlign="top" height={24} />
+                <Bar dataKey="RY" name="RY" fill="#1f77b4" />
+                <Bar dataKey="YB" name="YB" fill="#d62728" />
+                <Bar dataKey="BR" name="BR" fill="#2ca02c" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ width: '48%', height: 180 }}>
+            <h6 style={{ textAlign: 'center', marginBottom: 4 }}>
+              Current (A)
+            </h6>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={buildCurrentData()}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend verticalAlign="top" height={24} />
+                <Bar dataKey="R" name="R" fill="#d62728" />
+                <Bar dataKey="Y" name="Y" fill="#ffbf00" />
+                <Bar dataKey="B" name="B" fill="#1f77b4" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-// Styles for table cells
+// Styles
 const thStyle = {
   border: '1px solid #000',
   padding: 4,
   background: '#eee',
   textAlign: 'center',
-  fontSize: '12px',
+  fontSize: 12,
 };
 const td = {
   border: '1px solid #000',
   padding: 4,
-  fontSize: '12px',
+  fontSize: 12,
 };
 const tdCenter = {
   ...td,
   textAlign: 'center',
 };
+
+
+
+
+/*    <table
+          style={{
+            width: '100%',
+            border: '1px solid #000',
+            borderCollapse: 'collapse',
+          }}
+        >
+          <thead>
+            <tr>
+              <th style={thStyle}>Sl.no</th>
+              <th style={thStyle}>Category</th>
+              <th style={thStyle}>ACTUAL</th>
+              <th style={thStyle} colSpan={3}>
+                MEASUREMENT
+              </th>
+              <th style={thStyle}>Process Status</th>
+              <th style={thStyle}>Remarks</th>
+            </tr>
+            <tr>
+              <th style={thStyle} colSpan={3}></th>
+              {phases.map((p) => (
+                <th key={p} style={thStyle}>
+                  {p}
+                </th>
+              ))}
+              <th style={thStyle} colSpan={2}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {checklist.map((item) => {
+              const resp = responses[item.id] || {};
+
+              // First three items are double‐row
+              if (item.id <= 3) {
+                return (
+                  <React.Fragment key={item.id}>
+                    <tr>
+                      <td rowSpan={2} style={tdCenter}>
+                        {item.id}
+                      </td>
+                      <td rowSpan={2} style={td}>
+                        {item.label}
+                      </td>
+                      <td rowSpan={2} style={tdCenter}>
+                        {resp.actual ?? '—'}
+                      </td>
+                      {phases.map((p) => (
+                        <td key={p} style={tdCenter}>
+                          {p}
+                        </td>
+                      ))}
+                      <td rowSpan={2} style={tdCenter}>
+                        —
+                      </td>
+                      <td rowSpan={2} style={td}>
+                        {resp.remark ?? '—'}
+                      </td>
+                    </tr>
+                    <tr>
+                      {phases.map((p) => (
+                        <td key={p} style={tdCenter}>
+                          <span
+                            style={{
+                              color: getMeasurementColor(item.id, p),
+                            }}
+                          >
+                            {resp[p] ?? '—'}
+                          </span>
+                        </td>
+                      ))}
+                    </tr>
+                  </React.Fragment>
+                );
+              }
+
+              // Remaining single‐row items
+              return (
+                <tr key={item.id}>
+                  <td style={tdCenter}>{item.id}</td>
+                  <td style={td} colSpan={5}>
+                    {item.label}
+                  </td>
+                  <td style={tdCenter}>{renderStatusSymbol(item.id)}</td>
+                  <td style={td}>
+                    <span className={remarkColorClass(item.id)}>
+                      {resp.remark ?? '—'}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table> */

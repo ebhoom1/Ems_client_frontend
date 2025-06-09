@@ -9,6 +9,7 @@ import { API_URL } from "../../utils/apiConfig";
 import Dashboard from "../Dashboard/Dashboard";
 import DashboardSam from "../Dashboard/DashboardSam";
 import HeaderSim from "../Header/HeaderSim";
+import genexlogo from '../../assests/images/logonewgenex.png'
 
 export default function AdminReport() {
   const { username } = useParams();
@@ -84,10 +85,12 @@ export default function AdminReport() {
     );
 
     // Now take screenshot
-    const canvas = await html2canvas(reportRef.current, {
-      scale: 2,
-      useCORS: true,
-    });
+  const canvas = await html2canvas(reportRef.current, {
+  scale: 2,
+  useCORS: true,
+  allowTaint: false,
+  logging: true
+});
 
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({
@@ -226,22 +229,12 @@ export default function AdminReport() {
           style={{ background: "#236a80", color: "#fff", padding: "10px" }}
         >
           {/* Logo on the left */}
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={`${adminType} Logo`}
-              style={{
-                maxWidth: "120px",
-                maxHeight: "120px",
-                marginRight: "20px",
-                flexShrink: 0,
-              }}
-            />
-          ) : (
-            <div style={{ width: "120px", height: "80px", flexShrink: 0 }}>
-              Loading logo…
-            </div>
-          )}
+        <img
+            crossOrigin="anonymous"
+            src={genexlogo}
+            alt="Genex logo"
+            style={{ maxWidth: 120, maxHeight: 120 }}
+          />
 
           {/* Centered content that takes remaining space */}
           <div
@@ -254,7 +247,7 @@ export default function AdminReport() {
             }}
           >
             <h5 style={{ margin: 0 }}>
-              {selectedLog.capacity} KLD SEWAGE TREATMENT PLANT – Hilton Manyata
+              {selectedLog.capacity} KLD SEWAGE TREATMENT PLANT – {username}
             </h5>
             <p style={{ margin: "5px 0 0 0" }}>
               STP Operation &amp; Maintenance By{" "}
@@ -293,8 +286,8 @@ export default function AdminReport() {
         {/* MAIN TABLE */}
         <div
           style={{
-            overflowX: "auto",
-            maxHeight: "60vh",
+           /*  overflowX: "auto",
+            maxHeight: "60vh", */
             border: "1px solid #000",
             padding: "5px",
           }}
@@ -652,7 +645,8 @@ export default function AdminReport() {
                   }}
                 >
                   <img
-                    src={url}
+                   
+                   src={url}
                     alt={`Uploaded-${idx}`}
                     style={{
                       maxWidth: "100%",
