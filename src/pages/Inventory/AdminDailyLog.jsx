@@ -613,11 +613,11 @@ export default function AdminReport() {
               outlet.final) && (
               <tr className="fw-bold text-center bg-light">
                 <td colSpan={2}>TOTAL</td>
-                <td>{inlet.initial || "—"}</td>
-                <td>{inlet.final || "—"}</td>
+                <td></td>
+                <td></td>
                 <td>{inlet.total || "—"}</td>
-                <td>{outlet.initial || "—"}</td>
-                <td>{outlet.final || "—"}</td>
+                <td></td>
+                <td></td>
                 <td>{outlet.total || "—"}</td>
               </tr>
             )}
@@ -645,7 +645,7 @@ export default function AdminReport() {
                   }}
                 >
                   <img
-                   
+                   crossOrigin="anonymous"
                    src={url}
                     alt={`Uploaded-${idx}`}
                     style={{

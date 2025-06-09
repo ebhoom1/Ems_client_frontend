@@ -93,26 +93,31 @@ export default function DailyLog() {
 
   // Fetch user list if user is operator
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/getallusers`);
-        const data = await res.json();
-        console.log("data", data);
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/getallusers`);
+      const data = await res.json();
 
-        // Filter users with the same adminType and userType === "user"
-        const filteredUsers = data.users.filter(
-          (user) =>
-            user.adminType === validUser.adminType && user.userType === "user"
-        );
-        setUserList(filteredUsers);
-      } catch (error) {
-        console.error("Failed to load user list", error);
-      }
-    };
-    if (validUser.isOperator) {
-      fetchUsers();
+      if (!validUser._id) return;
+
+      // Filter users assigned to the logged-in operator
+      const filteredUsers = data.users.filter(
+        (user) =>
+          user.userType === "user" &&
+          user.operators?.includes(validUser._id) // Check if operator ID is in operators array
+      );
+
+      setUserList(filteredUsers);
+    } catch (error) {
+      console.error("Failed to load user list", error);
     }
-  }, [validUser]);
+  };
+
+  if (validUser.isOperator) {
+    fetchUsers();
+  }
+}, [validUser]);
+
 
   // Fetch equipment list on component mount
   useEffect(() => {
@@ -152,8 +157,8 @@ export default function DailyLog() {
   // Fetch today's log if user is operator and selectedUser is set
   useEffect(() => {
     const fetchExistingLog = async () => {
-      const dateInput =
-        document.getElementById("log-date")?.value ||
+      const dateInput = validUser.isOperator ? 
+        document.getElementById("log-date")?.value :
         new Date().toISOString().split("T")[0];
       if (!selectedUserCompany || !dateInput) return;
 

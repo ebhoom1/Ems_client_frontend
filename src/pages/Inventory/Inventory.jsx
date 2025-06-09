@@ -253,28 +253,36 @@ useEffect(() => {
 
   // Render tab navigation based on user type
  const renderTabs = () => (
-    <div className="d-flex align-items-center justify-content-center">
-      <button onClick={() => navigate("/inventory")} className="w-25 btn btn-outline-success me-2">
-        Inventory
-      </button>
-      <button onClick={() => navigate("/services")} className="w-25 btn btn-outline-success me-2">
-        Services
-      </button>
-     <button
-     className="w-25 btn btn-outline-success me-2"
-  onClick={() => {
-    if (userType === "admin") {
-      setShowModal(true);
-    } else if (userType === "user" || userType==="operator") {
-      navigate("/dailylogs");
-    }
-  }}
-  
->
-  Daily Log
-</button>
-
-    </div>
+      <div className="row  gx-3 gy-2 justify-content-center">
+  <div className="col-12 col-sm-6 col-md-4 col-lg-3">
+    <button
+      onClick={() => navigate("/inventory")}
+      className="btn btn-outline-success w-100"
+    >
+      Inventory
+    </button>
+  </div>
+  <div className="col-12 col-sm-6 col-md-4 col-lg-3">
+    <button
+      onClick={() => navigate("/services")}
+      className="btn btn-outline-success w-100"
+    >
+      Services
+    </button>
+  </div>
+  <div className="col-12 col-sm-6 col-md-4 col-lg-3">
+    <button
+      onClick={() =>
+        userType === "admin"
+          ? navigate(`/admin/report/HH014`)
+          : navigate("/dailylog")
+      }
+      className="btn btn-outline-success w-100"
+    >
+      Daily Log
+    </button>
+  </div>
+</div>
   );
   // Render content based on active tab and user type
   const renderContent = () => {

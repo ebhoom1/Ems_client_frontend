@@ -597,16 +597,15 @@ const isOperator =
       {/**overlay-block click-new */}
        {isOperator && !isCheckedIn && (
         <div
-          style={{
+         style={{
             position: "fixed",
-            top: "70px",                           // push down below your header
+            top: 0,
             left: 0,
             width: "100%",
-            height: "calc(100% - 70px)",
+            height: "100%",
             backgroundColor: "rgba(255, 255, 255, 0.3)",
-            zIndex: 999,                           // keep it above everything else
-            pointerEvents: "auto",                // block clicks underneath
-            backdropFilter: "blur(2px)",          // optional blurred look
+            zIndex: 9998, // Below the buttons but above everything else
+            backdropFilter: "blur(2px)",
           }}
         />
       )}
