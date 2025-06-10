@@ -131,7 +131,7 @@ const userName = userData?.validUserOne?.userName;
       onClick={() =>
         userType === "admin"
           ? navigate(`/admin/report/HH014`)
-          : navigate("/dailylog")
+          : navigate("/dailylogs")
       }
       className="btn btn-outline-success w-100"
     >
