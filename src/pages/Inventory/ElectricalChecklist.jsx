@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
+import { useSelector } from "react-redux";
 
 export default function ElectricalChecklist({
   equipment = {},
@@ -9,50 +10,13 @@ export default function ElectricalChecklist({
   powerFactor = 0.8
 }) {
   // ----------------------------------------------------------------------------
-  // 1) Technician state & handlers
+  // 1) Pull logged‐in technician info from Redux
   // ----------------------------------------------------------------------------
-  const [technician, setTechnician] = useState(null);
-  const [editingTech, setEditingTech] = useState(false);
-  const [techForm, setTechForm] = useState({
-    name: "",
-    designation: "",
-    email: ""
-  });
+   const { validUserOne = {} } = useSelector(state => state.user.userData || {});
+  const technician = validUserOne.isTechnician
+    ? { name: validUserOne.fname, email: validUserOne.email }
+    : null;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await axios.get(`${API_URL}/api/technician`);
-        if (data.success && data.technician) {
-          setTechnician(data.technician);
-        }
-      } catch (err) {
-        console.error("Failed to fetch technician", err);
-      }
-    })();
-  }, []);
-
-  const startEditTech = () => {
-    setTechForm({
-      name: technician?.name || "",
-      designation: technician?.designation || "",
-      email: technician?.email || ""
-    });
-    setEditingTech(true);
-  };
-  const cancelEditTech = () => setEditingTech(false);
-  const saveTech = async () => {
-    try {
-      const { data } = await axios.post(`${API_URL}/api/technician`, techForm);
-      if (data.success) {
-        setTechnician(data.technician);
-        setEditingTech(false);
-      }
-    } catch (err) {
-      console.error("Failed to save technician", err);
-      alert("Could not save technician details.");
-    }
-  };
 
   // ----------------------------------------------------------------------------
   // 2) Checklist items & phases
@@ -276,116 +240,11 @@ export default function ElectricalChecklist({
   return (
     <form onSubmit={onSubmit} style={{ maxWidth: 900, margin: "0 auto" }}>
       {/* ---------- Technician Section ---------- */}
-      <div
-        className="shadow"
-        style={{
-          marginBottom: 20,
-          padding: 10,
-          border: "1px solid #ccc",
-          borderRadius: "10px"
-        }}
-      >
-        {!editingTech && technician ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center"
-            }}
-          >
-            <div>
-              <strong>Technician:</strong> {technician.name} —{" "}
-              {technician.designation} (
-              <a href={`mailto:${technician.email}`}>{technician.email}</a>)
-            </div>
-            <button
-              type="button"
-              style={{
-                backgroundColor: "#236a80",
-                color: "#fff",
-                border: "none",
-                padding: "6px 12px",
-                borderRadius: 4,
-                cursor: "pointer"
-              }}
-              onClick={startEditTech}
-            >
-              Change
-            </button>
-          </div>
+      <div className="shadow" style={{ marginBottom:20, padding:10, border:"1px solid #ccc", borderRadius:10 }}>
+        {technician ? (
+          <div><strong>Technician:</strong> {technician.name} (<a href={`mailto:${technician.email}`}>{technician.email}</a>)</div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <input
-              type="text"
-              placeholder="Name"
-              value={techForm.name}
-              onChange={(e) =>
-                setTechForm((f) => ({ ...f, name: e.target.value }))
-              }
-              style={{
-                padding: "5px",
-                borderRadius: "10px",
-                border: "2px solid #236a80"
-              }}
-            />
-            <input
-              type="text"
-              placeholder="Designation"
-              value={techForm.designation}
-              onChange={(e) =>
-                setTechForm((f) => ({ ...f, designation: e.target.value }))
-              }
-              style={{
-                padding: "5px",
-                borderRadius: "10px",
-                border: "2px solid #236a80"
-              }}
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={techForm.email}
-              onChange={(e) =>
-                setTechForm((f) => ({ ...f, email: e.target.value }))
-              }
-              style={{
-                padding: "5px",
-                borderRadius: "10px",
-                border: "2px solid #236a80"
-              }}
-            />
-            <div style={{ gridColumn: "span 2", textAlign: "right" }}>
-              <button
-                type="button"
-                style={{
-                  marginRight: 8,
-                  padding: "6px 12px",
-                  backgroundColor: "#dc3545",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 4,
-                  cursor: "pointer"
-                }}
-                onClick={cancelEditTech}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                style={{
-                  padding: "6px 12px",
-                  backgroundColor: "#28a745",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 4,
-                  cursor: "pointer"
-                }}
-                onClick={saveTech}
-              >
-                Save
-              </button>
-            </div>
-          </div>
+          <div className="text-danger">You are not logged in as a technician.</div>
         )}
       </div>
 

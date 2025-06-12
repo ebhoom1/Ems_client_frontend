@@ -36,6 +36,7 @@ function Header() {
   const [onlineStatus, setOnlineStatus] = useState(
     navigator.onLine ? "Online" : "Offline"
   );
+  const [allFetchedUsers, setAllFetchedUsers] = useState([]);
 
   const { userData } = useSelector((state) => state.user);
 
@@ -54,33 +55,104 @@ function Header() {
   };
 
   // Fetch users data.
-useEffect(() => {
-  const fetchUsers = async () => {
-    try {
-      const currentUser = userData?.validUserOne;
-      if (!currentUser) return;
+  // useEffect(() => {
+  //   const fetchUsers = async () => {
+  //     try {
+  //       const currentUser = userData?.validUserOne;
+  //       if (!currentUser) return;
 
-      let response;
+  //       let response;
 
-      if (currentUser.adminType === "EBHOOM") {
-        response = await axios.get(`${API_URL}/api/getallusers`);
-      } else {
-        const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
-        response = await axios.get(url);
+  //       if (currentUser.adminType === "EBHOOM") {
+  //         response = await axios.get(`${API_URL}/api/getallusers`);
+  //       } else {
+  //         const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
+  //         response = await axios.get(url);
+  //       }
+
+  //       setUsers(response.data.users || []);
+  //     } catch (error) {
+  //       console.error("Error fetching users:", error);
+  //       setUsers([]);
+  //     }
+  //   };
+
+  //   fetchUsers();
+  // }, [userData]);
+
+  useEffect(() => {
+    const fetchAndFilterUsers = async () => {
+      try {
+        const currentUser = userData?.validUserOne;
+        if (!currentUser) {
+          setAllFetchedUsers([]); // Clear users if no current user
+          return;
+        }
+
+        let response;
+        if (currentUser.adminType === "EBHOOM") {
+          // EBHOOM fetches all users
+          response = await axios.get(`${API_URL}/api/getallusers`);
+          const fetchedUsers = response.data.users || [];
+          // EBHOOM logic: Filter out technicians, territorial managers, and operators
+          const filteredForEbhoom = fetchedUsers.filter(
+            (user) =>
+              user.isTechnician !== true &&
+              user.isTerritorialManager !== true &&
+              user.isOperator !== true
+          );
+          setAllFetchedUsers(filteredForEbhoom);
+        } else if (currentUser.userType === "super_admin") {
+          response = await axios.get(`${API_URL}/api/getallusers`); // Super admin still fetches all to determine createdBy hierarchy
+          const fetchedUsers = response.data.users || [];
+
+          // Get admins created by the super admin
+          const myAdmins = fetchedUsers.filter(
+            (user) =>
+              user.createdBy === currentUser._id && user.userType === "admin"
+          );
+
+          const myAdminIds = myAdmins.map((admin) => admin._id.toString());
+
+          // Get users created by the super admin or by admins
+          const usersForSuperAdmin = fetchedUsers.filter(
+            (user) =>
+              user.createdBy === currentUser._id ||
+              myAdminIds.includes(user.createdBy)
+          );
+
+          // Filter for display in the dropdown (non-technician, non-territorial manager, non-operator)
+          const filteredForSuperAdmin = usersForSuperAdmin.filter(
+            (user) =>
+              user.isTechnician !== true &&
+              user.isTerritorialManager !== true &&
+              user.isOperator !== true
+          );
+          setAllFetchedUsers(filteredForSuperAdmin);
+        } else if (currentUser.userType === "admin") {
+          // Admin fetches users created by them
+          const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
+          response = await axios.get(url);
+          const fetchedUsers = response.data.users || [];
+
+          // For an 'admin', you want to show only 'user' types created by them in the dropdown
+          const myUsers = fetchedUsers.filter(
+            (user) => user.userType === "user"
+          );
+          setAllFetchedUsers(myUsers);
+        } else {
+          // Fallback for 'user' type or any other unhandled type
+          setAllFetchedUsers([]);
+        }
+      } catch (error) {
+        console.error("Error fetching users for header dropdown:", error);
+        setAllFetchedUsers([]);
       }
+    };
 
-      setUsers(response.data.users || []);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      setUsers([]);
-    }
-  };
+    fetchAndFilterUsers();
+  }, [userData]);
 
-  fetchUsers();
-}, [userData]);
-
-
-  console.log(users);
 
   useEffect(() => {
     const validateUser = async () => {
@@ -170,11 +242,12 @@ useEffect(() => {
       });
     }
   };
-
-  const filteredUsers = users.filter(
+  // This filteredUsers now applies the search term to the already hierarchy-filtered users
+  const filteredUsers = allFetchedUsers.filter(
     (user) =>
-      user.userType === "user" &&
-      user.userName.toLowerCase().includes(searchTerm.toLowerCase())
+      user.userType === "user" && // Ensure only 'user' type is displayed in the dropdown
+      (user.userName.toLowerCase().includes(searchTerm) ||
+       user.companyName.toLowerCase().includes(searchTerm))
   );
 
   const savedUserId = sessionStorage.getItem("selectedUserId");
@@ -197,10 +270,14 @@ useEffect(() => {
             <Navbar.Brand href="#home" className="brand-text">
               <span className="d-none d-lg-inline">Username: </span>
               <span className="text-dark">
-                <b style={{fontSize:'19px'}}>{userData?.validUserOne?.userName || "Admin Developer"}</b>
+                <b style={{ fontSize: "19px" }}>
+                  {userData?.validUserOne?.userName || "Admin Developer"}
+                </b>
                 <span className="d-inline ms-2">
                   {onlineStatus === "Online" ? (
-                    <span className="online"   style={{ fontSize: "10px" }}>Online</span>
+                    <span className="online" style={{ fontSize: "10px" }}>
+                      Online
+                    </span>
                   ) : (
                     <span className="offline">Offline</span>
                   )}
@@ -215,10 +292,14 @@ useEffect(() => {
                     className="me-4 mt-2 text-dark fw-semibold"
                     style={{ fontSize: "12px" }}
                   >
-                   <b> {users.find(
-                      (u) =>
-                        u.userName === sessionStorage.getItem("selectedUserId")
-                    )?.companyName || ""}</b>
+                    <b>
+                      {" "}
+                      {users.find(
+                        (u) =>
+                          u.userName ===
+                          sessionStorage.getItem("selectedUserId")
+                      )?.companyName || ""}
+                    </b>
                   </div>
                 )}
 
@@ -269,7 +350,6 @@ useEffect(() => {
                     overflow: "visible",
                   }}
                   className="user-dropdown-menu"
-
                 >
                   <Dropdown.Item>
                     <img

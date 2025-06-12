@@ -18,6 +18,8 @@ export default function EquipmentList() {
   const [searchTerm, setSearchTerm] = useState("");
   const { validUserOne: type } = userData || {};
   const technician = userData?.validUserOne?.isTechnician;
+    const territorialManager = userData?.validUserOne?.isTerritorialManager;
+
   const [users, setUsers] = useState([]); // This state will hold company info for operators/admins
   const [selectedUserName, setSelectedUserName] = useState("all");
   const [showModal, setShowModal] = useState(false);
@@ -245,13 +247,13 @@ console.log("Type userType:", type?.userType); // <-- Add this line
 
   return (
     <div className="p-3 border">
-      {showModal && (type?.userType === "user" || technician === true) && (
-        <MaintenanceTypeModal
-          equipmentId={selectedId}
-          equipmentName={selectedEquipmentName}
-          onClose={() => setShowModal(false)}
-        />
-      )}
+     {showModal && (userData.validUserOne.isTechnician || userData.validUserOne.isTerritorialManager) && (
+  <MaintenanceTypeModal
+    equipmentId={selectedId}
+    equipmentName={selectedEquipmentName}
+    onClose={() => setShowModal(false)}
+  />
+)}
 
       {showReportModal && type?.userType === "admin" && (
         <ReportTypeModal
@@ -365,7 +367,7 @@ console.log("Type userType:", type?.userType); // <-- Add this line
                     </button>
                   </td>
                   <td className="d-flex gap-1">
-                    {(type?.userType === "user" || technician === true) ? (
+                    {(type?.userType === "user" || technician === true || territorialManager== true) ? (
                       <>
                         <button
                           className="btn btn-sm btn-success me-1 mt-3"
@@ -374,7 +376,7 @@ console.log("Type userType:", type?.userType); // <-- Add this line
                           Add Report
                         </button>
                        {type?.userType === "admin" && 
- !(userData?.validUserOne?.isTechnician || !userData?.validUserOne?.isTerritorialManager) && (
+ !(userData?.validUserOne?.isTechnician || userData?.validUserOne?.isTerritorialManager) && (
     <>
         <button
             className="btn btn-sm me-1"

@@ -100,9 +100,10 @@ const Water = () => {
 
   const [isCheckedIn, setIsCheckedIn] = useState(false); // new
   const [allowClicks, setAllowClicks] = useState(false); //new for overlay control
- 
 
- useEffect(() => {
+  useEffect(() => {
+    if (!loggedInUser?.userName) return; // only run when ready
+
     const checkServerStatus = async () => {
       const userRole = loggedInUser?.isTechnician
         ? "technician"
@@ -111,24 +112,24 @@ const Water = () => {
         : loggedInUser?.isOperator
         ? "operator"
         : null;
-      if (!userRole || !loggedInUser?.userName) return;
+
+      if (!userRole) return;
 
       try {
         const res = await axios.get(
           `${API_URL}/api/attendance/status/${loggedInUser.userName}/${userRole}`
         );
-        if (res.data?.isCheckedIn) {
-          setIsCheckedIn(true);
-          setAllowClicks(true);
-        }
+        const isChecked = res.data?.isCheckedIn === true;
+        setIsCheckedIn(isChecked);
+        setAllowClicks(!isChecked); // allow check-in only if not already checked-in
+        console.log("✅ isCheckedIn from DB:", isChecked);
       } catch (err) {
         console.error("Error checking server-side isCheckedIn:", err);
       }
     };
 
     checkServerStatus();
-  }, [loggedInUser]);
-  
+  }, [loggedInUser?.userName]); // 👈 depends only on userName availability
 
   const handleCheckOut = () => {
     if (!isCheckedIn) {
@@ -500,62 +501,61 @@ const Water = () => {
           (data) => data.stackName === selectedStack
         );
 
-const confirmCheckOut = async () => {
-  try {
-    setCheckoutLoading(true);
+  const confirmCheckOut = async () => {
+    try {
+      setCheckoutLoading(true);
 
-    // 1) Pick the same "valid user" object you used for check-in:
-    //    loggedInUser = userData.validUserOne
-    const userRole = loggedInUser?.isTechnician
-      ? "technician"
-      : loggedInUser?.isTerritorialManager
-      ? "territorialManager"
-      : loggedInUser?.isOperator
-      ? "operator"
-      : null;
+      // 1) Pick the same "valid user" object you used for check-in:
+      //    loggedInUser = userData.validUserOne
+      const userRole = loggedInUser?.isTechnician
+        ? "technician"
+        : loggedInUser?.isTerritorialManager
+        ? "territorialManager"
+        : loggedInUser?.isOperator
+        ? "operator"
+        : null;
 
-    if (!userRole || !loggedInUser?.userName) {
-      throw new Error("Cannot determine userRole or userName for checkout.");
+      if (!userRole || !loggedInUser?.userName) {
+        throw new Error("Cannot determine userRole or userName for checkout.");
+      }
+
+      // 2) Build payload with loggedInUser.userName (not operator.userName)
+      const payload = {
+        username: loggedInUser.userName,
+        checkOutTime: new Date().toISOString(),
+        userRole,
+      };
+
+      console.log("🚀 Sending checkout payload:", payload);
+
+      const res = await fetch(`${API_URL}/api/attendance/checkout`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      // 3) If non-2xx, print out the server's response text so you can see why it failed
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(
+          `❌ Checkout failed (status ${res.status}). Server response:\n`,
+          text
+        );
+        throw new Error(`Server returned ${res.status}`);
+      }
+
+      console.log("✅ Checkout succeeded");
+      alert("✅ Checked out successfully.");
+      setIsCheckedIn(false);
+      setAllowClicks(false);
+    } catch (err) {
+      console.error("🔴 confirmCheckOut Error:", err);
+      alert("❌ Checkout failed. See console for details.");
+    } finally {
+      setCheckoutLoading(false);
+      setCheckoutModalOpen(false);
     }
-
-    // 2) Build payload with loggedInUser.userName (not operator.userName)
-    const payload = {
-      username: loggedInUser.userName,
-      checkOutTime: new Date().toISOString(),
-      userRole,
-    };
-
-    console.log("🚀 Sending checkout payload:", payload);
-
-    const res = await fetch(`${API_URL}/api/attendance/checkout`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    // 3) If non-2xx, print out the server's response text so you can see why it failed
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(
-        `❌ Checkout failed (status ${res.status}). Server response:\n`,
-        text
-      );
-      throw new Error(`Server returned ${res.status}`);
-    }
-
-    console.log("✅ Checkout succeeded");
-    alert("✅ Checked out successfully.");
-    setIsCheckedIn(false);
-    setAllowClicks(false);
-  } catch (err) {
-    console.error("🔴 confirmCheckOut Error:", err);
-    alert("❌ Checkout failed. See console for details.");
-  } finally {
-    setCheckoutLoading(false);
-    setCheckoutModalOpen(false);
-  }
-};
-
+  };
 
   //browser
   useEffect(() => {
@@ -585,67 +585,65 @@ const confirmCheckOut = async () => {
     };
   }, []);
 
-  const isSpecialUser =
-    userData?.validUserOne?.isOperator === true ;
-   /*  userData?.validUserOne?.isTechnician === true ||
+  const isSpecialUser = userData?.validUserOne?.isOperator === true;
+  /*  userData?.validUserOne?.isTechnician === true ||
     userData?.validUserOne?.isTerritorialManager === true;
  */
 
-const handleSignOut = async () => {
-  console.log("Logout button clicked. Starting signOut process."); // Debugging log
+  const handleSignOut = async () => {
+    console.log("Logout button clicked. Starting signOut process."); // Debugging log
 
-  try {
-    // 1. Clear sessionStorage first
-    sessionStorage.clear();
-    console.log("sessionStorage cleared."); // Debugging log
+    try {
+      // 1. Clear sessionStorage first
+      sessionStorage.clear();
+      console.log("sessionStorage cleared."); // Debugging log
 
-    // 2. Dispatch Redux logout action
-    await dispatch(logoutUser()).unwrap(); // This should handle server-side logout and clear Redux state
-    dispatch(setSelectedUser(null)); // Clear the selected user from Redux state
+      // 2. Dispatch Redux logout action
+      await dispatch(logoutUser()).unwrap(); // This should handle server-side logout and clear Redux state
+      dispatch(setSelectedUser(null)); // Clear the selected user from Redux state
 
-    // 3. Optional: Confirm sessionStorage is empty (for debugging)
-    if (sessionStorage.length === 0) {
-      console.log("Confirmed: sessionStorage is empty after clearing.");
-    } else {
-      console.warn("Warning: sessionStorage is NOT empty after clearing.");
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i);
-        const value = sessionStorage.getItem(key);
-        console.warn(`Remaining sessionStorage item: ${key} = ${value}`);
+      // 3. Optional: Confirm sessionStorage is empty (for debugging)
+      if (sessionStorage.length === 0) {
+        console.log("Confirmed: sessionStorage is empty after clearing.");
+      } else {
+        console.warn("Warning: sessionStorage is NOT empty after clearing.");
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          const value = sessionStorage.getItem(key);
+          console.warn(`Remaining sessionStorage item: ${key} = ${value}`);
+        }
       }
+
+      // 4. Navigate to the login page
+      navigate("/");
+      toast.success("Logged out successfully.", { position: "top-center" }); // Add success toast
+    } catch (error) {
+      console.error("Error during logout process:", error);
+      toast.error("Failed to log out. Please try again.", {
+        // Add error toast
+        position: "top-center",
+      });
     }
-
-    // 4. Navigate to the login page
-    navigate("/");
-    toast.success("Logged out successfully.", { position: "top-center" }); // Add success toast
-
-  } catch (error) {
-    console.error("Error during logout process:", error);
-    toast.error("Failed to log out. Please try again.", { // Add error toast
-      position: "top-center",
-    });
-  }
-};
-const isOperator =
-    userData?.validUserOne?.isOperator === true;
+  };
+  const isOperator = userData?.validUserOne?.isOperator === true;
   return (
     <div>
       {/**overlay-block click-new */}
-       {isOperator && !isCheckedIn && (
+      {isOperator && !isCheckedIn && (
         <div
-         style={{
+          style={{
             position: "fixed",
             top: 0,
             left: 0,
             width: "100%",
             height: "100%",
             backgroundColor: "rgba(255, 255, 255, 0.3)",
-            zIndex: 9998, // Below the buttons but above everything else
+            zIndex: 10, // Below the buttons but above everything else
             backdropFilter: "blur(2px)",
           }}
         />
       )}
-    {/* Show loader while loading */}
+      {/* Show loader while loading */}
       {loading ? (
         <div className="loader-container">
           <div className="dot-spinner">
@@ -704,41 +702,42 @@ const isOperator =
                         <b> EFFLUENT DASHBOARD</b>
                       </h5>
                       {/* operator checkout button */}
-                { isSpecialUser && (
+                      {isSpecialUser && (
                         <div
                           className="d-flex justify-content-end align-items-center px-3 gap-2"
                           style={{
                             position: "relative",
-                            ...(!allowClicks && { zIndex: 10000 }),
+                            zIndex: 10001 ,// ✅ always above overlay (which is 10)
+                            
                           }}
                         >
-                      <button
-          onClick={() => {
-            if (!isCheckedIn) {
-              navigate("/geolocation");
-            } else {
-              alert("✅ You are already Checked‐In. Please Check‐Out first.");
-            }
-          }}
-          className="btn btn-success mb-3"
-          disabled={isCheckedIn} // Disable once checked in
-        >
-          ✅ Check‐In
-        </button>
-        <button
-          onClick={handleCheckOut}
-          className="btn btn-danger mb-3"
-        >
-          🔁 Check‐Out
-        </button>
-        <button
-          onClick={handleSignOut}
-          className="btn btn-warning mb-3"
-        >
-          ➡️ Logout
-        </button>
-
-                        
+                          <button
+                            onClick={() => {
+                              if (!isCheckedIn) {
+                                navigate("/geolocation");
+                              } else {
+                                alert(
+                                  "✅ You are already Checked‐In. Please Check‐Out first."
+                                );
+                              }
+                            }}
+                            className="btn btn-success mb-3"
+                            disabled={isCheckedIn} // Disable once checked in
+                          >
+                            ✅ Check‐In
+                          </button>
+                          <button
+                            onClick={handleCheckOut}
+                            className="btn btn-danger mb-3"
+                          >
+                            🔁 Check‐Out
+                          </button>
+                          <button
+                            onClick={handleSignOut}
+                            className="btn btn-warning mb-3"
+                          >
+                            ➡️ Logout
+                          </button>
                         </div>
                       )}
 
@@ -1048,11 +1047,11 @@ const isOperator =
         <h3 className="text-center">
           {userData?.validUserOne?.isOperator === true
             ? "Operator Checkout"
-           /*  : userData?.validUserOne?.isTechnician === true
+            : /*  : userData?.validUserOne?.isTechnician === true
             ? "Technician Checkout"
             : userData?.validUserOne?.isTerritorialManager === true
             ? "Territorial Manager Checkout" */
-            : "User Checkout"}
+              "User Checkout"}
         </h3>
 
         <p className="text-center mt-3">Are you sure you want to check out?</p>

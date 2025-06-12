@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { API_URL } from '../../utils/apiConfig';
 
 const overlayStyle = {
@@ -12,7 +13,7 @@ const overlayStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  zIndex: 1000
+  zIndex: 1000,
 };
 
 const boxStyle = {
@@ -20,11 +21,15 @@ const boxStyle = {
   padding: '20px',
   borderRadius: '8px',
   maxWidth: '400px',
-  width: '90%'
+  width: '90%',
 };
 
 export default function MaintenanceTypeModal({ equipmentId, equipmentName, onClose }) {
   const navigate = useNavigate();
+
+  // 🔑 grab the nested validUserOne object
+  const { validUserOne = {} } = useSelector(state => state.user.userData || {});
+  const { isTechnician, isTerritorialManager } = validUserOne;
 
   const [loading, setLoading]             = useState(true);
   const [canMechanical, setCanMechanical] = useState(false);
@@ -50,7 +55,7 @@ export default function MaintenanceTypeModal({ equipmentId, equipmentName, onClo
   const pick = (type) => {
     onClose();
     navigate(`/maintenance/${type}/${equipmentId}`, {
-      state: { equipmentName, equipmentId }
+      state: { equipmentName, equipmentId },
     });
   };
 
@@ -58,7 +63,7 @@ export default function MaintenanceTypeModal({ equipmentId, equipmentName, onClo
     return (
       <div style={overlayStyle}>
         <div style={boxStyle}>
-          <p>Checking report availability…</p>
+          <p>Checking maintenance availability…</p>
         </div>
       </div>
     );
@@ -67,34 +72,38 @@ export default function MaintenanceTypeModal({ equipmentId, equipmentName, onClo
   return (
     <div style={overlayStyle}>
       <div style={boxStyle}>
-        <h5>Select Maintenance Type for: <strong>{equipmentName}</strong></h5>
+        <h5>
+          Select Maintenance Type for: <strong>{equipmentName}</strong>
+        </h5>
         <div className="d-grid gap-2">
-          {canMechanical ? (
-            <button
-              className="btn "
-              style={{backgroundColor:'#236a80' , color:'#fff'}}
-              onClick={() => pick('mechanical')}
-            >
-              Monthly Mechanical Maintenance
-            </button>
-          ) : (
-            <button className="btn btn-outline-secondary" disabled>
-              Mechanical Already Done This Month
-            </button>
+          {/* territory managers only */}
+          {isTerritorialManager && (
+            canMechanical
+              ? <button
+                  className="btn"
+                  style={{ backgroundColor: '#236a80', color: '#fff' }}
+                  onClick={() => pick('mechanical')}
+                >
+                  Monthly Mechanical Maintenance
+                </button>
+              : <button className="btn btn-outline-secondary" disabled>
+                  Mechanical Already Done This Month
+                </button>
           )}
 
-          {canElectrical ? (
-            <button
-              className="btn "
-              style={{backgroundColor:'#236a80' , color:'#fff'}}
-              onClick={() => pick('electrical')}
-            >
-              Monthly Electrical Maintenance
-            </button>
-          ) : (
-            <button className="btn btn-outline-secondary" disabled>
-              Electrical Already Done This Month
-            </button>
+          {/* technicians only */}
+          {isTechnician && (
+            canElectrical
+              ? <button
+                  className="btn"
+                  style={{ backgroundColor: '#236a80', color: '#fff' }}
+                  onClick={() => pick('electrical')}
+                >
+                  Monthly Electrical Maintenance
+                </button>
+              : <button className="btn btn-outline-secondary" disabled>
+                  Electrical Already Done This Month
+                </button>
           )}
 
           <button

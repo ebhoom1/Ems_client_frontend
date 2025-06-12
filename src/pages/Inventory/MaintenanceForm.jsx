@@ -177,75 +177,25 @@ export default function MaintenanceForm() {
     return match ? match.key : null;
   };
 
+    // … earlier imports & constants …
+
   const slug = location.state?.equipmentName?.toLowerCase()?.trim();
   const matchedKey = slug ? getMatchingChecklistKey(slug) : null;
   const originalCfg = matchedKey ? mechanicalConfig[matchedKey] : { columns: [], rows: [] };
-  const { userData } = useSelector((state) => state.user);
 
-  const [additionalColumns, setAdditionalColumns] = useState([]);
+  // pull only the territorial manager data
+  const { validUserOne = {} } = useSelector((state) => state.user.userData || {});
+  const [manager, setManager] = useState(null);
+
   const [cfg, setCfg] = useState(originalCfg);
-  const [technician, setTechnician] = useState(null); // State for technician data
   const [answers, setAnswers] = useState({});
-
-  const isPump = matchedKey?.includes('pump');
-  const isBlower = matchedKey?.includes('blower');
   const [isWorking, setIsWorking] = useState("yes");
   const [comments, setComments] = useState("");
   const [photos, setPhotos] = useState([null]);
-console.log('userData in mainatnene form', userData);
 
-  const handlePhotoChange = (index, file) => {
-    const newPhotos = [...photos];
-    newPhotos[index] = file;
-    setPhotos(newPhotos);
-  };
-
-  const addPhotoField = () => {
-    setPhotos([...photos, null]);
-  };
-
-  // --- START: Technician data from localStorage ---
-  useEffect(() => {
-    try {
-       // Make sure this key matches your app's key
-      if (userData?.validUserOne?.isTechnician== true) {
-        const validUserOne = userData.validUserOne || userData; // Adjust if user_data itself is validUserOne
-        
-        if (validUserOne && validUserOne.isTechnician) {
-          setTechnician({
-            name: validUserOne.fname, // Use fname for the display name
-            email: validUserOne.email,
-            // If your userData has a 'designation' field, you can add it here too:
-            // designation: validUserOne.designation || "",
-          });
-        } else {
-          console.warn("Logged-in user is not a technician or user data structure is incorrect.");
-          setTechnician(null);
-          toast.warn("You are not authorized as a technician to submit reports.");
-        }
-      } else {
-        console.warn("No user data found in local storage.");
-        setTechnician(null);
-        toast.error("Please log in to submit reports.");
-      }
-    } catch (error) {
-      console.error("Error parsing user data from local storage:", error);
-      setTechnician(null);
-      toast.error("Error loading user data.");
-    }
-  }, []); // Empty dependency array means this runs once on component mount
-  // --- END: Technician data from localStorage ---
-
-
-  useEffect(() => {
-    const slug = location.state?.equipmentName?.toLowerCase()?.trim();
-    console.log("Current slug:", slug);
-    const matchedKey = slug ? getMatchingChecklistKey(slug) : null;
-    console.log("Matched key:", matchedKey);
-    const originalCfg = matchedKey ? mechanicalConfig[matchedKey] : { columns: [], rows: [] };
-    setCfg(originalCfg);
-  }, [location.state?.equipmentName]);
-
+  // detect pump/blower to allow adding columns
+  const isPump = matchedKey?.includes("pump");
+  const isBlower = matchedKey?.includes("blower");
   useEffect(() => {
     if (!dbId) return;
 
@@ -263,30 +213,46 @@ console.log('userData in mainatnene form', userData);
 
     fetchEquipment();
   }, [dbId]);
+  // load manager info once validUserOne changes
+  useEffect(() => {
+    if (validUserOne.isTerritorialManager) {
+      setManager({
+        name: validUserOne.fname,
+        email: validUserOne.email,
+      });
+    } else {
+      setManager(null);
+    }
+  }, [validUserOne]);
+ const handlePhotoChange = (index, file) => {
+    const newPhotos = [...photos];
+    newPhotos[index] = file;
+    setPhotos(newPhotos);
+  };
 
-  // IMPORTANT: REMOVE THIS useEffect block. It's causing the overwrite.
-  // useEffect(() => {
-  //   (async () => {
-  //     try {
-  //       const { data } = await axios.get(`${API_URL}/api/technician`);
-  //       if (data.success && data.technician) {
-  //         setTechnician(data.technician);
-  //       }
-  //     } catch (err) {
-  //       console.error("Failed to fetch technician", err);
-  //     }
-  //   })();
-  // }, []);
+  const addPhotoField = () => {
+    setPhotos([...photos, null]);
+  };
+  // re-init config when equipmentName changes
+  useEffect(() => {
+    const slug2 = location.state?.equipmentName?.toLowerCase()?.trim();
+    const key = slug2 ? getMatchingChecklistKey(slug2) : null;
+    setCfg(key ? mechanicalConfig[key] : { columns: [], rows: [] });
+  }, [location.state?.equipmentName]);
 
+  // fetch userName for this equipment
+  useEffect(() => {
+    if (!dbId) return;
+    axios.get(`${API_URL}/api/equiment/${dbId}`)
+      .then(res => setUserName(res.data.equipment?.userName || ""))
+      .catch(err => console.error("Error fetching equipment userName:", err));
+  }, [dbId]);
 
-  // Initialize answers when cfg changes
+  // initialize empty answers
   useEffect(() => {
     const init = {};
     cfg.rows.forEach(row => {
-      init[row.id] = {
-        checks: Array(cfg.columns.length).fill(""),
-        remarks: ""
-      };
+      init[row.id] = { checks: Array(cfg.columns.length).fill(""), remarks: "" };
     });
     setAnswers(init);
   }, [cfg]);
@@ -294,23 +260,23 @@ console.log('userData in mainatnene form', userData);
   const addAdditionalColumn = () => {
     if (isPump || isBlower) {
       const prefix = isPump ? "Pump" : "Blower";
-      const newColumn = `${prefix} ${cfg.columns.length + 1}`;
-
-      const newColumns = [...cfg.columns, newColumn];
-      setCfg({ ...cfg, columns: newColumns });
-
-      const updatedAnswers = { ...answers };
-      Object.keys(updatedAnswers).forEach(rowId => {
-        updatedAnswers[rowId].checks.push("");
+      const newCol = `${prefix} ${cfg.columns.length + 1}`;
+      setCfg(c => ({ ...c, columns: [...c.columns, newCol] }));
+      setAnswers(a => {
+        const copy = { ...a };
+        Object.values(copy).forEach(r => r.checks.push(""));
+        return copy;
       });
-      setAnswers(updatedAnswers);
     }
   };
 
   const onCheck = (rowId, idx, val) => {
     setAnswers(a => ({
       ...a,
-      [rowId]: { ...a[rowId], checks: a[rowId].checks.map((c, i) => (i === idx ? val : c)) }
+      [rowId]: {
+        ...a[rowId],
+        checks: a[rowId].checks.map((c, i) => (i === idx ? val : c))
+      }
     }));
   };
 
@@ -321,25 +287,17 @@ console.log('userData in mainatnene form', userData);
     }));
   };
 
-  const getRemarksColor = (rowId) => {
-    const rowAnswers = answers[rowId]?.checks;
-    if (!rowAnswers || rowAnswers.length === 0) {
-      return "";
-    }
-    if (rowAnswers.some(check => check === "fail")) {
-      return "text-danger";
-    }
-    if (rowAnswers.every(check => check === "ok")) {
-      return "text-success";
-    }
+  const getRemarksColor = rowId => {
+    const checks = answers[rowId]?.checks || [];
+    if (checks.some(c => c === "fail")) return "text-danger";
+    if (checks.every(c => c === "ok")) return "text-success";
     return "";
   };
 
   const submit = async (e) => {
     e.preventDefault();
-
-    if (!technician) {
-      toast.error("Technician information is required");
+    if (!manager) {
+      toast.error("Territorial Manager information is required");
       return;
     }
 
@@ -347,31 +305,26 @@ console.log('userData in mainatnene form', userData);
     payload.append("equipmentId", dbId);
     payload.append("equipmentName", slug);
     payload.append("userName", userName);
-    payload.append("capacity", capacity);
     payload.append("isWorking", isWorking);
     payload.append("comments", comments);
-
-    // Use the 'technician' state which is now populated from userData
-    payload.append("technician", JSON.stringify({
-      name: technician.name,
-      email: technician.email,
-      // Add other properties if needed for submission, e.g.,
-      // designation: technician.designation || "Technician"
+    payload.append("territorialManager", JSON.stringify({
+      name: manager.name,
+      email: manager.email
     }));
 
-    photos.filter(Boolean).forEach((photo) => {
-      payload.append(`photos`, photo);
-    });
+    photos.filter(Boolean).forEach(file => payload.append("photos", file));
 
     if (isWorking === "yes") {
       payload.append("columns", JSON.stringify(cfg.columns));
-      payload.append("entries", JSON.stringify(cfg.rows.map(row => ({
-        id: row.id,
-        category: row.category,
-        description: row.description,
-        checks: answers[row.id]?.checks || [],
-        remarks: answers[row.id]?.remarks || ""
-      }))));
+      payload.append("entries", JSON.stringify(
+        cfg.rows.map(r => ({
+          id: r.id,
+          category: r.category,
+          description: r.description,
+          checks: answers[r.id]?.checks || [],
+          remarks: answers[r.id]?.remarks || ""
+        }))
+      ));
     }
 
     payload.append("timestamp", new Date().toISOString());
@@ -380,11 +333,7 @@ console.log('userData in mainatnene form', userData);
       const { data } = await axios.post(
         `${API_URL}/api/add-mechanicalreport`,
         payload,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
       if (data.success) {
         toast.success("Report submitted successfully!");
@@ -404,6 +353,7 @@ console.log('userData in mainatnene form', userData);
         {type.charAt(0).toUpperCase() + type.slice(1)} Maintenance –{" "}
         {slug?.replace(/-/g, " ")}
       </h3>
+
       <div className="row">
         {/* User Name */}
         <div className="col-md-6 col-12 mb-3">
@@ -419,27 +369,27 @@ console.log('userData in mainatnene form', userData);
           />
         </div>
 
-        {/* Technician Info */}
-        <div className="col-md-6 col-12 mb-3">
-          <label className="form-label">
-            <strong>Technician</strong>
-          </label>
+        {/* Territorial Manager Info */}
+        <div className="col-md-6 mb-3">
+          <label className="form-label"><strong>Territorial Manager</strong></label>
           <div className="p-2 shadow bg-light rounded">
-            {technician ? (
-              <div className="text-success" >
-                {technician.name}
-                {technician.designation ? ` — ${technician.designation}` : ''}
-                {" "} (<a className="text-success" href={`mailto:${technician.email}`}>{technician.email}</a>)
+            {manager ? (
+              <div className="text-success">
+                {manager.name} (
+                <a href={`mailto:${manager.email}`}>{manager.email}</a>
+                )
               </div>
             ) : (
-              <div className="text-danger">Technician data not available or not logged in as a technician.</div>
+              <div className="text-danger">
+                Manager data not available or you’re not a manager.
+              </div>
             )}
           </div>
         </div>
       </div>
 
       <form onSubmit={submit}>
-        <div className="mb-4">
+         <div className="mb-4">
           <label className="form-label"><strong>Is the Equipment Working?</strong></label>
           <div>
             <div className="form-check form-check-inline">
@@ -505,79 +455,102 @@ console.log('userData in mainatnene form', userData);
           </button>
         </div>
 
-        {isWorking === "yes" && (
-          <div className="table-responsive mb-4">
-            <table className="table table-bordered">
-              <thead>
-                <tr>
-                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>#</th>
-                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Category</th>
-                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Description</th>
-                  {cfg.columns.map(col => (
-                    <th style={{ backgroundColor: '#236a80', color: '#fff' }} key={col}>{col}</th>
-                  ))}
-                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Remarks</th>
-                  {(isPump || isBlower) && (
-                    <th>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-success"
-                        onClick={addAdditionalColumn}
-                      >
-                        +
-                      </button>
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {cfg.rows.map((row, idx) => (
-                  <tr key={row.id}>
-                    <td>{idx + 1}</td>
-                    <td>Mechanical</td>
-                    <td>{row.category}</td>
-                    {cfg.columns.map((col, cidx) => (
-                      <td key={cidx} style={{ textAlign: "center", whiteSpace: "nowrap" }}>
-                        <button
-                          type="button"
-                          className={`btn btn-sm me-1 ${
-                            answers[row.id]?.checks[cidx] === "ok"
-                              ? "btn-success"
-                              : "btn-outline-secondary"
-                          }`}
-                          onClick={() => onCheck(row.id, cidx, "ok")}
-                        >
-                          ✓
-                        </button>
-                        <button
-                          type="button"
-                          className={`btn btn-sm ${
-                            answers[row.id]?.checks[cidx] === "fail"
-                              ? "btn-danger"
-                              : "btn-outline-secondary"
-                          }`}
-                          onClick={() => onCheck(row.id, cidx, "fail")}
-                        >
-                          ✕
-                        </button>
-                      </td>
-                    ))}
-                    <td>
-                      <input
-                        className={`form-control ${getRemarksColor(row.id)}`}
-                        value={answers[row.id]?.remarks || ""}
-                        onChange={e => onRemarks(row.id, e.target.value)}
-                      />
-                    </td>
-                    {(isPump || isBlower) && <td></td>}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {/* Equipment status, comments, photos… same as before */}
+{isWorking === "yes" && (
+ <div className="table-responsive mb-4">
+  <table className="table table-bordered">
+    <thead>
+      <tr>
+        <th style={{ backgroundColor: '#236a80', color: '#fff' }}>#</th>
+        <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Category</th>
+        <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Description</th>
+        {cfg.columns.map(col => (
+          <th
+            key={col}
+            style={{ backgroundColor: '#236a80', color: '#fff' }}
+          >
+            {col}
+          </th>
+        ))}
+        <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Remarks</th>
+        {(isPump || isBlower) && (
+          <th style={{ backgroundColor: '#236a80', color: '#fff' }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-success"
+              onClick={addAdditionalColumn}
+            >
+              +
+            </button>
+          </th>
         )}
+      </tr>
+    </thead>
 
-        <button type="submit" style={{ backgroundColor: '#236a80', color: '#fff' }} className="btn ">
+    <tbody>
+      {cfg.rows.map((row, idx) => {
+        // ensure rowData never undefined
+        const rowData = answers[row.id] || {
+          checks: Array(cfg.columns.length).fill(""),
+          remarks: ""
+        };
+
+        return (
+          <tr key={row.id}>
+            <td>{idx + 1}</td>
+            <td>Mechanical</td>
+            <td>{row.category}</td>
+
+            {cfg.columns.map((_, cidx) => (
+              <td
+                key={cidx}
+                style={{ textAlign: "center", whiteSpace: "nowrap" }}
+              >
+                <button
+                  type="button"
+                  className={`btn btn-sm me-1 ${
+                    rowData.checks[cidx] === "ok"
+                      ? "btn-success"
+                      : "btn-outline-secondary"
+                  }`}
+                  onClick={() => onCheck(row.id, cidx, "ok")}
+                >
+                  ✓
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${
+                    rowData.checks[cidx] === "fail"
+                      ? "btn-danger"
+                      : "btn-outline-secondary"
+                  }`}
+                  onClick={() => onCheck(row.id, cidx, "fail")}
+                >
+                  ✕
+                </button>
+              </td>
+            ))}
+
+            <td>
+              <input
+                className={`form-control ${getRemarksColor(row.id)}`}
+                value={rowData.remarks}
+                onChange={(e) => onRemarks(row.id, e.target.value)}
+              />
+            </td>
+
+            {(isPump || isBlower) && <td />}
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+</div>
+
+)}
+
+
+        <button type="submit" className="btn" style={{ backgroundColor: "#236a80", color: "#fff" }}>
           Submit Report
         </button>
       </form>
