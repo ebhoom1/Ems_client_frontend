@@ -19,25 +19,34 @@ const { validUserOne: u } = userData || {};
     nextServiceDue: "",
   });
 
-  useEffect(() => {
-    const fetchFaults = async () => {
-      try {
-        let url;
-        const u = userData?.validUserOne;
-        if (u?.userType === "user") url = `${API_URL}/api/fault-user/${u.userName}`;
-        else if (u?.userType === "admin")
-          url = `${API_URL}/api/admin-type-fault/${u.adminType}`;
-        else url = `${API_URL}/api/all-faults`;
+useEffect(() => {
+  const fetchFaults = async () => {
+    try {
+      let url;
+      const u = userData?.validUserOne;
 
-        const res = await fetch(url);
-        const data = await res.json();
-        setFaults(data.faults || []);
-      } catch {
-        toast.error("Server error while fetching faults");
+      if (u?.userType === "user") {
+        url = `${API_URL}/api/fault-user/${u.userName}`;
+      } else if (
+        u?.userType === "admin" ||
+        u?.userType === "operator" ||
+        u?.userType === "technician"
+      ) {
+        url = `${API_URL}/api/admin-type-fault/${u.adminType}`;
+      } else {
+        url = `${API_URL}/api/all-faults`; // fallback
       }
-    };
-    fetchFaults();
-  }, [userData]);
+
+      const res = await fetch(url);
+      const data = await res.json();
+      setFaults(data.faults || []);
+    } catch {
+      toast.error("Server error while fetching faults");
+    }
+  };
+  fetchFaults();
+}, [userData]);
+
 useEffect(() => {
   const fetchTechs = async () => {
     try {

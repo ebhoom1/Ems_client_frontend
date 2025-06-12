@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import { logoutUser } from "../../redux/features/user/userSlice";
 import { setSelectedUser } from "../../redux/features/selectedUsers/selectedUserSlice";
-
+import { toast } from "react-toastify"; // Make sure toast is imported
 import { fetchIotDataByUserName } from "../../redux/features/iotData/iotDataSlice";
 import {
   fetchLast10MinDataByUserName,
@@ -590,6 +590,42 @@ const confirmCheckOut = async () => {
    /*  userData?.validUserOne?.isTechnician === true ||
     userData?.validUserOne?.isTerritorialManager === true;
  */
+
+const handleSignOut = async () => {
+  console.log("Logout button clicked. Starting signOut process."); // Debugging log
+
+  try {
+    // 1. Clear sessionStorage first
+    sessionStorage.clear();
+    console.log("sessionStorage cleared."); // Debugging log
+
+    // 2. Dispatch Redux logout action
+    await dispatch(logoutUser()).unwrap(); // This should handle server-side logout and clear Redux state
+    dispatch(setSelectedUser(null)); // Clear the selected user from Redux state
+
+    // 3. Optional: Confirm sessionStorage is empty (for debugging)
+    if (sessionStorage.length === 0) {
+      console.log("Confirmed: sessionStorage is empty after clearing.");
+    } else {
+      console.warn("Warning: sessionStorage is NOT empty after clearing.");
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        const value = sessionStorage.getItem(key);
+        console.warn(`Remaining sessionStorage item: ${key} = ${value}`);
+      }
+    }
+
+    // 4. Navigate to the login page
+    navigate("/");
+    toast.success("Logged out successfully.", { position: "top-center" }); // Add success toast
+
+  } catch (error) {
+    console.error("Error during logout process:", error);
+    toast.error("Failed to log out. Please try again.", { // Add error toast
+      position: "top-center",
+    });
+  }
+};
 const isOperator =
     userData?.validUserOne?.isOperator === true;
   return (
@@ -668,7 +704,7 @@ const isOperator =
                         <b> EFFLUENT DASHBOARD</b>
                       </h5>
                       {/* operator checkout button */}
-                      {isSpecialUser && (
+                { isSpecialUser && (
                         <div
                           className="d-flex justify-content-end align-items-center px-3 gap-2"
                           style={{
@@ -694,6 +730,12 @@ const isOperator =
           className="btn btn-danger mb-3"
         >
           🔁 Check‐Out
+        </button>
+        <button
+          onClick={handleSignOut}
+          className="btn btn-warning mb-3"
+        >
+          ➡️ Logout
         </button>
 
                         
