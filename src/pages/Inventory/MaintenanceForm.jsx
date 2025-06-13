@@ -144,33 +144,75 @@ export default function MaintenanceForm() {
   const getMatchingChecklistKey = (name) => {
     if (!name) return null;
 
-    const keywordMap = [
-      { keyword: "ras pump", key: "shared-standard-pump" },
-      { keyword: "filter feed", key: "shared-standard-pump" },
-      { keyword: "permeate", key: "shared-standard-pump" },
-      { keyword: "sludge transfer", key: "shared-standard-pump" },
-      { keyword: "sludge re-circulation", key: "shared-standard-pump" },
-      { keyword: "softner feed", key: "shared-standard-pump" },
-      { keyword: "cip", key: "shared-standard-pump" },
-      { keyword: "air blower - 2", key: "ET&AT AIR BLOWER 2" },
-        { keyword: "air blower 2", key: "ET&AT AIR BLOWER 2" },
-      { keyword: "air blower 1", key: "ET&AT AIR BLOWER 2" },
-       { keyword: "air blower - 1", key: "ET&AT AIR BLOWER 2" },
-      //air blower - 1
-      { keyword: "uf feed", key: "shared-standard-pump" },
-      { keyword: "mbr blower", key: "mbr-air-blower-3-4" },
-      { keyword: "raw sewage pump 1", key: "raw-sewage-pump" },
-      { keyword: "raw sewage pump - 2", key: "raw-sewage-pump" },
-      { keyword: "et&at air blower", key: "ET&AT AIR BLOWER 2" },
-      { keyword: "bar screen", key: "bar-screen" },
-      { keyword: "oil skimmer", key: "oil-skimmer" },
-      { keyword: "agitator", key: "agitator-mechanism" },
-      { keyword: "filter press", key: "filter-press-unit" },
-      { keyword: "screw pump", key: "filter-press-unit" },
-      { keyword: "sludge pump", key: "filter-press-unit" },
-      { keyword: "dosing pump", key: "filter-press-unit" },
-      { keyword: "out side bypass pump", key: "filter-press-unit" },
-    ];
+   const keywordMap = [
+  { keyword: "ras pump", key: "shared-standard-pump" },
+  { keyword: "filter feed", key: "shared-standard-pump" },
+  { keyword: "permeate", key: "shared-standard-pump" },
+  { keyword: "sludge transfer", key: "shared-standard-pump" },
+  { keyword: "sludge re-circulation", key: "shared-standard-pump" },
+  { keyword: "softner feed", key: "shared-standard-pump" },
+  { keyword: "cip", key: "shared-standard-pump" },
+  { keyword: "treated water pump g block 2", key: "shared-standard-pump" },
+  { keyword: "treated water pump g block 1", key: "shared-standard-pump" },
+  { keyword: "treated water pump c block 2", key: "shared-standard-pump" },
+  { keyword: "treated water pump c block 1", key: "shared-standard-pump" },
+  { keyword: "treated water pump m block 2", key: "shared-standard-pump" },
+  { keyword: "treated water pump m block 1", key: "shared-standard-pump" },
+  { keyword: "ventilation motor terrace", key: "shared-standard-pump" },
+  { keyword: "ventilation motor exhaust", key: "shared-standard-pump" },
+  { keyword: "ventilation motor fresh air", key: "shared-standard-pump" },
+  { keyword: "drain pump 1", key: "shared-standard-pump" },
+  { keyword: "drain pump 2", key: "shared-standard-pump" },
+  { keyword: "drain pump b", key: "shared-standard-pump" },
+  { keyword: "drain pump a", key: "shared-standard-pump" },
+  { keyword: "ventilation exhaust air motor", key: "shared-standard-pump" },
+  { keyword: "ventilation fresh air motor", key: "shared-standard-pump" },
+  { keyword: "chamber 2 treated sewage pump 1", key: "shared-standard-pump" },
+  { keyword: "chamber 1 treated sewage pump 2", key: "shared-standard-pump" },
+  { keyword: "chamber 1 treated sewage pump 1", key: "shared-standard-pump" },
+  { keyword: "air blower - 2", key: "ET&AT AIR BLOWER 2" },
+  { keyword: "air blower 2", key: "ET&AT AIR BLOWER 2" },
+  { keyword: "air blower 1", key: "ET&AT AIR BLOWER 2" },
+  { keyword: "air blower - 1", key: "ET&AT AIR BLOWER 2" },
+  { keyword: "uf feed", key: "shared-standard-pump" },
+  { keyword: "mbr blower", key: "mbr-air-blower-3-4" },
+  { keyword: "raw sewage pump 1", key: "raw-sewage-pump" },
+  { keyword: "raw sewage pump - 2", key: "raw-sewage-pump" },
+  { keyword: "raw sewage pump 2", key: "raw-sewage-pump" },
+  { keyword: "et&at air blower", key: "ET&AT AIR BLOWER 2" },
+  { keyword: "bar screen", key: "bar-screen" },
+  { keyword: "oil skimmer", key: "oil-skimmer" },
+  { keyword: "agitator", key: "agitator-mechanism" },
+  { keyword: "filter press", key: "filter-press-unit" },
+  { keyword: "screw pump", key: "filter-press-unit" },
+  { keyword: "sludge pump", key: "filter-press-unit" },
+  { keyword: "dosing pump", key: "filter-press-unit" },
+  { keyword: "out side bypass pump", key: "filter-press-unit" },
+
+  // ——— Your newly added equipments ———
+  { keyword: "polymer dosing pump", key: "filter-press-unit" },
+  { keyword: "hydraulic filter press pump", key: "filter-press-unit" },
+  { keyword: "ventilation exhaust air motor", key: "shared-standard-pump" },
+  { keyword: "ventilation fresh air motor", key: "shared-standard-pump" },
+  { keyword: "anoxic tank agitator", key: "agitator-mechanism" },
+  { keyword: "oil skimmer motor", key: "oil-skimmer" },
+  { keyword: "drain pump b", key: "shared-standard-pump" },
+  { keyword: "drain pump a", key: "shared-standard-pump" },
+  { keyword: "return activated sludge pump b", key: "shared-standard-pump" },
+  { keyword: "return activated sludge pump a", key: "shared-standard-pump" },
+  { keyword: "filter press feed pump b", key: "filter-press-unit" },
+  { keyword: "filter press feed pump a", key: "filter-press-unit" },
+  { keyword: "permeate transfer pump b", key: "shared-standard-pump" },
+  { keyword: "permeate transfer pump a", key: "shared-standard-pump" },
+  { keyword: "mbr air blower b", key: "mbr-air-blower-3-4" },
+  { keyword: "mbr air blower a", key: "mbr-air-blower-3-4" },
+  { keyword: "softner feed pump b", key: "shared-standard-pump" },
+  { keyword: "softner feed pump a", key: "shared-standard-pump" },
+  { keyword: "eq & at air blower b", key: "ET&AT AIR BLOWER 2" },
+  { keyword: "eq & at air blower a", key: "ET&AT AIR BLOWER 2" },
+  { keyword: "sewage transfer pump a", key: "shared-standard-pump" }
+];
+
 
     const lowerName = name.toLowerCase();
     const match = keywordMap.find(item => lowerName.includes(item.keyword));
@@ -180,6 +222,7 @@ export default function MaintenanceForm() {
     // … earlier imports & constants …
 
   const slug = location.state?.equipmentName?.toLowerCase()?.trim();
+  console.log("Selected equipment name:", location.state?.equipmentName);
   const matchedKey = slug ? getMatchingChecklistKey(slug) : null;
   const originalCfg = matchedKey ? mechanicalConfig[matchedKey] : { columns: [], rows: [] };
 

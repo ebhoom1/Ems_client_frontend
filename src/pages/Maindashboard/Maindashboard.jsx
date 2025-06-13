@@ -18,12 +18,17 @@ function Maindashboard() {
 
   // Fetch station types with values
   useEffect(() => {
-    if (userName) {
+    // Only fetch if not super_admin, as super_admin doesn't rely on specific station types for visibility
+    if (userName && userType !== "super_admin") {
       fetchStationTypes(userName);
+    } else if (userType === "super_admin") {
+      // If super_admin, we might want to show all links by default or based on a different logic
+      // For now, let's assume super_admin sees all links that are not restricted by userName
+      setAvailableStationTypes(allLinks.map(link => link.key)); // Populate with all keys to ensure visibility
     } else {
-      console.log("userName is not available");
+      console.log("userName is not available or userType is super_admin.");
     }
-  }, [userName]);
+  }, [userName, userType]); // Add userType to dependency array
 
   const fetchStationTypes = async (userName) => {
     try {
@@ -66,18 +71,24 @@ function Maindashboard() {
     { name: "Fuel", path: "/fuel", key: "fuel" },
   ];
 
-  // Filter links based on available station types
-  // Filter links based on available station types, but always include "Waste" and "Generator"
   // Filter links based on available station types, but always include "Waste" and "Fuel".
-// Also, exclude "Effluent" for specific userNames.
-const visibleLinks = allLinks.filter((link) => {
-  // Check if the current userName is one of the restricted ones and the link is "Effluent"
-  if (link.key === "effluent" && (userName === "BANKA_BIO_ADMIN" || userName === "MY_HOME017")) {
+  // Also, exclude "Effluent" for specific userNames.
+ const visibleLinks = allLinks.filter(link => {
+  // super_admin sees only Quality, Water Quantity, Waste & Fuel
+  if (userType === "super_admin") {
+    return ["effluent", "effluent_flow", "waste", "fuel"].includes(link.key);
+  }
+
+  // existing logic for others:
+  if (link.key === "effluent" &&
+      (userName === "BANKA_BIO_ADMIN" || userName === "MY_HOME017")) {
     return false;
   }
-  // Otherwise, use the existing condition
-  return availableStationTypes.includes(link.key) || link.key === "waste" || link.key === "fuel";
+  return availableStationTypes.includes(link.key)
+      || link.key === "waste"
+      || link.key === "fuel";
 });
+
 
   console.log("Visible Links:", visibleLinks);
 
@@ -172,6 +183,3 @@ const visibleLinks = allLinks.filter((link) => {
 }
 
 export default Maindashboard;
-
-
-

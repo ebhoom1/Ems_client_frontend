@@ -286,22 +286,17 @@ function Header() {
             </Navbar.Brand>
             <div className="d-flex align-items-center">
               {/* ✅ Show selected company name */}
-              {userData?.validUserOne?.userType !== "user" &&
-                sessionStorage.getItem("selectedUserId") && (
-                  <div
-                    className="me-4 mt-2 text-dark fw-semibold"
-                    style={{ fontSize: "12px" }}
-                  >
-                    <b>
-                      {" "}
-                      {users.find(
-                        (u) =>
-                          u.userName ===
-                          sessionStorage.getItem("selectedUserId")
-                      )?.companyName || ""}
-                    </b>
-                  </div>
-                )}
+             {userData?.validUserOne?.userType !== "user" && selectedUserId && (
+  <div
+    className="me-4 mt-2 text-dark fw-semibold"
+    style={{ fontSize: "12px" }}
+  >
+    <b>
+      {allFetchedUsers.find(u => u.userName === selectedUserId)
+        ?.companyName || ""}
+    </b>
+  </div>
+)}
 
               <Nav.Link
                 className="me-3 mt-2"
@@ -351,6 +346,7 @@ function Header() {
                   }}
                   className="user-dropdown-menu"
                 >
+                  
                   <Dropdown.Item>
                     <img
                       src="https://cdn.pixabay.com/photo/2020/07/01/12/58/icon-5359553_640.png"
