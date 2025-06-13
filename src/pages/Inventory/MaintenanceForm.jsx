@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { API_URL } from "../../utils/apiConfig";
 import { useSelector } from "react-redux";
 
+
 const standardPumpChecklist = [
   { id: 1, category: "Pump Type", description: "Coupled / Monoblock" },
   { id: 2, category: "Check for safety Guards", description: "" },
@@ -50,11 +51,9 @@ const blowerChecklist = [
 
 const mechanicalConfig = {
   "shared-standard-pump": {
-    columns: ["Pump 1"],
     rows: standardPumpChecklist
   },
   "bar-screen": {
-    columns: ["Process Status"],
     rows: [
       { id: 1, category: "Material Type", description: "" },
       { id: 2, category: "Check for any damages", description: "" },
@@ -63,7 +62,6 @@ const mechanicalConfig = {
     ]
   },
   "oil-skimmer": {
-    columns: ["Process Status"],
     rows: [
       { id: 1, category: "Check for safety Guards", description: "" },
       { id: 2, category: "Direction of rotation", description: "" },
@@ -79,7 +77,6 @@ const mechanicalConfig = {
     ]
   },
   "raw-sewage-pump": {
-    columns: ["Pump 1"],
     rows: [
       { id: 1, category: "Type of Pump", description: "Submersible / Centrifugal pump" },
       { id: 2, category: "Check for safety Guards", description: "" },
@@ -97,16 +94,13 @@ const mechanicalConfig = {
       { id: 14, category: "Other observations if any", description: "" }
     ]
   },
-  "mbr-air-blower-3-4": {
-    columns: ["Blower 3"],
+  "mbr-air-blower": { // Renamed for clarity and generalization
     rows: blowerChecklist
   },
-  "ET&AT AIR BLOWER 2": {
-    columns: ["Blower 1"],
+  "et&at-air-blower": { // Renamed for clarity and generalization
     rows: blowerChecklist
   },
   "filter-press-unit": {
-    columns: ["Process Status"],
     rows: [
       { id: 1, category: "Check for the filter press cloth condition", description: "" },
       { id: 2, category: "Check for all connected valves", description: "" },
@@ -116,7 +110,6 @@ const mechanicalConfig = {
     ]
   },
   "agitator-mechanism": {
-    columns: ["Process Status"],
     rows: [
       { id: 1, category: "Type of the Mechanism", description: "Direct Coupled / Chain driven / Belt Driven" },
       { id: 2, category: "Check for safety Guards", description: "" },
@@ -133,6 +126,7 @@ const mechanicalConfig = {
   }
 };
 
+
 export default function MaintenanceForm() {
   const { type, equipmentId: dbId } = useParams();
   const navigate = useNavigate();
@@ -140,91 +134,64 @@ export default function MaintenanceForm() {
   const [capacity, setCapacity] = useState("");
   const [userName, setUserName] = useState("");
 
-  // Helper function to determine checklist key based on partial matches
   const getMatchingChecklistKey = (name) => {
     if (!name) return null;
 
-   const keywordMap = [
-  { keyword: "ras pump", key: "shared-standard-pump" },
-  { keyword: "filter feed", key: "shared-standard-pump" },
-  { keyword: "permeate", key: "shared-standard-pump" },
-  { keyword: "sludge transfer", key: "shared-standard-pump" },
-  { keyword: "sludge re-circulation", key: "shared-standard-pump" },
-  { keyword: "softner feed", key: "shared-standard-pump" },
-  { keyword: "cip", key: "shared-standard-pump" },
-  { keyword: "treated water pump g block 2", key: "shared-standard-pump" },
-  { keyword: "treated water pump g block 1", key: "shared-standard-pump" },
-  { keyword: "treated water pump c block 2", key: "shared-standard-pump" },
-  { keyword: "treated water pump c block 1", key: "shared-standard-pump" },
-  { keyword: "treated water pump m block 2", key: "shared-standard-pump" },
-  { keyword: "treated water pump m block 1", key: "shared-standard-pump" },
-  { keyword: "ventilation motor terrace", key: "shared-standard-pump" },
-  { keyword: "ventilation motor exhaust", key: "shared-standard-pump" },
-  { keyword: "ventilation motor fresh air", key: "shared-standard-pump" },
-  { keyword: "drain pump 1", key: "shared-standard-pump" },
-  { keyword: "drain pump 2", key: "shared-standard-pump" },
-  { keyword: "drain pump b", key: "shared-standard-pump" },
-  { keyword: "drain pump a", key: "shared-standard-pump" },
-  { keyword: "ventilation exhaust air motor", key: "shared-standard-pump" },
-  { keyword: "ventilation fresh air motor", key: "shared-standard-pump" },
-  { keyword: "chamber 2 treated sewage pump 1", key: "shared-standard-pump" },
-  { keyword: "chamber 1 treated sewage pump 2", key: "shared-standard-pump" },
-  { keyword: "chamber 1 treated sewage pump 1", key: "shared-standard-pump" },
-  { keyword: "air blower - 2", key: "ET&AT AIR BLOWER 2" },
-  { keyword: "air blower 2", key: "ET&AT AIR BLOWER 2" },
-  { keyword: "air blower 1", key: "ET&AT AIR BLOWER 2" },
-  { keyword: "air blower - 1", key: "ET&AT AIR BLOWER 2" },
-  { keyword: "uf feed", key: "shared-standard-pump" },
-  { keyword: "mbr blower", key: "mbr-air-blower-3-4" },
-  { keyword: "raw sewage pump 1", key: "raw-sewage-pump" },
-  { keyword: "raw sewage pump - 2", key: "raw-sewage-pump" },
-  { keyword: "raw sewage pump 2", key: "raw-sewage-pump" },
-  { keyword: "et&at air blower", key: "ET&AT AIR BLOWER 2" },
-  { keyword: "bar screen", key: "bar-screen" },
-  { keyword: "oil skimmer", key: "oil-skimmer" },
-  { keyword: "agitator", key: "agitator-mechanism" },
-  { keyword: "filter press", key: "filter-press-unit" },
-  { keyword: "screw pump", key: "filter-press-unit" },
-  { keyword: "sludge pump", key: "filter-press-unit" },
-  { keyword: "dosing pump", key: "filter-press-unit" },
-  { keyword: "out side bypass pump", key: "filter-press-unit" },
-
-  // ——— Your newly added equipments ———
-  { keyword: "polymer dosing pump", key: "filter-press-unit" },
-  { keyword: "hydraulic filter press pump", key: "filter-press-unit" },
-  { keyword: "ventilation exhaust air motor", key: "shared-standard-pump" },
-  { keyword: "ventilation fresh air motor", key: "shared-standard-pump" },
-  { keyword: "anoxic tank agitator", key: "agitator-mechanism" },
-  { keyword: "oil skimmer motor", key: "oil-skimmer" },
-  { keyword: "drain pump b", key: "shared-standard-pump" },
-  { keyword: "drain pump a", key: "shared-standard-pump" },
-  { keyword: "return activated sludge pump b", key: "shared-standard-pump" },
-  { keyword: "return activated sludge pump a", key: "shared-standard-pump" },
-  { keyword: "filter press feed pump b", key: "filter-press-unit" },
-  { keyword: "filter press feed pump a", key: "filter-press-unit" },
-  { keyword: "permeate transfer pump b", key: "shared-standard-pump" },
-  { keyword: "permeate transfer pump a", key: "shared-standard-pump" },
-  { keyword: "mbr air blower b", key: "mbr-air-blower-3-4" },
-  { keyword: "mbr air blower a", key: "mbr-air-blower-3-4" },
-  { keyword: "softner feed pump b", key: "shared-standard-pump" },
-  { keyword: "softner feed pump a", key: "shared-standard-pump" },
-  { keyword: "eq & at air blower b", key: "ET&AT AIR BLOWER 2" },
-  { keyword: "eq & at air blower a", key: "ET&AT AIR BLOWER 2" },
-  { keyword: "sewage transfer pump a", key: "shared-standard-pump" }
-];
-
-
     const lowerName = name.toLowerCase();
-    const match = keywordMap.find(item => lowerName.includes(item.keyword));
-    return match ? match.key : null;
-  };
 
-    // … earlier imports & constants …
+    if (lowerName.includes("pump")) {
+      // Check for specific pump types first if they have unique checklists
+      if (lowerName.includes("raw sewage pump") || lowerName.includes("raw sewage transfer pump")) {
+        return "raw-sewage-pump";
+      }
+      // Default for any other pump
+      return "shared-standard-pump";
+    }
+
+    if (lowerName.includes("blower")) {
+      // Check for specific blower types if they have unique checklists
+      if (lowerName.includes("mbr air blower")) {
+        return "mbr-air-blower";
+      }
+      if (lowerName.includes("et&at air blower") || lowerName.includes("eq & at air blower") || lowerName.includes("air blower at & et")) {
+        return "et&at-air-blower";
+      }
+      // Default for any other blower (if you had a generic one)
+      return "et&at-air-blower"; // Or a more generic blower key if you create one
+    }
+
+    if (lowerName.includes("bar screen")) return "bar-screen";
+    if (lowerName.includes("oil skimmer")) return "oil-skimmer";
+    if (lowerName.includes("agitator") || lowerName.includes("mixer")) return "agitator-mechanism";
+    if (lowerName.includes("filter press") || lowerName.includes("screw pump") || lowerName.includes("sludge pump") || lowerName.includes("dosing pump") || lowerName.includes("hydraulic filter press pump") || lowerName.includes("polymer dosing pump") || lowerName.includes("out side bypass pump")) return "filter-press-unit";
+
+    return null; // No match found
+  };
 
   const slug = location.state?.equipmentName?.toLowerCase()?.trim();
   console.log("Selected equipment name:", location.state?.equipmentName);
   const matchedKey = slug ? getMatchingChecklistKey(slug) : null;
-  const originalCfg = matchedKey ? mechanicalConfig[matchedKey] : { columns: [], rows: [] };
+
+  // Determine initial columns based on matchedKey
+  const initialColumns = () => {
+    if (matchedKey?.includes("pump")) {
+      return ["Pump 1"];
+    }
+    if (matchedKey?.includes("blower")) {
+      return ["Blower 1"];
+    }
+    // For other types, use a default or what's defined in mechanicalConfig if available
+    const defaultColumns = mechanicalConfig[matchedKey]?.columns || ["Process Status"];
+    // If a type like 'bar-screen' or 'oil-skimmer' inherently has a "Process Status" column,
+    // this will correctly pick it up. If it doesn't, it will default to ["Process Status"].
+    return defaultColumns;
+  };
+
+  const originalCfg = matchedKey ? {
+    ...mechanicalConfig[matchedKey],
+    columns: initialColumns(), // Dynamically set columns here
+  } : { columns: [], rows: [] };
+
 
   // pull only the territorial manager data
   const { validUserOne = {} } = useSelector((state) => state.user.userData || {});
@@ -267,7 +234,7 @@ export default function MaintenanceForm() {
       setManager(null);
     }
   }, [validUserOne]);
- const handlePhotoChange = (index, file) => {
+  const handlePhotoChange = (index, file) => {
     const newPhotos = [...photos];
     newPhotos[index] = file;
     setPhotos(newPhotos);
@@ -280,7 +247,10 @@ export default function MaintenanceForm() {
   useEffect(() => {
     const slug2 = location.state?.equipmentName?.toLowerCase()?.trim();
     const key = slug2 ? getMatchingChecklistKey(slug2) : null;
-    setCfg(key ? mechanicalConfig[key] : { columns: [], rows: [] });
+    setCfg(key ? {
+      ...mechanicalConfig[key],
+      columns: initialColumns(), // Re-apply dynamic column logic
+    } : { columns: [], rows: [] });
   }, [location.state?.equipmentName]);
 
   // fetch userName for this equipment
@@ -432,7 +402,7 @@ export default function MaintenanceForm() {
       </div>
 
       <form onSubmit={submit}>
-         <div className="mb-4">
+        <div className="mb-4">
           <label className="form-label"><strong>Is the Equipment Working?</strong></label>
           <div>
             <div className="form-check form-check-inline">
@@ -498,100 +468,94 @@ export default function MaintenanceForm() {
           </button>
         </div>
 
-        {/* Equipment status, comments, photos… same as before */}
-{isWorking === "yes" && (
- <div className="table-responsive mb-4">
-  <table className="table table-bordered">
-    <thead>
-      <tr>
-        <th style={{ backgroundColor: '#236a80', color: '#fff' }}>#</th>
-        <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Category</th>
-        <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Description</th>
-        {cfg.columns.map(col => (
-          <th
-            key={col}
-            style={{ backgroundColor: '#236a80', color: '#fff' }}
-          >
-            {col}
-          </th>
-        ))}
-        <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Remarks</th>
-        {(isPump || isBlower) && (
-          <th style={{ backgroundColor: '#236a80', color: '#fff' }}>
-            <button
-              type="button"
-              className="btn btn-sm btn-success"
-              onClick={addAdditionalColumn}
-            >
-              +
-            </button>
-          </th>
+        {isWorking === "yes" && (
+          <div className="table-responsive mb-4">
+            <table className="table table-bordered">
+              <thead>
+                <tr>
+                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>#</th>
+                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Category</th>
+                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Description</th>
+                  {cfg.columns.map(col => (
+                    <th
+                      key={col}
+                      style={{ backgroundColor: '#236a80', color: '#fff' }}
+                    >
+                      {col}
+                    </th>
+                  ))}
+                  <th style={{ backgroundColor: '#236a80', color: '#fff' }}>Remarks</th>
+                  {(isPump || isBlower) && (
+                    <th style={{ backgroundColor: '#236a80', color: '#fff' }}>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-success"
+                        onClick={addAdditionalColumn}
+                      >
+                        +
+                      </button>
+                    </th>
+                  )}
+                </tr>
+              </thead>
+
+              <tbody>
+                {cfg.rows.map((row, idx) => {
+                  const rowData = answers[row.id] || {
+                    checks: Array(cfg.columns.length).fill(""),
+                    remarks: ""
+                  };
+
+                  return (
+                    <tr key={row.id}>
+                      <td>{idx + 1}</td>
+                      <td>Mechanical</td>
+                      <td>{row.category}</td>
+
+                      {cfg.columns.map((_, cidx) => (
+                        <td
+                          key={cidx}
+                          style={{ textAlign: "center", whiteSpace: "nowrap" }}
+                        >
+                          <button
+                            type="button"
+                            className={`btn btn-sm me-1 ${rowData.checks[cidx] === "ok"
+                                ? "btn-success"
+                                : "btn-outline-secondary"
+                              }`}
+                            onClick={() => onCheck(row.id, cidx, "ok")}
+                          >
+                            ✓
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${rowData.checks[cidx] === "fail"
+                                ? "btn-danger"
+                                : "btn-outline-secondary"
+                              }`}
+                            onClick={() => onCheck(row.id, cidx, "fail")}
+                          >
+                            ✕
+                          </button>
+                        </td>
+                      ))}
+
+                      <td>
+                        <input
+                          className={`form-control ${getRemarksColor(row.id)}`}
+                          value={rowData.remarks}
+                          onChange={(e) => onRemarks(row.id, e.target.value)}
+                        />
+                      </td>
+
+                      {(isPump || isBlower) && <td />}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
-      </tr>
-    </thead>
-
-    <tbody>
-      {cfg.rows.map((row, idx) => {
-        // ensure rowData never undefined
-        const rowData = answers[row.id] || {
-          checks: Array(cfg.columns.length).fill(""),
-          remarks: ""
-        };
-
-        return (
-          <tr key={row.id}>
-            <td>{idx + 1}</td>
-            <td>Mechanical</td>
-            <td>{row.category}</td>
-
-            {cfg.columns.map((_, cidx) => (
-              <td
-                key={cidx}
-                style={{ textAlign: "center", whiteSpace: "nowrap" }}
-              >
-                <button
-                  type="button"
-                  className={`btn btn-sm me-1 ${
-                    rowData.checks[cidx] === "ok"
-                      ? "btn-success"
-                      : "btn-outline-secondary"
-                  }`}
-                  onClick={() => onCheck(row.id, cidx, "ok")}
-                >
-                  ✓
-                </button>
-                <button
-                  type="button"
-                  className={`btn btn-sm ${
-                    rowData.checks[cidx] === "fail"
-                      ? "btn-danger"
-                      : "btn-outline-secondary"
-                  }`}
-                  onClick={() => onCheck(row.id, cidx, "fail")}
-                >
-                  ✕
-                </button>
-              </td>
-            ))}
-
-            <td>
-              <input
-                className={`form-control ${getRemarksColor(row.id)}`}
-                value={rowData.remarks}
-                onChange={(e) => onRemarks(row.id, e.target.value)}
-              />
-            </td>
-
-            {(isPump || isBlower) && <td />}
-          </tr>
-        );
-      })}
-    </tbody>
-  </table>
-</div>
-
-)}
-
 
         <button type="submit" className="btn" style={{ backgroundColor: "#236a80", color: "#fff" }}>
           Submit Report
