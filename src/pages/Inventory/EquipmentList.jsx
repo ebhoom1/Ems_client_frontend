@@ -18,21 +18,23 @@ export default function EquipmentList() {
   const [searchTerm, setSearchTerm] = useState("");
   const { validUserOne: type } = userData || {};
   const technician = userData?.validUserOne?.isTechnician;
-    const territorialManager = userData?.validUserOne?.isTerritorialManager;
+  const territorialManager = userData?.validUserOne?.isTerritorialManager;
 
-  const [users, setUsers] = useState([]); // This state will hold company info for operators/admins
+  const [users, setUsers] = useState([]);
   const [selectedUserName, setSelectedUserName] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedEquipmentName, setSelectedEquipmentName] = useState(null);
+  const [selectedEquipmentUserName, setSelectedEquipmentUserName] = useState(null); // <-- NEW STATE
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMonthModal, setShowMonthModal] = useState(false);
   const [reportType, setReportType] = useState(null);
   const navigate = useNavigate();
-console.log("Current userData:", userData);
-console.log("Is Technician:", userData?.validUserOne?.isTechnician);
-console.log("Type object:", type); // <-- Add this line
-console.log("Type userType:", type?.userType); // <-- Add this line
+  console.log("Current userData:", userData);
+  console.log("Is Technician:", userData?.validUserOne?.isTechnician);
+  console.log("Type object:", type);
+  console.log("Type userType:", type?.userType);
+
   // Effect to fetch users/companies (runs once or when type/isOperator changes)
   useEffect(() => {
     const fetchUsers = async () => {
@@ -59,7 +61,7 @@ console.log("Type userType:", type?.userType); // <-- Add this line
     };
 
     fetchUsers();
-  }, [type, isOperator]); // Only run when user type or operator status changes
+  }, [type, isOperator]);
 
   // Effect to fetch equipment (runs when type, isOperator, or users change)
   useEffect(() => {
@@ -119,7 +121,7 @@ console.log("Type userType:", type?.userType); // <-- Add this line
     };
 
     fetchEquipment();
-  }, [type, isOperator, users]); // This effect now correctly depends on `users` being populated
+  }, [type, isOperator, users]);
 
   const downloadQR = async (value) => {
     try {
@@ -201,10 +203,11 @@ console.log("Type userType:", type?.userType); // <-- Add this line
     );
   });
 
-  const openModal = (id, name) => {
-    console.log("Opening maintenance type modal for equipment:", id, name);
+  const openModal = (id, name, userName) => { // <-- ADD userName parameter
+    console.log("Opening maintenance type modal for equipment:", id, name, userName);
     setSelectedId(id);
     setSelectedEquipmentName(name);
+    setSelectedEquipmentUserName(userName); // <-- SET NEW STATE
     setShowModal(true);
   };
 
@@ -251,6 +254,7 @@ console.log("Type userType:", type?.userType); // <-- Add this line
   <MaintenanceTypeModal
     equipmentId={selectedId}
     equipmentName={selectedEquipmentName}
+    equipmentUserName={selectedEquipmentUserName} // <-- PASS NEW PROP
     onClose={() => setShowModal(false)}
   />
 )}
@@ -371,11 +375,11 @@ console.log("Type userType:", type?.userType); // <-- Add this line
                       <>
                         <button
                           className="btn btn-sm btn-success me-1 mt-3"
-                          onClick={() => openModal(e._id, e.equipmentName)}
+                          onClick={() => openModal(e._id, e.equipmentName, e.userName)} // <-- PASS e.userName HERE
                         >
                           Add Report
                         </button>
-                       {type?.userType === "admin" && 
+                       {type?.userType === "admin" &&
  !(userData?.validUserOne?.isTechnician || userData?.validUserOne?.isTerritorialManager) && (
     <>
         <button
@@ -406,7 +410,7 @@ console.log("Type userType:", type?.userType); // <-- Add this line
                           View Report
                         </button>
 
-                     {type?.userType === "admin" && 
+                     {type?.userType === "admin" &&
  !(userData?.validUserOne?.isTechnician || userData?.validUserOne?.isTerritorialManager) && (
     <>
         <button

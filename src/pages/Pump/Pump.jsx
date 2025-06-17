@@ -12,58 +12,77 @@ const PumpControlDashboard = () => {
   const pumpList = [
     { pumpId: 'PUMP01', name: 'Permeate Pump 1' },
     { pumpId: 'PUMP02', name: 'Permeate Pump 2' },
-    { pumpId: 'pump_0', name: 'Membrane Feed Pump 1' },
-    { pumpId: 'PUMP04', name: 'Membrane Feed Pump 2' },
-    { pumpId: 'BLWR01', name: 'Air Blower 1' },
-    { pumpId: 'BLWR02', name: 'Air Blower 2' },
-    { pumpId: 'BLWR03', name: 'Air Blower 3' },
-    { pumpId: 'BLWR04', name: 'Air Blower 4' },
-    { pumpId: 'PUMP05', name: 'Raw Water Pump 1' },
-    { pumpId: 'PUMP06', name: 'Raw Water Pump 2' },
-    { pumpId: 'PUMP07', name: 'Anoxic Mechanic Pump' },
-    { pumpId: 'PUMP08', name: 'CIP Pump' },
-    { pumpId: 'PUMP09', name: 'Dosing Pump' },
+    /* …the rest… */
   ];
 
   // 3) status map in state
   const [statuses, setStatuses] = useState(
     pumpList.reduce((acc, p) => ({ ...acc, [p.pumpId]: false }), {})
   );
+  // track which pumps are waiting for feedback
+  const [pending, setPending] = useState({});
 
   // 4) join your product room so you only get relevant feedback
   useEffect(() => {
+    console.debug('JOIN ROOM →', product_id);
     socket.emit('joinRoom', { product_id });
   }, [product_id]);
 
-  // 5) listen for real feedback and update state
+  // 5a) listen for ack (fast)
   useEffect(() => {
-    const handler = (payload) => {
-      const { pumpId, status } = payload.pumpData;
-      setStatuses(prev => ({
-        ...prev,
-        [pumpId]: status === 1
-      }));
+    const ackHandler = (ack) => {
+      console.debug('💡 pumpAck received:', ack);
+      const { pumpData: { pumpId, status } } = ack;
+      // ack comes before real feedback – update optimistically:
+      setStatuses(s => ({ ...s, [pumpId]: status === 1 }));
     };
-    socket.on('pumpFeedback', handler);
-    return () => { socket.off('pumpFeedback', handler); };
+    socket.on('pumpAck', ackHandler);
+    return () => { socket.off('pumpAck', ackHandler); };
   }, []);
 
-  // 6) when user toggles, send controlPump
+  // 5b) listen for real feedback (and clear pending)
+  useEffect(() => {
+    const fbHandler = (fb) => {
+      console.debug('✅ pumpFeedback received:', fb);
+      const { pumpData: { pumpId, status } } = fb;
+      setStatuses(s => ({ ...s, [pumpId]: status === 1 }));
+      setPending(p => {
+        const nxt = { ...p };
+        delete nxt[pumpId];
+        return nxt;
+      });
+    };
+    socket.on('pumpFeedback', fbHandler);
+    return () => { socket.off('pumpFeedback', fbHandler); };
+  }, []);
+
+  // 6) when user toggles, send controlPump once
   const handleToggle = (pumpId, name) => {
+    if (pending[pumpId]) {
+      console.warn(`Toggle for ${pumpId} ignored: still pending.`);
+      return;
+    }
+
     const isOn = !statuses[pumpId];
-    socket.emit('controlPump', {
+    const payload = {
       product_id,
       pumps: [{ pumpId, pumpName: name, status: isOn ? 'ON' : 'OFF' }]
-    });
-    console.log(`Sent ${isOn ? 'ON' : 'OFF'} for ${name}`);
-    // (optionally) optimistic UI:
-    setStatuses(prev => ({ ...prev, [pumpId]: isOn }));
+    };
+
+    console.trace('👉 controlPump emit', payload);
+    socket.emit('controlPump', payload);
+
+    // mark as pending so we don’t fire again until feedback
+    setPending(p => ({ ...p, [pumpId]: true }));
+
+    // optimistic UI update
+    setStatuses(s => ({ ...s, [pumpId]: isOn }));
   };
 
   return (
     <div style={{ padding: 20, textAlign: 'center' }}>
       <h1>Pump & Blower Control</h1>
-      <div style={{ 
+      <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
         gap: '1rem'
@@ -75,11 +94,15 @@ const PumpControlDashboard = () => {
               <input
                 type="checkbox"
                 checked={statuses[pumpId]}
+                disabled={pending[pumpId]}
                 onChange={() => handleToggle(pumpId, name)}
               />
               <span className="slider round"></span>
             </label>
-            <p>Status: {statuses[pumpId] ? 'ON' : 'OFF'}</p>
+            <p>
+              Status: {statuses[pumpId] ? 'ON' : 'OFF'}{' '}
+              {pending[pumpId] && <em>(waiting…)</em>}
+            </p>
           </div>
         ))}
       </div>

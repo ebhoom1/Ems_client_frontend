@@ -3,23 +3,32 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
 import { useSelector } from "react-redux";
+import { useLocation } from "react-router-dom"; // <-- Import useLocation
 
 export default function ElectricalChecklist({
-  equipment = {},
-  equipmentId,
+  equipment = {}, // This `equipment` prop might be partially filled or empty.
+  // equipmentId, // <-- We'll now get equipmentId from location.state
   powerFactor = 0.8
 }) {
   // ----------------------------------------------------------------------------
   // 1) Pull logged‐in technician info from Redux
   // ----------------------------------------------------------------------------
-   const { validUserOne = {} } = useSelector(state => state.user.userData || {});
+  const { validUserOne = {} } = useSelector((state) => state.user.userData || {});
   const technician = validUserOne.isTechnician
     ? { name: validUserOne.fname, email: validUserOne.email }
     : null;
 
+  // ----------------------------------------------------------------------------
+  // 2) Get equipmentId and equipmentUserName from navigation state
+  // ----------------------------------------------------------------------------
+  const location = useLocation();
+  const { equipmentId, equipmentName, equipmentUserName } = location.state || {}; // Destructure equipmentId and equipmentUserName
+
+  // State to hold the full equipment details, potentially fetched if 'equipment' prop is incomplete
+  const [fullEquipmentDetails, setFullEquipmentDetails] = useState(equipment);
 
   // ----------------------------------------------------------------------------
-  // 2) Checklist items & phases
+  // 3) Checklist items & phases
   // ----------------------------------------------------------------------------
   // Rows 1–3 = measurement; Rows 4–8 = remark‐only
   const checklistItems = [
@@ -56,24 +65,23 @@ export default function ElectricalChecklist({
   const curPhases = ["R", "Y", "B"];
 
   // ----------------------------------------------------------------------------
-  // 3) Responses state: each row gets “actual” + each phase + “remark” text + “remarkStatus”
+  // 4) Responses state: each row gets “actual” + each phase + “remark” text + “remarkStatus”
   // ----------------------------------------------------------------------------
   const [responses, setResponses] = useState(() =>
     checklistItems.reduce((acc, item) => {
       if (item.type === "measurement") {
         acc[item.id] = {
-          actual:       equipment[item.actualKey] ?? "",
+          actual:       equipment[item.actualKey] ?? "", // Initial from prop
           RY:           "",
           YB:           "",
           BR:           "",
-          R:            "",   // for Current row
+          R:            "",
           Y:            "",
           B:            "",
-          remark:       "",   // spans measurements for rows 1–3
-          remarkStatus: ""    // “pass” or “fail” but only used in rows 4–8
+          remark:       "",
+          remarkStatus: ""
         };
       } else {
-        // For purely “remark” rows:
         acc[item.id] = {
           remark:       "",
           remarkStatus: ""
@@ -84,7 +92,46 @@ export default function ElectricalChecklist({
   );
 
   // ----------------------------------------------------------------------------
-  // 4) Auto‐calculate Power (row 3) when Voltage (row 1) or Current (row 2) change
+  // 5) Effect to fetch full equipment details if needed (and update initial 'actual' values)
+  // ----------------------------------------------------------------------------
+  useEffect(() => {
+    const fetchFullEquipment = async () => {
+      if (equipmentId) { // Use the equipmentId from location.state
+        try {
+          const response = await axios.get(`${API_URL}/api/get-equipment/${equipmentId}`);
+          const fetchedEquipment = response.data.equipment;
+          if (fetchedEquipment) {
+            setFullEquipmentDetails(fetchedEquipment);
+            // Update initial 'actual' values based on fetched equipment
+            setResponses(prevResponses => {
+              const newResponses = { ...prevResponses };
+              checklistItems.forEach(item => {
+                if (item.type === "measurement" && fetchedEquipment[item.actualKey] !== undefined) {
+                  newResponses[item.id] = {
+                    ...newResponses[item.id],
+                    actual: fetchedEquipment[item.actualKey]
+                  };
+                }
+              });
+              return newResponses;
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching full equipment details:", error);
+          // Fallback to initial 'equipment' prop if fetching fails
+          setFullEquipmentDetails(equipment);
+        }
+      }
+    };
+    // Only fetch if initial 'equipment' prop doesn't have enough details
+    // For example, if it only came with _id, name, and you need capacity, ratedLoad etc.
+    if (!fullEquipmentDetails.capacity || !fullEquipmentDetails.ratedLoad) {
+      fetchFullEquipment();
+    }
+  }, [equipmentId, equipment]); // Depend on equipmentId from location.state and initial 'equipment' prop
+
+  // ----------------------------------------------------------------------------
+  // 6) Auto-calculate Power (row 3) when Voltage (row 1) or Current (row 2) change
   // ----------------------------------------------------------------------------
   useEffect(() => {
     const voltRow = responses[1];
@@ -114,7 +161,7 @@ export default function ElectricalChecklist({
   }, [responses[1], responses[2], powerFactor]);
 
   // ----------------------------------------------------------------------------
-  // 5) Handlers for measurement & remark text
+  // 7) Handlers for measurement & remark text
   // ----------------------------------------------------------------------------
   const onActualChange = (id, value) =>
     setResponses((prev) => ({
@@ -135,7 +182,7 @@ export default function ElectricalChecklist({
     }));
 
   // ----------------------------------------------------------------------------
-  // 6) Toggle handler for “remarkStatus” in rows 4–8
+  // 8) Toggle handler for “remarkStatus” in rows 4–8
   // ----------------------------------------------------------------------------
   const toggleRemarkStatus = (id, newValue) => {
     setResponses((prev) =>
@@ -150,7 +197,7 @@ export default function ElectricalChecklist({
   };
 
   // ----------------------------------------------------------------------------
-  // 7) Determine text color in measurements (red if measured > actual, green otherwise)
+  // 9) Determine text color in measurements (red if measured > actual, green otherwise)
   // ----------------------------------------------------------------------------
   function getColorForMeasurement(id, phaseKey) {
     const measured = parseFloat(responses[id][phaseKey]);
@@ -162,7 +209,7 @@ export default function ElectricalChecklist({
   }
 
   // ----------------------------------------------------------------------------
-  // 8) Determine CSS class for remark text input under rows 4–8
+  // 10) Determine CSS class for remark text input under rows 4–8
   //    ("text-success" if pass, "text-danger" if fail)
   // ----------------------------------------------------------------------------
   const getRemarksColor = (id) => {
@@ -173,7 +220,7 @@ export default function ElectricalChecklist({
   };
 
   // ----------------------------------------------------------------------------
-  // 9) Submit handler: POST entire `responses` object
+  // 11) Submit handler: POST entire `responses` object
   // ----------------------------------------------------------------------------
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -181,12 +228,18 @@ export default function ElectricalChecklist({
       alert("Please enter technician details first.");
       return;
     }
+    if (!equipmentId || !equipmentUserName) {
+      alert("Equipment details (ID or User Name) are missing. Cannot save report.");
+      return;
+    }
+
     try {
       const payload = {
-        equipmentId,
+        equipmentId, // From useLocation state
         technician,
-        equipment,
-        responses
+        equipment: fullEquipmentDetails, // Use the fetched full details for consistency
+        responses,
+        userName: equipmentUserName // <-- Pass the equipment's userName here
       };
       await axios.post(`${API_URL}/api/add-electricalreport`, payload);
       alert("Electrical report saved successfully!");
@@ -197,12 +250,12 @@ export default function ElectricalChecklist({
   };
 
   // ----------------------------------------------------------------------------
-  // 10) Split out remark‐only rows (IDs 4–8)
+  // 12) Split out remark‐only rows (IDs 4–8)
   // ----------------------------------------------------------------------------
   const remarkOnlyRows = checklistItems.filter((item) => item.type === "remark");
 
   // ----------------------------------------------------------------------------
-  // 11) Styles
+  // 13) Styles
   // ----------------------------------------------------------------------------
   const thMeasurement = {
     border: "1px solid #000",
@@ -235,12 +288,12 @@ export default function ElectricalChecklist({
   };
 
   // ----------------------------------------------------------------------------
-  // 12) Render
+  // 14) Render
   // ----------------------------------------------------------------------------
   return (
     <form onSubmit={onSubmit} style={{ maxWidth: 900, margin: "0 auto" }}>
       {/* ---------- Technician Section ---------- */}
-      <div className="shadow" style={{ marginBottom:20, padding:10, border:"1px solid #ccc", borderRadius:10 }}>
+      <div className="shadow" style={{ marginBottom: 20, padding: 10, border: "1px solid #ccc", borderRadius: 10 }}>
         {technician ? (
           <div><strong>Technician:</strong> {technician.name} (<a href={`mailto:${technician.email}`}>{technician.email}</a>)</div>
         ) : (
@@ -251,13 +304,15 @@ export default function ElectricalChecklist({
       {/* ---------- Equipment Info ---------- */}
       <h2 style={{ textAlign: "center" }}>Electrical Report</h2>
       <div style={{ marginBottom: 16 }}>
-        <strong>Equipment:</strong> {equipment?.name || "—"}
+        <strong>Equipment:</strong> {fullEquipmentDetails?.equipmentName || fullEquipmentDetails?.name || "—"}
         <br />
-        <strong>Model:</strong> {equipment?.model || "—"}
+        <strong>Model:</strong> {fullEquipmentDetails?.modelSerial || fullEquipmentDetails?.model || "—"}
         <br />
-        <strong>Capacity:</strong> {equipment?.capacity || "—"}
+        <strong>Capacity:</strong> {fullEquipmentDetails?.capacity || "—"}
         <br />
-        <strong>Rated Load:</strong> {equipment?.ratedLoad || "—"}
+        <strong>Rated Load:</strong> {fullEquipmentDetails?.ratedLoad || "—"}
+        <br />
+        <strong>Managed By (User):</strong> {equipmentUserName || "N/A"} {/* Display equipmentUserName */}
       </div>
 
       {/* ---------- Table for Rows 1–3 (Measurement Rows) ---------- */}
@@ -302,7 +357,7 @@ export default function ElectricalChecklist({
                 <td style={tdCenterMeasurement}>
                   <input
                     type="number"
-                    placeholder={equipment[item.actualKey] ?? ""}
+                    placeholder={fullEquipmentDetails[item.actualKey] ?? ""}
                     value={responses[item.id].actual}
                     onChange={(e) =>
                       onActualChange(item.id, e.target.value)
@@ -369,25 +424,6 @@ export default function ElectricalChecklist({
       {/* ---------- Table for Rows 4–8 (Remark‐Only Rows) ---------- */}
       <div className="table-responsive" style={{ marginTop: 20 }}>
         <table className="table table-bordered">
-        {/*   <thead>
-            <tr>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
-                #
-              </th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
-                Category
-              </th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
-                Description
-              </th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
-                Process Status
-              </th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
-                Remarks
-              </th>
-            </tr>
-          </thead> */}
           <tbody>
             {remarkOnlyRows.map((row, idx) => (
               <tr key={row.id}>

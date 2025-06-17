@@ -255,6 +255,8 @@ function App() {
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/download" element={<DownloadData />} />
                   <Route path="/how-to-use" element={<UserManual />} />
+                      <Route path="/pump" element={<Pump />} />
+
                   <Route
                     path="/customisable-report"
                     element={<CustomisableReport />}

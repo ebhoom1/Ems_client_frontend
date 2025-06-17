@@ -24,10 +24,9 @@ const boxStyle = {
   width: '90%',
 };
 
-export default function MaintenanceTypeModal({ equipmentId, equipmentName, onClose }) {
+export default function MaintenanceTypeModal({ equipmentId, equipmentName, equipmentUserName, onClose }) { // <-- ADD equipmentUserName PROP
   const navigate = useNavigate();
 
-  // 🔑 grab the nested validUserOne object
   const { validUserOne = {} } = useSelector(state => state.user.userData || {});
   const { isTechnician, isTerritorialManager } = validUserOne;
 
@@ -55,7 +54,7 @@ export default function MaintenanceTypeModal({ equipmentId, equipmentName, onClo
   const pick = (type) => {
     onClose();
     navigate(`/maintenance/${type}/${equipmentId}`, {
-      state: { equipmentName, equipmentId },
+      state: { equipmentName, equipmentId, equipmentUserName }, // <-- PASS equipmentUserName IN STATE
     });
   };
 

@@ -47,6 +47,8 @@ export default function MergedElectricalReport() {
     const url = `${API_URL}/api/electricalreports/user/${encodeURIComponent(
       userName
     )}/${year}/${month}`;
+    console.log('api ', url);
+    
     axios
       .get(url)
       .then((res) => {
