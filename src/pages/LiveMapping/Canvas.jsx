@@ -70,76 +70,42 @@ console.log('new product Id' , product_id);
 useEffect(() => {
   if (!socket || !socketConnected) return;
 
-  // Join the room using the actual userName from userData
-  const userName = userData?.validUserOne?.userName;
-  console.log('🔌 Connecting socket for user:', userName);
-  socket.emit('joinRoom', userName); // Changed from hardcoded "CROWN_PLAZA"
+  // join by product_id
+  socket.emit('joinRoom', product_id);
 
-  // Tank data handler
-  const handleTankData = (payload) => {
-    console.log('📦 [TANK DATA RECEIVED]', payload);
-    
-    if (payload.tankData) {
-      console.log('🏭 Processing tank data:', payload.tankData);
-      setLiveTankData(payload.tankData);
-      
-      // Update nodes with tank data
-      setNodes(nds => nds.map(node => {
-        if (node.data.isTank) {
-          const tankMatch = payload.tankData.find(
-            t => t.tankName?.toLowerCase() === node.data.label?.toLowerCase()
-          );
-          
-          if (tankMatch) {
-            console.log(`💧 Updating tank ${node.data.label} with depth:`, tankMatch.depth);
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                currentDepth: tankMatch.depth,
-                waterLevel: Math.round((tankMatch.depth / (node.data.totalDepth || 1)) * 100)
-              }
-            };
-          }
-        }
-        return node;
+  const handler = payload => {
+    console.group('📦 Incoming Data Payload');
+    console.log('Raw payload:', payload);
+
+    // LOG the incoming tank array
+    console.log('🔍 payload.tankData →', payload.tankData);
+
+    if (Array.isArray(payload.tankData)) {
+      const tanks = payload.tankData.map(t => ({
+        tankName: t.tankName.trim(),
+        percentage: parseFloat(t.percentage ?? t.depth ?? 0)
       }));
+      console.log('🏭 [TANK DATA]', tanks);
+      setLiveTankData(tanks);
     }
-  };
 
-  // Sensor data handler (keep your existing flow value logic)
-  const handleSensorData = (payload) => {
-    if (payload.stacks) {
-      const effluentMap = {};
+    if (Array.isArray(payload.stacks)) {
+      const flows = {};
       payload.stacks
         .filter(s => s.stationType === 'effluent_flow')
-        .forEach(s => { 
-          effluentMap[s.stackName] = s.cumulatingFlow;
-          console.log(`🌊 Flow update for ${s.stackName}:`, s.cumulatingFlow);
-        });
-      setFlowValues(prev => ({ ...prev, ...effluentMap }));
+        .forEach(s => (flows[s.stackName] = s.cumulatingFlow));
+      setFlowValues(f => ({ ...f, ...flows }));
     }
-  };
 
-  // Set up listeners
-  socket.on('data', (payload) => {
-    console.group('📡 Incoming Data Payload');
-    console.log('Product ID:', payload.product_id);
-    console.log('User:', payload.userName);
-    
-    if (payload.tankData) {
-      handleTankData(payload);
-    } else if (payload.stacks) {
-      handleSensorData(payload);
-    }
-    
     console.groupEnd();
-  });
-
-  return () => {
-    socket.off('data');
   };
-}, [socket, socketConnected, userData]);
+
+  socket.on('data', handler);
+  return () => { socket.off('data', handler); };
+}, [socket, socketConnected, product_id]);
+
+
+
 
 
   // Update nodes with pump status when they change
@@ -406,7 +372,7 @@ const newNode = {
 // 👇 Connect socket.io for real-time tank data
 useEffect(() => {
   const socket = io("https://api.ocems.ebhoom.com"); // or your hosted URL
-
+ 
   socket.on("connect", () => {
     console.log("✅ Socket connected:", socket.id);
 

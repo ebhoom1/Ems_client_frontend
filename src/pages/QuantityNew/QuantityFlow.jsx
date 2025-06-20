@@ -289,7 +289,7 @@ useEffect(() => {
   }).sort((a, b) => (realTimeData[b.stackName] ? 1 : -1));
   
   const effluentFlowParameters = [
-    { parameter: "Cumulating Flow", value: "m³", name: "cumulatingFlow" },
+   // { parameter: "Cumulating Flow", value: "m³", name: "cumulatingFlow" },
     { parameter: "Flow Rate", value: "m³", name: "flowRate" },
   ];
   
@@ -465,7 +465,7 @@ useEffect(() => {
          {/*  <div>
             <h5 className="text-center"><b>Water Balancing</b></h5>
           </div> */}
-          <div className="row mb-4 mt-4 gap-4 d-flex align-items-center justify-content-center">
+       {/*    <div className="row mb-4 mt-4 gap-4 d-flex align-items-center justify-content-center">
             <div
               className="col-md-3 p-4 text-center shadow"
               style={{
@@ -552,9 +552,9 @@ useEffect(() => {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
         </div> 
-        <ConsumptionEmissionDashboard />
+{/*         <ConsumptionEmissionDashboard /> */}
 
         <ul
           className="d-flex align-items-center justify-content-end mb-4"
@@ -727,17 +727,17 @@ useEffect(() => {
             ref={graphRef}
           >
             {selectedCard ? (
-              <div>
-                <FlowGraph
-                  parameter={selectedCard.name}
-                  userName={currentUserName}
-                  stackName={selectedCard.stackName}
-                  dailyConsumptionData={dailyConsumption}
-                />
-              </div>
-            ) : (
-              <h5 className="text-center mt-5">Select a parameter to view its graph</h5>
-            )}
+    <FlowGraph
+      parameter={selectedCard.name}
+      userName={currentUserName}
+      stackName={selectedCard.stackName}
+      dailyConsumptionData={dailyConsumption}
+    />
+  ) : (
+    <h5 className="text-center mt-5">
+      Select a parameter to view its graph
+    </h5>
+  )}
 
             {selectedCard && (
               <button

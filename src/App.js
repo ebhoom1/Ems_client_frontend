@@ -94,6 +94,7 @@ import Attendence from "./pages/Attendence/Attendence";
 import { AttendanceHistory } from "./pages/Attendence/AttendenceHistory";
 import MapView from "./pages/Attendence/MapView";
 import EditEquipment from "./pages/Inventory/EditEquipment";
+import Summary from "./pages/QuantityNew/Summary";
 
 function App() {
   const dispatch = useDispatch();
@@ -240,6 +241,7 @@ function App() {
     <Route path="/dailylog" element={<DailyLog />} />
     <Route path="/admin/report/:username" element={<AdminReport />} />
     <Route path="/edit-equipment/:id" element={<EditEquipment />} />
+    <Route path="/summary" element={<Summary />} />
 
   </Route>
 )}
@@ -328,6 +330,8 @@ function App() {
                   /> */}
                   <Route path="/dailylogs" element={<DailyLog />} />
                   <Route path="/geolocation" element={<Geolocation />} />
+                      <Route path="/summary" element={<Summary />} />
+
                 </Route>
               )}
 
@@ -397,6 +401,8 @@ function App() {
 {/*                                   <Route path="/report/mechanical/download/:year?/:month?" element={<MergedMechanicalReport />} />
  */}                  <Route path="/dailylogs" element={<DailyLog />} />
                   <Route path="/geolocation" element={<Geolocation />} />
+                      <Route path="/summary" element={<Summary />} />
+
                 </Route>
               )}
 

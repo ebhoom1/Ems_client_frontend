@@ -1,197 +1,211 @@
+// src/components/EquipmentList.jsx
+
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { API_URL } from "../../utils/apiConfig";
 import { useSelector } from "react-redux";
 import QRCode from "react-qr-code";
 import QRCodeLib from "qrcode";
-import MaintenanceTypeModal from "./MaintenanceTypeModal";
 import { useNavigate } from "react-router-dom";
+import { FaEdit, FaTrash } from "react-icons/fa";
+
+import MaintenanceTypeModal from "./MaintenanceTypeModal";
 import ReportTypeModal from "./ReportTypeModal";
 import MonthSelectionModal from "./MonthSelectionModal";
-import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function EquipmentList() {
   const { userData } = useSelector((state) => state.user);
-  const userType = userData?.validUserOne?.userType;
-  const isOperator = userData?.validUserOne?.isOperator;
-  const [list, setList] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const { validUserOne: type } = userData || {};
-  const technician = userData?.validUserOne?.isTechnician;
-  const territorialManager = userData?.validUserOne?.isTerritorialManager;
+  const type = userData?.validUserOne || {};
+  const isOperator = type.isOperator;
+  const isTechnician = type.isTechnician;
+  const territorialManager = type.isTerritorialManager;
 
+  const [list, setList] = useState([]);
+  const [electricalReportStatus, setElectricalReportStatus] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState([]);
   const [selectedUserName, setSelectedUserName] = useState("all");
+
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedEquipmentName, setSelectedEquipmentName] = useState(null);
-  const [selectedEquipmentUserName, setSelectedEquipmentUserName] = useState(null); // <-- NEW STATE
+  const [selectedEquipmentUserName, setSelectedEquipmentUserName] = useState(null);
+
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMonthModal, setShowMonthModal] = useState(false);
   const [reportType, setReportType] = useState(null);
-  const navigate = useNavigate();
-  console.log("Current userData:", userData);
-  console.log("Is Technician:", userData?.validUserOne?.isTechnician);
-  console.log("Type object:", type);
-  console.log("Type userType:", type?.userType);
 
-  // Effect to fetch users/companies (runs once or when type/isOperator changes)
+  const navigate = useNavigate();
+
+  // 1) Fetch companies/users based on role
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        if (type?.userType === "admin") {
-          const url = `${API_URL}/api/get-users-by-adminType/${type.adminType}`;
-          console.log("Fetching users for admin:", url);
-          const res = await fetch(url);
-          const data = await res.json();
-          console.log("Users fetched (admin):", data);
-          setUsers(data.users || []);
+        let fetched = [];
+
+        if (isTechnician) {
+          const res = await fetch(
+            `${API_URL}/api/get-companies-by-technician/${type._id}`
+          );
+          fetched = (await res.json()).companies || [];
+        } else if (territorialManager) {
+          const res = await fetch(
+            `${API_URL}/api/get-companies-by-territorialManager/${type._id}`
+          );
+          fetched = (await res.json()).companies || [];
         } else if (isOperator) {
-          const url = `${API_URL}/api/get-companies-by-operator/${type._id}`;
-          console.log("Fetching companies for operator:", url);
-          const res = await fetch(url);
+          const res = await fetch(
+            `${API_URL}/api/get-companies-by-operator/${type._id}`
+          );
+          fetched = (await res.json()).companies || [];
+        } else if (type.userType === "admin") {
+          const res = await fetch(
+            `${API_URL}/api/get-users-by-adminType/${type.adminType}`
+          );
+          fetched = (await res.json()).users || [];
+        } else if (type.userType === "user") {
+          const res = await fetch(`${API_URL}/api/user/${type.userName}`);
           const data = await res.json();
-          console.log("Companies fetched (operator):", data);
-          setUsers(data.companies || []);
+          fetched = data.userName
+            ? [{ _id: type._id, userName: data.userName, companyName: data.companyName }]
+            : [];
         }
+
+        setUsers(fetched);
       } catch (err) {
         toast.error("Error fetching users/companies");
-        console.error("Fetch users/companies error:", err);
+        console.error(err);
       }
     };
-
     fetchUsers();
-  }, [type, isOperator]);
+  }, [type, isOperator, isTechnician, territorialManager]);
 
-  // Effect to fetch equipment (runs when type, isOperator, or users change)
+  // 2) Fetch equipment + electrical report status
   useEffect(() => {
-    const fetchEquipment = async () => {
+    const fetchEquipmentAndStatus = async () => {
       try {
         let equipmentData = [];
-        if (type?.userType === "user") {
-          const url = `${API_URL}/api/user/${type.userName}`;
-          console.log("Fetching equipment for user:", url);
-          const res = await fetch(url);
-          const data = await res.json();
-          console.log("Equipment fetched (user):", data);
-          equipmentData = data.equipment || data.inventoryItems || data;
-        } else if (type?.userType === "admin") {
-          const url = `${API_URL}/api/admin-type-equipment/${type.adminType}`;
-          console.log("Fetching equipment for admin:", url);
-          const res = await fetch(url);
-          const data = await res.json();
-          console.log("Equipment fetched (admin):", data);
-          equipmentData = data.equipment || data.inventoryItems || data;
-        } else if (isOperator) {
-          // This ensures `users` has been populated before proceeding
+
+        if (isOperator || isTechnician || territorialManager) {
           if (users.length > 0) {
-            let allOperatorEquipment = [];
-            for (const user of users) {
-              const url = `${API_URL}/api/operator-equipment/${user.userName}`;
-              console.log("Fetching equipment for operator company:", url);
-              const res = await fetch(url);
+            const all = [];
+            for (const u of users) {
+              const res = await fetch(
+                `${API_URL}/api/operator-equipment/${u.userName}`
+              );
               const data = await res.json();
-              console.log(`Equipment fetched for ${user.userName}:`, data);
-              const companyEquipment = data.equipment || data.inventoryItems || data;
-              if (Array.isArray(companyEquipment)) {
-                allOperatorEquipment = [...allOperatorEquipment, ...companyEquipment];
-              }
+              all.push(...(data.equipment || data.inventoryItems || []));
             }
-            equipmentData = allOperatorEquipment;
-          } else {
-              // If operator but no users fetched yet, do nothing until 'users' is populated
-              console.log("Operator is active, but companies not yet loaded. Waiting...");
-              return;
+            equipmentData = all;
           }
+        } else if (type.userType === "admin") {
+          const res = await fetch(
+            `${API_URL}/api/admin-type-equipment/${type.adminType}`
+          );
+          equipmentData = (await res.json()).equipment || [];
+        } else if (type.userType === "user") {
+          const res = await fetch(`${API_URL}/api/user/${type.userName}`);
+          equipmentData = (await res.json()).equipment || [];
         } else {
-          // Default case for all equipment if no specific user type is matched
-          const url = `${API_URL}/api/all-equipment`;
-          console.log("Fetching all equipment (default):", url);
-          const res = await fetch(url);
-          const data = await res.json();
-          console.log("All equipment fetched (default):", data);
-          equipmentData = data.equipment || data.inventoryItems || data;
+          const res = await fetch(`${API_URL}/api/all-equipment`);
+          equipmentData = (await res.json()).equipment || [];
         }
 
-        setList(Array.isArray(equipmentData) ? equipmentData : []);
+        setList(equipmentData);
+
+        // fetch /exists for each
+        const statusMap = {};
+        await Promise.all(
+          equipmentData.map(async (e) => {
+            try {
+              const res = await fetch(
+                `${API_URL}/api/electricalreport/exists/${e._id}`
+              );
+              const json = await res.json();
+              statusMap[e._id] = Boolean(json.exists);
+            } catch {
+              statusMap[e._id] = false;
+            }
+          })
+        );
+        setElectricalReportStatus(statusMap);
       } catch (err) {
         toast.error("Error fetching equipment");
-        console.error("Fetch equipment error:", err);
+        console.error(err);
       }
     };
+    fetchEquipmentAndStatus();
+  }, [type, isOperator, isTechnician, territorialManager, users]);
 
-    fetchEquipment();
-  }, [type, isOperator, users]);
-
+  // Helpers
   const downloadQR = async (value) => {
     try {
-      console.log("Generating QR code for value:", value);
-      const pngUrl = await QRCodeLib.toDataURL(value);
-      console.log("QR code PNG URL generated.");
+      const png = await QRCodeLib.toDataURL(value);
       const a = document.createElement("a");
-      a.href = pngUrl;
+      a.href = png;
       a.download = `qr-${value}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      console.log("QR code downloaded successfully.");
-    } catch (error) {
-      toast.error("Failed to download QR code");
-      console.error("Download QR code error:", error);
+    } catch (err) {
+      toast.error("Failed to download QR");
+      console.error(err);
     }
   };
 
-  const downloadReport = async (id) => {
+  const deleteEquipment = async (id) => {
+    if (!window.confirm("Delete this equipment?")) return;
     try {
-      console.log("Downloading report for ID:", id);
-      const res = await fetch(`${API_URL}/api/download-report/${id}`);
-      const blob = await res.blob();
-      console.log("Report blob received:", blob);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `report-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success("Report downloaded successfully");
-      console.log("Report downloaded successfully.");
-    } catch (error) {
-      toast.error("Failed to download report");
-      console.error("Download report error:", error);
+      const res = await fetch(`${API_URL}/api/equipment/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setList((prev) => prev.filter((e) => e._id !== id));
+        setElectricalReportStatus((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        toast.success("Deleted");
+      } else {
+        const json = await res.json();
+        toast.error(json.message || "Delete failed");
+      }
+    } catch (err) {
+      toast.error("Error deleting");
+      console.error(err);
     }
   };
 
-  const viewReport = (id) => {
-    console.log("Navigating to report for ID:", id);
-    navigate(`/report/${id}`);
+  const openModal = (id, name, userName) => {
+    setSelectedId(id);
+    setSelectedEquipmentName(name);
+    setSelectedEquipmentUserName(userName);
+    setShowModal(true);
+  };
+
+  const openReportModal = (id) => {
+    setSelectedId(id);
+    setShowReportModal(true);
+  };
+
+  const openMergedReportModal = (t) => {
+    setReportType(t);
+    setShowMonthModal(true);
   };
 
   const handleMonthSelected = (year, month) => {
     setShowMonthModal(false);
-    if (reportType === 'mechanical') {
-      console.log("Navigating to mechanical report download for year/month:", year, month);
-      navigate(`/report/mechanical/download/${year}/${month}`);
-    } else if (reportType === 'electrical') {
-      console.log("Navigating to electrical report download for year/month:", year, month);
-      navigate(`/report/electrical/download/${year}/${month}`);
-    }
+    navigate(`/report/${reportType}/download/${year}/${month}`);
   };
 
-  const openMergedReportModal = (type) => {
-    console.log("Opening merged report modal for type:", type);
-    setReportType(type);
-    setShowMonthModal(true);
+  const editEquipment = (id) => {
+    navigate(`/edit-equipment/${id}`);
   };
 
   const filtered = list.filter((e) => {
-    // 1) if a user is selected, skip everything else:
-    if (selectedUserName !== "all" && e.userName !== selectedUserName) {
+    if (selectedUserName !== "all" && e.userName !== selectedUserName)
       return false;
-    }
-
-    // 2) then apply your existing searchTerm match:
     const term = searchTerm.toLowerCase();
     const dateStr = e.installationDate
       ? new Date(e.installationDate).toLocaleDateString("en-GB")
@@ -203,69 +217,22 @@ export default function EquipmentList() {
     );
   });
 
-  const openModal = (id, name, userName) => { // <-- ADD userName parameter
-    console.log("Opening maintenance type modal for equipment:", id, name, userName);
-    setSelectedId(id);
-    setSelectedEquipmentName(name);
-    setSelectedEquipmentUserName(userName); // <-- SET NEW STATE
-    setShowModal(true);
-  };
-
-  const openReportModal = (id) => {
-    console.log("Opening report type modal for equipment ID:", id);
-    setSelectedId(id);
-    setShowReportModal(true);
-  };
-
-  const deleteEquipment = async (id) => {
-    const confirm = window.confirm("Are you sure you want to delete this equipment?");
-    if (!confirm) {
-      console.log("Equipment deletion cancelled by user.");
-      return;
-    }
-
-    try {
-      console.log("Deleting equipment with ID:", id);
-      const res = await fetch(`${API_URL}/api/equipment/${id}`, {
-        method: "DELETE",
-      });
-      const result = await res.json();
-      console.log("Delete equipment response:", result);
-      if (res.ok) {
-        toast.success("Equipment deleted successfully");
-        setList((prev) => prev.filter((item) => item._id !== id));
-      } else {
-        toast.error(result.message || "Failed to delete equipment");
-      }
-    } catch (err) {
-      toast.error("Something went wrong while deleting");
-      console.error("Delete equipment error:", err);
-    }
-  };
-
-  const editEquipment = (id) => {
-    console.log("Navigating to edit equipment for ID:", id);
-    navigate(`/edit-equipment/${id}`);
-  };
-
   return (
     <div className="p-3 border">
-     {showModal && (userData.validUserOne.isTechnician || userData.validUserOne.isTerritorialManager) && (
-  <MaintenanceTypeModal
-    equipmentId={selectedId}
-    equipmentName={selectedEquipmentName}
-    equipmentUserName={selectedEquipmentUserName} // <-- PASS NEW PROP
-    onClose={() => setShowModal(false)}
-  />
-)}
-
-      {showReportModal && type?.userType === "admin" && (
+      {showModal && (isTechnician || territorialManager) && (
+        <MaintenanceTypeModal
+          equipmentId={selectedId}
+          equipmentName={selectedEquipmentName}
+          equipmentUserName={selectedEquipmentUserName}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+      {showReportModal && type.userType === "admin" && (
         <ReportTypeModal
           equipmentId={selectedId}
           onClose={() => setShowReportModal(false)}
         />
       )}
-
       {showMonthModal && (
         <MonthSelectionModal
           reportType={reportType}
@@ -274,22 +241,21 @@ export default function EquipmentList() {
         />
       )}
 
-      {/* Search bar */}
+      {/* Search & Filter */}
       <div className="mb-3 row align-items-center g-2">
-        {/* Search Input Column */}
-        <div className="col-12 col-md-4">
+        <div className="col-md-4">
           <input
-            type="text"
             className="form-control"
             placeholder="Search equipment..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-
-        {/* Dropdown Column - Only show if admin or operator */}
-        {(type?.userType === "admin" || isOperator) && (
-          <div className="col-12 col-md-4">
+        {(type.userType === "admin" ||
+          isOperator ||
+          isTechnician ||
+          territorialManager) && (
+          <div className="col-md-4">
             <select
               className="form-control"
               value={selectedUserName}
@@ -304,28 +270,27 @@ export default function EquipmentList() {
             </select>
           </div>
         )}
-
-        {/* Buttons Column */}
-        <div className="col-12 col-md-4 d-flex flex-wrap justify-content-md-end justify-content-start gap-2 mt-2 mt-md-0">
-          {type?.userType === "admin" && (
+        <div className="col-md-4 d-flex justify-content-md-end gap-2">
+          {type.userType === "admin" && (
             <>
               <button
                 className="btn btn-warning"
                 onClick={() => openMergedReportModal("mechanical")}
               >
-                <i className="fa-solid fa-download" /> Mechanical Report
+                Download Mechanical
               </button>
               <button
                 className="btn btn-warning"
                 onClick={() => openMergedReportModal("electrical")}
               >
-                <i className="fa-solid fa-download" /> Electrical Report
+                Download Electrical
               </button>
             </>
           )}
         </div>
       </div>
 
+      {/* Equipment Table */}
       <div style={{ maxHeight: "60vh", overflow: "auto" }}>
         {filtered.length === 0 ? (
           <p>No equipment found</p>
@@ -333,17 +298,17 @@ export default function EquipmentList() {
           <table className="table table-striped align-middle">
             <thead style={{ background: "#236a80", color: "#fff" }}>
               <tr>
-                <th style={{ background: "#236a80", color: "#fff" }}>Name</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>User</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Model</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Date</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Capacity</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Rated Load</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Location</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Notes</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>QR</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Download QR</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Action</th>
+                <th  style={{ background: "#236a80", color: "#fff" }}>Name</th>
+                <th  style={{ background: "#236a80", color: "#fff" }}>User</th>
+                <th  style={{ background: "#236a80", color: "#fff" }}>Model</th>
+                <th  style={{ background: "#236a80", color: "#fff" }}>Date</th>
+                <th  style={{ background: "#236a80", color: "#fff" }}>Capacity</th>
+                <th  style={{ background: "#236a80", color: "#fff" }}>Rated Load</th>
+                <th  style={{ background: "#236a80", color: "#fff" }}>Location</th>
+                <th  style={{ background: "#236a80", color: "#fff" }}>Notes</th>
+                <th  style={{ background: "#236a80", color: "#fff" }}>QR</th>
+                <th  style={{ background: "#236a80", color: "#fff" }}>Download QR</th>
+                <th  style={{ background: "#236a80", color: "#fff" }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -361,7 +326,9 @@ export default function EquipmentList() {
                   <td>{e.ratedLoad || "–"}</td>
                   <td>{e.location || "N/A"}</td>
                   <td>{e.notes || "N/A"}</td>
-                  <td><QRCode value={e._id} size={64} /></td>
+                  <td>
+                    <QRCode value={e._id} size={64} />
+                  </td>
                   <td>
                     <button
                       className="btn btn-sm btn-outline-success"
@@ -370,66 +337,70 @@ export default function EquipmentList() {
                       Download
                     </button>
                   </td>
-                  <td className="d-flex gap-1">
-                    {(type?.userType === "user" || technician === true || territorialManager== true) ? (
+                  <td className="d-flex align-items-center gap-2">
+                    {isTechnician ? (
                       <>
                         <button
-                          className="btn btn-sm btn-success me-1 mt-3"
-                          onClick={() => openModal(e._id, e.equipmentName, e.userName)} // <-- PASS e.userName HERE
+                          disabled
+                          className={`btn btn-sm ${
+                            electricalReportStatus[e._id]
+                              ? "btn-primary"
+                              : "btn-danger"
+                          }`}
                         >
-                          Add Report
+                          {electricalReportStatus[e._id]
+                            ? "Submitted"
+                            : "Not Submitted"}
                         </button>
-                       {type?.userType === "admin" &&
- !(userData?.validUserOne?.isTechnician || userData?.validUserOne?.isTerritorialManager) && (
-    <>
-        <button
-            className="btn btn-sm me-1"
-            style={{ color: "blue" }}
-            title="Edit Equipment"
-            onClick={() => editEquipment(e._id)}
-        >
-              <FaEdit/>
-        </button>
-        <button
-            style={{ color: "red" }}
-            className="btn btn-sm"
-            title="Delete Equipment"
-            onClick={() => deleteEquipment(e._id)}
-        >
-            <FaTrash />
-        </button>
-    </>
-)}
+                        <button
+                          className="btn btn-sm btn-warning"
+                          onClick={() =>
+                            openModal(
+                              e._id,
+                              e.equipmentName,
+                              e.userName
+                            )
+                          }
+                        >
+                          {electricalReportStatus[e._id]
+                            ? "Edit Report"
+                            : "Add Report"}
+                        </button>
                       </>
                     ) : (
+                      <button
+                        className="btn btn-sm btn-success"
+                        onClick={() => openReportModal(e._id)}
+                      >
+                        View Report
+                      </button>
+                    )}
+                    {type.userType === "admin" && !territorialManager && (
                       <>
                         <button
-                          className="btn btn-sm btn-success me-1 mt-3"
-                          onClick={() => openReportModal(e._id)}
+                          className="btn btn-sm text-blue-600"
+                          onClick={() => editEquipment(e._id)}
+                          title="Edit Equipment"
                         >
-                          View Report
+                          <FaEdit />
                         </button>
-
-                     {type?.userType === "admin" &&
- !(userData?.validUserOne?.isTechnician || userData?.validUserOne?.isTerritorialManager) && (
-    <>
-        <button
-            className="btn btn-sm me-1"
-            style={{ color: "blue" }}
-            title="Edit Equipment"
-            onClick={() => editEquipment(e._id)}
-        >
-            Edit
-        </button>
-        <button
-            style={{ color: "red" }}
-            className="btn btn-sm"
-            title="Delete Equipment"
-            onClick={() => deleteEquipment(e._id)}
-        >
-            <FaTrash />
-        </button>
-    </>
+                       {userData?.validUserOne?.userType === "admin" && !isTechnician && !territorialManager && (
+  <>
+    <button
+      className="btn btn-sm text-blue-600"
+      onClick={() => editEquipment(e._id)}
+      title="Edit Equipment"
+    >
+      <FaEdit />
+    </button>
+    <button
+      className="btn btn-sm text-red-600"
+      onClick={() => deleteEquipment(e._id)}
+      title="Delete Equipment"
+    >
+      <FaTrash />
+    </button>
+  </>
 )}
                       </>
                     )}

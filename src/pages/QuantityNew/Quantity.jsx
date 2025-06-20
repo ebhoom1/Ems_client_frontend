@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { API_URL } from "../../utils/apiConfig";
 import FlowDataModal from "./FlowDataModal";
 import "./index.css";
+import { useNavigate } from "react-router-dom";
 
 // Helper function to format a timestamp into "DD/MM/YYYY" using UTC
 const formatTimestampToCustomDate = (timestamp) => {
@@ -189,7 +190,7 @@ const Quantity = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [uniqueDateGroups, setUniqueDateGroups] = useState([]);
-
+const navigate = useNavigate();       
   const storedUserId = sessionStorage.getItem("selectedUserId");
   const currentUserName =
     userType === "admin" ? "KSPCB001" : userData?.validUserOne?.userName;
@@ -395,6 +396,12 @@ const Quantity = () => {
                 <button className="btn btn-success" onClick={() => setModalOpen(true)}>
                   View
                 </button>
+              <button
+          className="btn btn-success"
+          onClick={() => navigate("/summary")}        // ← navigate instead of setModalOpen
+        >
+          Summarize table
+        </button>
               </div>
 
               <div

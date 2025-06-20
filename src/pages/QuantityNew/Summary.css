@@ -1,0 +1,28 @@
+/* src/components/Summary.css */
+.summary-top-bar {
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+.company-name {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #003366;
+}
+.summary-table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+.summary-table th,
+.summary-table td {
+  border: 1px solid #dee2e6;
+  text-align: center;
+  padding: 0.5rem;
+}
+.summary-table th {
+  background: #fff;
+  color: #003366;
+  font-weight: 600;
+}
+.summary-table td {
+  background: #f5f5f5;
+}

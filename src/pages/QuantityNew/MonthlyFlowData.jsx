@@ -119,32 +119,38 @@ const MonthlyFlowData = () => {
   };
 
   // Fetch bar chart data for the user (across all stacks).
-  const fetchUserMonthlyFlowData = async (userName, month) => {
-    if (!userName || !month) return;
-    const monthNumber = monthMapping[month];
-    const currentYear = new Date().getFullYear();
-    try {
-      const response = await axios.get(
-        `${API_URL}/api/cumulative-flow/user/${userName}/${monthNumber}?year=${currentYear}`
-      );
-      if (response.data.success) {
-        const data = response.data.data || [];
-        const filteredData = data
-          .filter((entry) => entry.stationType === "effluent_flow")
-          .map((entry) => ({
-            stackName: entry.stackName,
-            lastCumulatingFlow: parseFloat(entry.lastCumulatingFlow).toFixed(2),
-          }));
-        setStackFlowData(filteredData);
-      } else {
-        alert("No data found for this user.");
-        setStackFlowData([]);
-      }
-    } catch (error) {
-      console.error("Error fetching user flow data:", error);
-      alert("Error fetching user flow data.");
+const fetchUserMonthlyFlowData = async (userName, month) => {
+  if (!userName || !month) return;
+
+  const monthNumber = monthMapping[month];
+  const currentYear = new Date().getFullYear();
+  const url = `${API_URL}/api/cumulative-flow/user/${userName}/${monthNumber}?year=${currentYear}`;
+
+  console.log("➡️ Fetching monthly flow URL:", url);
+
+  try {
+    const response = await axios.get(url);
+    console.log("⬅️ Response from server:", response.data);
+
+    if (response.data.success) {
+      const data = response.data.data || [];
+      const filteredData = data
+        .filter((entry) => entry.stationType === "effluent_flow")
+        .map((entry) => ({
+          stackName: entry.stackName,
+          lastCumulatingFlow: parseFloat(entry.lastCumulatingFlow).toFixed(2),
+        }));
+      setStackFlowData(filteredData);
+    } else {
+      console.warn("⚠️ No data found for user/month:", userName, month);
+      setStackFlowData([]);
     }
-  };
+  } catch (error) {
+    console.error("❌ Error fetching user flow data:", error);
+    alert("Error fetching user flow data.");
+  }
+};
+
   const maxValue = Math.max(...stackFlowData.map((d) => parseFloat(d.lastCumulatingFlow)), 0);
 
   // Define the step size (1000)

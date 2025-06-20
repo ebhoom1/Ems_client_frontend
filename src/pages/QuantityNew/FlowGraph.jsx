@@ -5,7 +5,7 @@ import {
   LinearScale,
   PointElement,
   LineElement,
-  Title,
+  Title as ChartTitle,
   Tooltip,
   Legend,
 } from 'chart.js';
@@ -15,13 +15,14 @@ import { toast } from 'react-toastify';
 import { Oval } from 'react-loader-spinner';
 import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
+import { API_URL } from '../../utils/apiConfig';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  Title,
+  ChartTitle,
   Tooltip,
   Legend
 );
@@ -29,118 +30,118 @@ ChartJS.register(
 const FlowGraph = ({ parameter, userName, stackName }) => {
   const [graphData, setGraphData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [chartHeight, setChartHeight] = useState(window.innerHeight * 0.4); // 40% of screen height
+  const [chartHeight, setChartHeight] = useState(window.innerHeight * 0.4);
 
+  // Adjust chart height on window resize
   useEffect(() => {
-    if (userName && stackName && parameter === 'dailyConsumption') {
-      fetchDailyConsumptionData();
-    }
-  }, [userName, stackName, parameter]);
-
-  useEffect(() => {
-    const updateChartHeight = () => {
-      setChartHeight(window.innerHeight * 0.4);
-    };
-    window.addEventListener('resize', updateChartHeight);
-    return () => window.removeEventListener('resize', updateChartHeight);
+    const onResize = () => setChartHeight(window.innerHeight * 0.4);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Fetch the difference data, then for the most recent date (with cumulatingFlowDifference),
-  // filter and show data for that date and the previous 5 days.
+  // Fetch appropriate data when props change
+  useEffect(() => {
+    if (!userName || !stackName) return;
+    if (parameter === 'dailyConsumption') {
+      fetchDailyConsumptionData();
+    } else if (parameter === 'cumulatingFlow') {
+      fetchCumulatingFlowData();
+    } else {
+      // For other params (e.g. flowRate), clear data
+      setGraphData([]);
+    }
+  }, [parameter, userName, stackName]);
+
+  // Fetch last 5 days' daily consumption
   const fetchDailyConsumptionData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`https://api.ocems.ebhoom.com/api/difference/${userName}?interval=daily`);
-      const result = await response.json();
-      console.log("Difference API Response:", result);
-      if (result.success && Array.isArray(result.data)) {
-        // Filter data by userName, stackName and ensure cumulatingFlowDifference exists
-        let filteredData = result.data.filter(
-          item =>
-            item.userName === userName &&
-            item.stackName === stackName &&
-            item.cumulatingFlowDifference !== undefined &&
-            item.cumulatingFlowDifference !== null
-        );
+      const res = await fetch(`${API_URL}/api/difference/${userName}?interval=daily`);
+      const { success, data } = await res.json();
+      if (!success || !Array.isArray(data)) throw new Error('Invalid data');
 
-        if (filteredData.length === 0) {
-          toast.error('No difference data available');
-          setGraphData([]);
-          return;
-        }
-
-        // Sort data descending by date (most recent first)
-        filteredData.sort(
-          (a, b) =>
-            moment(b.date, 'DD/MM/YYYY').valueOf() -
-            moment(a.date, 'DD/MM/YYYY').valueOf()
-        );
-
-        // Use the most recent date as the selected date.
-        const selectedDate = filteredData[0].date;
-        const selectedMoment = moment(selectedDate, 'DD/MM/YYYY');
-        // Determine the start date (5 days before the selected date)
-        const startDate = selectedMoment.clone().subtract(5, 'days');
-
-        // Filter records with dates between startDate and selectedMoment (inclusive)
-        let rangeData = filteredData.filter(item => {
-          const itemDate = moment(item.date, 'DD/MM/YYYY');
-          return itemDate.isBetween(startDate, selectedMoment, null, '[]');
-        });
-
-        // Sort the range data in ascending order so the oldest appears first
-        rangeData.sort(
+      let filtered = data
+        .filter(
+          i =>
+            i.userName === userName &&
+            i.stackName === stackName &&
+            i.cumulatingFlowDifference != null
+        )
+        .sort(
           (a, b) =>
             moment(a.date, 'DD/MM/YYYY').valueOf() -
             moment(b.date, 'DD/MM/YYYY').valueOf()
         );
 
-        // Remove duplicate dates - keep only the first record for each unique date
-        const dedupedData = [];
-        const seenDates = new Set();
-        rangeData.forEach(item => {
-          if (!seenDates.has(item.date)) {
-            dedupedData.push(item);
-            seenDates.add(item.date);
-          }
-        });
+      if (filtered.length > 5) filtered = filtered.slice(-5);
 
-        setGraphData(dedupedData);
-      } else {
-        toast.error('No difference data available');
-        setGraphData([]);
-      }
-    } catch (error) {
-      toast.error('Failed to fetch difference data');
-      console.error('Error fetching difference data:', error);
+      setGraphData(
+        filtered.map(i => ({ label: i.date, value: i.cumulatingFlowDifference }))
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error('No daily consumption data');
       setGraphData([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Process data to create labels and values arrays for the chart.
-  const processGraphData = () => {
-    const labels = graphData.map(item => item.date);
-    const values = graphData.map(item => item.cumulatingFlowDifference);
-    return { labels, values };
+  // Fetch today's cumulating flow by hour
+  const fetchCumulatingFlowData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/hourly/today?userName=${userName}`);
+      const { success, data } = await res.json();
+      if (!success || !Array.isArray(data)) throw new Error('Invalid data');
+
+      const arr = data
+        .map(entry => {
+          const s = entry.stacks.find(s => s.stackName === stackName);
+          return { label: `${entry.hour}:00`, value: s ? s.cumulatingFlow : 0 };
+        })
+        .sort((a, b) => parseInt(a.label) - parseInt(b.label));
+
+      setGraphData(arr);
+    } catch (err) {
+      console.error(err);
+      toast.error('No cumulating flow data');
+      setGraphData([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const { labels, values } = processGraphData();
+  // Prepare chart data and config
+  const labels = graphData.map(d => d.label);
+  const values = graphData.map(d => d.value);
+
+  const configs = {
+    dailyConsumption: {
+      title: `Daily Consumption (last ${labels.length} days)`,
+      yLabel: 'Consumption (m³)',
+      color: '#236A80',
+    },
+    cumulatingFlow: {
+      title: `Cumulating Flow Today — ${stackName}`,
+      yLabel: 'Cumulating Flow (m³)',
+      color: '#22C55E',
+    },
+  };
+
+  const config = configs[parameter] || {};
 
   const chartData = {
     labels,
     datasets: [
       {
-        label: `Cumulating Flow Difference - ${stackName}`,
-        data: values.length > 0 ? values : [0],
+        label: config.title,
+        data: values,
         fill: false,
-        backgroundColor: '#236a80',
-        borderColor: '#236A80',
+        backgroundColor: config.color,
+        borderColor: config.color,
         tension: 0.1,
-        pointRadius: 5,
-        pointHoverRadius: 10,
-        pointHoverBorderWidth: 3,
+        pointRadius: 4,
       },
     ],
   };
@@ -149,74 +150,50 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: true,
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: 'Cumulating Flow Difference Over Selected 5 Days',
-      },
-      tooltip: {
-        callbacks: {
-          title: (tooltipItems) => `Date: ${tooltipItems[0].label}`,
-          label: (tooltipItem) => {
-            const value = tooltipItem.raw;
-            return `Cumulating Flow Difference: ${parseFloat(value).toFixed(2)} m³`;
-          },
-        },
-      },
+      legend: { display: false },
+      title: { display: true, text: config.title || '' },
     },
     scales: {
       x: {
-        title: {
-          display: true,
-          text: 'Date',
-        },
-        ticks: {
-          autoSkip: true,
-          maxTicksLimit: 6,
-        },
+        title: { display: true, text: parameter === 'dailyConsumption' ? 'Date' : 'Hour' },
       },
       y: {
-        title: {
-          display: true,
-          text: 'Cumulating Flow Difference (m³)',
-        },
+        title: { display: true, text: config.yLabel || '' },
         beginAtZero: true,
-        suggestedMax: Math.max(...values, 5),
+        suggestedMax: Math.max(...values, 0),
       },
     },
   };
 
+  // Render states
+  if (loading) {
+    return (
+      <div className="loading-container mt-5">
+        <Oval height={60} width={60} color={config.color || '#236A80'} strokeWidth={2} />
+        <p>Loading data…</p>
+      </div>
+    );
+  }
+
+  if (parameter === 'flowRate') {
+    return (
+      <div className="no-data-container">
+        <h5>Please click on Cumulating Flow or Daily Consumption to view graph</h5>
+      </div>
+    );
+  }
+
+  if (!graphData.length) {
+    return (
+      <div className="no-data-container">
+        <h5>No data available</h5>
+      </div>
+    );
+  }
+
   return (
-    <div className="graph-container">
-      <h5 className="popup-title text-center mt-5">
-        Cumulating Flow Difference - {stackName}
-      </h5>
-      {loading ? (
-        <div className="loading-container">
-          <Oval
-            height={60}
-            width={60}
-            color="#236A80"
-            ariaLabel="Fetching details"
-            strokeWidth={2}
-          />
-          <p>Loading data, please wait...</p>
-        </div>
-      ) : graphData.length === 0 ? (
-        <div className="no-data-container">
-          <h5>No data available for cumulating flow difference</h5>
-        </div>
-      ) : (
-        <div
-          className="chart-wrapper"
-          style={{ height: chartHeight, minHeight: '300px', maxHeight: '80vh' }}
-        >
-          <Line data={chartData} options={chartOptions} />
-        </div>
-      )}
+    <div className="chart-wrapper mt-5" style={{ height: chartHeight, minHeight: '300px' }}>
+      <Line data={chartData} options={chartOptions} />
     </div>
   );
 };

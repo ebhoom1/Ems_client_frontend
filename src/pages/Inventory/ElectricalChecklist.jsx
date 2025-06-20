@@ -7,7 +7,6 @@ import { useLocation } from "react-router-dom"; // <-- Import useLocation
 
 export default function ElectricalChecklist({
   equipment = {}, // This `equipment` prop might be partially filled or empty.
-  // equipmentId, // <-- We'll now get equipmentId from location.state
   powerFactor = 0.8
 }) {
   // ----------------------------------------------------------------------------
@@ -22,7 +21,8 @@ export default function ElectricalChecklist({
   // 2) Get equipmentId and equipmentUserName from navigation state
   // ----------------------------------------------------------------------------
   const location = useLocation();
-  const { equipmentId, equipmentName, equipmentUserName } = location.state || {}; // Destructure equipmentId and equipmentUserName
+  // Destructure equipmentId, equipmentName, and equipmentUserName from location.state
+  const { equipmentId, equipmentName, equipmentUserName } = location.state || {}; 
 
   // State to hold the full equipment details, potentially fetched if 'equipment' prop is incomplete
   const [fullEquipmentDetails, setFullEquipmentDetails] = useState(equipment);
@@ -222,7 +222,7 @@ export default function ElectricalChecklist({
   // ----------------------------------------------------------------------------
   // 11) Submit handler: POST entire `responses` object
   // ----------------------------------------------------------------------------
-  const onSubmit = async (e) => {
+   const onSubmit = async (e) => {
     e.preventDefault();
     if (!technician) {
       alert("Please enter technician details first.");
@@ -235,19 +235,24 @@ export default function ElectricalChecklist({
 
     try {
       const payload = {
-        equipmentId, // From useLocation state
+        equipmentId,
         technician,
-        equipment: fullEquipmentDetails, // Use the fetched full details for consistency
+        equipment: fullEquipmentDetails,
         responses,
-        userName: equipmentUserName // <-- Pass the equipment's userName here
+        userName: equipmentUserName,
+        hasElectricalReport: true   // ← flag will now be saved
       };
-      await axios.post(`${API_URL}/api/add-electricalreport`, payload);
+      await axios.post(
+        `${API_URL}/api/add-electricalreport`,
+        payload
+      );
       alert("Electrical report saved successfully!");
     } catch (err) {
       console.error("Save failed:", err);
       alert("Failed to save report. Please try again.");
     }
   };
+
 
   // ----------------------------------------------------------------------------
   // 12) Split out remark‐only rows (IDs 4–8)
@@ -312,7 +317,7 @@ export default function ElectricalChecklist({
         <br />
         <strong>Rated Load:</strong> {fullEquipmentDetails?.ratedLoad || "—"}
         <br />
-        <strong>Managed By (User):</strong> {equipmentUserName || "N/A"} {/* Display equipmentUserName */}
+        <strong>Managed By (User):</strong> {equipmentUserName || "N/A"} {/* Displaying equipmentUserName */}
       </div>
 
       {/* ---------- Table for Rows 1–3 (Measurement Rows) ---------- */}

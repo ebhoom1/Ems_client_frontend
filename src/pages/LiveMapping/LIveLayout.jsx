@@ -12,7 +12,6 @@ import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
 import HeaderSim from "../Header/HeaderSim";
 import io from 'socket.io-client';
-
 function LIveLayout() {
   const { userData } = useSelector((state) => state.user);
   console.log('userdata respone ', userData)
@@ -29,7 +28,7 @@ function LIveLayout() {
 
   // Initialize socket connection
   useEffect(() => {
-    const newSocket = io('https://api.ocems.ebhoom.com', {
+    const newSocket = io('http://localhost:5555', {
       reconnectionAttempts: 5,
       reconnectionDelay: 5000,
     });

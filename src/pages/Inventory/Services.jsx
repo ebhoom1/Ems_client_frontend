@@ -54,7 +54,11 @@ const userName = userData?.validUserOne?.userName;
 
     const userNav = (
       <ul className="nav nav-tabs mb-3 mt-3">
-        
+         <li className="nav-item">
+          <button className="nav-link" style={tabStyle("addEquipment")} onClick={() => setSelectedTab("addEquipment")}>
+            Add Equipment
+          </button>
+        </li>
         <li className="nav-item">
           <button className="nav-link" style={tabStyle("equipmentList")} onClick={() => setSelectedTab("equipmentList")}>
             Equipment List

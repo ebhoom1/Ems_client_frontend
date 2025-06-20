@@ -5,12 +5,12 @@ import { useNavigate } from 'react-router-dom';
 function RunningTime() {
   // Sample data rows for demonstration
   const data = [
-    { id: 1, instrument: 'Instrument 1', auto: '00:05:00', run: '00:02:00', trip: '00:03:00' },
-    { id: 2, instrument: 'Instrument 2', auto: '00:10:00', run: '00:05:00', trip: '00:05:00' },
-    { id: 3, instrument: 'Instrument 3', auto: '00:15:00', run: '00:07:00', trip: '00:08:00' },
-    { id: 4, instrument: 'Instrument 4', auto: '00:08:00', run: '00:03:00', trip: '00:05:00' },
-    { id: 5, instrument: 'Instrument 5', auto: '00:12:00', run: '00:06:00', trip: '00:06:00' },
-    { id: 6, instrument: 'Instrument 6', auto: '00:20:00', run: '00:10:00', trip: '00:10:00' },
+    { id: 1, instrument: ' Permeate Pump 1', auto: '00:05:00', run: '00:02:00', trip: '00:03:00' },
+    { id: 2, instrument: ' Permeate Pump 1', auto: '00:10:00', run: '00:05:00', trip: '00:05:00' },
+    { id: 3, instrument: ' Membrane Feed Pump 1', auto: '00:15:00', run: '00:07:00', trip: '00:08:00' },
+    { id: 4, instrument: 'Membrane Feed Pump 1', auto: '00:08:00', run: '00:03:00', trip: '00:05:00' },
+    { id: 5, instrument: 'Raw Water Pump 1', auto: '00:12:00', run: '00:06:00', trip: '00:06:00' },
+    { id: 6, instrument: 'Raw Water Pump 2', auto: '00:20:00', run: '00:10:00', trip: '00:10:00' },
     // ...add more rows as needed
   ];
 

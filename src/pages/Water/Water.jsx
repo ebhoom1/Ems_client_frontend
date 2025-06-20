@@ -278,32 +278,23 @@ const Water = () => {
       dispatch(fetchIotDataByUserName(userId));
     }
   }, [userId, dispatch]);
-  useEffect(() => {
-    const storedUserId = sessionStorage.getItem("selectedUserId");
-    const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-
-    console.log(`Username: ${userName}`);
-
-    // Fetch user details by username
-    dispatch(fetchUserByUserName(userName))
-      .unwrap()
-      .then((user) => {
-        console.log("Fetched User Object:", user); // ✅ Log full user details
-        console.log("Fetched User ID (_id):", user?._id || "No user ID found"); // ✅ Log _id
-
-        if (user?._id) {
-          setUserId(user._id); // ✅ Save the fetched userId in state
-        }
-      })
-      .catch((error) => console.error("Error fetching user:", error));
-
-    fetchData(userName);
-    fetchEffluentStacks(userName); // Fetch emission stacks
-
-    if (storedUserId) {
-      setCurrentUserName(storedUserId);
-    }
-  }, [selectedUserIdFromRedux, currentUserName, dispatch]);
+useEffect(() => {
+  if (!selectedUserIdFromRedux) return;
+  
+  setLoading(true);
+  const userName = selectedUserIdFromRedux;
+  setCurrentUserName(userName);
+  sessionStorage.setItem("selectedUserId", userName);
+  
+  // Reset data while loading
+  setRealTimeData({});
+  setEffluentStacks([]);
+  
+  fetchData(userName);
+  fetchEffluentStacks(userName);
+  dispatch(fetchUserByUserName(userName));
+  
+}, [selectedUserIdFromRedux, dispatch]);
 
   // ✅ New useEffect: Fetch address when userId is available
   useEffect(() => {
