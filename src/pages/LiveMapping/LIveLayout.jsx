@@ -28,7 +28,7 @@ function LIveLayout() {
 
   // Initialize socket connection
   useEffect(() => {
-    const newSocket = io('http://localhost:5555', {
+    const newSocket = io('https://api.ocems.ebhoom.com', {
       reconnectionAttempts: 5,
       reconnectionDelay: 5000,
     });
