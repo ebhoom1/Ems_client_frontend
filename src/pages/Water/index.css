@@ -19,3 +19,29 @@
     0% { left: 0; }
     100% { left: 100%; }
 }
+/* Chart type toggle styles */
+.chart-type-toggle {
+    margin-left: 20px;
+}
+
+.chart-type-btn {
+    transition: all 0.3s ease;
+}
+
+.chart-type-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .d-flex.justify-content-center.align-items-center.gap-3.mt-3 {
+        flex-direction: column;
+        gap: 10px !important;
+    }
+    
+    .interval-buttons, .chart-type-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+}

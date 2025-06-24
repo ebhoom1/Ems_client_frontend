@@ -6,23 +6,27 @@ import {
     LinearScale,
     PointElement,
     LineElement,
+    BarElement,
     Title,
     Tooltip,
     Legend,
 } from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import moment from 'moment';
 import { toast } from 'react-toastify';
 import { Oval } from 'react-loader-spinner'; 
 import 'react-toastify/dist/ReactToastify.css';
 import './index.css'; 
 import { API_URL } from '../../utils/apiConfig';
+import { FaChartLine, FaChartBar } from 'react-icons/fa'; // Import chart icons
 
+// Register chart components
 ChartJS.register(
     CategoryScale,
     LinearScale,
     PointElement,
     LineElement,
+    BarElement,
     Title,
     Tooltip,
     Legend
@@ -32,6 +36,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
     const [timeInterval, setTimeInterval] = useState('hour');
     const [graphData, setGraphData] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [chartType, setChartType] = useState('line'); // 'line' or 'bar'
 
     useEffect(() => {
         if (userName && stackName && parameter) {
@@ -44,10 +49,8 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
         try {
             let url = '';
             if (timeInterval === 'hour') {
-                // Fetch hourly data for today
                 url = `${API_URL}/api/average/user/${userName}/stack/${stackName}/interval/hour`;
             } else {
-                // For daily and monthly, fetch all data and then process/group it
                 url = `${API_URL}/api/average/user/${userName}/stack/${stackName}`;
             }
             const response = await fetch(url);
@@ -75,12 +78,10 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
         let filteredData = [];
     
         if (timeInterval === 'hour') {
-            // Filter only today's entries
             filteredData = graphData.filter(entry =>
                 moment(entry.timestamp).isSame(moment(), 'day')
             );
         } else {
-            // For day and month, work with all available data
             filteredData = graphData;
         }
     
@@ -96,23 +97,18 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                 );
                 if (!paramKey) return;
                 const paramValue = parseFloat(stack.parameters[paramKey] || 0);
-                // If the value is negative, skip this entry
                 if (paramValue < 0) return;
-                // Format label as hour:minute
                 labels.push(moment(entry.timestamp).format("HH:mm"));
                 values.push(paramValue);
             });
-            // Reverse the arrays so the last data appears first
             labels.reverse();
             values.reverse();
         } else if (timeInterval === 'day') {
-            // Filter data to only include entries from the last 20 days
             const last20Days = moment().subtract(20, 'days');
             const filteredLast20Days = filteredData.filter(entry =>
                 moment(entry.timestamp).isAfter(last20Days)
             );
     
-            // Group data by date (DD/MM/YYYY) and take the latest entry of each day
             const groupedByDate = {};
             filteredLast20Days.forEach(entry => {
                 const dateLabel = moment(entry.timestamp).format("DD/MM/YYYY");
@@ -122,12 +118,10 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                 groupedByDate[dateLabel].push(entry);
             });
     
-            // Sort dates in ascending order so that the earliest date comes first and the latest at the end
             Object.keys(groupedByDate)
                 .sort((a, b) => moment(a, "DD/MM/YYYY") - moment(b, "DD/MM/YYYY"))
                 .forEach(dateLabel => {
                     const entries = groupedByDate[dateLabel];
-                    // Get the latest entry for that date
                     const latestEntry = entries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[entries.length - 1];
                     const stack = latestEntry.stackData.find(s => s.stackName === stackName);
                     if (!stack) return;
@@ -136,15 +130,12 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                     );
                     if (!paramKey) return;
                     const paramValue = parseFloat(stack.parameters[paramKey] || 0);
-                    // If the value is negative, skip this entry
                     if (paramValue < 0) return;
     
                     labels.push(dateLabel);
                     values.push(paramValue);
                 });
-            // No reversal needed for day interval
         } else if (timeInterval === 'month') {
-            // Group data by month (e.g., "MMMM YYYY") and take the latest entry for each month
             const groupedByMonth = {};
             filteredData.forEach(entry => {
                 const monthLabel = moment(entry.timestamp).format("MMMM YYYY");
@@ -154,7 +145,6 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                 groupedByMonth[monthLabel].push(entry);
             });
     
-            // Sort months in descending order so the latest month comes first
             Object.keys(groupedByMonth)
                 .sort((a, b) => moment(b, "MMMM YYYY") - moment(a, "MMMM YYYY"))
                 .forEach(monthLabel => {
@@ -167,20 +157,17 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                     );
                     if (!paramKey) return;
                     const paramValue = parseFloat(stack.parameters[paramKey] || 0);
-                    // If the value is negative, skip this entry
                     if (paramValue < 0) return;
     
                     labels.push(monthLabel);
                     values.push(paramValue);
                 });
-            // Reverse the arrays so that the "last month" (from your data) appears first
             labels.reverse();
             values.reverse();
         }
     
         return { labels, values };
     };
-    
     
     const { labels, values } = processData();
     
@@ -197,6 +184,10 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                 pointRadius: 5,
                 pointHoverRadius: 10,
                 pointHoverBorderWidth: 3,
+                // For bar chart
+                borderWidth: 1,
+                borderRadius: 4,
+                borderSkipped: false,
             },
         ],
     };
@@ -238,13 +229,7 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
             },
         },
     };
-    
-    useEffect(() => {
-        console.log('Graph Data:', graphData);
-        console.log('Processed Labels:', labels);
-        console.log('Processed Values:', values);
-    }, [graphData, labels, values]);
-    
+
     const customStyles = {
         content: {
             top: '50%',
@@ -270,28 +255,70 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                 {parameter} - {stackName}
             </h5>
         
-            <div 
-                className="col interval-buttons d-flex align-items-center justify-content-center mt-3 flex-wrap"
-                style={{ gap: '10px' }}
-            >
-                {['hour', 'day', 'month'].map((interval) => (
+            <div className="d-flex justify-content-center align-items-center gap-3 mt-3">
+                {/* Time interval buttons */}
+                <div className="interval-buttons d-flex align-items-center justify-content-center flex-wrap" style={{ gap: '10px' }}>
+                    {['hour', 'day', 'month'].map((interval) => (
+                        <button
+                            key={interval}
+                            className={`interval-btn ${timeInterval === interval ? 'active' : ''}`}
+                            onClick={() => setTimeInterval(interval)}
+                            style={{
+                                backgroundColor: '#236a80',
+                                color: '#fff',
+                                border: 'none',
+                                padding: '7px 15px',
+                                borderRadius: '5px',
+                                textAlign: 'center',
+                                minWidth: '80px',
+                            }}
+                        >
+                            {interval.charAt(0).toUpperCase() + interval.slice(1)}
+                        </button>
+                    ))}
+                </div>
+                
+                {/* Chart type toggle */}
+                <div className="chart-type-toggle d-flex align-items-center" style={{ gap: '10px', marginLeft: '20px' }}>
                     <button
-                        key={interval}
-                        className={`interval-btn ${timeInterval === interval ? 'active' : ''}`}
-                        onClick={() => setTimeInterval(interval)}
+                        className={`chart-type-btn ${chartType === 'line' ? 'active' : ''}`}
+                        onClick={() => setChartType('line')}
                         style={{
-                            backgroundColor: '#236a80',
-                            color: '#fff',
+                            backgroundColor: chartType === 'line' ? '#236a80' : '#e0e0e0',
+                            color: chartType === 'line' ? '#fff' : '#333',
                             border: 'none',
                             padding: '7px 15px',
                             borderRadius: '5px',
-                            textAlign: 'center',
-                            minWidth: '80px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            marginBottom:'18px'
                         }}
+                        title="Line Chart"
                     >
-                        {interval.charAt(0).toUpperCase() + interval.slice(1)}
+                        <FaChartLine /> Line
                     </button>
-                ))}
+                    <button
+                        className={`chart-type-btn ${chartType === 'bar' ? 'active' : ''}`}
+                        onClick={() => setChartType('bar')}
+                        style={{
+                            backgroundColor: chartType === 'bar' ? '#236a80' : '#e0e0e0',
+                            color: chartType === 'bar' ? '#fff' : '#333',
+                            border: 'none',
+                            padding: '7px 15px',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                               marginBottom:'18px'
+                        }}
+                        title="Bar Chart"
+                    >
+                        <FaChartBar /> Bar
+                    </button>
+                </div>
             </div>
         
             {loading ? (
@@ -317,7 +344,11 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
                     className="chart-container mt-3 d-flex align-items-center justify-content-center"
                     style={{ height: '300px' }}
                 >
-                    <Line data={chartData} options={chartOptions} />
+                    {chartType === 'line' ? (
+                        <Line data={chartData} options={chartOptions} />
+                    ) : (
+                        <Bar data={chartData} options={chartOptions} />
+                    )}
                 </div>
             )}
         </div>

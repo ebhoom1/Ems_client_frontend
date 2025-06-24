@@ -8,6 +8,7 @@ import Hedaer from "../Header/Hedaer";
 import { API_URL } from "../../utils/apiConfig";
 import "./Summary.css";
 import EffluentBarChart from "./EffluentBarChart";
+import { useNavigate } from "react-router-dom";
 
 const PAGE_SIZE = 10;
 const LIGHT_BLUE = "#EAF5F8";
@@ -29,22 +30,26 @@ const Summary = () => {
       : userData?.validUserOne?.userName;
   const activeUser = selectedUserId || storedUserId || currentUserName;
 
-  // caches
   const companyCache = useRef({});
   const dataCache = useRef({});
 
   const [companyName, setCompanyName] = useState("");
-  const [averages, setAverages] = useState([]);
+  const [differences, setDifferences] = useState([]); // was `averages`
   const [headers, setHeaders] = useState([]);
   const [page, setPage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // if we have everything cached, load from cache
-    if (companyCache.current[activeUser] && dataCache.current[activeUser]) {
-      const { companyName, averages, headers } = dataCache.current[activeUser];
+    // load from cache
+    if (
+      companyCache.current[activeUser] &&
+      dataCache.current[activeUser]
+    ) {
+      const { companyName, differences, headers } =
+        dataCache.current[activeUser];
       setCompanyName(companyName);
-      setAverages(averages);
+      setDifferences(differences);
       setHeaders(headers);
       setIsLoading(false);
       setPage(0);
@@ -53,69 +58,104 @@ const Summary = () => {
 
     setIsLoading(true);
 
-    // fetch both in parallel
     Promise.all([
       axios.get(`${API_URL}/api/get-user-by-userName/${activeUser}`),
       axios.get(
-        `${API_URL}/api/daily/effluent-averages?userName=${activeUser}&days=20`
+        `${API_URL}/api/difference/${activeUser}?interval=daily&page=1&limit=700`
       ),
     ])
-      .then(([userRes, dailyRes]) => {
+      .then(([userRes, diffRes]) => {
         const company = userRes.data.user.companyName || "";
-        const data = dailyRes.data.data || [];
+        let entries = diffRes.data.data || [];
 
-        // build sorted headers
-        const sorted = data
-          .map((d) => ({
-            original: d.date,
-            m: moment(d.date, "DD/MM/YYYY"),
-          }))
-          .sort((a, b) => b.m.valueOf() - a.m.valueOf())
-          .map(({ original, m }) => ({
-            original,
-            display: m.format("DD-MMM"),
-          }));
+        // 1️⃣ keep only effluent_flow & those with a real diff
+        entries = entries.filter(
+          (e) =>
+            e.stationType === "effluent_flow" &&
+            typeof e.cumulatingFlowDifference === "number"
+        );
+
+        // 2️⃣ dedupe per date+stackName, pick latest timestamp
+        const byKey = {};
+        entries.forEach((e) => {
+          const key = `${e.date}|${e.stackName}`;
+          if (
+            !byKey[key] ||
+            new Date(e.timestamp) > new Date(byKey[key].timestamp)
+          ) {
+            byKey[key] = e;
+          }
+        });
+        const deduped = Object.values(byKey);
+
+        // 3️⃣ pick last 20 unique dates (descending)
+        const uniqDates = Array.from(
+          new Set(deduped.map((e) => e.date))
+        )
+          .sort(
+            (a, b) =>
+              moment(b, "DD/MM/YYYY").valueOf() -
+              moment(a, "DD/MM/YYYY").valueOf()
+          )
+          .slice(0, 20);
+
+        // 4️⃣ shape into [{ date, stacks: [ {stackName, diff}, … ] }, …]
+        const byDate = uniqDates.map((date) => ({
+          date,
+          stacks: deduped
+            .filter((e) => e.date === date)
+            .map((e) => ({
+              stackName: e.stackName,
+              diff: e.cumulatingFlowDifference,
+            })),
+        }));
+
+        // 5️⃣ headers for table
+        const hdrs = byDate.map((d) => ({
+          original: d.date,
+          display: moment(d.date, "DD/MM/YYYY").format("DD-MMM"),
+        }));
 
         // cache
         companyCache.current[activeUser] = company;
         dataCache.current[activeUser] = {
           companyName: company,
-          averages: data,
-          headers: sorted,
+          differences: byDate,
+          headers: hdrs,
         };
 
         // set state
         setCompanyName(company);
-        setAverages(data);
-        setHeaders(sorted);
+        setDifferences(byDate);
+        setHeaders(hdrs);
         setPage(0);
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
   }, [activeUser]);
 
-  // grouped[stackName][date] = avgFlow
+  // grouped[stackName][date] = diff
   const grouped = useMemo(() => {
     const g = {};
-    averages.forEach(({ date, stacks }) => {
-      stacks.forEach(({ stackName, avgFlow }) => {
+    differences.forEach(({ date, stacks }) => {
+      stacks.forEach(({ stackName, diff }) => {
         if (!g[stackName]) g[stackName] = {};
-        g[stackName][date] = avgFlow;
+        g[stackName][date] = diff;
       });
     });
     return g;
-  }, [averages]);
+  }, [differences]);
 
   // dynamic list of stackNames
   const stackNames = useMemo(() => {
     const seen = [];
-    averages.forEach(({ stacks }) =>
+    differences.forEach(({ stacks }) =>
       stacks.forEach(({ stackName }) => {
         if (!seen.includes(stackName)) seen.push(stackName);
       })
     );
     return seen;
-  }, [averages]);
+  }, [differences]);
 
   // compute min/max date per stack
   const extremes = useMemo(() => {
@@ -127,7 +167,6 @@ const Summary = () => {
           value: grouped[name]?.[original] ?? null,
         }))
         .filter((x) => x.value != null);
-
       if (vals.length) {
         let min = vals[0],
           max = vals[0];
@@ -168,7 +207,10 @@ const Summary = () => {
               >
                 Water Quantity
               </button>
-              <button className="btn btn-outline-secondary">
+              <button
+                className="btn btn-outline-secondary"
+                onClick={() => navigate("/summary/waterquality")}
+              >
                 Water Quality
               </button>
             </div>
@@ -200,8 +242,7 @@ const Summary = () => {
                         <td>{stackName}</td>
                         <td>-</td>
                         {pagedHeaders.map(({ original }) => {
-                          const val =
-                            grouped[stackName]?.[original] ?? null;
+                          const val = grouped[stackName]?.[original] ?? null;
                           const bg = getColorForValue(
                             original,
                             minDate,
@@ -251,9 +292,9 @@ const Summary = () => {
           </div>
 
           <div className="mt-5 border p-4 m-2 shadow">
-  <h3 className="mb-3">Trending Analysis (Effluent Flow)</h3>
-  <EffluentBarChart userName={activeUser} />
-</div>
+            <h3 className="mb-3">Trending Analysis (Effluent Flow)</h3>
+            <EffluentBarChart userName={activeUser} />
+          </div>
         </div>
       </div>
     </div>

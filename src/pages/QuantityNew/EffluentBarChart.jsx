@@ -23,43 +23,94 @@ export default function EffluentBarChart({ userName }) {
   const [days, setDays] = useState(30);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [chartType, setChartType] = useState("bar"); // 'bar' or 'line'
+  const [chartType, setChartType] = useState("bar");
 
   useEffect(() => {
     if (!userName) return;
     setLoading(true);
+
     axios
-      .get(`${API_URL}/api/daily/effluent-averages`, { params: { userName, days } })
+      .get(`${API_URL}/api/difference/${userName}`, {
+        params: { interval: "daily", page: 1, limit: 700 }
+      })
       .then((res) => {
-        const chartData = (res.data.data || []).map((d) => {
-          const row = { date: moment(d.date, "DD/MM/YYYY").format("DD-MMM-YYYY") };
-          d.stacks.forEach((s) => {
-            row[s.stackName] = s.avgFlow;
-          });
+        let entries = res.data.data || [];
+
+        // 1) filter to effluent_flow & valid diffs
+        entries = entries.filter(
+          (e) =>
+            e.stationType === "effluent_flow" &&
+            typeof e.cumulatingFlowDifference === "number"
+        );
+
+        // 2) dedupe per date|stackName, keep latest timestamp
+        const byKey = {};
+        entries.forEach((e) => {
+          const key = `${e.date}|${e.stackName}`;
+          if (
+            !byKey[key] ||
+            new Date(e.timestamp) > new Date(byKey[key].timestamp)
+          ) {
+            byKey[key] = e;
+          }
+        });
+        const deduped = Object.values(byKey);
+
+        // 3) pick most recent `days` unique dates
+        const uniqDates = Array.from(
+          new Set(deduped.map((e) => e.date))
+        )
+          .sort(
+            (a, b) =>
+              moment(b, "DD/MM/YYYY").valueOf() -
+              moment(a, "DD/MM/YYYY").valueOf()
+          )
+          .slice(0, days)
+          .reverse(); // reverse so X-axis is chronological
+
+        // 4) pivot into chart rows
+        const chartData = uniqDates.map((date) => {
+          const row = {
+            date: moment(date, "DD/MM/YYYY").format("DD-MMM-YYYY")
+          };
+          deduped
+            .filter((e) => e.date === date)
+            .forEach((e) => {
+              row[e.stackName] = e.cumulatingFlowDifference;
+            });
           return row;
         });
+
         setData(chartData);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [userName, days]);
 
+  // stack keys (all except "date")
   const stackKeys = data[0]
     ? Object.keys(data[0]).filter((k) => k !== "date")
     : [];
 
-  // Compute metrics for the first stack
+  // compute metrics on first stack
   let metrics = null;
   if (data.length && stackKeys.length) {
     const key = stackKeys[0];
-    const values = data.map((d) => d[key]).filter((v) => typeof v === 'number');
-    const total = values.reduce((sum, v) => sum + v, 0);
-    const avg = parseFloat((total / values.length).toFixed(1));
-    const min = Math.min(...values);
-    const max = Math.max(...values);
+    const vals = data.map((d) => d[key]).filter((v) => typeof v === "number");
+    const total = vals.reduce((s, v) => s + v, 0);
+    const avg = parseFloat((total / vals.length).toFixed(1));
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
     const minDate = data.find((d) => d[key] === min)?.date;
     const maxDate = data.find((d) => d[key] === max)?.date;
-    metrics = { min, max, avg, total: parseFloat(total.toFixed(1)), minDate, maxDate };
+    metrics = {
+      min,
+      max,
+      avg,
+      total: parseFloat(total.toFixed(1)),
+      minDate,
+      maxDate
+    };
   }
 
   const iconStyle = (active) => ({
@@ -69,13 +120,12 @@ export default function EffluentBarChart({ userName }) {
     borderRadius: "4px",
     padding: "4px",
     backgroundColor: active ? "#EAF5F8" : "transparent",
-    marginRight: '8px'
+    marginRight: "8px"
   });
 
   return (
     <div className="effluent-bar-chart">
       <div className="mb-3 d-flex align-items-center">
-        {/* Period buttons */}
         {[30, 60, 90].map((n) => (
           <button
             key={n}
@@ -84,14 +134,13 @@ export default function EffluentBarChart({ userName }) {
             style={{
               border: "1px solid #236a80",
               backgroundColor: days === n ? "#236a80" : "transparent",
-              color: days === n ? "#ffffff" : "#236a80"
+              color: days === n ? "#fff" : "#236a80"
             }}
           >
             {n}-Days
           </button>
         ))}
 
-        {/* Chart type toggles with border */}
         <FiBarChart2
           onClick={() => setChartType("bar")}
           size={24}
@@ -113,21 +162,31 @@ export default function EffluentBarChart({ userName }) {
           </div>
         </div>
       ) : (
-        <>  {/* Fragment wrapper for chart + metrics */}
+        <>
           <ResponsiveContainer width="100%" height={300}>
             {chartType === "bar" ? (
-              <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <BarChart
+                data={data}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
                 {stackKeys.map((key, idx) => (
-                  <Bar key={key} dataKey={key} fill={COLORS[idx % COLORS.length]} />
+                  <Bar
+                    key={key}
+                    dataKey={key}
+                    fill={COLORS[idx % COLORS.length]}
+                  />
                 ))}
               </BarChart>
             ) : (
-              <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <LineChart
+                data={data}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
@@ -146,13 +205,16 @@ export default function EffluentBarChart({ userName }) {
             )}
           </ResponsiveContainer>
 
-          {/* Metrics summary */}
           {metrics && (
-            <ul style={{ marginTop: 16, listStyleType: 'disc', paddingLeft: 20 }}>
-              <li>Minimum value: {metrics.min} KLD was on {metrics.minDate}</li>
-              <li>Maximum value: {metrics.max} KLD was on {metrics.maxDate}</li>
-              <li>Average value: {metrics.avg} KLD</li>
-              <li>Total value: {metrics.total} KLD</li>
+            <ul style={{ marginTop: 16, listStyleType: "disc", paddingLeft: 20 }}>
+              <li>
+                Minimum: {metrics.min.toFixed(2)} on {metrics.minDate}
+              </li>
+              <li>
+                Maximum: {metrics.max.toFixed(2)} on {metrics.maxDate}
+              </li>
+              <li>Average: {metrics.avg.toFixed(2)}</li>
+              <li>Total: {metrics.total.toFixed(2)}</li>
             </ul>
           )}
         </>

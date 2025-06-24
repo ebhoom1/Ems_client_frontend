@@ -95,6 +95,8 @@ import { AttendanceHistory } from "./pages/Attendence/AttendenceHistory";
 import MapView from "./pages/Attendence/MapView";
 import EditEquipment from "./pages/Inventory/EditEquipment";
 import Summary from "./pages/QuantityNew/Summary";
+import WaterQualitySummary from "./pages/QuantityNew/WaterQualitySummary";
+import RealTimeDashboard from "./pages/QuantityNew/RealTimeDashboard";
 
 function App() {
   const dispatch = useDispatch();
@@ -242,6 +244,8 @@ function App() {
     <Route path="/admin/report/:username" element={<AdminReport />} />
     <Route path="/edit-equipment/:id" element={<EditEquipment />} />
     <Route path="/summary" element={<Summary />} />
+        <Route path="/summary/waterquality" element={<WaterQualitySummary />} />
+                  <Route path="/realtimedashboard" element={<RealTimeDashboard />} />
 
   </Route>
 )}
@@ -331,6 +335,8 @@ function App() {
                   <Route path="/dailylogs" element={<DailyLog />} />
                   <Route path="/geolocation" element={<Geolocation />} />
                       <Route path="/summary" element={<Summary />} />
+        <Route path="/summary/waterquality" element={<WaterQualitySummary />} />
+                  <Route path="/realtimedashboard" element={<RealTimeDashboard />} />
 
                 </Route>
               )}
