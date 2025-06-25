@@ -53,39 +53,40 @@ const FlowGraph = ({ parameter, userName, stackName }) => {
   }, [parameter, userName, stackName]);
 
   // Fetch last 5 days' daily consumption
-  const fetchDailyConsumptionData = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/api/difference/${userName}?interval=daily`);
-      const { success, data } = await res.json();
-      if (!success || !Array.isArray(data)) throw new Error('Invalid data');
+// Fetch last 5 days' daily consumption
+const fetchDailyConsumptionData = async () => {
+  setLoading(true);
+  try {
+    const res = await fetch(`${API_URL}/api/difference/${userName}?interval=daily`);
+    const { success, data } = await res.json();
+    if (!success || !Array.isArray(data)) throw new Error('Invalid data');
 
-      let filtered = data
-        .filter(
-          i =>
-            i.userName === userName &&
-            i.stackName === stackName &&
-            i.cumulatingFlowDifference != null
-        )
-        .sort(
-          (a, b) =>
-            moment(a.date, 'DD/MM/YYYY').valueOf() -
-            moment(b.date, 'DD/MM/YYYY').valueOf()
-        );
+    // build an array of the last 5 dates (DD/MM/YYYY), oldest first
+    const last5 = Array.from({ length: 5 }, (_, i) => 
+      moment().subtract(4 - i, 'days').format('DD/MM/YYYY')
+    );
 
-      if (filtered.length > 5) filtered = filtered.slice(-5);
-
-      setGraphData(
-        filtered.map(i => ({ label: i.date, value: i.cumulatingFlowDifference }))
+    const chartArray = last5.map(dateStr => {
+      // find the matching record, if any
+      const rec = data.find(
+        d => d.date === dateStr && d.stackName === stackName
       );
-    } catch (err) {
-      console.error(err);
-      toast.error('No daily consumption data');
-      setGraphData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+      return {
+        label: dateStr,
+        value: rec?.cumulatingFlowDifference ?? 0
+      };
+    });
+
+    setGraphData(chartArray);
+  } catch (err) {
+    console.error(err);
+    toast.error('No daily consumption data');
+    setGraphData([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // Fetch today's cumulating flow by hour
   const fetchCumulatingFlowData = async () => {

@@ -96,7 +96,7 @@ const QuantityFlow = () => {
 const fetchData = async (userName) => {
   setLoading(true);
   try {
-    // 1) Try “latest” endpoint first
+    // First try to fetch real-time data
     const latest = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
     const liveStacks = (latest.stackData || [])
       .filter(i => i.stationType === 'effluent_flow');
@@ -109,26 +109,31 @@ const fetchData = async (userName) => {
       setCompanyName(latest.companyName);
       setSearchResult(Object.values(byName));
       setEffluentFlowStacks(Object.keys(byName));
-      if (!Object.keys(realTimeData).length) {
-        setRealTimeData(byName);
-      }
-      return; // done
+      setRealTimeData(byName);
+      return;
     }
 
-    // 2) Fallback to hourly‐last
-    const { data: hourly } = await axios.get(
-      `${API_URL}/api/hourly/effluent/last`,
-      { params: { userName } }
-    );
-    const stacks = hourly.data.stacks;
-    const byName = stacks.reduce((acc, s) => {
-      acc[s.stackName] = s;
-      return acc;
-    }, {});
-    setSearchResult(stacks);
-    setEffluentFlowStacks(stacks.map(s => s.stackName));
-    setRealTimeData(byName);
-
+    // If no real-time data, fetch the latest data from the API
+    const response = await axios.get(`${API_URL}/api/latest/${userName}`);
+    if (response.data.success) {
+      const latestData = response.data.data[0]; // Get the first entry
+      const effluentFlowStacks = (latestData.stackData || [])
+        .filter(i => i.stationType === 'effluent_flow');
+      
+      if (effluentFlowStacks.length) {
+        const byName = effluentFlowStacks.reduce((acc, i) => {
+          acc[i.stackName] = {
+            ...i,
+            timestamp: latestData.timestamp // Use the timestamp from the response
+          };
+          return acc;
+        }, {});
+        setCompanyName(latestData.companyName);
+        setSearchResult(Object.values(byName));
+        setEffluentFlowStacks(Object.keys(byName));
+        setRealTimeData(byName);
+      }
+    }
   } catch (err) {
     console.error("Error fetching data:", err);
     setSearchError(err.message || "Error fetching data");
@@ -136,7 +141,6 @@ const fetchData = async (userName) => {
     setLoading(false);
   }
 };
-
 
 
   const fetchDifferenceData = async (userName) => {
@@ -193,28 +197,28 @@ const fetchData = async (userName) => {
 useEffect(() => {
   const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
 
-  // join the correct room:
-  socket.emit("joinRoom", userName);
+  // Only setup socket if we have real-time data
+  if (Object.keys(realTimeData).length > 0) {
+    socket.emit("joinRoom", userName);
 
-  const handleUpdate = (msg) => {
-    console.log("💥 stackDataUpdate received:", msg);
+    const handleUpdate = (msg) => {
+      if (msg.userName !== userName) return;
 
-    if (msg.userName !== userName) return;
+      const eff = msg.stackData.filter(i => i.stationType === "effluent_flow");
+      const byName = eff.reduce((acc, i) => {
+        acc[i.stackName] = i;
+        return acc;
+      }, {});
+      setRealTimeData(rt => ({ ...rt, ...byName }));
+    };
 
-    const eff = msg.stackData.filter(i => i.stationType === "effluent_flow");
-    const byName = eff.reduce((acc, i) => {
-      acc[i.stackName] = i;
-      return acc;
-    }, {});
-    setRealTimeData(rt => ({ ...rt, ...byName }));
-  };
-
-  socket.on("stackDataUpdate", handleUpdate);
-  return () => {
-    socket.emit("leaveRoom", userName);
-    socket.off("stackDataUpdate", handleUpdate);
-  };
-}, [selectedUserIdFromRedux, storedUserId, currentUserName]);
+    socket.on("stackDataUpdate", handleUpdate);
+    return () => {
+      socket.emit("leaveRoom", userName);
+      socket.off("stackDataUpdate", handleUpdate);
+    };
+  }
+}, [selectedUserIdFromRedux, storedUserId, currentUserName, realTimeData]);
 
 
   
@@ -237,22 +241,6 @@ useEffect(() => {
 
   const handleCloseCalibrationPopup = () => {
     setShowCalibrationPopup(false);
-  };
-
-  const handleNextUser = () => {
-    const userIdNumber = parseInt(currentUserName.replace(/[^\d]/g, ''), 10);
-    if (!isNaN(userIdNumber)) {
-      const newUserId = `KSPCB${String(userIdNumber + 1).padStart(3, '0')}`;
-      setCurrentUserName(newUserId);
-    }
-  };
-
-  const handlePrevUser = () => {
-    const userIdNumber = parseInt(currentUserName.replace(/[^\d]/g, ''), 10);
-    if (!isNaN(userIdNumber) && userIdNumber > 1) {
-      const newUserId = `KSPCB${String(userIdNumber - 1).padStart(3, '0')}`;
-      setCurrentUserName(newUserId);
-    }
   };
 
   const handleDownloadPdf = () => {
@@ -291,7 +279,7 @@ useEffect(() => {
   }).sort((a, b) => (realTimeData[b.stackName] ? 1 : -1));
   
   const effluentFlowParameters = [
-   { parameter: "Cumulating Flow", value: "m³", name: "cumulatingFlow" },
+   //{ parameter: "Cumulating Flow", value: "m³", name: "cumulatingFlow" },
     { parameter: "Flow Rate", value: "m³", name: "flowRate" },
   ];
   

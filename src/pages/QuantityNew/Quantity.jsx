@@ -386,130 +386,100 @@ const navigate = useNavigate();
   };
 
   return (
-    <div className="container-fluid">
-      <div className="row mt-5">
-        <div className="col-md-12 col-lg-12 mb-2">
-          <div className="card" style={{ height: "100%" }}>
-            <div className="card-body">
-              <h2 className="text-center text-light mt-2">Water Flow</h2>
-              <div className="mb-3 d-flex justify-content-between">
-                <button className="btn btn-success" onClick={() => setModalOpen(true)}>
-                  View
-                </button>
-              <button
-          className="btn btn-success"
-          onClick={() => navigate("/summary")}        // ← navigate instead of setModalOpen
-        >
-          Summarize table
-        </button>
-              </div>
+   <div className="container-fluid">
+  <div className="row mt-5">
+    <div className="col-md-12 mb-2">
+      <div className="card" style={{ height: "100%" }}>
+        <div className="card-body">
+          <h2 className="text-center text-light mt-2">Water Flow</h2>
+          <div className="mb-3 d-flex justify-content-between">
+            <button
+              className="btn btn-success"
+              onClick={() => setModalOpen(true)}
+            >
+              View
+            </button>
+            <button
+              className="btn btn-success"
+              onClick={() => navigate("/summary")}
+            >
+              Summarize table
+            </button>
+          </div>
 
-              <div
-                className="table-responsive mt-3"
-                style={{ maxHeight: "400px", overflowY: "auto" }}
-              >
-                {loading ? (
-                  <div className="text-center">Loading...</div>
-                ) : (
-                  <table className="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th>SL. NO</th>
-                        <th>Stack Name</th>
-                        <th>Acceptables</th>
-                        {headers.map((header, index) => (
-                          <th key={index}>{header}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {finalGroupData.map(({ stackName, records }, stackIndex) => (
-                        <React.Fragment key={stackIndex}>
-                          <tr>
-                            <td rowSpan={3}>{stackIndex + 1}</td>
-                            <td rowSpan={3}>{stackName}</td>
-                            <td>Initial Flow</td>
-                            {headers.map((header, index) => {
-                              const matchingRecord = records.find(
-                                (item) => item.date === header
-                              );
-                              return (
-                                <td key={index}>
-                                  {matchingRecord?.initialCumulatingFlow != null
-                                    ? parseFloat(matchingRecord.initialCumulatingFlow).toFixed(2)
-                                    : "N/A"}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                          <tr>
-                            <td>Final Flow</td>
-                            {headers.map((header, index) => {
-                              const matchingRecord = records.find(
-                                (item) => item.date === header
-                              );
-                              return (
-                                <td key={index}>
-                                  {matchingRecord?.lastCumulatingFlow != null
-                                    ? parseFloat(matchingRecord.lastCumulatingFlow).toFixed(2)
-                                    : "N/A"}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                          <tr>
-                            <td>Flow Difference</td>
-                            {headers.map((header, index) => {
-                              const matchingRecord = records.find(
-                                (item) => item.date === header
-                              );
-                              return (
-                                <td key={index}>
-                                  {matchingRecord?.cumulatingFlowDifference != null
-                                    ? parseFloat(matchingRecord.cumulatingFlowDifference).toFixed(2)
-                                    : "N/A"}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
+          <div
+            className="table-responsive mt-3"
+            style={{ maxHeight: "400px", overflowY: "auto" }}
+          >
+            {loading ? (
+              <div className="text-center">Loading...</div>
+            ) : (
+              <table className="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>SL. NO</th>
+                    <th>Stack Name</th>
+                    <th>Acceptables</th>
+                    {headers.map((header, i) => (
+                      <th key={i}>{header}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {finalGroupData.map(({ stackName, records }, idx) => (
+                    <tr key={idx}>
+                      <td>{idx + 1}</td>
+                      <td>{stackName}</td>
+                      <td>Flow Difference</td>
+                      {headers.map((header, i) => {
+                        const rec = records.find(r => r.date === header);
+                        return (
+                          <td key={i}>
+                            {rec?.cumulatingFlowDifference != null
+                              ? parseFloat(rec.cumulatingFlowDifference).toFixed(2)
+                              : "N/A"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
 
-              {/* Pagination */}
-              <div className="pagination-controls d-flex justify-content-between mt-3">
-                <button
-                  className="btn btn-secondary"
-                  onClick={handlePreviousPage}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-                <span>
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-
-            {/* Modal */}
-            <FlowDataModal
-              isOpen={isModalOpen}
-              onRequestClose={() => setModalOpen(false)}
-            />
+          {/* Pagination */}
+          <div className="pagination-controls d-flex justify-content-between mt-3">
+            <button
+              className="btn btn-secondary"
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              className="btn btn-secondary"
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
           </div>
         </div>
+
+        {/* Modal */}
+        <FlowDataModal
+          isOpen={isModalOpen}
+          onRequestClose={() => setModalOpen(false)}
+        />
       </div>
     </div>
+  </div>
+</div>
+
   );
 };
 

@@ -31,6 +31,7 @@ const monthMapping = {
 
 const MonthlyFlowData = () => {
   const { userType, userData } = useSelector((state) => state.user);
+
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState("");
   const [stackOptions, setStackOptions] = useState([]);
@@ -40,130 +41,175 @@ const MonthlyFlowData = () => {
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [selectedMonth, setSelectedMonth] = useState("");
 
-  useEffect(() => {
-    if (userType === "admin" && userData?.validUserOne?.adminType) {
-      fetchUsers();
-    } else if (userType === "user" && userData?.validUserOne?.userName) {
-      // For non-admin users, auto-set the userName and fetch data.
-      setSelectedUser(userData.validUserOne.userName);
-      fetchStackOptions(userData.validUserOne.userName);
-      if (selectedMonth) {
-        fetchUserMonthlyFlowData(userData.validUserOne.userName, selectedMonth);
+  // — fetch & filter users exactly like Header's logic —
+useEffect(() => {
+  const fetchAndFilterUsers = async () => {
+    const currentUser = userData?.validUserOne;
+    if (!currentUser) {
+      setUsers([]);
+      return;
+    }
+    
+    try {
+      let response;
+      const endpoint = `${API_URL}/api/getallusers`;
+
+      if (currentUser.adminType === "EBHOOM") {
+        // EBHOOM admin - get all non-technical users
+        response = await axios.get(endpoint);
+        const allUsers = response.data.users || [];
+        setUsers(
+          allUsers.filter(u => !u.isTechnician && !u.isTerritorialManager && !u.isOperator)
+        );
+      } else if (currentUser.userType === "super_admin") {
+        // Super admin - get users created by them or their admins
+        response = await axios.get(endpoint);
+        const allUsers = response.data.users || [];
+        const adminIds = allUsers
+          .filter(u => u.createdBy === currentUser._id && u.userType === "admin")
+          .map(a => a._id.toString());
+        
+        setUsers(
+          allUsers.filter(u => 
+            (u.createdBy === currentUser._id || adminIds.includes(u.createdBy)) &&
+            !u.isTechnician && 
+            !u.isOperator
+          )
+        );
+      } else if (currentUser.userType === "admin") {
+        // Regular admin - get only their direct users
+        response = await axios.get(`${API_URL}/api/get-users-by-creator/${currentUser._id}`);
+        setUsers(response.data.users || []);
+      } else {
+        // Regular user - can't see other users
+        setUsers([]);
       }
-      // Also fetch the circular chart data if a stack is selected.
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setUsers([]);
+    }
+  };
+
+  fetchAndFilterUsers();
+}, [userData]);
+
+  // — if non-admin, auto-select themselves —
+  useEffect(() => {
+    if (
+      userType === "user" &&
+      userData?.validUserOne?.userName
+    ) {
+      const me = userData.validUserOne.userName;
+      setSelectedUser(me);
+      fetchStackOptions(me);
+      if (selectedMonth) {
+        fetchUserMonthlyFlowData(me, selectedMonth);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userType, userData]);
 
-  const fetchUsers = async () => {
-    try {
-      if (userData?.validUserOne) {
-        let response;
-        if (userData.validUserOne.adminType) {
-          response = await axios.get(
-            `${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`
-          );
-        } else {
-          response = await axios.get(`${API_URL}/api/getallusers`);
-        }
-        const filteredUsers = response.data.users.filter(
-          (user) => user.userType === "user"
-        );
-        setUsers(filteredUsers);
-      }
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
-  };
-
+  // Fetch stack list for a user
   const fetchStackOptions = async (userName) => {
     if (!userName) return;
     try {
-      const response = await axios.get(
+      const resp = await axios.get(
         `${API_URL}/api/get-stacknames-by-userName/${userName}`
       );
-      const filteredStacks = response.data.stackNames
-        .filter((stack) => stack.stationType === "effluent_flow")
-        .map((stack) => stack.name);
-      setStackOptions(filteredStacks);
-    } catch (error) {
-      console.error("Error fetching stack names:", error);
-      alert("Failed to fetch stack names.");
+      console.log("📥 get-stacknames response:", resp.data);
+      const stacks = resp.data.stackNames || [];
+      setStackOptions(stacks.filter(s => s.stationType === "effluent_flow").map(s => s.name));
+    } catch (err) {
+      console.error("❌ Error fetching stacks:", err);
+      setStackOptions([]);
     }
   };
 
-  // Fetch circular chart data for a specific stack.
-  const fetchLastCumulatingFlow = async (userName, stackName, month) => {
-    if (!userName || !stackName || !month) return;
-    const monthNumber = monthMapping[month];
+  // Fetch bar-chart data across stacks (monthly consumption)
+  const fetchUserMonthlyFlowData = async (userName, month) => {
+    if (!userName || !month) return;
+    const monthNum = monthMapping[month];
+    
     try {
-      const response = await axios.get(
-        `${API_URL}/api/cumulative-flow/stack/${userName}/${encodeURIComponent(
-          stackName
-        )}/${monthNumber}`
-      );
-      if (response.data.success) {
-        const flowValue = response.data.data.lastCumulatingFlow || 0;
-        setLastCumulatingFlow(flowValue);
-        setAnimatedProgress(0);
-        setTimeout(() => {
-          setAnimatedProgress(85);
-        }, 200);
+      // Fetch both first and last flows for the month
+      const [lastFlowResponse, firstFlowResponse] = await Promise.all([
+        axios.get(`${API_URL}/api/last-flow/${userName}/${monthNum}`),
+        axios.get(`${API_URL}/api/first-flow/${userName}/${monthNum}`)
+      ]);
+
+      console.log("📥 last-flow response:", lastFlowResponse.data);
+      console.log("📥 first-flow response:", firstFlowResponse.data);
+
+      if (lastFlowResponse.data.success && firstFlowResponse.data.success) {
+        const lastFlows = lastFlowResponse.data.data || [];
+        const firstFlows = firstFlowResponse.data.data || [];
+        
+        // Calculate consumption for each stack (last - first)
+        const consumptionData = lastFlows.map(lastFlow => {
+          const firstFlow = firstFlows.find(f => f.stackName === lastFlow.stackName);
+          const consumption = firstFlow 
+            ? (parseFloat(lastFlow.lastCumulatingFlow) - parseFloat(firstFlow.initialCumulatingFlow))
+            : 0;
+          
+          return {
+            stackName: lastFlow.stackName,
+            monthlyConsumption: Math.max(0, consumption).toFixed(2),
+            lastCumulatingFlow: parseFloat(lastFlow.lastCumulatingFlow).toFixed(2),
+            firstCumulatingFlow: firstFlow ? parseFloat(firstFlow.initialCumulatingFlow).toFixed(2) : 0
+          };
+        });
+
+        setStackFlowData(consumptionData);
       } else {
-        alert("No data found for this stack.");
+        setStackFlowData([]);
       }
-    } catch (error) {
-      console.error("Error fetching flow data:", error);
-      alert("Error fetching flow data.");
-    }
-  };
-
-  // Fetch bar chart data for the user (across all stacks).
-const fetchUserMonthlyFlowData = async (userName, month) => {
-  if (!userName || !month) return;
-
-  const monthNumber = monthMapping[month];
-  const currentYear = new Date().getFullYear();
-  const url = `${API_URL}/api/cumulative-flow/user/${userName}/${monthNumber}?year=${currentYear}`;
-
-  console.log("➡️ Fetching monthly flow URL:", url);
-
-  try {
-    const response = await axios.get(url);
-    console.log("⬅️ Response from server:", response.data);
-
-    if (response.data.success) {
-      const data = response.data.data || [];
-      const filteredData = data
-        .filter((entry) => entry.stationType === "effluent_flow")
-        .map((entry) => ({
-          stackName: entry.stackName,
-          lastCumulatingFlow: parseFloat(entry.lastCumulatingFlow).toFixed(2),
-        }));
-      setStackFlowData(filteredData);
-    } else {
-      console.warn("⚠️ No data found for user/month:", userName, month);
+    } catch (err) {
+      console.error("❌ Error fetching monthly flow data:", err);
       setStackFlowData([]);
     }
-  } catch (error) {
-    console.error("❌ Error fetching user flow data:", error);
-    alert("Error fetching user flow data.");
-  }
-};
+  };
 
-  const maxValue = Math.max(...stackFlowData.map((d) => parseFloat(d.lastCumulatingFlow)), 0);
+  // Fetch radial-chart data for one stack (monthly consumption)
+  const fetchLastCumulatingFlow = async (userName, stackName, month) => {
+    if (!userName || !stackName || !month) return;
+    const monthNum = monthMapping[month];
+    
+    try {
+      // Fetch both first and last flows for the selected stack
+      const [lastFlowResponse, firstFlowResponse] = await Promise.all([
+        axios.get(`${API_URL}/api/last-flow/${userName}/${monthNum}`),
+        axios.get(`${API_URL}/api/first-flow/${userName}/${monthNum}`)
+      ]);
 
-  // Define the step size (1000)
+      if (lastFlowResponse.data.success && firstFlowResponse.data.success) {
+        const lastFlow = lastFlowResponse.data.data.find(f => f.stackName === stackName);
+        const firstFlow = firstFlowResponse.data.data.find(f => f.stackName === stackName);
+        
+        if (lastFlow && firstFlow) {
+          const consumption = parseFloat(lastFlow.lastCumulatingFlow) - parseFloat(firstFlow.initialCumulatingFlow);
+          setLastCumulatingFlow(Math.max(0, consumption));
+          setAnimatedProgress(0);
+          setTimeout(() => setAnimatedProgress(85), 200);
+        } else {
+          setLastCumulatingFlow(0);
+        }
+      }
+    } catch (err) {
+      console.error("❌ Error fetching stack flow:", err);
+      setLastCumulatingFlow(0);
+    }
+  };
+
+  // Prepare ticks for Y-axis
+  const maxVal = Math.max(
+    ...stackFlowData.map((d) => parseFloat(d.monthlyConsumption)),
+    0
+  );
   const step = 1000;
-  
-  // Round up to the next multiple of 1000
-  const maxTick = Math.ceil(maxValue / step) * step;
-  
-  // Build an array of ticks [0, 1000, 2000, 3000, ... up to maxTick]
+  const maxTick = Math.ceil(maxVal / step) * step;
   const ticks = [];
-  for (let i = 0; i <= maxTick; i += step) {
-    ticks.push(i);
-  }
+  for (let i = 0; i <= maxTick; i += step) ticks.push(i);
+
   return (
     <div className="container-fluid shadow">
       <h4 className="text-center mt-3 mb-4">
@@ -171,90 +217,81 @@ const fetchUserMonthlyFlowData = async (userName, month) => {
       </h4>
 
       <div className="row mb-3">
+        {/* User selector */}
         <div className="col-md-4">
-          <select
-            className="form-select"
-            onChange={(e) => {
-              setSelectedUser(e.target.value);
-              fetchStackOptions(e.target.value);
-              if (selectedMonth) {
-                fetchUserMonthlyFlowData(e.target.value, selectedMonth);
-              }
-            }}
-            value={selectedUser}
-            disabled={userType !== "admin"}
-          >
-            {userType === "admin" ? (
-              <>
-                <option value="">Select User</option>
-                {users.map((user) => (
-                  <option key={user._id} value={user.userName}>
-                    {user.userName}
-                  </option>
-                ))}
-              </>
-            ) : (
-              <option value={userData?.validUserOne?.userName}>
-                {userData?.validUserOne?.userName}
-              </option>
-            )}
-          </select>
+      <select
+  className="form-select"
+  value={selectedUser}
+  onChange={(e) => {
+    setSelectedUser(e.target.value);
+    fetchStackOptions(e.target.value);
+    if (selectedMonth) {
+      fetchUserMonthlyFlowData(e.target.value, selectedMonth);
+    }
+  }}
+>
+  <option value="">Select User</option>
+  {users.map((u) => (
+    <option key={u._id} value={u.userName}>
+      {u.userName} — {u.companyName}
+    </option>
+  ))}
+</select>
         </div>
 
+        {/* Stack selector */}
         <div className="col-md-4">
           <select
             className="form-select"
+            value={selectedStack}
             onChange={(e) => {
               setSelectedStack(e.target.value);
               if (selectedUser && selectedMonth) {
-                fetchLastCumulatingFlow(selectedUser, e.target.value, selectedMonth);
+                fetchLastCumulatingFlow(
+                  selectedUser,
+                  e.target.value,
+                  selectedMonth
+                );
               }
             }}
-            value={selectedStack}
             disabled={!selectedUser}
           >
             <option value="">Select Stack</option>
-            {stackOptions.map((stack, index) => (
-              <option key={index} value={stack}>
-                {stack}
+            {stackOptions.map((s) => (
+              <option key={s} value={s}>
+                {s}
               </option>
             ))}
           </select>
         </div>
 
+        {/* Month selector */}
         <div className="col-md-4">
           <select
             className="form-select"
+            value={selectedMonth}
             onChange={(e) => {
               setSelectedMonth(e.target.value);
               if (selectedUser) {
-                fetchUserMonthlyFlowData(selectedUser, e.target.value);
-                // Also update circular chart if a stack is selected.
+                fetchUserMonthlyFlowData(
+                  selectedUser,
+                  e.target.value
+                );
                 if (selectedStack) {
-                  fetchLastCumulatingFlow(selectedUser, selectedStack, e.target.value);
+                  fetchLastCumulatingFlow(
+                    selectedUser,
+                    selectedStack,
+                    e.target.value
+                  );
                 }
               }
             }}
-            value={selectedMonth}
             disabled={!selectedUser}
           >
             <option value="">Select Month</option>
-            {[
-              "January",
-              "February",
-              "March",
-              "April",
-              "May",
-              "June",
-              "July",
-              "August",
-              "September",
-              "October",
-              "November",
-              "December",
-            ].map((month, index) => (
-              <option key={index} value={month}>
-                {month}
+            {Object.keys(monthMapping).map((m) => (
+              <option key={m} value={m}>
+                {m}
               </option>
             ))}
           </select>
@@ -262,7 +299,9 @@ const fetchUserMonthlyFlowData = async (userName, month) => {
       </div>
 
       <div className="row gap-4 m-2 mb-5">
-        <div className="col-lg-7 shadow p-3 position-relative">
+        <div
+          className="col-lg-7 shadow p-3 position-relative"
+        >
           {/* Background Image */}
           <div
             style={{
@@ -282,47 +321,49 @@ const fetchUserMonthlyFlowData = async (userName, month) => {
 
           {/* Bar Chart */}
           <ResponsiveContainer width="100%" height={300}>
-  <BarChart
-    data={stackFlowData}
-    barCategoryGap={20}
-    margin={{ top: 30, right: 30, left: 20, bottom: 5 }}
-  >
-    <XAxis
-      dataKey="stackName"
-      tick={{ fontSize: 10, angle: -10, textAnchor: "end" }}
-      interval={0}
-    />
-    <YAxis
-      tick={{ fontSize: 12 }}
-      /* Use our custom tick array */
-      ticks={ticks}
-      /* Y-axis goes from 0 to maxTick */
-      domain={[0, maxTick]}
-      /* Show commas in large numbers */
-      tickFormatter={(value) => value.toLocaleString()}
-    />
-   {stackFlowData.length > 0 && <Tooltip />}
-    <Bar dataKey="lastCumulatingFlow" fill="url(#progressGradient)">
-      <LabelList
-        dataKey="lastCumulatingFlow"
-        position="top"
-        style={{
-          fill: "#000",
-          fontSize: "12px",
-          fontWeight: "bold",
-        }}
-      />
-    </Bar>
-  </BarChart>
-</ResponsiveContainer>
-
+            <BarChart
+              data={stackFlowData}
+              barCategoryGap={20}
+              margin={{ top: 30, right: 30, left: 20, bottom: 5 }}
+            >
+              <XAxis
+                dataKey="stackName"
+                tick={{ fontSize: 10, angle: -10, textAnchor: "end" }}
+                interval={0}
+              />
+              <YAxis
+                ticks={ticks}
+                domain={[0, maxTick]}
+                tickFormatter={(v) => v.toLocaleString()}
+              />
+              {stackFlowData.length > 0 && <Tooltip />}
+              <Bar dataKey="monthlyConsumption" fill="url(#progressGradient)">
+                <LabelList
+                  dataKey="monthlyConsumption"
+                  position="top"
+                  style={{
+                    fill: "#000",
+                    fontSize: 12,
+                    fontWeight: "bold",
+                  }}
+                  formatter={(value) => `${value} m³`}
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         <div className="col-lg-4 shadow p-3 d-flex align-items-center justify-content-center">
           <div style={{ position: "relative", width: "200px", height: "200px" }}>
             <svg width="0" height="0">
               <defs>
-                <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient
+                  id="progressGradient"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="0%"
+                >
                   <stop offset="0%" stopColor="#6AC5D5" />
                   <stop offset="100%" stopColor="#236a80" />
                 </linearGradient>
@@ -351,7 +392,6 @@ const fetchUserMonthlyFlowData = async (userName, month) => {
                 clockWise={false}
                 dataKey="value"
                 cornerRadius={50}
-                strokeWidth={5}
                 strokeLinecap="round"
                 animationBegin={0}
                 animationDuration={1000}
@@ -359,7 +399,7 @@ const fetchUserMonthlyFlowData = async (userName, month) => {
               />
             </RadialBarChart>
 
-            {/* Centered Data */}
+            {/* Centered Info */}
             <div
               style={{
                 position: "absolute",
@@ -371,10 +411,11 @@ const fetchUserMonthlyFlowData = async (userName, month) => {
                 fontWeight: "bold",
               }}
             >
-              <div style={{ fontSize: "14px", marginBottom: "5px" }}>
-                {selectedMonth || new Date().toLocaleString("default", { month: "long" })}
+              <div style={{ fontSize: 14, marginBottom: 5 }}>
+                {selectedMonth ||
+                  new Date().toLocaleString("default", { month: "long" })}
               </div>
-              <div style={{ fontSize: "14px", marginTop: "5px" }}>
+              <div style={{ fontSize: 14, marginTop: 5 }}>
                 {selectedStack || "Select Stack"}
               </div>
             </div>
@@ -384,12 +425,12 @@ const fetchUserMonthlyFlowData = async (userName, month) => {
                 top: "60%",
                 left: "50%",
                 transform: "translate(-50%, -50%)",
-                fontSize: "24px",
+                fontSize: 24,
                 fontWeight: "bold",
                 color: "#236a80",
               }}
             >
-              {parseFloat(lastCumulatingFlow).toFixed(2)}
+              {parseFloat(lastCumulatingFlow).toFixed(2)} m³
             </div>
           </div>
         </div>
