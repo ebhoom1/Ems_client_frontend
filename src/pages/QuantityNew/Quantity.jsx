@@ -393,16 +393,10 @@ const navigate = useNavigate();
         <div className="card-body">
           <h2 className="text-center text-light mt-2">Water Flow</h2>
           <div className="mb-3 d-flex justify-content-between">
-            <button
-              className="btn btn-success"
-              onClick={() => setModalOpen(true)}
-            >
+            <button className="btn btn-success" onClick={() => setModalOpen(true)}>
               View
             </button>
-            <button
-              className="btn btn-success"
-              onClick={() => navigate("/summary")}
-            >
+            <button className="btn btn-success" onClick={() => navigate("/summary")}>
               Summarize table
             </button>
           </div>
@@ -420,21 +414,21 @@ const navigate = useNavigate();
                     <th>SL. NO</th>
                     <th>Stack Name</th>
                     <th>Acceptables</th>
-                    {headers.map((header, i) => (
-                      <th key={i}>{header}</th>
+                    {headers.map((header, idx) => (
+                      <th key={idx}>{header}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {finalGroupData.map(({ stackName, records }, idx) => (
-                    <tr key={idx}>
-                      <td>{idx + 1}</td>
+                  {finalGroupData.map(({ stackName, records }, i) => (
+                    <tr key={i}>
+                      <td>{i + 1}</td>
                       <td>{stackName}</td>
                       <td>Flow Difference</td>
-                      {headers.map((header, i) => {
+                      {headers.map((header, j) => {
                         const rec = records.find(r => r.date === header);
                         return (
-                          <td key={i}>
+                          <td key={j}>
                             {rec?.cumulatingFlowDifference != null
                               ? parseFloat(rec.cumulatingFlowDifference).toFixed(2)
                               : "N/A"}
@@ -479,6 +473,7 @@ const navigate = useNavigate();
     </div>
   </div>
 </div>
+
 
   );
 };

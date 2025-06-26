@@ -143,48 +143,70 @@ const fetchData = async (userName) => {
 };
 
 
-  const fetchDifferenceData = async (userName) => {
-    try {
-      const response = await axios.get(`${API_URL}/api/difference/${userName}?interval=daily`);
-      const { data } = response;
-      if (data && data.success) {
-        const initialFlowData = {};
-        const today = moment().format('DD/MM/YYYY');
-  
-        data.data.forEach(item => {
-          if (item.stationType === 'effluent_flow' && item.date === today) {
-            initialFlowData[item.stackName] = item.initialCumulatingFlow;
-          }
-        });
-  
-        console.log("✅ Initial Flows from API:", initialFlowData);
-        setInitialFlows(initialFlowData);
-      }
-    } catch (error) {
-      console.error("❌ Error fetching difference data:", error);
-    }
-  };
+const fetchDifferenceData = async (userName) => {
+  try {
+    const url = `${API_URL}/api/difference/${userName}?interval=daily`;
+    console.log("🔍 Fetching daily-difference from:", url);
 
-  useEffect(() => {
-    if (initialFlows) {
-      const consumptionData = {};
-      Object.keys(initialFlows).forEach(stackName => {
-        const currentFlow = realTimeData[stackName]?.cumulatingFlow || 0;
-        const initialFlow = initialFlows[stackName] || 0;
-        const difference = Math.max(0, currentFlow - initialFlow);
+    const response = await axios.get(url);
+    console.log("📄 Raw data array:", response.data.data);
 
-        console.log(`🔹 Stack: ${stackName} | Initial Flow: ${initialFlow} | Current Flow: ${currentFlow} | Daily Consumption: ${difference}`);
+    const today = moment().format("DD/MM/YYYY");
 
-        consumptionData[stackName] = difference;
-      });
-      setDailyConsumption(consumptionData);
-    }
-  }, [realTimeData, initialFlows]);
+    // Filter purely by date
+    const todayItems = response.data.data.filter(
+      (item) => item.date === today
+    );
 
-  useEffect(() => {
-    const userName = storedUserId || currentUserName;
-    fetchDifferenceData(userName);
-  }, [storedUserId, currentUserName]);
+    // Build { stackName: initialCumulatingFlow }
+    const todayInitialFlows = todayItems.reduce((acc, { stackName, initialCumulatingFlow }) => {
+      acc[stackName] = initialCumulatingFlow;
+      return acc;
+    }, {});
+
+    console.log("✅ Today's initialCumulatingFlow:", todayInitialFlows);
+    setInitialFlows(todayInitialFlows);
+  } catch (error) {
+    console.error("❌ Error fetching difference data:", error);
+  }
+};
+
+
+
+useEffect(() => {
+  console.groupCollapsed("🔸 Recomputing dailyConsumption");
+  console.log("initialFlows:", initialFlows);
+  console.log("realTimeData:", realTimeData);
+
+  const consumptionData = {};
+  Object.keys(initialFlows).forEach(stackName => {
+    const currentFlow = realTimeData[stackName]?.cumulatingFlow ?? 0;
+    const initialFlow = initialFlows[stackName] ?? 0;
+    // if initial is 0, show 0; otherwise compute difference
+    const difference =
+      initialFlow === 0
+        ? 0
+        : Math.max(0, currentFlow - initialFlow);
+
+    console.log(
+      `  • ${stackName}: currentFlow=${currentFlow} − initialFlow=${initialFlow} = ${difference}`
+    );
+    consumptionData[stackName] = difference;
+  });
+
+  console.log("→ new dailyConsumption:", consumptionData);
+  console.groupEnd();
+
+  setDailyConsumption(consumptionData);
+}, [realTimeData, initialFlows]);
+
+
+
+useEffect(() => {
+  console.log("🔄 refetching initial flows for", effectiveUserName);
+  setInitialFlows({});               // clear out old values
+  fetchDifferenceData(effectiveUserName);
+}, [effectiveUserName]);
 
   useEffect(() => {
     const userName = storedUserId || currentUserName;
@@ -279,7 +301,7 @@ useEffect(() => {
   }).sort((a, b) => (realTimeData[b.stackName] ? 1 : -1));
   
   const effluentFlowParameters = [
-   //{ parameter: "Cumulating Flow", value: "m³", name: "cumulatingFlow" },
+  // { parameter: "Cumulating Flow", value: "m³", name: "cumulatingFlow" },
     { parameter: "Flow Rate", value: "m³", name: "flowRate" },
   ];
   
