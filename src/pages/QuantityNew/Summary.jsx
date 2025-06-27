@@ -34,20 +34,19 @@ const Summary = () => {
   const dataCache = useRef({});
 
   const [companyName, setCompanyName] = useState("");
-  const [differences, setDifferences] = useState([]); // was `averages`
+  const [differences, setDifferences] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [page, setPage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  const filterUnwantedStacks = (stackName) => {
+    return !stackName.includes("STP intlet") && !stackName.includes("STP iutlet");
+  };
+
   useEffect(() => {
-    // load from cache
-    if (
-      companyCache.current[activeUser] &&
-      dataCache.current[activeUser]
-    ) {
-      const { companyName, differences, headers } =
-        dataCache.current[activeUser];
+    if (companyCache.current[activeUser] && dataCache.current[activeUser]) {
+      const { companyName, differences, headers } = dataCache.current[activeUser];
       setCompanyName(companyName);
       setDifferences(differences);
       setHeaders(headers);
@@ -68,14 +67,15 @@ const Summary = () => {
         const company = userRes.data.user.companyName || "";
         let entries = diffRes.data.data || [];
 
-        // 1️⃣ keep only effluent_flow & those with a real diff
+        // Filter for effluent_flow and remove unwanted stacks
         entries = entries.filter(
           (e) =>
             e.stationType === "effluent_flow" &&
-            typeof e.cumulatingFlowDifference === "number"
+            typeof e.cumulatingFlowDifference === "number" &&
+            filterUnwantedStacks(e.stackName)
         );
 
-        // 2️⃣ dedupe per date+stackName, pick latest timestamp
+        // Dedupe per date+stackName, pick latest timestamp
         const byKey = {};
         entries.forEach((e) => {
           const key = `${e.date}|${e.stackName}`;
@@ -88,7 +88,7 @@ const Summary = () => {
         });
         const deduped = Object.values(byKey);
 
-        // 3️⃣ pick last 20 unique dates (descending)
+        // Pick last 20 unique dates (descending)
         const uniqDates = Array.from(
           new Set(deduped.map((e) => e.date))
         )
@@ -99,7 +99,7 @@ const Summary = () => {
           )
           .slice(0, 20);
 
-        // 4️⃣ shape into [{ date, stacks: [ {stackName, diff}, … ] }, …]
+        // Shape into [{ date, stacks: [ {stackName, diff}, … ] }, …]
         const byDate = uniqDates.map((date) => ({
           date,
           stacks: deduped
@@ -110,13 +110,13 @@ const Summary = () => {
             })),
         }));
 
-        // 5️⃣ headers for table
+        // Headers for table
         const hdrs = byDate.map((d) => ({
           original: d.date,
           display: moment(d.date, "DD/MM/YYYY").format("DD-MMM"),
         }));
 
-        // cache
+        // Cache
         companyCache.current[activeUser] = company;
         dataCache.current[activeUser] = {
           companyName: company,
@@ -124,7 +124,7 @@ const Summary = () => {
           headers: hdrs,
         };
 
-        // set state
+        // Set state
         setCompanyName(company);
         setDifferences(byDate);
         setHeaders(hdrs);
@@ -139,25 +139,29 @@ const Summary = () => {
     const g = {};
     differences.forEach(({ date, stacks }) => {
       stacks.forEach(({ stackName, diff }) => {
-        if (!g[stackName]) g[stackName] = {};
-        g[stackName][date] = diff;
+        if (filterUnwantedStacks(stackName)) {
+          if (!g[stackName]) g[stackName] = {};
+          g[stackName][date] = diff;
+        }
       });
     });
     return g;
   }, [differences]);
 
-  // dynamic list of stackNames
+  // Dynamic list of stackNames (filtered)
   const stackNames = useMemo(() => {
     const seen = [];
     differences.forEach(({ stacks }) =>
       stacks.forEach(({ stackName }) => {
-        if (!seen.includes(stackName)) seen.push(stackName);
+        if (!seen.includes(stackName) && filterUnwantedStacks(stackName)) {
+          seen.push(stackName);
+        }
       })
     );
     return seen;
   }, [differences]);
 
-  // compute min/max date per stack
+  // Compute min/max date per stack
   const extremes = useMemo(() => {
     const e = {};
     stackNames.forEach((name) => {

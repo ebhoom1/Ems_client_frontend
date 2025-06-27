@@ -21,27 +21,63 @@ function DownloadData() {
 
   const { userData } = useSelector((state) => state.user);
 
+  // ✅ New useEffect to fetch users based on userType and createdBy, similar to the Header component
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchAndFilterUsers = async () => {
       try {
-        if (userData?.validUserOne) {
-          let response;
-          if (userData.validUserOne.adminType) {
-            response = await axios.get(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`);
-          } else {
-            response = await axios.get(`${API_URL}/api/getallusers`);
-          }
-          const filteredUsers = response.data.users.filter((user) => user.userType === 'user');
-          setUsers(filteredUsers);
+        const currentUser = userData?.validUserOne;
+        if (!currentUser) {
+          setUsers([]);
+          return;
+        }
+
+        let response;
+        if (currentUser.adminType === "EBHOOM") {
+          // EBHOOM fetches all 'user' types
+          response = await axios.get(`${API_URL}/api/getallusers`);
+          const fetchedUsers = response.data.users || [];
+          const filteredForEbhoom = fetchedUsers.filter(
+            (user) => user.userType === 'user'
+          );
+          setUsers(filteredForEbhoom);
+        } else if (currentUser.userType === "super_admin") {
+          // Super admin fetches all and filters down to users created by them or their admins
+          response = await axios.get(`${API_URL}/api/getallusers`);
+          const fetchedUsers = response.data.users || [];
+          
+          const myAdmins = fetchedUsers.filter(
+            (user) => user.createdBy === currentUser._id && user.userType === "admin"
+          );
+          const myAdminIds = myAdmins.map((admin) => admin._id.toString());
+          
+          const usersForSuperAdmin = fetchedUsers.filter(
+            (user) =>
+              user.userType === 'user' &&
+              (user.createdBy === currentUser._id || myAdminIds.includes(user.createdBy))
+          );
+          setUsers(usersForSuperAdmin);
+        } else if (currentUser.userType === "admin") {
+          // Admin fetches 'user' types created by them
+          const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
+          response = await axios.get(url);
+          const fetchedUsers = response.data.users || [];
+          const myUsers = fetchedUsers.filter(
+            (user) => user.userType === "user"
+          );
+          setUsers(myUsers);
+        } else {
+          // For 'user' type, show an empty list since they can't download data for other users
+          setUsers([]);
         }
       } catch (error) {
         console.error('Error fetching users:', error);
         toast.error('Failed to fetch users.');
+        setUsers([]);
       }
     };
-    
+
     if (userData?.validUserOne) {
-      fetchUsers();
+      fetchAndFilterUsers();
     }
   }, [userData]);
 
@@ -117,38 +153,36 @@ function DownloadData() {
                         >
                           <option value="">Select User</option>
                           {users.map((item) => (
-                            <option key={item.userName} value={item.userName}>{item.userName}</option>
+                            <option key={item.userName} value={item.userName}>{item.userName}-{item.companyName}</option>
                           ))}
                         </select>
                       </div>
                       <div className="col-lg-6 col-md-6 mb-4">
-    <label htmlFor="stackName" className="form-label">Stack Name</label>
-    <select
-        id="stackName"
-        name="stackName"
-        className="input-field"
-        value={stackName}
-        onChange={(e) => setStackName(e.target.value)}
-        style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
-    >
-        <option value="">Select Stack Name</option>
-        {stackOptions
-            .filter(option => option.stationType === "effluent") // ✅ Filter effluent stacks only
-            .map((option, index) => (
-                <option key={index} value={option.name}>{option.name}</option>
-            ))
-        }
-    </select>
-</div>
-
+                        <label htmlFor="stackName" className="form-label">Stack Name</label>
+                        <select
+                          id="stackName"
+                          name="stackName"
+                          className="input-field"
+                          value={stackName}
+                          onChange={(e) => setStackName(e.target.value)}
+                          style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
+                        >
+                          <option value="">Select Stack Name</option>
+                          {stackOptions
+                            .filter(option => option.stationType === "effluent")
+                            .map((option, index) => (
+                              <option key={index} value={option.name}>{option.name}</option>
+                            ))
+                          }
+                        </select>
+                      </div>
                       <div className="col-lg-6 col-md-6 mb-4">
                         <label htmlFor="startDate" className="form-label">Start Date</label>
-                        <input   style={{ width: '100%', padding: '15px', borderRadius: '10px' }} type="date" id="startDate" className="input-field" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
-                        
+                        <input  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} type="date" id="startDate" className="input-field" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
                       </div>
                       <div className="col-lg-6 col-md-6 mb-4">
                         <label htmlFor="endDate" className="form-label">End Date</label>
-                        <input   style={{ width: '100%', padding: '15px', borderRadius: '10px' }} type="date" id="endDate" className="input-field" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+                        <input  style={{ width: '100%', padding: '15px', borderRadius: '10px' }} type="date" id="endDate" className="input-field" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
                       </div>
                     </div>
                     <button type="submit" className="btn btn-success">Download</button>

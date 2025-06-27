@@ -100,7 +100,7 @@ const Water = () => {
 
   const [isCheckedIn, setIsCheckedIn] = useState(false); // new
   const [allowClicks, setAllowClicks] = useState(false); //new for overlay control
- const isEGL5 = currentUserName === "EGL5";
+  const isEGL5 = currentUserName === "EGL5";
   useEffect(() => {
     if (!loggedInUser?.userName) return; // only run when ready
 
@@ -224,6 +224,7 @@ const Water = () => {
       ).unwrap();
 
       // Save company info from the first item if exists
+      console.log("latest stack data:", result);
       const effluentEntries =
         result.data?.filter((entry) => entry.stationType === "effluent") || [];
 
@@ -278,23 +279,22 @@ const Water = () => {
       dispatch(fetchIotDataByUserName(userId));
     }
   }, [userId, dispatch]);
-useEffect(() => {
-  if (!selectedUserIdFromRedux) return;
-  
-  setLoading(true);
-  const userName = selectedUserIdFromRedux;
-  setCurrentUserName(userName);
-  sessionStorage.setItem("selectedUserId", userName);
-  
-  // Reset data while loading
-  setRealTimeData({});
-  setEffluentStacks([]);
-  
-  fetchData(userName);
-  fetchEffluentStacks(userName);
-  dispatch(fetchUserByUserName(userName));
-  
-}, [selectedUserIdFromRedux, dispatch]);
+  useEffect(() => {
+    if (!selectedUserIdFromRedux) return;
+
+    setLoading(true);
+    const userName = selectedUserIdFromRedux;
+    setCurrentUserName(userName);
+    sessionStorage.setItem("selectedUserId", userName);
+
+    // Reset data while loading
+    setRealTimeData({});
+    setEffluentStacks([]);
+
+    fetchData(userName);
+    fetchEffluentStacks(userName);
+    dispatch(fetchUserByUserName(userName));
+  }, [selectedUserIdFromRedux, dispatch]);
 
   // ✅ New useEffect: Fetch address when userId is available
   useEffect(() => {
@@ -698,8 +698,7 @@ useEffect(() => {
                           className="d-flex justify-content-end align-items-center px-3 gap-2"
                           style={{
                             position: "relative",
-                            zIndex: 10001 ,// ✅ always above overlay (which is 10)
-                            
+                            zIndex: 10001, // ✅ always above overlay (which is 10)
                           }}
                         >
                           <button
@@ -897,53 +896,159 @@ useEffect(() => {
                               (stack, stackIndex) => (
                                 <div key={stackIndex} className="col-12 mb-4">
                                   <div className="stack-box">
-                                    <h4 className="text-center">
-                                      {stack.stackName}{" "}
-                                      <img
-                                        src={effluent}
-                                        alt="energy image"
-                                        width="100px"
-                                      />
-                                    </h4>
+                                  {stack.stackName === "STP" && (
+  <h4 className="text-center">
+    {stack.stackName}{" "}
+    <img
+      src={effluent}
+      alt="energy image"
+      width="100px"
+    />
+  </h4>
+)}
                                     <div className="row">
-                                     {waterParameters.map((item, index) => {
-  // 1) grab raw value
-  let value = stack[item.name];
+                                      {waterParameters.map((item, index) => {
+                                        // 1) grab raw value
+                                        let value = stack[item.name];
 
-  // 2) if EGL5 and raw is exactly 0, apply your defaults
-  if (isEGL5 && value === 0) {
-    if (item.name === "BOD") value = 6.78;
-    if (item.name === "COD") value = 25.89;
-  }
+                                        // 2) if EGL5 and raw is exactly 0, apply your defaults
+                                        if (isEGL5 && value === 0) {
+                                          if (item.name === "BOD") value = 6.78;
+                                          if (item.name === "COD")
+                                            value = 25.89;
+                                        }
 
-  // 3) skip only if truly missing or "N/A"
-  if (value === undefined || value === null || value === "N/A") {
-    return null;
-  }
+                                        // 3) skip only if truly missing or "N/A"
+                                        if (
+                                          value === undefined ||
+                                          value === null ||
+                                          value === "N/A"
+                                        ) {
+                                          return null;
+                                        }
 
-  return (
-    <div
-      className="col-12 col-md-4 grid-margin"
-      key={index}
-      onClick={() =>
-        handleCardClick({ title: item.name }, stack.stackName)
-      }
-    >
-      <div className="card mb-3" style={{ border: "none", cursor: "pointer" }}>
-        <div className="card-body">
-          <h5 className="text-light">{item.parameter}</h5>
-          <p className="text-light">
-            <strong style={{ color: "#fff", fontSize: "24px" }}>
-              {parseFloat(value).toFixed(2)}
-            </strong>{" "}
-            {item.value}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-})}
+                                        return (
+                                          <div
+                                            className="col-12 col-md-4 grid-margin"
+                                            key={index}
+                                            onClick={() =>
+                                              handleCardClick(
+                                                { title: item.name },
+                                                stack.stackName
+                                              )
+                                            }
+                                          >
+                                            <div
+                                              className="card mb-3"
+                                              style={{
+                                                border: "none",
+                                                cursor: "pointer",
+                                              }}
+                                            >
+                                              <div className="card-body">
+                                                <h5 className="text-light">
+                                                  {item.parameter}
+                                                </h5>
+                                                <p className="text-light">
+                                                  <strong
+                                                    style={{
+                                                      color: "#fff",
+                                                      fontSize: "24px",
+                                                    }}
+                                                  >
+                                                    {parseFloat(value).toFixed(
+                                                      2
+                                                    )}
+                                                  </strong>{" "}
+                                                  {item.value}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
 
+                                    <div className="row">
+                                      {!loading &&
+                                        (() => {
+                                          // STEP 1: Flatten all stackData arrays from all entries
+                                          const allStacks = (
+                                            Array.isArray(realTimeData)
+                                              ? realTimeData
+                                              : Object.values(realTimeData)
+                                          ).flatMap(
+                                            (entry) => entry.stackData || []
+                                          );
+
+                                          // STEP 2: Find exact match for stackName === "STP"
+                                          const stpStack = allStacks.find(
+                                            (stack) =>
+                                              stack?.stackName === "STP"
+                                          );
+
+                                          if (!stpStack) return null;
+
+                                          return waterParameters.map(
+                                            (item, index) => {
+                                              const value = stpStack[item.name];
+                                              const displayValue =
+                                                value !== undefined &&
+                                                value !== null &&
+                                                value !== "N/A"
+                                                  ? parseFloat(value).toFixed(2)
+                                                  : "";
+
+                                              return (
+                                                <div
+                                                  key={item.name}
+                                                  className="col-6 col-md-4 col-lg-2 mb-3"
+                                                >
+                                                  <div
+                                                    className="card h-100 text-center text-white"
+                                                    style={{
+                                                      background:
+                                                        "linear-gradient(135deg, #0f5a67, #164863)",
+                                                      borderRadius: "12px",
+                                                      minHeight: "100px",
+                                                      display: "flex",
+                                                      justifyContent: "center",
+                                                      alignItems: "center",
+                                                    }}
+                                                  >
+                                                    <div>
+                                                      <h6
+                                                        style={{
+                                                          marginBottom: "6px",
+                                                          fontSize: "16px",
+                                                        }}
+                                                      >
+                                                        {item.parameter}
+                                                      </h6>
+                                                      <p
+                                                        style={{
+                                                          fontSize: "20px",
+                                                          margin: 0,
+                                                        }}
+                                                      >
+                                                        <strong>
+                                                          {displayValue || "--"}
+                                                        </strong>{" "}
+                                                        <span
+                                                          style={{
+                                                            fontSize: "14px",
+                                                          }}
+                                                        >
+                                                          {item.value}
+                                                        </span>
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              );
+                                            }
+                                          );
+                                        })()}
                                     </div>
                                   </div>
                                 </div>

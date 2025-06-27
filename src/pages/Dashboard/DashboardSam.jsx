@@ -375,14 +375,14 @@ function DashboardSam() {
                       <span className="title">Live Emission Video</span>
                     </a>
                   </li>
-                  <li className="list active text-center">
+                {/*   <li className="list active text-center">
                     <a
                       href="/subscribe"
                       style={{ textDecoration: "none", color: "#ffffff" }}
                     >
                       <span className="title">Subscribe</span>
                     </a>
-                  </li>
+                  </li> */}
                 </>
               )}
 

@@ -44,7 +44,9 @@ export default function WaterQualitySummary() {
     if (!activeUser) return;
     axios
       .get(`${API_URL}/api/get-user-by-userName/${activeUser}`)
-      .then((res) => setCompanyName(res.data.user.companyName || ""))
+      .then((res) =>
+        setCompanyName(res.data.user.companyName || "")
+      )
       .catch(console.error);
   }, [activeUser]);
 
@@ -63,32 +65,46 @@ export default function WaterQualitySummary() {
       .finally(() => setLoading(false));
   }, [activeUser]);
 
-  // build sorted headers array: [{ raw: "DD/MM/YYYY", label: "DD-MMM" }, …]
+  // Only keep entries with valid dates
+  const validDaily = useMemo(
+    () =>
+      daily.filter((entry) =>
+        moment(entry.date, "DD/MM/YYYY", true).isValid()
+      ),
+    [daily]
+  );
+
+  // build sorted, unique headers array
   const headers = useMemo(() => {
-    return [...daily]
-      .sort(
-        (a, b) =>
-          moment(a.date, "DD/MM/YYYY").valueOf() -
-          moment(b.date, "DD/MM/YYYY").valueOf()
-      )
-      .map((d) => ({
-        raw: d.date,
-        label: moment(d.date, "DD/MM/YYYY").format("DD-MMM"),
-      }));
-  }, [daily]);
+    // extract all valid dates
+    const dates = validDaily.map((d) => d.date);
+    // dedupe
+    const uniqueDates = Array.from(new Set(dates));
+    // sort chronologically
+    uniqueDates.sort(
+      (a, b) =>
+        moment(a, "DD/MM/YYYY").valueOf() -
+        moment(b, "DD/MM/YYYY").valueOf()
+    );
+    // map to { raw, label }
+    return uniqueDates.map((date) => ({
+      raw: date,
+      label: moment(date, "DD/MM/YYYY").format("DD-MMM"),
+    }));
+  }, [validDaily]);
 
   // collect visible parameter names, excluding HIDDEN
   const parameters = useMemo(() => {
-    if (!daily.length) return [];
-    return Object.keys(daily[0].stackData[0].parameters).filter(
-      (key) => !HIDDEN.has(key)
-    );
-  }, [daily]);
+    if (!validDaily.length) return [];
+    return Object.keys(
+      validDaily[0].stackData[0].parameters
+    ).filter((key) => !HIDDEN.has(key));
+  }, [validDaily]);
 
   // lookup[param][date] = value
   const lookup = useMemo(() => {
     const table = {};
-    daily.forEach((entry) => {
+    validDaily.forEach((entry) => {
       const date = entry.date;
       const params = entry.stackData[0].parameters;
       Object.entries(params).forEach(([key, val]) => {
@@ -98,7 +114,7 @@ export default function WaterQualitySummary() {
       });
     });
     return table;
-  }, [daily]);
+  }, [validDaily]);
 
   // compute min/max per parameter for coloring
   const extremes = useMemo(() => {
@@ -158,10 +174,7 @@ export default function WaterQualitySummary() {
           {/* Table or loader */}
           {loading ? (
             <div className="text-center my-4">
-              <div
-                className="spinner-border text-primary"
-                role="status"
-              />
+              <div className="spinner-border text-primary" role="status" />
             </div>
           ) : (
             <div className="table-responsive">
@@ -179,7 +192,7 @@ export default function WaterQualitySummary() {
                   {parameters.map((param) => (
                     <tr key={param}>
                       <td>{param.toUpperCase()}</td>
-                      <td>{/* put limits here if needed */}</td>
+                      <td>{/* put limits here if needed */}-</td>
                       {headers.map((h) => {
                         const val = lookup[param][h.raw];
                         const bg = getBg(param, val);

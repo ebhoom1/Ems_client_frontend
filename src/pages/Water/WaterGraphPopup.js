@@ -69,106 +69,78 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
         }
     };
 
-    const processData = () => {
-        if (!Array.isArray(graphData) || graphData.length === 0) {
-            console.warn("⚠️ No valid data found in graphData!");
-            return { labels: [], values: [] };
-        }
-    
-        let filteredData = [];
-    
+  const processData = () => {
+    if (!Array.isArray(graphData) || graphData.length === 0) {
+        console.warn("⚠️ No valid data found in graphData!");
+        return { labels: [], values: [] };
+    }
+
+    let labels = [];
+    let values = [];
+
+    // Group data by interval (hour, day, month)
+    const groupedData = {};
+
+    graphData.forEach(entry => {
+        const stack = entry.stackData.find(s => s.stackName === stackName);
+        if (!stack) return;
+
+        const paramKey = Object.keys(stack.parameters).find(
+            key => key.toLowerCase() === parameter.toLowerCase()
+        );
+        if (!paramKey) return;
+
+        const paramValue = parseFloat(stack.parameters[paramKey] || 0);
+        if (paramValue < 0) return;
+
+        let key = '';
         if (timeInterval === 'hour') {
-            filteredData = graphData.filter(entry =>
-                moment(entry.timestamp).isSame(moment(), 'day')
-            );
-        } else {
-            filteredData = graphData;
-        }
-    
-        let labels = [];
-        let values = [];
-    
-        if (timeInterval === 'hour') {
-            filteredData.forEach(entry => {
-                const stack = entry.stackData.find(s => s.stackName === stackName);
-                if (!stack) return;
-                const paramKey = Object.keys(stack.parameters).find(
-                    key => key.toLowerCase() === parameter.toLowerCase()
-                );
-                if (!paramKey) return;
-                const paramValue = parseFloat(stack.parameters[paramKey] || 0);
-                if (paramValue < 0) return;
-                labels.push(moment(entry.timestamp).format("HH:mm"));
-                values.push(paramValue);
-            });
-            labels.reverse();
-            values.reverse();
+            // Filter to show only data from today
+            if (!moment(entry.timestamp).isSame(moment(), 'day')) {
+                return;
+            }
+            key = moment(entry.timestamp).format("HH:mm");
         } else if (timeInterval === 'day') {
-            const last20Days = moment().subtract(20, 'days');
-            const filteredLast20Days = filteredData.filter(entry =>
-                moment(entry.timestamp).isAfter(last20Days)
-            );
-    
-            const groupedByDate = {};
-            filteredLast20Days.forEach(entry => {
-                const dateLabel = moment(entry.timestamp).format("DD/MM/YYYY");
-                if (!groupedByDate[dateLabel]) {
-                    groupedByDate[dateLabel] = [];
-                }
-                groupedByDate[dateLabel].push(entry);
-            });
-    
-            Object.keys(groupedByDate)
-                .sort((a, b) => moment(a, "DD/MM/YYYY") - moment(b, "DD/MM/YYYY"))
-                .forEach(dateLabel => {
-                    const entries = groupedByDate[dateLabel];
-                    const latestEntry = entries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[entries.length - 1];
-                    const stack = latestEntry.stackData.find(s => s.stackName === stackName);
-                    if (!stack) return;
-                    const paramKey = Object.keys(stack.parameters).find(
-                        key => key.toLowerCase() === parameter.toLowerCase()
-                    );
-                    if (!paramKey) return;
-                    const paramValue = parseFloat(stack.parameters[paramKey] || 0);
-                    if (paramValue < 0) return;
-    
-                    labels.push(dateLabel);
-                    values.push(paramValue);
-                });
+            key = moment(entry.timestamp).format("DD/MM/YYYY");
         } else if (timeInterval === 'month') {
-            const groupedByMonth = {};
-            filteredData.forEach(entry => {
-                const monthLabel = moment(entry.timestamp).format("MMMM YYYY");
-                if (!groupedByMonth[monthLabel]) {
-                    groupedByMonth[monthLabel] = [];
-                }
-                groupedByMonth[monthLabel].push(entry);
-            });
-    
-            Object.keys(groupedByMonth)
-                .sort((a, b) => moment(b, "MMMM YYYY") - moment(a, "MMMM YYYY"))
-                .forEach(monthLabel => {
-                    const entries = groupedByMonth[monthLabel];
-                    const latestEntry = entries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[entries.length - 1];
-                    const stack = latestEntry.stackData.find(s => s.stackName === stackName);
-                    if (!stack) return;
-                    const paramKey = Object.keys(stack.parameters).find(
-                        key => key.toLowerCase() === parameter.toLowerCase()
-                    );
-                    if (!paramKey) return;
-                    const paramValue = parseFloat(stack.parameters[paramKey] || 0);
-                    if (paramValue < 0) return;
-    
-                    labels.push(monthLabel);
-                    values.push(paramValue);
-                });
-            labels.reverse();
-            values.reverse();
+            key = moment(entry.timestamp).format("MMMM YYYY"); // Added year to avoid month collision
         }
-    
-        return { labels, values };
-    };
-    
+
+        if (!groupedData[key]) {
+            groupedData[key] = {
+                timestamp: moment(entry.timestamp).toDate(),
+                value: paramValue
+            };
+        } else {
+            // Keep the latest value for the given time interval
+            if (moment(entry.timestamp).isAfter(groupedData[key].timestamp)) {
+                groupedData[key].timestamp = moment(entry.timestamp).toDate();
+                groupedData[key].value = paramValue;
+            }
+        }
+    });
+
+    // Sort the keys (timestamps) and populate labels and values
+    const sortedKeys = Object.keys(groupedData).sort((a, b) => {
+        if (timeInterval === 'hour') {
+            return moment(a, "HH:mm") - moment(b, "HH:mm");
+        }
+        if (timeInterval === 'day') {
+            return moment(a, "DD/MM/YYYY") - moment(b, "DD/MM/YYYY");
+        }
+        if (timeInterval === 'month') {
+            return moment(a, "MMMM YYYY") - moment(b, "MMMM YYYY");
+        }
+        return 0;
+    });
+
+    sortedKeys.forEach(key => {
+        labels.push(key);
+        values.push(groupedData[key].value);
+    });
+
+    return { labels, values };
+};
     const { labels, values } = processData();
     
     const chartData = {

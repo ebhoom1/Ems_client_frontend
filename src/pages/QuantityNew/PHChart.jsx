@@ -34,18 +34,29 @@ export default function PHChart({ userName, stackName = "STP" }) {
       .get(`${API_URL}/api/average/user/${userName}/stack/${stackName}`)
       .then((res) => {
         if (res.data.success) {
-          // map to { date, ph }
+          // 1) Map in the date + ph + raw timestamp
           const arr = res.data.data.map((entry) => ({
             date: moment(entry.timestamp).format("DD-MMM"),
             ph: entry.stackData[0].parameters.ph,
+            timestamp: entry.timestamp,
           }));
-          // sort ascending by actual timestamp
+
+          // 2) Sort chronologically by the real timestamp
           arr.sort(
-            (a, b) =>
-              moment(a.date, "DD-MMM").valueOf() -
-              moment(b.date, "DD-MMM").valueOf()
+            (a, b) => moment(a.timestamp).valueOf() - moment(b.timestamp).valueOf()
           );
-          setRawData(arr);
+
+          // 3) Deduplicate: keep only the first entry for each date
+          const seen = new Set();
+          const unique = [];
+          arr.forEach(({ date, ph }) => {
+            if (!seen.has(date)) {
+              seen.add(date);
+              unique.push({ date, ph });
+            }
+          });
+
+          setRawData(unique);
         }
       })
       .catch(console.error)
@@ -61,8 +72,8 @@ export default function PHChart({ userName, stackName = "STP" }) {
   // chart‐type icon style helper
   const iconStyle = (active) => ({
     cursor: "pointer",
-    color: active ? "#236A80" : "#888",
-    border: "1px solid #236A80",
+    color: active ? COLORS[0] : "#888",
+    border: `1px solid ${COLORS[0]}`,
     borderRadius: 4,
     padding: 4,
     backgroundColor: active ? "#EAF5F8" : "transparent",
@@ -72,23 +83,21 @@ export default function PHChart({ userName, stackName = "STP" }) {
   return (
     <div className="ph-chart-container">
       <div className="d-flex align-items-center mb-3">
-        {/* Period buttons */}
         {PERIODS.map((n) => (
           <button
             key={n}
             className="btn me-2"
             onClick={() => setDays(n)}
             style={{
-              border: "1px solid #236A80",
-              backgroundColor: days === n ? "#236A80" : "transparent",
-              color: days === n ? "#fff" : "#236A80",
+              border: `1px solid ${COLORS[0]}`,
+              backgroundColor: days === n ? COLORS[0] : "transparent",
+              color: days === n ? "#fff" : COLORS[0],
             }}
           >
             {n}-Days
           </button>
         ))}
 
-        {/* Chart type toggles */}
         <FiBarChart2
           size={24}
           onClick={() => setChartType("bar")}
@@ -112,7 +121,10 @@ export default function PHChart({ userName, stackName = "STP" }) {
       ) : (
         <ResponsiveContainer width="100%" height={300}>
           {chartType === "bar" ? (
-            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <BarChart
+              data={data}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis domain={["dataMin", "dataMax"]} />
@@ -120,17 +132,15 @@ export default function PHChart({ userName, stackName = "STP" }) {
               <Bar dataKey="ph" fill={COLORS[0]} />
             </BarChart>
           ) : (
-            <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+            <LineChart
+              data={data}
+              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis domain={["dataMin", "dataMax"]} />
               <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="ph"
-                stroke={COLORS[0]}
-                dot={false}
-              />
+              <Line type="monotone" dataKey="ph" stroke={COLORS[0]} dot={false} />
             </LineChart>
           )}
         </ResponsiveContainer>
