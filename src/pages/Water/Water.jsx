@@ -100,7 +100,7 @@ const Water = () => {
 
   const [isCheckedIn, setIsCheckedIn] = useState(false); // new
   const [allowClicks, setAllowClicks] = useState(false); //new for overlay control
-
+ const isEGL5 = currentUserName === "EGL5";
   useEffect(() => {
     if (!loggedInUser?.userName) return; // only run when ready
 
@@ -906,51 +906,44 @@ useEffect(() => {
                                       />
                                     </h4>
                                     <div className="row">
-                                      {waterParameters.map((item, index) => {
-                                        const value = stack[item.name];
-                                        return value && value !== "N/A" ? (
-                                          <div
-                                            className="col-12 col-md-4 grid-margin"
-                                            key={index}
-                                          >
-                                            <div
-                                              className="card mb-3"
-                                              style={{
-                                                border: "none",
-                                                cursor: "pointer",
-                                              }} // Added cursor pointer for better UX
-                                              onClick={() =>
-                                                handleCardClick(
-                                                  { title: item.name },
-                                                  stack.stackName
-                                                )
-                                              }
-                                              // Trigger handleCardClick on click
-                                            >
-                                              <div className="card-body">
-                                                <h5 className="text-light">
-                                                  {item.parameter}
-                                                </h5>
-                                                <p className="text-light">
-                                                  <strong
-                                                    className="text-light"
-                                                    style={{
-                                                      color: "#236A80",
-                                                      fontSize: "24px",
-                                                    }}
-                                                  >
-                                                    {parseFloat(value).toFixed(
-                                                      2
-                                                    )}{" "}
-                                                    {/* Changed to limit value to 2 decimal places */}
-                                                  </strong>{" "}
-                                                  {item.value}
-                                                </p>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        ) : null;
-                                      })}
+                                     {waterParameters.map((item, index) => {
+  // 1) grab raw value
+  let value = stack[item.name];
+
+  // 2) if EGL5 and raw is exactly 0, apply your defaults
+  if (isEGL5 && value === 0) {
+    if (item.name === "BOD") value = 6.78;
+    if (item.name === "COD") value = 25.89;
+  }
+
+  // 3) skip only if truly missing or "N/A"
+  if (value === undefined || value === null || value === "N/A") {
+    return null;
+  }
+
+  return (
+    <div
+      className="col-12 col-md-4 grid-margin"
+      key={index}
+      onClick={() =>
+        handleCardClick({ title: item.name }, stack.stackName)
+      }
+    >
+      <div className="card mb-3" style={{ border: "none", cursor: "pointer" }}>
+        <div className="card-body">
+          <h5 className="text-light">{item.parameter}</h5>
+          <p className="text-light">
+            <strong style={{ color: "#fff", fontSize: "24px" }}>
+              {parseFloat(value).toFixed(2)}
+            </strong>{" "}
+            {item.value}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+})}
+
                                     </div>
                                   </div>
                                 </div>
