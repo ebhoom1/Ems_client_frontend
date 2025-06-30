@@ -1,6 +1,6 @@
 // src/components/EquipmentList.jsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import { API_URL } from "../../utils/apiConfig";
 import { useSelector } from "react-redux";
@@ -38,48 +38,93 @@ export default function EquipmentList() {
   const navigate = useNavigate();
 
   // 1) Fetch companies/users based on role
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        let fetched = [];
+  const fetchUsers = useCallback(async () => {
+    try {
+      let fetched = [];
 
-        if (isTechnician) {
-          const res = await fetch(
-            `${API_URL}/api/get-companies-by-technician/${type._id}`
-          );
-          fetched = (await res.json()).companies || [];
-        } else if (territorialManager) {
-          const res = await fetch(
-            `${API_URL}/api/get-companies-by-territorialManager/${type._id}`
-          );
-          fetched = (await res.json()).companies || [];
-        } else if (isOperator) {
-          const res = await fetch(
-            `${API_URL}/api/get-companies-by-operator/${type._id}`
-          );
-          fetched = (await res.json()).companies || [];
-        } else if (type.userType === "admin") {
-          const res = await fetch(
-            `${API_URL}/api/get-users-by-adminType/${type.adminType}`
-          );
-          fetched = (await res.json()).users || [];
-        } else if (type.userType === "user") {
-          const res = await fetch(`${API_URL}/api/user/${type.userName}`);
-          const data = await res.json();
-          fetched = data.userName
-            ? [{ _id: type._id, userName: data.userName, companyName: data.companyName }]
-            : [];
-        }
-
-        setUsers(fetched);
-      } catch (err) {
-        toast.error("Error fetching users/companies");
-        console.error(err);
+      // EBHOOM (root) sees all non-tech users
+      if (type.adminType === "EBHOOM") {
+        const res = await fetch(`${API_URL}/api/getallusers`);
+        const all = (await res.json()).users || [];
+        fetched = all.filter(
+          (u) =>
+            !u.isOperator &&
+            !u.isTechnician &&
+            !u.isTerritorialManager
+        );
       }
-    };
-    fetchUsers();
-  }, [type, isOperator, isTechnician, territorialManager]);
+      // super_admin: see own admins + their users
+      else if (type.userType === "super_admin") {
+        const res = await fetch(`${API_URL}/api/getallusers`);
+        const all = (await res.json()).users || [];
+        const myAdmins = all.filter(
+          (u) =>
+            u.createdBy === type._id && u.userType === "admin"
+        );
+        const adminIds = myAdmins.map((a) => a._id.toString());
+        const allowed = all.filter(
+          (u) =>
+            u.createdBy === type._id ||
+            adminIds.includes(u.createdBy)
+        );
+        fetched = allowed.filter(
+          (u) =>
+            !u.isOperator &&
+            !u.isTechnician &&
+            !u.isTerritorialManager
+        );
+      }
+      // admin: only users they created
+      else if (type.userType === "admin") {
+        const res = await fetch(
+          `${API_URL}/api/get-users-by-creator/${type._id}`
+        );
+        const usersByAdmin = (await res.json()).users || [];
+        fetched = usersByAdmin.filter((u) => u.userType === "user");
+      }
+      // technician / territorial / operator: as before
+      else if (isTechnician) {
+        const res = await fetch(
+          `${API_URL}/api/get-companies-by-technician/${type._id}`
+        );
+        fetched = (await res.json()).companies || [];
+      } 
+      else if (territorialManager) {
+        const res = await fetch(
+          `${API_URL}/api/get-companies-by-territorialManager/${type._id}`
+        );
+        fetched = (await res.json()).companies || [];
+      } 
+      else if (isOperator) {
+        const res = await fetch(
+          `${API_URL}/api/get-companies-by-operator/${type._id}`
+        );
+        fetched = (await res.json()).companies || [];
+      }
+      // user: just themselves
+      else if (type.userType === "user") {
+        const res = await fetch(`${API_URL}/api/user/${type.userName}`);
+        const data = await res.json();
+        if (data.userName) {
+          fetched = [
+            {
+              _id: type._id,
+              userName: data.userName,
+              companyName: data.companyName,
+            },
+          ];
+        }
+      }
 
+      setUsers(fetched);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setUsers([]);
+    }
+  }, [type, isOperator, isTechnician, territorialManager]);
+   useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
   // 2) Fetch equipment + electrical report status
   useEffect(() => {
     const fetchEquipmentAndStatus = async () => {
@@ -386,13 +431,13 @@ export default function EquipmentList() {
                         </button>
                        {userData?.validUserOne?.userType === "admin" && !isTechnician && !territorialManager && (
   <>
-    <button
+   {/*  <button
       className="btn btn-sm text-blue-600"
       onClick={() => editEquipment(e._id)}
       title="Edit Equipment"
     >
       <FaEdit />
-    </button>
+    </button> */}
     <button
       className="btn btn-sm text-red-600"
       onClick={() => deleteEquipment(e._id)}

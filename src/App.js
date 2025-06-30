@@ -97,6 +97,7 @@ import EditEquipment from "./pages/Inventory/EditEquipment";
 import Summary from "./pages/QuantityNew/Summary";
 import WaterQualitySummary from "./pages/QuantityNew/WaterQualitySummary";
 import RealTimeDashboard from "./pages/QuantityNew/RealTimeDashboard";
+import DayReport from "./pages/Report/DayReport";
 
 function App() {
   const dispatch = useDispatch();
@@ -246,6 +247,8 @@ function App() {
     <Route path="/summary" element={<Summary />} />
         <Route path="/summary/waterquality" element={<WaterQualitySummary />} />
                   <Route path="/realtimedashboard" element={<RealTimeDashboard />} />
+                                    <Route path="/dayreport" element={<DayReport />} />
+
 
   </Route>
 )}
@@ -337,6 +340,7 @@ function App() {
                       <Route path="/summary" element={<Summary />} />
         <Route path="/summary/waterquality" element={<WaterQualitySummary />} />
                   <Route path="/realtimedashboard" element={<RealTimeDashboard />} />
+                                    <Route path="/dayreport" element={<DayReport />} />
 
                 </Route>
               )}

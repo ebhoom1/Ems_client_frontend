@@ -40,8 +40,7 @@ function Header() {
 
   const { userData } = useSelector((state) => state.user);
 
-  const selectedUserId = useSelector((state) => state.selectedUser.userId);
-
+  const selectedUserId=sessionStorage.getItem("selectedUserId");
   // Create an audio instance for the notification sound.
   const audioRef = useRef(new Audio(notificationSound));
   // Keep track of previous notifications count.
@@ -153,7 +152,6 @@ function Header() {
     fetchAndFilterUsers();
   }, [userData]);
 
-
   useEffect(() => {
     const validateUser = async () => {
       try {
@@ -219,6 +217,8 @@ function Header() {
 
   const handleUserSelect = (userId) => {
     sessionStorage.setItem("selectedUserId", userId);
+    const selectedUser = sessionStorage.getItem("selectedUserId");
+    console.log("selected useid:", selectedUser);
     dispatch(setSelectedUser(userId));
     setUserName(userId);
   };
@@ -247,7 +247,7 @@ function Header() {
     (user) =>
       user.userType === "user" && // Ensure only 'user' type is displayed in the dropdown
       (user.userName.toLowerCase().includes(searchTerm) ||
-       user.companyName.toLowerCase().includes(searchTerm))
+        user.companyName.toLowerCase().includes(searchTerm))
   );
 
   const savedUserId = sessionStorage.getItem("selectedUserId");
@@ -286,17 +286,19 @@ function Header() {
             </Navbar.Brand>
             <div className="d-flex align-items-center">
               {/* ✅ Show selected company name */}
-             {userData?.validUserOne?.userType !== "user" && selectedUserId && (
-  <div
-    className="me-4 mt-2 text-dark fw-semibold"
-    style={{ fontSize: "12px" }}
-  >
-    <b>
-      {allFetchedUsers.find(u => u.userName === selectedUserId)
-        ?.companyName || ""}
-    </b>
-  </div>
-)}
+              {userData?.validUserOne?.userType !== "user" &&
+                selectedUserId && (
+                  <div
+                    className="me-4 mt-2 text-dark fw-semibold"
+                    style={{ fontSize: "12px" }}
+                  >
+                    <b>
+                      {allFetchedUsers.find(
+                        (u) => u.userName === selectedUserId
+                      )?.companyName || ""}
+                    </b>
+                  </div>
+                )}
 
               <Nav.Link
                 className="me-3 mt-2"
@@ -346,7 +348,6 @@ function Header() {
                   }}
                   className="user-dropdown-menu"
                 >
-                  
                   <Dropdown.Item>
                     <img
                       src="https://cdn.pixabay.com/photo/2020/07/01/12/58/icon-5359553_640.png"

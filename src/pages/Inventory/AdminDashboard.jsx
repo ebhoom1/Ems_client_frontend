@@ -1,8 +1,9 @@
 // AdminDashboard.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { API_URL } from "../../utils/apiConfig";
 import LeftQuantity from "./LeftQuantity"; // already used for used inventory
 import { useSelector } from "react-redux";
+import axios from "axios";
 
 const AdminDashboard = () => {
   const [activeAdminTab, setActiveAdminTab] = useState("inventoryAdded");
@@ -51,16 +52,50 @@ const [selectedUserName, setSelectedUserName] = useState("all");
         });
     }
   }, [activeAdminTab, userData]);
-useEffect(() => {
-  if (userData?.validUserOne?.userType === "admin") {
-    fetch(`${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`)
-      .then(res => res.json())
-      .then(data => {
-        setUsers(data.users || []);
-      })
-      .catch(console.error);
-  }
-}, [userData]);
+const fetchUsers = useCallback(async () => {
+    try {
+      const currentUser = userData?.validUserOne;
+      if (!currentUser) {
+        setUsers([]);
+        return;
+      }
+
+      let response;
+      // EBHOOM: fetch all non-tech users
+      if (currentUser.adminType === "EBHOOM") {
+        response = await axios.get(`${API_URL}/api/getallusers`);
+        const all = response.data.users || [];
+        setUsers(all.filter(u => !u.isTechnician && !u.isTerritorialManager && !u.isOperator));
+      }
+      // Super admin: fetch own admins + their users
+      else if (currentUser.userType === "super_admin") {
+        response = await axios.get(`${API_URL}/api/getallusers`);
+        const all = response.data.users || [];
+        const myAdmins = all.filter(u => u.createdBy === currentUser._id && u.userType === "admin");
+        const adminIds = myAdmins.map(a => a._id.toString());
+        const allowed = all.filter(u => u.createdBy === currentUser._id || adminIds.includes(u.createdBy));
+        setUsers(allowed.filter(u => !u.isTechnician && !u.isTerritorialManager && !u.isOperator));
+      }
+      // Admin: fetch users they created
+      else if (currentUser.userType === "admin") {
+        response = await axios.get(`${API_URL}/api/get-users-by-creator/${currentUser._id}`);
+        const myUsers = response.data.users || [];
+        setUsers(myUsers.filter(u => u.userType === "user"));
+      } else {
+        setUsers([]);
+      }
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setUsers([]);
+    }
+  }, [userData]);
+
+  useEffect(() => {
+    if (userData?.validUserOne?.userType === "admin" ||
+        userData?.validUserOne?.userType === "super_admin") {
+      fetchUsers();
+    }
+  }, [userData, fetchUsers]);
 
   // Fetch Usage Logs
   useEffect(() => {
@@ -236,25 +271,26 @@ useEffect(() => {
 
       {/* Global Search Bar */}
      <div style={{ margin: "1rem 0", width: "20%" }}>
-  <select
-    value={selectedUserName}
-    onChange={e => setSelectedUserName(e.target.value)}
-    style={{
-      padding: "0.5rem",
-      width: "100%",
-      borderRadius: "20px",
-      border: "1px solid #ccc",
-      backgroundColor: "#fff",
-      appearance: "none"
-    }}
-  >
-    <option value="all">Select Companies</option>
-    {users.map(u => (
-      <option key={u._id} value={u.userName}>
-        {u.companyName}
-      </option>
-    ))}
-  </select>
+<select
+  value={selectedUserName}
+  onChange={e => setSelectedUserName(e.target.value)}
+  style={{
+    padding: "0.5rem",
+    width: "100%",
+    borderRadius: "20px",
+    border: "1px solid #ccc",
+    backgroundColor: "#fff",
+    appearance: "none"
+  }}
+>
+  <option value="all">Select Companies</option>
+  {users.map(user => (
+    <option key={user.userName} value={user.userName}>
+      {user.companyName}
+    </option>
+  ))}
+</select>
+
 </div>
 
 

@@ -29,9 +29,13 @@ const monthMapping = {
   December: 12,
 };
 
+// Function to filter out unwanted stacks
+const filterUnwantedStacks = (stackName) => {
+  return !stackName.includes("STP intlet") && !stackName.includes("STP iutlet");
+};
+
 const MonthlyFlowData = () => {
   const { userType, userData } = useSelector((state) => state.user);
-
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState("");
   const [stackOptions, setStackOptions] = useState([]);
@@ -42,56 +46,54 @@ const MonthlyFlowData = () => {
   const [selectedMonth, setSelectedMonth] = useState("");
 
   // — fetch & filter users exactly like Header's logic —
-useEffect(() => {
-  const fetchAndFilterUsers = async () => {
-    const currentUser = userData?.validUserOne;
-    if (!currentUser) {
-      setUsers([]);
-      return;
-    }
-    
-    try {
-      let response;
-      const endpoint = `${API_URL}/api/getallusers`;
+  useEffect(() => {
+    const fetchAndFilterUsers = async () => {
+      const currentUser = userData?.validUserOne;
+      if (!currentUser) {
+        setUsers([]);
+        return;
+      }
 
-      if (currentUser.adminType === "EBHOOM") {
-        // EBHOOM admin - get all non-technical users
-        response = await axios.get(endpoint);
-        const allUsers = response.data.users || [];
-        setUsers(
-          allUsers.filter(u => !u.isTechnician && !u.isTerritorialManager && !u.isOperator)
-        );
-      } else if (currentUser.userType === "super_admin") {
-        // Super admin - get users created by them or their admins
-        response = await axios.get(endpoint);
-        const allUsers = response.data.users || [];
-        const adminIds = allUsers
-          .filter(u => u.createdBy === currentUser._id && u.userType === "admin")
-          .map(a => a._id.toString());
-        
-        setUsers(
-          allUsers.filter(u => 
-            (u.createdBy === currentUser._id || adminIds.includes(u.createdBy)) &&
-            !u.isTechnician && 
-            !u.isOperator
-          )
-        );
-      } else if (currentUser.userType === "admin") {
-        // Regular admin - get only their direct users
-        response = await axios.get(`${API_URL}/api/get-users-by-creator/${currentUser._id}`);
-        setUsers(response.data.users || []);
-      } else {
-        // Regular user - can't see other users
+      try {
+        let response;
+        const endpoint = `${API_URL}/api/getallusers`;
+        if (currentUser.adminType === "EBHOOM") {
+          // EBHOOM admin - get all non-technical users
+          response = await axios.get(endpoint);
+          const allUsers = response.data.users || [];
+          setUsers(
+            allUsers.filter(u => !u.isTechnician && !u.isTerritorialManager && !u.isOperator)
+          );
+        } else if (currentUser.userType === "super_admin") {
+          // Super admin - get users created by them or their admins
+          response = await axios.get(endpoint);
+          const allUsers = response.data.users || [];
+          const adminIds = allUsers
+            .filter(u => u.createdBy === currentUser._id && u.userType === "admin")
+            .map(a => a._id.toString());
+
+          setUsers(
+            allUsers.filter(u =>
+              (u.createdBy === currentUser._id || adminIds.includes(u.createdBy)) &&
+              !u.isTechnician &&
+              !u.isOperator
+            )
+          );
+        } else if (currentUser.userType === "admin") {
+          // Regular admin - get only their direct users
+          response = await axios.get(`${API_URL}/api/get-users-by-creator/${currentUser._id}`);
+          setUsers(response.data.users || []);
+        } else {
+          // Regular user - can't see other users
+          setUsers([]);
+        }
+      } catch (err) {
+        console.error("Error fetching users:", err);
         setUsers([]);
       }
-    } catch (err) {
-      console.error("Error fetching users:", err);
-      setUsers([]);
-    }
-  };
-
-  fetchAndFilterUsers();
-}, [userData]);
+    };
+    fetchAndFilterUsers();
+  }, [userData]);
 
   // — if non-admin, auto-select themselves —
   useEffect(() => {
@@ -109,7 +111,7 @@ useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userType, userData]);
 
-  // Fetch stack list for a user
+  // Fetch stack list for a user and filter out unwanted stacks
   const fetchStackOptions = async (userName) => {
     if (!userName) return;
     try {
@@ -118,47 +120,47 @@ useEffect(() => {
       );
       console.log("📥 get-stacknames response:", resp.data);
       const stacks = resp.data.stackNames || [];
-      setStackOptions(stacks.filter(s => s.stationType === "effluent_flow").map(s => s.name));
+      // Filter for effluent_flow and remove unwanted stacks
+      setStackOptions(stacks.filter(s => s.stationType === "effluent_flow" && filterUnwantedStacks(s.name)).map(s => s.name));
     } catch (err) {
       console.error("❌ Error fetching stacks:", err);
       setStackOptions([]);
     }
   };
-
+  
   // Fetch bar-chart data across stacks (monthly consumption)
   const fetchUserMonthlyFlowData = async (userName, month) => {
     if (!userName || !month) return;
     const monthNum = monthMapping[month];
-    
+
     try {
       // Fetch both first and last flows for the month
       const [lastFlowResponse, firstFlowResponse] = await Promise.all([
         axios.get(`${API_URL}/api/last-flow/${userName}/${monthNum}`),
         axios.get(`${API_URL}/api/first-flow/${userName}/${monthNum}`)
       ]);
-
       console.log("📥 last-flow response:", lastFlowResponse.data);
       console.log("📥 first-flow response:", firstFlowResponse.data);
-
       if (lastFlowResponse.data.success && firstFlowResponse.data.success) {
         const lastFlows = lastFlowResponse.data.data || [];
         const firstFlows = firstFlowResponse.data.data || [];
-        
-        // Calculate consumption for each stack (last - first)
-        const consumptionData = lastFlows.map(lastFlow => {
-          const firstFlow = firstFlows.find(f => f.stackName === lastFlow.stackName);
-          const consumption = firstFlow 
-            ? (parseFloat(lastFlow.lastCumulatingFlow) - parseFloat(firstFlow.initialCumulatingFlow))
-            : 0;
-          
-          return {
-            stackName: lastFlow.stackName,
-            monthlyConsumption: Math.max(0, consumption).toFixed(2),
-            lastCumulatingFlow: parseFloat(lastFlow.lastCumulatingFlow).toFixed(2),
-            firstCumulatingFlow: firstFlow ? parseFloat(firstFlow.initialCumulatingFlow).toFixed(2) : 0
-          };
-        });
 
+        // Calculate consumption for each stack (last - first) and filter unwanted stacks
+        const consumptionData = lastFlows
+          .filter(lastFlow => filterUnwantedStacks(lastFlow.stackName)) // Filter here as well
+          .map(lastFlow => {
+            const firstFlow = firstFlows.find(f => f.stackName === lastFlow.stackName);
+            const consumption = firstFlow
+              ? (parseFloat(lastFlow.lastCumulatingFlow) - parseFloat(firstFlow.initialCumulatingFlow))
+              : 0;
+
+            return {
+              stackName: lastFlow.stackName,
+              monthlyConsumption: Math.max(0, consumption).toFixed(2),
+              lastCumulatingFlow: parseFloat(lastFlow.lastCumulatingFlow).toFixed(2),
+              firstCumulatingFlow: firstFlow ? parseFloat(firstFlow.initialCumulatingFlow).toFixed(2) : 0
+            };
+          });
         setStackFlowData(consumptionData);
       } else {
         setStackFlowData([]);
@@ -173,18 +175,24 @@ useEffect(() => {
   const fetchLastCumulatingFlow = async (userName, stackName, month) => {
     if (!userName || !stackName || !month) return;
     const monthNum = monthMapping[month];
-    
+
+    // Check if the selected stack is one of the unwanted ones
+    if (!filterUnwantedStacks(stackName)) {
+      setLastCumulatingFlow(0);
+      setAnimatedProgress(0);
+      return; // Early exit if the stack is unwanted
+    }
+
     try {
       // Fetch both first and last flows for the selected stack
       const [lastFlowResponse, firstFlowResponse] = await Promise.all([
         axios.get(`${API_URL}/api/last-flow/${userName}/${monthNum}`),
         axios.get(`${API_URL}/api/first-flow/${userName}/${monthNum}`)
       ]);
-
       if (lastFlowResponse.data.success && firstFlowResponse.data.success) {
         const lastFlow = lastFlowResponse.data.data.find(f => f.stackName === stackName);
         const firstFlow = firstFlowResponse.data.data.find(f => f.stackName === stackName);
-        
+
         if (lastFlow && firstFlow) {
           const consumption = parseFloat(lastFlow.lastCumulatingFlow) - parseFloat(firstFlow.initialCumulatingFlow);
           setLastCumulatingFlow(Math.max(0, consumption));
@@ -215,30 +223,28 @@ useEffect(() => {
       <h4 className="text-center mt-3 mb-4">
         <b> Monthly Consumption</b>
       </h4>
-
       <div className="row mb-3">
         {/* User selector */}
         <div className="col-md-4">
-      <select
-  className="form-select"
-  value={selectedUser}
-  onChange={(e) => {
-    setSelectedUser(e.target.value);
-    fetchStackOptions(e.target.value);
-    if (selectedMonth) {
-      fetchUserMonthlyFlowData(e.target.value, selectedMonth);
-    }
-  }}
->
-  <option value="">Select User</option>
-  {users.map((u) => (
-    <option key={u._id} value={u.userName}>
-      {u.userName} — {u.companyName}
-    </option>
-  ))}
-</select>
+          <select
+            className="form-select"
+            value={selectedUser}
+            onChange={(e) => {
+              setSelectedUser(e.target.value);
+              fetchStackOptions(e.target.value);
+              if (selectedMonth) {
+                fetchUserMonthlyFlowData(e.target.value, selectedMonth);
+              }
+            }}
+          >
+            <option value="">Select User</option>
+            {users.map((u) => (
+              <option key={u._id} value={u.userName}>
+                {u.userName} — {u.companyName}
+              </option>
+            ))}
+          </select>
         </div>
-
         {/* Stack selector */}
         <div className="col-md-4">
           <select
@@ -264,7 +270,6 @@ useEffect(() => {
             ))}
           </select>
         </div>
-
         {/* Month selector */}
         <div className="col-md-4">
           <select
@@ -297,7 +302,6 @@ useEffect(() => {
           </select>
         </div>
       </div>
-
       <div className="row gap-4 m-2 mb-5">
         <div
           className="col-lg-7 shadow p-3 position-relative"
@@ -318,7 +322,6 @@ useEffect(() => {
               zIndex: 0,
             }}
           ></div>
-
           {/* Bar Chart */}
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
@@ -352,7 +355,6 @@ useEffect(() => {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
         <div className="col-lg-4 shadow p-3 d-flex align-items-center justify-content-center">
           <div style={{ position: "relative", width: "200px", height: "200px" }}>
             <svg width="0" height="0">
@@ -398,7 +400,6 @@ useEffect(() => {
                 style={{ filter: "drop-shadow(2px 4px 6px rgba(0,0,0,0.2))" }}
               />
             </RadialBarChart>
-
             {/* Centered Info */}
             <div
               style={{
@@ -438,5 +439,4 @@ useEffect(() => {
     </div>
   );
 };
-
 export default MonthlyFlowData;

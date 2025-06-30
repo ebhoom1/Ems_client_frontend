@@ -277,6 +277,13 @@ const ViewReport = () => {
       >
         Customisable Report
       </div>
+        <div
+        style={{ borderRadius: '10px', cursor: 'pointer',color:'#236a80'  }}
+        className="border border-solid shadow m-3 p-3 w-50 text-center"
+        onClick={() => navigate('/dayreport')}
+      >
+       Day Report
+      </div>
     </div>
           
         </div>
