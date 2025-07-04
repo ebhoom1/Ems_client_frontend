@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Handle, Position } from "react-flow-renderer";
 
-export default function TankNode({ data, liveTankData, id }) {
+export default function TankNode({ data, liveTankData, id, productId }) {
   const { isEditing } = data;
 
   // 1) Editable tankName, defaulting to saved data or node label
@@ -52,12 +52,13 @@ export default function TankNode({ data, liveTankData, id }) {
 
   // 6) Debug logging
   useEffect(() => {
+    console.log('TankNode debug:', { productId, tankName, liveTankData });
     if (lastMatch) {
       console.log("💧 Displaying last tank data:", lastMatch);
     } else {
       console.log(`💧 No tank data yet for "${tankName}"`);
     }
-  }, [lastMatch, tankName]);
+  }, [lastMatch, tankName, productId, liveTankData]);
 
   // 7) Persist back into node data for saving
   useEffect(() => {

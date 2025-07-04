@@ -17,8 +17,6 @@ import io from "socket.io-client";
 
 function LIveLayout() {
   const { userData } = useSelector((state) => state.user);
-  console.log("userdata respone ", userData);
-  const productId = userData?.validUserOne?.productID;
   const [isEditMode, setIsEditMode] = useState(false);
   const [stationsList, setStationsList] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
@@ -27,42 +25,66 @@ function LIveLayout() {
   const [socket, setSocket] = useState(null);
   const [pumpStates, setPumpStates] = useState({});
   const [socketConnected, setSocketConnected] = useState(false);
+  const [liveTankData, setLiveTankData] = useState([]);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  const productId = userData?.validUserOne?.productID;
+  let currentProductId = productId;
+  if (userData?.validUserOne?.userType === "admin" && selectedUser) {
+    const selectedUserObj = users.find((u) => u.userName === selectedUser);
+    if (selectedUserObj && selectedUserObj.productID) {
+      currentProductId = selectedUserObj.productID;
+    }
+  }
+
   // Initialize socket connection
   useEffect(() => {
+    if (!currentProductId) return; // Don't connect if no productId
+  
     const newSocket = io("https://api.ocems.ebhoom.com", {
       reconnectionAttempts: 5,
       reconnectionDelay: 5000,
+      transports: ['websocket'], // Force WebSocket transport for better reliability
+      query: {
+        productId: currentProductId,
+        userType: userData?.validUserOne?.userType || 'user'
+      }
     });
-
+  
     setSocket(newSocket);
-
+    console.log('Socket initialized for product:', currentProductId);
+  
+    // Socket event handlers
     const handleConnect = () => {
-      console.log("Connected to socket server");
+      console.log('✅ Socket connected:', newSocket.id);
       setSocketConnected(true);
-      newSocket.emit("joinRoom", { product_id: productId }); // Changed to 27 to match your logs
+      // Join room with productId (as string to match backend expectation)
+      newSocket.emit('joinRoom', currentProductId.toString());
+      console.log(`Joined room for productId: ${currentProductId}`);
     };
-
-    const handleDisconnect = () => {
-      console.log("Disconnected from socket server");
+  
+    const handleDisconnect = (reason) => {
+      console.log('❌ Socket disconnected:', reason);
       setSocketConnected(false);
+      if (reason === 'io server disconnect') {
+        // Try to reconnect manually if server disconnects us
+        setTimeout(() => newSocket.connect(), 1000);
+      }
     };
-
+  
+    const handleError = (error) => {
+      console.error('Socket error:', error);
+    };
+  
     const handlePumpAcknowledgment = (ackData) => {
-      console.log("Processing acknowledgment:", ackData);
-
+      console.log('🔧 Processing acknowledgment:', ackData);
       if (!ackData.pumps) return;
-
+  
       // Create a map of updated pumps for batch state update
       const updates = {};
-
       ackData.pumps.forEach((pump) => {
-        // Handle both numeric (1/0) and string ('ON'/'OFF') status values
-        const newStatus =
-          pump.status === 1 || pump.status === "ON" || pump.status === "on";
-
+        const newStatus = pump.status === 1 || pump.status === 'ON' || pump.status === 'on';
         updates[pump.pumpId] = {
           status: newStatus,
           pending: false,
@@ -70,42 +92,63 @@ function LIveLayout() {
           lastUpdated: new Date().toISOString(),
         };
       });
-
+  
       // Batch update all pump states at once
       setPumpStates((prev) => ({
         ...prev,
         ...updates,
       }));
-
-      // Debug log to verify updates
-      console.log("Applied pump state updates:", updates);
+      console.log('🔧 Applied pump state updates:', updates);
     };
-
-    // Error handler with automatic reconnection
-    const handleError = (error) => {
-      console.error("Socket error:", error);
-      if (!socketConnected) {
-        setTimeout(() => newSocket.connect(), 2000);
+  
+    const handleTankData = (payload) => {
+      console.log('💧 Received tank payload:', payload);
+      if (payload?.tankData) {
+        // Transform tank data to ensure consistent format
+        const tanks = payload.tankData.map(t => ({
+          tankName: t.tankName?.trim() || '',
+          percentage: parseFloat(t.percentage ?? t.depth ?? 0),
+          level: parseFloat(t.level ?? t.depth ?? 0),
+          stackName: t.stackName || '',
+          timestamp: t.timestamp || new Date().toISOString()
+        }));
+        setLiveTankData(tanks);
       }
     };
-
-    // Setup all event listeners
-    newSocket.on("connect", handleConnect);
-    newSocket.on("disconnect", handleDisconnect);
-    newSocket.on("pumpAck", handlePumpAcknowledgment);
-    newSocket.on("pumpStateUpdate", handlePumpAcknowledgment);
-    newSocket.on("error", handleError);
-
-    return () => {
-      // Cleanup all event listeners
-      newSocket.off("connect", handleConnect);
-      newSocket.off("disconnect", handleDisconnect);
-      newSocket.off("pumpAck", handlePumpAcknowledgment);
-      newSocket.off("pumpStateUpdate", handlePumpAcknowledgment);
-      newSocket.off("error", handleError);
-      newSocket.disconnect();
+  
+    const handleReconnectAttempt = (attempt) => {
+      console.log(`Attempting to reconnect (${attempt})...`);
     };
-  }, []); // Empty dependency array ensures this runs once on mount // Empty dependency array ensures this runs once on mount
+  
+    // Setup all event listeners
+    newSocket.on('connect', handleConnect);
+    newSocket.on('disconnect', handleDisconnect);
+    newSocket.on('error', handleError);
+    newSocket.on('pumpAck', handlePumpAcknowledgment);
+    newSocket.on('pumpStateUpdate', handlePumpAcknowledgment);
+    newSocket.on('data', handleTankData);
+    newSocket.on('reconnect_attempt', handleReconnectAttempt);
+  
+    // Initial connection
+    newSocket.connect();
+  
+    // Cleanup function
+    return () => {
+      console.log('🧹 Cleaning up socket connection');
+      // Remove all listeners
+      newSocket.off('connect', handleConnect);
+      newSocket.off('disconnect', handleDisconnect);
+      newSocket.off('error', handleError);
+      newSocket.off('pumpAck', handlePumpAcknowledgment);
+      newSocket.off('pumpStateUpdate', handlePumpAcknowledgment);
+      newSocket.off('data', handleTankData);
+      newSocket.off('reconnect_attempt', handleReconnectAttempt);
+      
+      // Disconnect socket
+      newSocket.disconnect();
+      setSocketConnected(false);
+    };
+  }, [currentProductId]); // Reconnect when productId changes// Empty dependency array ensures this runs once on mount // Empty dependency array ensures this runs once on mount
 
   const handlePumpToggle = (pumpId, pumpName, status, isPending = false) => {
     if (!socket || !socketConnected) {
@@ -130,7 +173,7 @@ function LIveLayout() {
       const messageId = `cmd-${Date.now()}`;
 
       const command = {
-        product_id: productId, // Consistent with acknowledgment messages
+        product_id: currentProductId,
         pumps: [
           {
             pumpId,
@@ -285,6 +328,12 @@ useEffect(() => {
     navigate("/how-to-use");
   };
 
+  // Add this before rendering Canvas
+  console.log('Selected user:', selectedUser);
+  const selectedUserObj = users.find((u) => u.userName === selectedUser);
+  console.log('Selected user object:', selectedUserObj);
+  console.log('Current productId used for Canvas:', currentProductId);
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="container-fluid">
@@ -297,11 +346,11 @@ useEffect(() => {
             <div className="row">
               <div className="col-12">
                 <HeaderSim />
-                {!socketConnected && (
+                {/* {!socketConnected && (
                   <div className="alert alert-warning mb-0">
                     Connection to pump control server is offline
                   </div>
-                )}
+                )} */}
               </div>
             </div>
 
@@ -423,6 +472,7 @@ useEffect(() => {
                                   socketConnected={socketConnected}
                                   pumpStates={pumpStates}
                                   onPumpToggle={handlePumpToggle}
+                                  productId={currentProductId}
                                 />
                               </div>
                             </div>
@@ -469,6 +519,7 @@ useEffect(() => {
                                   socketConnected={socketConnected}
                                   pumpStates={pumpStates}
                                   onPumpToggle={handlePumpToggle}
+                                  productId={currentProductId}
                                 />
                               </div>
                             </div>

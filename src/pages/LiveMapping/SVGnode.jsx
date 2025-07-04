@@ -8,7 +8,7 @@ import "./livemapping.css";
 
 const API = "https://api.ocems.ebhoom.com";
 
-const SVGnode = ({ id, data, selected, liveTankData }) => {
+const SVGnode = ({ id, data, selected, liveTankData, productId }) => {
   const {
     socket,
     socketConnected,
@@ -25,8 +25,6 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
     onPumpToggle,
     isEditing: isParentEditing,
   } = data;
-
-  const productId = "27";
 
   // Local state
   const [isOn, setIsOn] = useState(propStatus);
@@ -274,7 +272,7 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
   style={{
     position: 'absolute',      // add absolute positioning
     top: 1,                    // moves knob 2px from the top of the track
-    left: 0,                   // base position; we’ll still shift it via transform
+    left: 0,                   // base position; we'll still shift it via transform
     width: 14,
     height: 16,
     borderRadius: '50%',
