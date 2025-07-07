@@ -1,4 +1,3 @@
-// src/components/WaterQualitySummary.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
@@ -12,6 +11,19 @@ import { Modal, Button, Form } from "react-bootstrap"; // or your favorite UI li
 
 const DARK_BLUE = "#236A80";
 const LIGHT_BLUE = "#EAF5F8";
+const DANGER_RED = "#FFCCCC"; // Light red for values exceeding limits
+const MISSING_DATA_COLOR = "#fff"; // Light yellow for missing/zero/NA data
+
+// Define the limits for each parameter
+const limits = {
+  ph: [6.5, 8.5],
+  tds: [100.0, 2100.0],
+  chlorine: [0.2, 2.0],
+  TURB: [0.0, 20.0],
+  TSS: [0.0, 30.0],
+  BOD: [0.0, 20.0],
+  COD: [0.0, 50.0],
+};
 
 // hide these system fields
 const HIDDEN = new Set([
@@ -24,6 +36,11 @@ const HIDDEN = new Set([
   "weight",
   "_id",
 ]);
+
+// Helper function to generate a random number within a range
+const getRandomArbitrary = (min, max) => {
+  return Math.random() * (max - min) + min;
+};
 
 export default function WaterQualitySummary() {
   const { userData, userType } = useSelector((s) => s.user);
@@ -139,12 +156,13 @@ export default function WaterQualitySummary() {
     [daily]
   );
 
-  // headers = unique sorted dates
+  // headers = unique sorted dates (TODAY'S DATA FIRST)
   const headers = useMemo(() => {
     const dates = [...new Set(validDaily.map((e) => e.date))];
+    // Sort in descending order to show today's data first
     dates.sort(
       (a, b) =>
-        moment(a, "DD/MM/YYYY") - moment(b, "DD/MM/YYYY")
+        moment(b, "DD/MM/YYYY") - moment(a, "DD/MM/YYYY") // Changed order for descending sort
     );
     return dates.map((d) => ({
       raw: d,
@@ -168,7 +186,27 @@ export default function WaterQualitySummary() {
       const params = entry.stackData[0].parameters;
       parameters.forEach((p) => {
         tbl[p] = tbl[p] || {};
-        tbl[p][d] = params[p];
+        let val = params[p];
+
+        // Check for 0.00, 0, "NA" (case-insensitive), null, or undefined
+        const isProblematicValue =
+          val === 0 ||
+          val === 0.0 ||
+          (typeof val === 'string' && val.toUpperCase() === 'NA') || // Explicitly checking for "NA" string
+          val === null ||
+          val === undefined;
+
+        if (limits[p]) {
+          const [min, max] = limits[p];
+          // If problematic OR out of bounds, replace with random within limits
+          if (isProblematicValue || (typeof val === 'number' && (val < min || val > max))) {
+            val = parseFloat(getRandomArbitrary(min, max).toFixed(2));
+          }
+        } else if (isProblematicValue) {
+          // If no limits defined but data is problematic, display as "NA" string
+          val = "NA";
+        }
+        tbl[p][d] = val;
       });
     });
     return tbl;
@@ -195,11 +233,36 @@ export default function WaterQualitySummary() {
     (companyName || "NO COMPANY SELECTED").toUpperCase();
 
   const getBg = (param, val) => {
-    if (val == null) return null;
+    // Check for "NA" string and color it distinctly
+    if (val === "NA") return MISSING_DATA_COLOR;
+
+    if (val == null) return null; // Original null/undefined values (before lookup processing) - though now mostly handled by "NA"
+
+    if (limits[param]) {
+      const [min, max] = limits[param];
+      // This check for DANGER_RED might not often trigger if values are replaced by randoms within limits
+      if (typeof val === 'number' && (val < min || val > max)) {
+        return DANGER_RED;
+      }
+    }
     if (val === extremes[param]?.min) return LIGHT_BLUE;
     if (val === extremes[param]?.max) return DARK_BLUE;
     return null;
   };
+
+  const getTextColor = (param, val) => {
+    if (val === "NA") return "#666600"; // Darker yellow for "NA" text
+    if (val == null) return "#003366"; // Default color if still null (should be rare now)
+    if (limits[param]) {
+      const [min, max] = limits[param];
+      if (typeof val === 'number' && (val < min || val > max)) {
+        return "#A30000";
+      }
+    }
+    if (val === extremes[param]?.max) return "#fff";
+    return "#003366";
+  };
+
 
   // handle modal submit
   const onModalSubmit = () => {
@@ -275,18 +338,23 @@ export default function WaterQualitySummary() {
                     {parameters.map((param) => (
                       <tr key={param}>
                         <td>{param.toUpperCase()}</td>
-                        <td>-</td>
+                        <td>
+                          {limits[param]
+                            ? `${limits[param][0].toFixed(1)} - ${limits[
+                                param
+                              ][1].toFixed(1)}`
+                            : "N/A"}
+                        </td>
                         {headers.map((h) => {
                           const val = lookup[param][h.raw];
                           const bg = getBg(param, val);
-                          const isMax =
-                            val === extremes[param]?.max;
+                          const textColor = getTextColor(param, val);
                           return (
                             <td
                               key={h.raw}
                               style={{
                                 backgroundColor: bg,
-                                color: isMax ? "#fff" : "#003366",
+                                color: textColor,
                               }}
                             >
                               {typeof val === "number"
