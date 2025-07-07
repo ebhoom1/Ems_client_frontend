@@ -40,10 +40,88 @@ const Summary = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+
+   const [showModal, setShowModal] = useState(false);
+  const [allFetchedUsers, setAllFetchedUsers] = useState([]);
+  const [modalUser, setModalUser]       = useState("");
+  const [modalMonth, setModalMonth]     = useState(String(new Date().getMonth() + 1));
+  const [modalYear, setModalYear]       = useState(String(new Date().getFullYear()));
+
   const filterUnwantedStacks = (stackName) => {
     return !stackName.includes("STP intlet") && !stackName.includes("STP iutlet");
   };
+  useEffect(() => {
+    const fetchAndFilterUsers = async () => {
+      try {
+        const currentUser = userData?.validUserOne;
+        if (!currentUser) {
+          setAllFetchedUsers([]); // Clear users if no current user
+          return;
+        }
 
+        let response;
+        if (currentUser.adminType === "EBHOOM") {
+          // EBHOOM fetches all users
+          response = await axios.get(`${API_URL}/api/getallusers`);
+          const fetchedUsers = response.data.users || [];
+          // EBHOOM logic: Filter out technicians, territorial managers, and operators
+          const filteredForEbhoom = fetchedUsers.filter(
+            (user) =>
+              user.isTechnician !== true &&
+              user.isTerritorialManager !== true &&
+              user.isOperator !== true
+          );
+          setAllFetchedUsers(filteredForEbhoom);
+        } else if (currentUser.userType === "super_admin") {
+          response = await axios.get(`${API_URL}/api/getallusers`); // Super admin still fetches all to determine createdBy hierarchy
+          const fetchedUsers = response.data.users || [];
+
+          // Get admins created by the super admin
+          const myAdmins = fetchedUsers.filter(
+            (user) =>
+              user.createdBy === currentUser._id && user.userType === "admin"
+          );
+
+          const myAdminIds = myAdmins.map((admin) => admin._id.toString());
+
+          // Get users created by the super admin or by admins
+          const usersForSuperAdmin = fetchedUsers.filter(
+            (user) =>
+              user.createdBy === currentUser._id ||
+              myAdminIds.includes(user.createdBy)
+          );
+
+          // Filter for display in the dropdown (non-technician, non-territorial manager, non-operator)
+          const filteredForSuperAdmin = usersForSuperAdmin.filter(
+            (user) =>
+              user.isTechnician !== true &&
+              user.isTerritorialManager !== true &&
+              user.isOperator !== true
+          );
+          setAllFetchedUsers(filteredForSuperAdmin);
+        } else if (currentUser.userType === "admin") {
+          // Admin fetches users created by them
+          const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
+          response = await axios.get(url);
+          const fetchedUsers = response.data.users || [];
+
+          // For an 'admin', you want to show only 'user' types created by them in the dropdown
+          const myUsers = fetchedUsers.filter(
+            (user) => user.userType === "user"
+          );
+          setAllFetchedUsers(myUsers);
+        } else {
+          // Fallback for 'user' type or any other unhandled type
+          setAllFetchedUsers([]);
+        }
+      } catch (error) {
+        console.error("Error fetching users for header dropdown:", error);
+        setAllFetchedUsers([]);
+      }
+    };
+
+    fetchAndFilterUsers();
+  }, [userData]);
   useEffect(() => {
     if (companyCache.current[activeUser] && dataCache.current[activeUser]) {
       const { companyName, differences, headers } = dataCache.current[activeUser];
@@ -192,7 +270,12 @@ const Summary = () => {
     page * PAGE_SIZE,
     page * PAGE_SIZE + PAGE_SIZE
   );
-
+const handleModalSubmit = () => {
+  setShowModal(false);
+  navigate(
+    `/previous-quantity?user=${modalUser}&month=${modalMonth}&year=${modalYear}`
+  );
+};
   return (
     <div className="container-fluid">
       <div className="row" style={{ backgroundColor: "white" }}>
@@ -219,8 +302,14 @@ const Summary = () => {
               </button>
             </div>
           </div>
-
-          {isLoading ? (
+  <div className="d-flex align-items-center justify-content-end mt-2">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowModal(true)}
+            >
+              Previous Data
+            </button>
+          </div>        {isLoading ? (
             <div className="text-center my-4">
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
@@ -299,6 +388,90 @@ const Summary = () => {
             <h3 className="mb-3">Trending Analysis (Effluent Flow)</h3>
             <EffluentBarChart userName={activeUser} />
           </div>
+
+           <div
+            className={`modal fade ${showModal ? "show" : ""}`}
+            style={{ display: showModal ? "block" : "none" }}
+            tabIndex={-1}
+          >
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Select User / Month / Year</h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setShowModal(false)}
+                  />
+                </div>
+                <div className="modal-body">
+                  <div className="mb-3">
+                    <label className="form-label">User</label>
+                    <select
+                      className="form-select"
+                      value={modalUser}
+                      onChange={(e) => setModalUser(e.target.value)}
+                    >
+                      <option value="">— select user —</option>
+                      {allFetchedUsers.map((u) => (
+                        <option key={u._id} value={u.userName}>
+                          {u.userName}-{u.companyName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Month</label>
+                    <select
+                      className="form-select"
+                      value={modalMonth}
+                      onChange={(e) => setModalMonth(e.target.value)}
+                    >
+                      {[...Array(12)].map((_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          {i + 1}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label">Year</label>
+                    <select
+                      className="form-select"
+                      value={modalYear}
+                      onChange={(e) => setModalYear(e.target.value)}
+                    >
+                      {Array.from({ length: 5 }).map((_, idx) => {
+                        const y = new Date().getFullYear() - idx;
+                        return (
+                          <option key={y} value={y}>
+                            {y}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setShowModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn"
+                    style={{backgroundColor:'#236a80' , color:'#fff'}}
+                    disabled={!modalUser}
+                    onClick={handleModalSubmit}
+                  >
+                    Submit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {showModal && <div className="modal-backdrop fade show" />}
         </div>
       </div>
     </div>

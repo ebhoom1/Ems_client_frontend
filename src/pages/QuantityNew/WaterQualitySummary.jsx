@@ -8,11 +8,12 @@ import Hedaer from "../Header/Hedaer";
 import PHChart from "./PHChart";
 import { API_URL } from "../../utils/apiConfig";
 import { useNavigate } from "react-router-dom";
+import { Modal, Button, Form } from "react-bootstrap"; // or your favorite UI lib
 
 const DARK_BLUE = "#236A80";
 const LIGHT_BLUE = "#EAF5F8";
 
-// parameters to hide (all-zero system values + internal _id)
+// hide these system fields
 const HIDDEN = new Set([
   "cumulatingFlow",
   "flowRate",
@@ -39,18 +40,82 @@ export default function WaterQualitySummary() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // fetch companyName once
+  // modal controls
+  const [showModal, setShowModal] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [modalUser, setModalUser] = useState(activeUser);
+  const [modalMonth, setModalMonth] = useState(
+    moment().month() + 1
+  );
+  const [modalYear, setModalYear] = useState(moment().year());
+
+  // fetch users for dropdown
+  useEffect(() => {
+    const fetchAndFilterUsers = async () => {
+      const currentUser = userData?.validUserOne;
+      if (!currentUser) {
+        setAllUsers([]);
+        return;
+      }
+      try {
+        let response;
+        if (currentUser.adminType === "EBHOOM") {
+          response = await axios.get(`${API_URL}/api/getallusers`);
+          const fetched = response.data.users || [];
+          setAllUsers(
+            fetched.filter(
+              (u) =>
+                !u.isTechnician &&
+                !u.isTerritorialManager &&
+                !u.isOperator
+            )
+          );
+        } else if (currentUser.userType === "super_admin") {
+          response = await axios.get(`${API_URL}/api/getallusers`);
+          const fetched = response.data.users || [];
+          const myAdmins = fetched.filter(
+            (u) => u.createdBy === currentUser._id && u.userType === "admin"
+          );
+          const adminIds = myAdmins.map((a) => a._id.toString());
+          const usersForSuper = fetched.filter(
+            (u) =>
+              u.createdBy === currentUser._id ||
+              adminIds.includes(u.createdBy)
+          );
+          setAllUsers(
+            usersForSuper.filter(
+              (u) =>
+                !u.isTechnician &&
+                !u.isTerritorialManager &&
+                !u.isOperator
+            )
+          );
+        } else if (currentUser.userType === "admin") {
+          const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
+          response = await axios.get(url);
+          const fetched = response.data.users || [];
+          setAllUsers(fetched.filter((u) => u.userType === "user"));
+        } else {
+          setAllUsers([]);
+        }
+      } catch (err) {
+        console.error(err);
+        setAllUsers([]);
+      }
+    };
+    fetchAndFilterUsers();
+  }, [userData]);
+
+  // fetch company name
   useEffect(() => {
     if (!activeUser) return;
     axios
       .get(`${API_URL}/api/get-user-by-userName/${activeUser}`)
-      .then((res) =>
-        setCompanyName(res.data.user.companyName || "")
-      )
+      .then((res) => setCompanyName(res.data.user.companyName || ""))
       .catch(console.error);
   }, [activeUser]);
 
-  // fetch last-20 days of daily averages
+  // fetch last-20 days
   useEffect(() => {
     if (!activeUser) return;
     setLoading(true);
@@ -65,58 +130,51 @@ export default function WaterQualitySummary() {
       .finally(() => setLoading(false));
   }, [activeUser]);
 
-  // Only keep entries with valid dates
+  // only valid dates
   const validDaily = useMemo(
     () =>
-      daily.filter((entry) =>
-        moment(entry.date, "DD/MM/YYYY", true).isValid()
+      daily.filter((e) =>
+        moment(e.date, "DD/MM/YYYY", true).isValid()
       ),
     [daily]
   );
 
-  // build sorted, unique headers array
+  // headers = unique sorted dates
   const headers = useMemo(() => {
-    // extract all valid dates
-    const dates = validDaily.map((d) => d.date);
-    // dedupe
-    const uniqueDates = Array.from(new Set(dates));
-    // sort chronologically
-    uniqueDates.sort(
+    const dates = [...new Set(validDaily.map((e) => e.date))];
+    dates.sort(
       (a, b) =>
-        moment(a, "DD/MM/YYYY").valueOf() -
-        moment(b, "DD/MM/YYYY").valueOf()
+        moment(a, "DD/MM/YYYY") - moment(b, "DD/MM/YYYY")
     );
-    // map to { raw, label }
-    return uniqueDates.map((date) => ({
-      raw: date,
-      label: moment(date, "DD/MM/YYYY").format("DD-MMM"),
+    return dates.map((d) => ({
+      raw: d,
+      label: moment(d, "DD/MM/YYYY").format("DD-MMM"),
     }));
   }, [validDaily]);
 
-  // collect visible parameter names, excluding HIDDEN
+  // visible parameters
   const parameters = useMemo(() => {
     if (!validDaily.length) return [];
     return Object.keys(
       validDaily[0].stackData[0].parameters
-    ).filter((key) => !HIDDEN.has(key));
+    ).filter((k) => !HIDDEN.has(k));
   }, [validDaily]);
 
   // lookup[param][date] = value
   const lookup = useMemo(() => {
-    const table = {};
+    const tbl = {};
     validDaily.forEach((entry) => {
-      const date = entry.date;
+      const d = entry.date;
       const params = entry.stackData[0].parameters;
-      Object.entries(params).forEach(([key, val]) => {
-        if (HIDDEN.has(key)) return;
-        table[key] = table[key] || {};
-        table[key][date] = val;
+      parameters.forEach((p) => {
+        tbl[p] = tbl[p] || {};
+        tbl[p][d] = params[p];
       });
     });
-    return table;
-  }, [validDaily]);
+    return tbl;
+  }, [validDaily, parameters]);
 
-  // compute min/max per parameter for coloring
+  // extremes for coloring
   const extremes = useMemo(() => {
     const ex = {};
     parameters.forEach((p) => {
@@ -131,9 +189,10 @@ export default function WaterQualitySummary() {
       }
     });
     return ex;
-  }, [parameters, headers, lookup]);
+  }, [headers, lookup, parameters]);
 
-  const displayName = (companyName || "NO COMPANY SELECTED").toUpperCase();
+  const displayName =
+    (companyName || "NO COMPANY SELECTED").toUpperCase();
 
   const getBg = (param, val) => {
     if (val == null) return null;
@@ -142,89 +201,185 @@ export default function WaterQualitySummary() {
     return null;
   };
 
+  // handle modal submit
+  const onModalSubmit = () => {
+    setShowModal(false);
+    navigate(
+      `/previous-quality?user=${modalUser}&month=${modalMonth}&year=${modalYear}`
+    );
+  };
+
   return (
-    <div className="container-fluid">
-      <div className="row" style={{ backgroundColor: "white" }}>
-        <div className="col-lg-3 d-none d-lg-block">
-          <DashboardSam />
-        </div>
-        <div className="col-lg-9 col-12">
-          <Hedaer />
-
-          {/* Top bar */}
-          <div className="p-3 border mb-4 d-flex justify-content-between align-items-center">
-            <div>
-              <h6 className="company-name mb-0">{displayName}</h6>
-              <small className="text-muted">Water Quality Summary</small>
-            </div>
-            <div>
-              <button
-                className="btn me-2"
-                style={{ backgroundColor: DARK_BLUE, color: "white" }}
-                onClick={() => navigate("/summary")}
-              >
-                Water Quantity
-              </button>
-              <button className="btn btn-outline-secondary">
-                Water Quality
-              </button>
-            </div>
+    <>
+      <div className="container-fluid">
+        <div className="row" style={{ backgroundColor: "white" }}>
+          <div className="col-lg-3 d-none d-lg-block">
+            <DashboardSam />
           </div>
+          <div className="col-lg-9 col-12">
+            <Hedaer />
 
-          {/* Table or loader */}
-          {loading ? (
-            <div className="text-center my-4">
-              <div className="spinner-border text-primary" role="status" />
+            <div className="p-3 border mb-4 d-flex justify-content-between align-items-center">
+              <div>
+                <h6 className="company-name mb-0">{displayName}</h6>
+                <small className="text-muted">
+                  Water Quality Summary
+                </small>
+              </div>
+              <div>
+                <button
+                  className="btn me-2"
+                  style={{
+                    backgroundColor: DARK_BLUE,
+                    color: "white",
+                  }}
+                  onClick={() => navigate("/summary")}
+                >
+                  Water Quantity
+                </button>
+                <button className="btn btn-outline-secondary">
+                  Water Quality
+                </button>
+              </div>
             </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table summary-table">
-                <thead>
-                  <tr>
-                    <th>Parameter</th>
-                    <th>Acceptable Limits</th>
-                    {headers.map((h) => (
-                      <th key={h.raw}>{h.label}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {parameters.map((param) => (
-                    <tr key={param}>
-                      <td>{param.toUpperCase()}</td>
-                      <td>{/* put limits here if needed */}-</td>
-                      {headers.map((h) => {
-                        const val = lookup[param][h.raw];
-                        const bg = getBg(param, val);
-                        const isMax = val === extremes[param]?.max;
-                        return (
-                          <td
-                            key={h.raw}
-                            style={{
-                              backgroundColor: bg,
-                              color: isMax ? "#fff" : "#003366",
-                            }}
-                          >
-                            {typeof val === "number"
-                              ? val.toFixed(2)
-                              : "NA"}
-                          </td>
-                        );
-                      })}
+
+            <div className="d-flex justify-content-end mb-3">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowModal(true)}
+              >
+                Previous Data
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="text-center my-4">
+                <div
+                  className="spinner-border text-primary"
+                  role="status"
+                />
+              </div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table summary-table">
+                  <thead>
+                    <tr>
+                      <th>Parameter</th>
+                      <th>Acceptable Limits</th>
+                      {headers.map((h) => (
+                        <th key={h.raw}>{h.label}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {parameters.map((param) => (
+                      <tr key={param}>
+                        <td>{param.toUpperCase()}</td>
+                        <td>-</td>
+                        {headers.map((h) => {
+                          const val = lookup[param][h.raw];
+                          const bg = getBg(param, val);
+                          const isMax =
+                            val === extremes[param]?.max;
+                          return (
+                            <td
+                              key={h.raw}
+                              style={{
+                                backgroundColor: bg,
+                                color: isMax ? "#fff" : "#003366",
+                              }}
+                            >
+                              {typeof val === "number"
+                                ? val.toFixed(2)
+                                : "NA"}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-          {/* pH Trending Chart */}
-          <div className="mt-5 border p-4 m-2 shadow">
-            <h3 className="mb-3">pH Trending Analysis</h3>
-            <PHChart userName={activeUser} stackName="STP" />
+            <div className="mt-5 border p-4 m-2 shadow">
+              <h3 className="mb-3">pH Trending Analysis</h3>
+              <PHChart
+                userName={activeUser}
+                stackName="STP"
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Modal */}
+      <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Select Previous Data</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>User</Form.Label>
+              <Form.Select
+                value={modalUser}
+                onChange={(e) => setModalUser(e.target.value)}
+              >
+                {allUsers.map((u) => (
+                  <option key={u.userName} value={u.userName}>
+                    {u.userName}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Month</Form.Label>
+              <Form.Select
+                value={modalMonth}
+                onChange={(e) =>
+                  setModalMonth(e.target.value)
+                }
+              >
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {moment().month(i).format("MMMM")}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Year</Form.Label>
+              <Form.Select
+                value={modalYear}
+                onChange={(e) =>
+                  setModalYear(e.target.value)
+                }
+              >
+                {Array.from({ length: 5 }).map((_, idx) => {
+                  const y = moment().year() - idx;
+                  return (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  );
+                })}
+              </Form.Select>
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => setShowModal(false)}
+          >
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={onModalSubmit}>
+            Go
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 }

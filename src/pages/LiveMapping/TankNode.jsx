@@ -10,6 +10,16 @@ export default function TankNode({ data, liveTankData, id, productId }) {
     data.tankName || data.label || ""
   );
 
+  // 1a) A simple alias map for common typos
+  const aliases = useMemo(
+    () => ({
+      Equilisation: "Equalization",
+      Airation:"Aeration"
+      // add more aliases here if needed
+    }),
+    []
+  );
+
   // 2) Find a fresh match in liveTankData
   const freshMatch = liveTankData?.find(
     (t) =>
@@ -21,11 +31,9 @@ export default function TankNode({ data, liveTankData, id, productId }) {
   const [lastMatch, setLastMatch] = useState(freshMatch);
 
   useEffect(() => {
-    // Whenever we get a new freshMatch, update lastMatch
     if (freshMatch) {
       setLastMatch(freshMatch);
     }
-    // Else leave lastMatch untouched
   }, [freshMatch]);
 
   // 4) Derive displayed percentage & level from lastMatch (or 0 if none ever)
@@ -52,7 +60,7 @@ export default function TankNode({ data, liveTankData, id, productId }) {
 
   // 6) Debug logging
   useEffect(() => {
-    console.log('TankNode debug:', { productId, tankName, liveTankData });
+    console.log("TankNode debug:", { productId, tankName, liveTankData });
     if (lastMatch) {
       console.log("💧 Displaying last tank data:", lastMatch);
     } else {
@@ -63,23 +71,18 @@ export default function TankNode({ data, liveTankData, id, productId }) {
   // 7) Persist back into node data for saving
   useEffect(() => {
     data.tankName = tankName;
-    data.label = tankName;               // keep React Flow label in sync
-    data.percentFull = displayedPercent; // used by save/export
+    data.label = tankName;
+    data.percentFull = displayedPercent;
     data.backendPercentage = lastMatch?.percentage;
     data.level = displayedLevel;
 
-    // If Canvas provided an onLabelChange, tell it about name edits
     if (data.onLabelChange) {
       data.onLabelChange(id, tankName);
     }
-  }, [
-    tankName,
-    displayedPercent,
-    displayedLevel,
-    lastMatch,
-    data,
-    id,
-  ]);
+  }, [tankName, displayedPercent, displayedLevel, lastMatch, data, id]);
+
+  // Compute display name with alias if any
+  const displayName = aliases[tankName] || tankName;
 
   return (
     <div
@@ -115,22 +118,15 @@ export default function TankNode({ data, liveTankData, id, productId }) {
             }}
           />
         ) : (
-          tankName || "Unnamed"
+          displayName || "Unnamed"
         )}
       </div>
 
       {/* Percentage */}
-      <div
-        style={{
-          fontSize: "12px",
-          fontWeight: "bold",
-          color: barColor,
-        }}
-      >
+      <div style={{ fontSize: "12px", fontWeight: "bold", color: barColor }}>
         {displayedPercent}%
       </div>
 
-   
       {/* Progress Bar */}
       <div
         style={{

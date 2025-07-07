@@ -98,6 +98,8 @@ import Summary from "./pages/QuantityNew/Summary";
 import WaterQualitySummary from "./pages/QuantityNew/WaterQualitySummary";
 import RealTimeDashboard from "./pages/QuantityNew/RealTimeDashboard";
 import DayReport from "./pages/Report/DayReport";
+import PreviousQuantity from "./pages/QuantityNew/PreviousQuantity";
+import PreviousQuality from "./pages/QuantityNew/PreviousQuality";
 
 function App() {
   const dispatch = useDispatch();
@@ -245,10 +247,17 @@ function App() {
     <Route path="/admin/report/:username" element={<AdminReport />} />
     <Route path="/edit-equipment/:id" element={<EditEquipment />} />
     <Route path="/summary" element={<Summary />} />
-        <Route path="/summary/waterquality" element={<WaterQualitySummary />} />
-                  <Route path="/realtimedashboard" element={<RealTimeDashboard />} />
-                                    <Route path="/dayreport" element={<DayReport />} />
-
+    <Route path="/summary/waterquality" element={<WaterQualitySummary />} />
+    <Route path="/realtimedashboard" element={<RealTimeDashboard />} />
+    <Route path="/dayreport" element={<DayReport />} />
+ <Route
+          path="/previous-quantity"
+          element={<PreviousQuantity />}
+        />
+          <Route
+          path="/previous-quality"
+          element={<PreviousQuality />}
+        />
 
   </Route>
 )}
@@ -341,7 +350,16 @@ function App() {
         <Route path="/summary/waterquality" element={<WaterQualitySummary />} />
                   <Route path="/realtimedashboard" element={<RealTimeDashboard />} />
                                     <Route path="/dayreport" element={<DayReport />} />
+ <Route
+          path="/previous-quantity"
+          element={<PreviousQuantity />}
+        />
 
+         <Route
+          path="/previous-quality"
+          element={<PreviousQuality />}
+        />
+        
                 </Route>
               )}
 
