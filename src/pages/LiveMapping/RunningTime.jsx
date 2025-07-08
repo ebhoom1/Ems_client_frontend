@@ -1,178 +1,310 @@
-import React from 'react';
-import { FaArrowRight } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
 
-function RunningTime() {
-  // Sample data rows for demonstration
-  const data = [
-    { id: 1, instrument: ' Permeate Pump 1', auto: '00:05:00', run: '00:02:00', trip: '00:03:00' },
-    { id: 2, instrument: ' Permeate Pump 1', auto: '00:10:00', run: '00:05:00', trip: '00:05:00' },
-    { id: 3, instrument: ' Membrane Feed Pump 1', auto: '00:15:00', run: '00:07:00', trip: '00:08:00' },
-    { id: 4, instrument: 'Membrane Feed Pump 1', auto: '00:08:00', run: '00:03:00', trip: '00:05:00' },
-    { id: 5, instrument: 'Raw Water Pump 1', auto: '00:12:00', run: '00:06:00', trip: '00:06:00' },
-    { id: 6, instrument: 'Raw Water Pump 2', auto: '00:20:00', run: '00:10:00', trip: '00:10:00' },
-    // ...add more rows as needed
-  ];
 
+// import React, { useEffect, useState } from "react";
+// import { useNavigate } from "react-router-dom";
+// import { FaArrowRight } from "react-icons/fa";
+// import { useSelector } from "react-redux";
+// import axios from "axios";
+// import moment from "moment";
+// import { API_URL} from "../../utils/apiConfig";
+// import { io } from "socket.io-client";
+
+// // 👇 initialize socket connection once
+// const socket = io(API_URL); // ensure SOCKET_URL is defined in config
+
+// function RunTime() {
+//   const { userData } = useSelector((state) => state.user);
+//   const actualUser = userData?.validUserOne || {};
+//   const [data, setData] = useState([]);
+//   const [loading, setLoading] = useState(false);
+//   const navigate = useNavigate();
+
+//   useEffect(() => {
+//     const fetchRuntime = async () => {
+//       setLoading(true);
+//       try {
+//         const today = moment().format("YYYY-MM-DD");
+//         const response = await axios.get(
+//           `${API_URL}/api/runtime/${actualUser.productID}/${actualUser.userName}/${today}`
+//         );
+//         const records = response.data.data.map((item, index) => ({
+//           id: index + 1,
+//           pumpId: item.pumpId,
+//           instrument: item.pumpName,
+//           run: item.runtime,
+//         }));
+
+//         setData(records);
+//       } catch (err) {
+//         console.error("Error fetching runtime:", err);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     if (actualUser?.userName && actualUser?.productID) {
+//       fetchRuntime();
+
+//       // 👉 join room with productID for real-time updates
+//       socket.emit("joinRoom", actualUser.productID);
+
+//       // 👂 listen to real-time updates
+//       socket.on("pumpRuntimeUpdate", (update) => {
+//         console.log("📡 Real-time pump runtime update:", update);
+//         setData((prev) => {
+//           const existingIndex = prev.findIndex(p => p.pumpId === update.pumpId);
+//           if (existingIndex !== -1) {
+//             const updated = [...prev];
+//             updated[existingIndex].run = update.runtime;
+//             return updated;
+//           } else {
+//             return [
+//               ...prev,
+//               {
+//                 id: prev.length + 1,
+//                 pumpId: update.pumpId,
+//                 instrument: update.pumpName,
+//                 run: update.runtime,
+//               }
+//             ];
+//           }
+//         });
+//       });
+
+//       // Clean up socket listener on unmount
+//       return () => {
+//         socket.off("pumpRuntimeUpdate");
+//         socket.disconnect();
+//       };
+//     }
+//   }, [actualUser]);
+
+//   return (
+//     <div style={{ padding: "20px" }}>
+//       <h3>Running Time</h3>
+
+//       <div
+//         className="table-responsive"
+//         style={{ maxHeight: "500px", overflowY: "auto" }}
+//       >
+//         {loading ? (
+//           <div className="text-center p-3">Loading...</div>
+//         ) : (
+//           <table className="table table-bordered" style={{ minWidth: "600px" }}>
+//             <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
+//               <tr>
+//                 <th>SL.NO</th>
+//                 <th>Instrument Name</th>
+//                 <th>Running Time</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {data.length > 0 ? (
+//                 data.map((row, index) => (
+//                   <tr key={row.pumpId || index}>
+//                     <td>{index + 1}</td>
+//                     <td>{row.instrument}</td>
+//                     <td>{row.run}</td>
+//                   </tr>
+//                 ))
+//               ) : (
+//                 <tr>
+//                   <td colSpan="3" className="text-center">
+//                     No runtime data available for today.
+//                   </td>
+//                 </tr>
+//               )}
+//             </tbody>
+//           </table>
+//         )}
+//       </div>
+
+//       <div className="d-flex justify-content-end mt-3">
+//         <button
+//           onClick={() => navigate("/previous-data")}
+//           style={{
+//             border: "1px solid green",
+//             background: "transparent",
+//             padding: "8px 16px",
+//             cursor: "pointer",
+//             display: "flex",
+//             alignItems: "center",
+//             color: "green",
+//             borderRadius: "10px",
+//           }}
+//         >
+//           Previous Data
+//           <FaArrowRight style={{ marginLeft: "8px" }} />
+//         </button>
+//       </div>
+//     </div>
+//   );
+// }
+
+// export default RunTime;
+
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaArrowRight } from "react-icons/fa";
+import { useSelector } from "react-redux";
+import axios from "axios";
+import moment from "moment";
+import { API_URL} from "../../utils/apiConfig";
+import { io } from "socket.io-client";
+
+const socket = io(API_URL);
+
+function RunTime() {
+  const { userData } = useSelector((state) => state.user);
+  const actualUser = userData?.validUserOne || {};
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchRuntime = async () => {
+      setLoading(true);
+      try {
+        const today = moment().format("YYYY-MM-DD");
+        const response = await axios.get(
+          `${API_URL}/api/runtime/${actualUser.productID}/${actualUser.userName}/${today}`
+        );
+
+        const records = response.data.data.map((item, index) => ({
+          id: index + 1,
+          pumpId: item.pumpId,
+          instrument: item.pumpName,
+          run: item.runtime,
+          lastOnTime: item.lastOnTime || null
+        }));
+
+        setData(records);
+      } catch (err) {
+        console.error("Error fetching runtime:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (actualUser?.userName && actualUser?.productID) {
+      fetchRuntime();
+
+      socket.emit("joinRoom", actualUser.productID);
+
+      socket.on("pumpRuntimeUpdate", (update) => {
+        setData((prev) => {
+          const existingIndex = prev.findIndex(p => p.pumpId === update.pumpId);
+          const updatedRow = {
+            id: existingIndex !== -1 ? prev[existingIndex].id : prev.length + 1,
+            pumpId: update.pumpId,
+            instrument: update.pumpName,
+            run: update.runtime,
+            lastOnTime: update.lastOnTime || null
+          };
+
+          if (existingIndex !== -1) {
+            const updated = [...prev];
+            updated[existingIndex] = updatedRow;
+            return updated;
+          } else {
+            return [...prev, updatedRow];
+          }
+        });
+      });
+
+      return () => {
+        socket.off("pumpRuntimeUpdate");
+        socket.disconnect();
+      };
+    }
+  }, [actualUser]);
+
+  // ⏱ Ticking timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setData(prev =>
+        prev.map(row => {
+          if (row.lastOnTime) {
+            const start = moment(row.lastOnTime);
+            const now = moment();
+            const duration = moment.duration(now.diff(start));
+            const h = String(Math.floor(duration.asHours())).padStart(2, "0");
+            const m = String(duration.minutes()).padStart(2, "0");
+            const s = String(duration.seconds()).padStart(2, "0");
+
+            return { ...row, run: `${h}:${m}:${s}` };
+          }
+          return row;
+        })
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: "20px" }}>
       <h3>Running Time</h3>
 
-      {/* Mobile‐friendly horizontal & vertical scroll */}
       <div
         className="table-responsive"
-        style={{
-          maxHeight: '500px',
-          overflowY: 'auto',
-          marginBottom: '10px',
-        }}
+        style={{ maxHeight: "500px", overflowY: "auto" }}
       >
-        <table
-          className="table table-bordered mb-0"
-          style={{ minWidth: '600px', borderCollapse: 'collapse' }}
-        >
-          <thead style={{ backgroundColor: '#236a80', color: '#fff' }}>
-            <tr>
-              <th
-                rowSpan="2"
-                style={{
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  textAlign: 'center',
-                  backgroundColor: '#236a80', color: '#fff' 
-                }}
-              >
-                SL.NO
-              </th>
-              <th
-                rowSpan="2"
-                style={{
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  textAlign: 'center',
-                  backgroundColor: '#236a80', color: '#fff' 
-                }}
-              >
-                Instrument Name
-              </th>
-              <th
-                colSpan="3"
-                style={{
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  textAlign: 'center',
-                  backgroundColor: '#236a80', color: '#fff' 
-                }}
-              >
-                Running Time
-              </th>
-            </tr>
-            <tr>
-              <th
-                style={{
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  textAlign: 'center',
-                  backgroundColor: '#236a80', color: '#fff' 
-                }}
-              >
-                Auto
-              </th>
-              <th
-                style={{
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  textAlign: 'center',
-                  backgroundColor: '#236a80', color: '#fff' 
-                }}
-              >
-                Run
-              </th>
-              <th
-                style={{
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  textAlign: 'center',
-                  backgroundColor: '#236a80', color: '#fff' 
-                }}
-              >
-                Trip
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {data.map((row) => (
-              <tr key={row.id}>
-                <td
-                  style={{
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    textAlign: 'center',
-                  }}
-                >
-                  {row.id}
-                </td>
-                <td style={{ padding: '8px', border: '1px solid #ddd' }}>
-                  {row.instrument}
-                </td>
-                <td
-                  style={{
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    textAlign: 'center',
-                  }}
-                >
-                  {row.auto}
-                </td>
-                <td
-                  style={{
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    textAlign: 'center',
-                  }}
-                >
-                  {row.run}
-                </td>
-                <td
-                  style={{
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    textAlign: 'center',
-                  }}
-                >
-                  {row.trip}
-                </td>
+        {loading ? (
+          <div className="text-center p-3">Loading...</div>
+        ) : (
+          <table className="table table-bordered" style={{ minWidth: "600px" }}>
+            <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
+              <tr>
+                <th>SL.NO</th>
+                <th>Instrument Name</th>
+                <th>Running Time</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.length > 0 ? (
+                data.map((row, index) => (
+                  <tr key={row.pumpId || index}>
+                    <td>{index + 1}</td>
+                    <td>{row.instrument}</td>
+                    <td style={{ color: row.lastOnTime ? "green" : "black" }}>
+                      {row.run}
+                      {row.lastOnTime && <span> (Live)</span>}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" className="text-center">
+                    No runtime data available for today.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {/* Previous Data button */}
-      <div className="d-flex align-items-center justify-content-end">
+      <div className="d-flex justify-content-end mt-3">
         <button
-          onClick={() => navigate('/previous-data')}
+          onClick={() => navigate("/previous-data")}
           style={{
-            border: '1px solid green',
-            background: 'transparent',
-            padding: '8px 16px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            fontSize: '16px',
-            color: 'green',
-            borderRadius: '10px',
+            border: "1px solid green",
+            background: "transparent",
+            padding: "8px 16px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            color: "green",
+            borderRadius: "10px",
           }}
         >
           Previous Data
-          <FaArrowRight style={{ marginLeft: '8px' }} />
+          <FaArrowRight style={{ marginLeft: "8px" }} />
         </button>
       </div>
     </div>
   );
 }
 
-export default RunningTime;
+export default RunTime;

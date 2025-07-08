@@ -67,8 +67,7 @@ function Maindashboard() {
     { name: "Noise", path: "/noise", key: "noise" },
     { name: "Water Quantity", path: "/quantity", key: "effluent_flow" },
     { name: "Energy", path: "/energy", key: "energy" },
-    { name: "Waste", path: "/waste", key: "waste" },
-    { name: "Fuel", path: "/fuel", key: "fuel" },
+    
   ];
 
   // Filter links based on available station types, but always include "Waste" and "Fuel".
