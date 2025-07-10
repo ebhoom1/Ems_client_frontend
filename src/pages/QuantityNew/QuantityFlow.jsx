@@ -142,7 +142,6 @@ const fetchData = async (userName) => {
   }
 };
 
-
 const fetchDifferenceData = async (userName) => {
   try {
     const url = `${API_URL}/api/difference/${userName}?interval=daily`;
@@ -152,26 +151,33 @@ const fetchDifferenceData = async (userName) => {
     console.log("📄 Raw data array:", response.data.data);
 
     const today = moment().format("DD/MM/YYYY");
+    // 1. keep only today's items
+    const todayItems = response.data.data.filter(item => item.date === today);
 
-    // Filter purely by date
-    const todayItems = response.data.data.filter(
-      (item) => item.date === today
-    );
+    // 2. drop any zero‐flow records
+    const nonZeroItems = todayItems.filter(item => item.initialCumulatingFlow !== 0);
 
-    // Build { stackName: initialCumulatingFlow }
-    const todayInitialFlows = todayItems.reduce((acc, { stackName, initialCumulatingFlow }) => {
-      acc[stackName] = initialCumulatingFlow;
+    // 3. pick the first non-zero reading per stack
+    const todayInitialFlows = nonZeroItems.reduce((acc, { stackName, initialCumulatingFlow }) => {
+      if (acc[stackName] === undefined) {
+        acc[stackName] = initialCumulatingFlow;
+      }
       return acc;
     }, {});
 
-    console.log("✅ Today's initialCumulatingFlow:", todayInitialFlows);
+    console.log("✅ Today's initialCumulatingFlow (non-zero):", todayInitialFlows);
     setInitialFlows(todayInitialFlows);
+
   } catch (error) {
     console.error("❌ Error fetching difference data:", error);
   }
 };
 
-
+useEffect(() => {
+  console.log("🔄 refetching initial flows for", effectiveUserName);
+  setInitialFlows({});      // clear out old values
+  fetchDifferenceData(effectiveUserName);
+}, [effectiveUserName]);
 
 useEffect(() => {
   console.groupCollapsed("🔸 Recomputing dailyConsumption");

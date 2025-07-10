@@ -137,6 +137,10 @@ import HeaderSim from "../Header/HeaderSim";
 import { useSelector } from "react-redux";
 import moment from "moment";
 import { API_URL } from "../../utils/apiConfig";
+import { useDispatch } from "react-redux";
+// import { fetchUsers } from "../../redux/slices/user/userLogSlice";
+import {fetchUsers} from "../../redux/features/userLog/userLogSlice";
+
 
 export default function Attendence() {
   const navigate = useNavigate();
@@ -145,12 +149,20 @@ export default function Attendence() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("operator");
+  const [modalImage, setModalImage] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const dispatch = useDispatch();
+const { users } = useSelector((state) => state.userLog); // 👈 get all users
+
 
   const { userData } = useSelector((state) => state.user);
   const adminType = userData?.validUserOne?.adminType;
 
   useEffect(() => {
     if (!adminType) return;
+
+    dispatch(fetchUsers());
 
     const fetchAttendance = async () => {
       setLoading(true);
@@ -186,6 +198,11 @@ export default function Attendence() {
     item.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const getUserFname = (username) => {
+    const user = users.find((u) => u.userName === username);
+    return user?.fname || username; // fallback to username if fname missing
+  };
+
   return (
     <div className="container-fluid">
       <div className="row" style={{ backgroundColor: "white" }}>
@@ -204,13 +221,13 @@ export default function Attendence() {
                   type="text"
                   placeholder="Search by name"
                   className="form-control d-inline-block me-2"
-                  style={{ width: "200px" , fontSize:'15px'}}
+                  style={{ width: "200px", fontSize: "15px" }}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <button
                   className="btn "
-                  style={{backgroundColor:'#236a80' , color:'#fff'}}
+                  style={{ backgroundColor: "#236a80", color: "#fff" }}
                   onClick={() => navigate("history")}
                 >
                   View History
@@ -220,27 +237,25 @@ export default function Attendence() {
           </div>
 
           {/* TABS */}
-       <div className="mt-3">
-  <ul className="nav nav-tabs">
-    {["operator", "technician", "territorialManager"].map((role) => (
-      <li className="nav-item" key={role}>
-        <button
-          className={`nav-link ${activeTab === role ? "active" : ""}`}
-          onClick={() => setActiveTab(role)}
-          style={{
-            color: activeTab === role ? "#236a80" : "#000",
-            fontWeight: activeTab === role ? "bold" : "normal"
-          }}
-        >
-          {role.charAt(0).toUpperCase() +
-            role.slice(1).replace("Manager", " Manager")}
-        </button>
-      </li>
-    ))}
-  </ul>
-</div>
-
-
+          <div className="mt-3">
+            <ul className="nav nav-tabs">
+              {["operator", "technician", "territorialManager"].map((role) => (
+                <li className="nav-item" key={role}>
+                  <button
+                    className={`nav-link ${activeTab === role ? "active" : ""}`}
+                    onClick={() => setActiveTab(role)}
+                    style={{
+                      color: activeTab === role ? "#236a80" : "#000",
+                      fontWeight: activeTab === role ? "bold" : "normal",
+                    }}
+                  >
+                    {role.charAt(0).toUpperCase() +
+                      role.slice(1).replace("Manager", " Manager")}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
 
           {/* TABLE */}
           <div className="row mt-4">
@@ -248,11 +263,24 @@ export default function Attendence() {
               <table className="table table-bordered table-striped">
                 <thead>
                   <tr>
-                    <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Name</th>
-                    <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Check-In</th>
-                    <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Check-Out</th>
-                    <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Hours</th>
-                    <th style={{backgroundColor:'#236a80' , color:'#fff'}}>Method</th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Name
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Check-In
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Check-Out
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Hours
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Method
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Photo
+                    </th>
                     {displayedList.some((row) =>
                       ["technician", "territorialManager"].includes(
                         row.userRole
@@ -272,11 +300,33 @@ export default function Attendence() {
 
                     return (
                       <tr key={row._id}>
-                        <td>{row.username}</td>
+                       <td>{getUserFname(row.username)}</td>
                         <td>{inTime.format("HH:mm")}</td>
                         <td>{outTime ? outTime.format("HH:mm") : "—"}</td>
                         <td>{hours}</td>
                         <td>{row.checkInMethod}</td>
+                        <td>
+                          {row.photoBase64 ? (
+                            <img
+                              src={row.photoBase64}
+                              alt="Site"
+                              style={{
+                                width: "50px",
+                                height: "50px",
+                                objectFit: "cover",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                              }}
+                              onClick={() => {
+                                setModalImage(row.photoBase64);
+                                setShowModal(true);
+                              }}
+                            />
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+
                         {["technician", "territorialManager"].includes(
                           row.userRole
                         ) && (
@@ -316,6 +366,35 @@ export default function Attendence() {
           </div>
         </div>
       </div>
+      {showModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+          onClick={() => setShowModal(false)} // close on click outside
+        >
+          <img
+            src={modalImage}
+            alt="Full View"
+            style={{
+              maxWidth: "90%",
+              maxHeight: "90%",
+              boxShadow: "0 0 10px #fff",
+              borderRadius: "10px",
+            }}
+            onClick={(e) => e.stopPropagation()} // prevent closing on image click
+          />
+        </div>
+      )}
     </div>
   );
 }

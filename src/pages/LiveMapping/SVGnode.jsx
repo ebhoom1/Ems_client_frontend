@@ -8,10 +8,12 @@ import "./livemapping.css";
 
 const API = "https://api.ocems.ebhoom.com";
 
-const SVGnode = ({ id, data, selected, liveTankData, productId }) => {
+const SVGnode = ({ id, data, selected }) => {
   const {
     socket,
     socketConnected,
+    productId,
+    percentage: waterLevel = 0,
     pumpStatus: propStatus = false,
     isPending: propPending = false,
     svgPath,
@@ -35,12 +37,12 @@ const SVGnode = ({ id, data, selected, liveTankData, productId }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [totalDepth, setTotalDepth] = useState(data.totalDepth || "");
 
-  const match = liveTankData.find(
-    (t) => t.tankName?.toLowerCase() === text.toLowerCase()
-  );
-  const depth = match?.depth || 0;
-  const total = totalDepth || 1;
-  const waterLevel = Math.round((depth / total) * 100);
+  // const match = liveTankData.find(
+  //   (t) => t.tankName?.toLowerCase() === text.toLowerCase()
+  // );
+  // const depth = match?.depth || 0;
+  // const total = totalDepth || 1;
+  // const waterLevel = Math.round((depth / total) * 100);
 
   useEffect(() => {
     data.totalDepth = totalDepth;

@@ -2,94 +2,50 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Handle, Position } from "react-flow-renderer";
 
-export default function TankNode({ data, liveTankData, id, productId }) {
-  const { isEditing } = data;
+export default function TankNode({ data, id }) {
+  // 1. Get all values directly from the data prop.
+  // The Canvas component has already calculated and provided these.
+  const {
+    isEditing,
+    label,
+    percentage = 0, // Default to 0 if no data yet
+    level = 0,
+    onLabelChange,
+  } = data;
 
-  // 1) Editable tankName, defaulting to saved data or node label
-  const [tankName, setTankName] = useState(
-    data.tankName || data.label || ""
-  );
+  // 2. Use a local state for the editable tank name.
+  const [tankName, setTankName] = useState(label || "");
 
-  // 1a) A simple alias map for common typos
-  const aliases = useMemo(
-    () => ({
-      Equilisation: "Equalization",
-      Airation:"Aeration"
-      // add more aliases here if needed
-    }),
-    []
-  );
-
-  // 2) Find a fresh match in liveTankData
-  const freshMatch = liveTankData?.find(
-    (t) =>
-      t.tankName.trim().toLowerCase() ===
-      tankName.trim().toLowerCase()
-  );
-
-  // 3) Keep the last match in state
-  const [lastMatch, setLastMatch] = useState(freshMatch);
-
+  // 3. Persist changes back to the node's data object.
   useEffect(() => {
-    if (freshMatch) {
-      setLastMatch(freshMatch);
-    }
-  }, [freshMatch]);
-
-  // 4) Derive displayed percentage & level from lastMatch (or 0 if none ever)
-  const displayedPercent = useMemo(() => {
-    if (!lastMatch) return 0;
-    const pct = Math.round(Number(lastMatch.percentage));
-    return Math.min(100, Math.max(0, pct));
-  }, [lastMatch]);
-
-  const displayedLevel = useMemo(() => {
-    if (!lastMatch) return 0;
-    return parseFloat(lastMatch.level ?? lastMatch.depth ?? 0);
-  }, [lastMatch]);
-
-  // 5) Pick a color based on displayedPercent
-  const barColor = useMemo(() => {
-    const p = displayedPercent;
-    if (p <= 25) return "#ff4444";
-    if (p <= 50) return "#ff9900";
-    if (p <= 70) return "#00bcd4";
-    if (p <= 90) return "#4285F4";
-    return "#34a853";
-  }, [displayedPercent]);
-
-  // 6) Debug logging
-  useEffect(() => {
-    console.log("TankNode debug:", { productId, tankName, liveTankData });
-    if (lastMatch) {
-      console.log("💧 Displaying last tank data:", lastMatch);
-    } else {
-      console.log(`💧 No tank data yet for "${tankName}"`);
-    }
-  }, [lastMatch, tankName, productId, liveTankData]);
-
-  // 7) Persist back into node data for saving
-  useEffect(() => {
-    data.tankName = tankName;
     data.label = tankName;
-    data.percentFull = displayedPercent;
-    data.backendPercentage = lastMatch?.percentage;
-    data.level = displayedLevel;
-
-    if (data.onLabelChange) {
-      data.onLabelChange(id, tankName);
+    if (onLabelChange) {
+      onLabelChange(id, tankName);
     }
-  }, [tankName, displayedPercent, displayedLevel, lastMatch, data, id]);
+  }, [tankName, data, onLabelChange, id]);
 
-  // Compute display name with alias if any
-  const displayName = aliases[tankName] || tankName;
+  // 4. Determine the bar color based on the percentage.
+  const barColor = useMemo(() => {
+    if (percentage <= 25) return "#ff4444"; // Red
+    if (percentage <= 50) return "#ff9900"; // Orange
+    if (percentage <= 70) return "#00bcd4"; // Cyan
+    if (percentage <= 90) return "#4285F4"; // Blue
+    return "#34a853"; // Green
+  }, [percentage]);
+
+  // 5. Correct spelling for specific tank names
+  const displayName = useMemo(() => {
+    if (tankName === "Airation") return "Aeration";
+    if (tankName === "Equilisation") return "Equalization";
+    return tankName;
+  }, [tankName]);
 
   return (
     <div
       style={{
         width: 100,
         padding: 4,
-        background: "transparent",
+        background: "#ffffff",
         borderRadius: 4,
         border: "1px solid #ddd",
         textAlign: "center",
@@ -112,9 +68,10 @@ export default function TankNode({ data, liveTankData, id, productId }) {
               width: "100%",
               fontSize: "12px",
               background: "transparent",
-              border: "none",
+              border: isEditing ? "1px solid #eee" : "none",
               textAlign: "center",
               outline: "none",
+              borderRadius: "3px",
             }}
           />
         ) : (
@@ -124,7 +81,7 @@ export default function TankNode({ data, liveTankData, id, productId }) {
 
       {/* Percentage */}
       <div style={{ fontSize: "12px", fontWeight: "bold", color: barColor }}>
-        {displayedPercent}%
+        {(Number(percentage) || 0).toFixed(1)}%
       </div>
 
       {/* Progress Bar */}
@@ -141,7 +98,7 @@ export default function TankNode({ data, liveTankData, id, productId }) {
         <div
           style={{
             height: "100%",
-            width: `${displayedPercent}%`,
+            width: `${percentage}%`,
             backgroundColor: barColor,
             transition: "width 0.5s ease, background-color 0.5s ease",
           }}

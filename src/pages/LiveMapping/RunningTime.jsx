@@ -9,8 +9,7 @@
 // import { API_URL} from "../../utils/apiConfig";
 // import { io } from "socket.io-client";
 
-// // 👇 initialize socket connection once
-// const socket = io(API_URL); // ensure SOCKET_URL is defined in config
+// const socket = io(API_URL);
 
 // function RunTime() {
 //   const { userData } = useSelector((state) => state.user);
@@ -27,11 +26,13 @@
 //         const response = await axios.get(
 //           `${API_URL}/api/runtime/${actualUser.productID}/${actualUser.userName}/${today}`
 //         );
+
 //         const records = response.data.data.map((item, index) => ({
 //           id: index + 1,
 //           pumpId: item.pumpId,
 //           instrument: item.pumpName,
 //           run: item.runtime,
+//           lastOnTime: item.lastOnTime || null
 //         }));
 
 //         setData(records);
@@ -45,39 +46,58 @@
 //     if (actualUser?.userName && actualUser?.productID) {
 //       fetchRuntime();
 
-//       // 👉 join room with productID for real-time updates
 //       socket.emit("joinRoom", actualUser.productID);
 
-//       // 👂 listen to real-time updates
 //       socket.on("pumpRuntimeUpdate", (update) => {
-//         console.log("📡 Real-time pump runtime update:", update);
 //         setData((prev) => {
 //           const existingIndex = prev.findIndex(p => p.pumpId === update.pumpId);
+//           const updatedRow = {
+//             id: existingIndex !== -1 ? prev[existingIndex].id : prev.length + 1,
+//             pumpId: update.pumpId,
+//             instrument: update.pumpName,
+//             run: update.runtime,
+//             lastOnTime: update.lastOnTime || null
+//           };
+
 //           if (existingIndex !== -1) {
 //             const updated = [...prev];
-//             updated[existingIndex].run = update.runtime;
+//             updated[existingIndex] = updatedRow;
 //             return updated;
 //           } else {
-//             return [
-//               ...prev,
-//               {
-//                 id: prev.length + 1,
-//                 pumpId: update.pumpId,
-//                 instrument: update.pumpName,
-//                 run: update.runtime,
-//               }
-//             ];
+//             return [...prev, updatedRow];
 //           }
 //         });
 //       });
 
-//       // Clean up socket listener on unmount
 //       return () => {
 //         socket.off("pumpRuntimeUpdate");
 //         socket.disconnect();
 //       };
 //     }
 //   }, [actualUser]);
+
+//   // ⏱ Ticking timer
+//   useEffect(() => {
+//     const interval = setInterval(() => {
+//       setData(prev =>
+//         prev.map(row => {
+//           if (row.lastOnTime) {
+//             const start = moment(row.lastOnTime);
+//             const now = moment();
+//             const duration = moment.duration(now.diff(start));
+//             const h = String(Math.floor(duration.asHours())).padStart(2, "0");
+//             const m = String(duration.minutes()).padStart(2, "0");
+//             const s = String(duration.seconds()).padStart(2, "0");
+
+//             return { ...row, run: `${h}:${m}:${s}` };
+//           }
+//           return row;
+//         })
+//       );
+//     }, 1000);
+
+//     return () => clearInterval(interval);
+//   }, []);
 
 //   return (
 //     <div style={{ padding: "20px" }}>
@@ -104,7 +124,10 @@
 //                   <tr key={row.pumpId || index}>
 //                     <td>{index + 1}</td>
 //                     <td>{row.instrument}</td>
-//                     <td>{row.run}</td>
+//                     <td style={{ color: row.lastOnTime ? "green" : "black" }}>
+//                       {row.run}
+//                       {row.lastOnTime && <span> (Live)</span>}
+//                     </td>
 //                   </tr>
 //                 ))
 //               ) : (
@@ -143,6 +166,7 @@
 
 // export default RunTime;
 
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
@@ -161,15 +185,81 @@ function RunTime() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // useEffect(() => {
+  //   const fetchRuntime = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const today = moment().format("YYYY-MM-DD");
+  //       const response = await axios.get(
+  //         `${API_URL}/api/runtime/${actualUser.productID}/${actualUser.userName}/${today}`
+  //       );
+  //       const records = response.data.data.map((item, index) => ({
+  //         id: index + 1,
+  //         pumpId: item.pumpId,
+  //         instrument: item.pumpName,
+  //         run: item.runtime,
+  //         lastOnTime: item.lastOnTime || null
+  //       }));
+
+  //       setData(records);
+  //     } catch (err) {
+  //       console.error("Error fetching runtime:", err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   if (actualUser?.userName && actualUser?.productID) {
+  //     fetchRuntime();
+
+  //     socket.emit("joinRoom", actualUser.productID);
+
+  //     socket.on("pumpRuntimeUpdate", (update) => {
+  //       setData((prev) => {
+  //         const existingIndex = prev.findIndex(p => p.pumpId === update.pumpId);
+  //         const updatedRow = {
+  //           id: existingIndex !== -1 ? prev[existingIndex].id : prev.length + 1,
+  //           pumpId: update.pumpId,
+  //           instrument: update.pumpName,
+  //           run: update.runtime,
+  //           lastOnTime: update.lastOnTime || null
+  //         };
+
+  //         if (existingIndex !== -1) {
+  //           const updated = [...prev];
+  //           updated[existingIndex] = updatedRow;
+  //           return updated;
+  //         } else {
+  //           return [...prev, updatedRow];
+  //         }
+  //       });
+  //     });
+
+  //     return () => {
+  //       socket.off("pumpRuntimeUpdate");
+  //       socket.disconnect();
+  //     };
+  //   }
+  // }, [actualUser]);
   useEffect(() => {
     const fetchRuntime = async () => {
       setLoading(true);
       try {
         const today = moment().format("YYYY-MM-DD");
+  
+        // If admin, override userName from sessionStorage
+        const userName = actualUser.userType === "admin"
+          ? sessionStorage.getItem("selectedUserId")
+          : actualUser.userName;
+  
+        const productID = actualUser.productID;
+  
+        if (!userName || !productID) return;
+  
         const response = await axios.get(
-          `${API_URL}/api/runtime/${actualUser.productID}/${actualUser.userName}/${today}`
+          `${API_URL}/api/runtime/${productID}/${userName}/${today}`
         );
-
+  
         const records = response.data.data.map((item, index) => ({
           id: index + 1,
           pumpId: item.pumpId,
@@ -177,7 +267,7 @@ function RunTime() {
           run: item.runtime,
           lastOnTime: item.lastOnTime || null
         }));
-
+  
         setData(records);
       } catch (err) {
         console.error("Error fetching runtime:", err);
@@ -185,12 +275,18 @@ function RunTime() {
         setLoading(false);
       }
     };
-
-    if (actualUser?.userName && actualUser?.productID) {
+  
+    const userName = actualUser.userType === "admin"
+      ? sessionStorage.getItem("selectedUserId")
+      : actualUser.userName;
+  
+    const productID = actualUser.productID;
+  
+    if (userName && productID) {
       fetchRuntime();
-
-      socket.emit("joinRoom", actualUser.productID);
-
+  
+      socket.emit("joinRoom", productID);
+  
       socket.on("pumpRuntimeUpdate", (update) => {
         setData((prev) => {
           const existingIndex = prev.findIndex(p => p.pumpId === update.pumpId);
@@ -201,7 +297,7 @@ function RunTime() {
             run: update.runtime,
             lastOnTime: update.lastOnTime || null
           };
-
+  
           if (existingIndex !== -1) {
             const updated = [...prev];
             updated[existingIndex] = updatedRow;
@@ -211,13 +307,14 @@ function RunTime() {
           }
         });
       });
-
+  
       return () => {
         socket.off("pumpRuntimeUpdate");
         socket.disconnect();
       };
     }
   }, [actualUser]);
+  
 
   // ⏱ Ticking timer
   useEffect(() => {
