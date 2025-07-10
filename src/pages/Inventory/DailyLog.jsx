@@ -93,31 +93,26 @@ export default function DailyLog() {
 
   // Fetch user list if user is operator
   useEffect(() => {
-  const fetchUsers = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/getallusers`);
-      const data = await res.json();
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/getallusers`);
+        const data = await res.json();
+        console.log("data", data);
 
-      if (!validUser._id) return;
-
-      // Filter users assigned to the logged-in operator
-      const filteredUsers = data.users.filter(
-        (user) =>
-          user.userType === "user" &&
-          user.operators?.includes(validUser._id) // Check if operator ID is in operators array
-      );
-
-      setUserList(filteredUsers);
-    } catch (error) {
-      console.error("Failed to load user list", error);
+        // Filter users with the same adminType and userType === "user"
+        const filteredUsers = data.users.filter(
+          (user) =>
+            user.adminType === validUser.adminType && user.userType === "user"
+        );
+        setUserList(filteredUsers);
+      } catch (error) {
+        console.error("Failed to load user list", error);
+      }
+    };
+    if (validUser.isOperator) {
+      fetchUsers();
     }
-  };
-
-  if (validUser.isOperator) {
-    fetchUsers();
-  }
-}, [validUser]);
-
+  }, [validUser]);
 
   // Fetch equipment list on component mount
   useEffect(() => {

@@ -292,8 +292,9 @@ export default function Geolocation() {
 
     const handleSuccess = (position) => {
       // For testing, we’re hardcoding Korlam Hospital Kollam coordinates:
-     /*  const latitude = 8.864167;
-      const longitude = 76.681111;  */
+     /*  const latitude = 13.060904;
+      const longitude = 77.515971;  */
+      //13.060904, 77.515971
       // In production, uncomment the next two lines:
     const { latitude, longitude } = position.coords;
       // setCoords({ lat: latitude, lng: longitude });
