@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Handle, Position } from 'react-flow-renderer';
 
-export default function FlowMeterNode({ data, selected }) {
-  const { isEditing,flowValue = '--' } = data;
+export default function FlowMeterNode({ data, flowValues, selected }) {
+  const { isEditing } = data;
 
   // keep a local copy of label so React re-renders on change
   const [label, setLabel] = useState(data.label || '');
   useEffect(() => {
     data.label = label;
   }, [label, data]);
+
+  const matchedKey = Object.keys(flowValues).find(
+    k => k.trim().toLowerCase() === label.trim().toLowerCase()
+  );
+  const liveValue = matchedKey ? flowValues[matchedKey] : '--';
 
   return (
     <div
@@ -65,7 +70,7 @@ export default function FlowMeterNode({ data, selected }) {
           padding: '1px 2px',
         }}
       >
-        {flowValue}
+        {liveValue}
       </div>
 
       {/* bottom connection */}
