@@ -206,23 +206,28 @@ export default function MaintenanceForm() {
   // detect pump/blower to allow adding columns
   const isPump = matchedKey?.includes("pump");
   const isBlower = matchedKey?.includes("blower");
-  useEffect(() => {
-    if (!dbId) return;
+// Around line 258
+useEffect(() => {
+  if (!dbId) return;
 
-    const fetchEquipment = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/equiment/${dbId}`);
-        const equipment = res.data?.equipment;
-        if (equipment?.userName) {
-          setUserName(equipment.userName);
-        }
-      } catch (err) {
-        console.error("❌ Error fetching equipment for userName:", err);
+  const fetchEquipment = async () => {
+    try {
+      // Note: The URL seems to have a typo "equiment" instead of "equipment"
+      // I am using your provided URL. Correct it if it's a typo.
+      const res = await axios.get(`${API_URL}/api/equiment/${dbId}`);
+      const equipment = res.data?.equipment;
+      if (equipment) {
+        setUserName(equipment.userName || "");
+        setCapacity(equipment.capacity || ""); // ✅ FIX: Set the capacity here
       }
-    };
+    } catch (err) {
+      console.error("❌ Error fetching equipment details:", err);
+      toast.error("Could not fetch equipment details.");
+    }
+  };
 
-    fetchEquipment();
-  }, [dbId]);
+  fetchEquipment();
+}, [dbId]);
   // load manager info once validUserOne changes
   useEffect(() => {
     if (validUserOne.isTerritorialManager) {
@@ -318,6 +323,7 @@ export default function MaintenanceForm() {
     payload.append("equipmentId", dbId);
     payload.append("equipmentName", slug);
     payload.append("userName", userName);
+    payload.append("capacity", capacity); // ✅ FIX: Add capacity to the payload
     payload.append("isWorking", isWorking);
     payload.append("comments", comments);
     payload.append("territorialManager", JSON.stringify({

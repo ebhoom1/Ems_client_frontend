@@ -19,7 +19,7 @@ export default function EquipmentList() {
   const isOperator = type.isOperator;
   const isTechnician = type.isTechnician;
   const territorialManager = type.isTerritorialManager;
-
+const [mechanicalReportStatus, setMechanicalReportStatus] = useState({}); // ✅ ADD THIS
   const [list, setList] = useState([]);
   const [electricalReportStatus, setElectricalReportStatus] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
@@ -120,11 +120,13 @@ export default function EquipmentList() {
     fetchUsers();
   }, [fetchUsers]);
   // 2) Fetch equipment + electrical report status
+// 2) Fetch equipment + report statuses
   useEffect(() => {
     const fetchEquipmentAndStatus = async () => {
       try {
         let equipmentData = [];
 
+        // Part 1: Fetch the list of equipment based on user role
         if (isOperator || isTechnician || territorialManager) {
           if (users.length > 0) {
             const all = [];
@@ -152,29 +154,44 @@ export default function EquipmentList() {
 
         setList(equipmentData);
 
-        // fetch /exists for each
-        const statusMap = {};
+        // Part 2: For each piece of equipment, check if reports exist
+        const electricalStatusMap = {};
+        const mechanicalStatusMap = {};
+
         await Promise.all(
           equipmentData.map(async (e) => {
+            // Check for Electrical Report
             try {
-              const res = await fetch(
-                `${API_URL}/api/electricalreport/exists/${e._id}`
-              );
-              const json = await res.json();
-              statusMap[e._id] = Boolean(json.exists);
+              const elecRes = await fetch(`${API_URL}/api/electricalreport/exists/${e._id}`);
+              const elecJson = await elecRes.json();
+              electricalStatusMap[e._id] = Boolean(elecJson.exists);
             } catch {
-              statusMap[e._id] = false;
+              electricalStatusMap[e._id] = false;
+            }
+
+            // Check for Mechanical Report
+            try {
+              const mechRes = await fetch(`${API_URL}/api/mechanicalreport/exists/${e._id}`);
+              const mechJson = await mechRes.json();
+              mechanicalStatusMap[e._id] = Boolean(mechJson.exists);
+            } catch {
+              mechanicalStatusMap[e._id] = false;
             }
           })
         );
-        setElectricalReportStatus(statusMap);
+        
+        // Part 3: Set the state for both report statuses
+        setElectricalReportStatus(electricalStatusMap);
+        setMechanicalReportStatus(mechanicalStatusMap);
+
       } catch (err) {
         toast.error("Error fetching equipment");
         console.error(err);
       }
     };
+
     fetchEquipmentAndStatus();
-  }, [type, isOperator, isTechnician, territorialManager, users]);
+  }, [type, isOperator, isTechnician, territorialManager, users]); // Dependencies for the effect
 
   // Helpers
   const downloadQR = async (value) => {
@@ -376,74 +393,51 @@ export default function EquipmentList() {
                       Download
                     </button>
                   </td>
-                  <td className="d-flex align-items-center gap-2">
-                    {isTechnician ? (
-                      <>
-                        <button
-                          disabled
-                          className={`btn btn-sm ${
-                            electricalReportStatus[e._id]
-                              ? "btn-primary"
-                              : "btn-danger"
-                          }`}
-                        >
-                          {electricalReportStatus[e._id]
-                            ? "Submitted"
-                            : "Not Submitted"}
-                        </button>
-                        <button
-                          className="btn btn-sm btn-warning"
-                          onClick={() =>
-                            openModal(
-                              e._id,
-                              e.equipmentName,
-                              e.userName
-                            )
-                          }
-                        >
-                          {electricalReportStatus[e._id]
-                            ? "Edit Report"
-                            : "Add Report"}
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        className="btn btn-sm btn-success"
-                        onClick={() => openReportModal(e._id)}
-                      >
-                        View Report
-                      </button>
-                    )}
-                    {type.userType === "admin" && !territorialManager && (
-                      <>
-                        <button
-                          className="btn btn-sm text-blue-600"
-                          onClick={() => editEquipment(e._id)}
-                          title="Edit Equipment"
-                        >
-                          <FaEdit />
-                        </button>
-                       {userData?.validUserOne?.userType === "admin" && !isTechnician && !territorialManager && (
-  <>
-   {/*  <button
-      className="btn btn-sm text-blue-600"
-      onClick={() => editEquipment(e._id)}
-      title="Edit Equipment"
-    >
-      <FaEdit />
-    </button> */}
+               
+<td className="d-flex align-items-center gap-2">
+  {territorialManager ? ( // Show Mechanical status for Manager
+    <>
+      <button
+        disabled
+        className={`btn btn-sm ${
+          mechanicalReportStatus[e._id] ? "btn-primary" : "btn-danger"
+        }`}
+      >
+        {mechanicalReportStatus[e._id] ? "Submitted" : "Not Submitted"}
+      </button>
+      <button
+        className="btn btn-sm btn-warning"
+        onClick={() => openModal(e._id, e.equipmentName, e.userName)}
+      >
+        {mechanicalReportStatus[e._id] ? "Edit Report" : "Add Report"}
+      </button>
+    </>
+  ) : isTechnician ? ( // Show Electrical status for Technician
+    <>
+      <button
+        disabled
+        className={`btn btn-sm ${
+          electricalReportStatus[e._id] ? "btn-primary" : "btn-danger"
+        }`}
+      >
+        {electricalReportStatus[e._id] ? "Submitted" : "Not Submitted"}
+      </button>
+      <button
+        className="btn btn-sm btn-warning"
+        onClick={() => openModal(e._id, e.equipmentName, e.userName)}
+      >
+        {electricalReportStatus[e._id] ? "Edit Report" : "Add Report"}
+      </button>
+    </>
+  ) : ( // Default 'View Report' for other users like admin
     <button
-      className="btn btn-sm text-red-600"
-      onClick={() => deleteEquipment(e._id)}
-      title="Delete Equipment"
+      className="btn btn-sm btn-success"
+      onClick={() => openReportModal(e._id)}
     >
-      <FaTrash />
+      View Report
     </button>
-  </>
-)}
-                      </>
-                    )}
-                  </td>
+  )}
+</td>
                 </tr>
               ))}
             </tbody>
