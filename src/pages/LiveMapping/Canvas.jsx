@@ -21,12 +21,15 @@ import PDFNode from "./PDFNode";
 import DeviceNode from "./DeviceNode"; 
 import FlowMeterNode from "./FlowMeterNode";
 import TankNode from "./TankNode";
+
+
 function Canvas({
   selectedStation,
   isEditMode,
   setIsEditMode,
   socket,
   socketConnected,
+  productId,
 }) {
   const { userId } = useSelector((state) => state.selectedUser);
   const { userData } = useSelector((state) => state.user);
@@ -52,8 +55,6 @@ function Canvas({
   y: 0,
   zoom: 1,
 });
-const product_id= userData?.validUserOne?.productID
-console.log('new product Id' , product_id);
 
   // Handle pump toggle from child components
   const handlePumpToggle = useCallback((pumpId, pumpName, status, isPending) => {
@@ -68,78 +69,37 @@ console.log('new product Id' , product_id);
   }, []);
 // In your Canvas.jsx component
 useEffect(() => {
-  if (!socket || !socketConnected) return;
+  if (!socket || !socketConnected || !productId) return;
 
-  // Join the room using the actual userName from userData
-  const userName = userData?.validUserOne?.userName;
-  console.log('🔌 Connecting socket for user:', userName);
-  socket.emit('joinRoom', userName); // Changed from hardcoded "CROWN_PLAZA"
+  // Always join the new room when productId changes
+  console.log('Emitting joinRoom for productId:', productId);
+  socket.emit('joinRoom', productId);
 
-  // Tank data handler
-  const handleTankData = (payload) => {
-    console.log('📦 [TANK DATA RECEIVED]', payload);
-    
-    if (payload.tankData) {
-      console.log('🏭 Processing tank data:', payload.tankData);
-      setLiveTankData(payload.tankData);
-      
-      // Update nodes with tank data
-      setNodes(nds => nds.map(node => {
-        if (node.data.isTank) {
-          const tankMatch = payload.tankData.find(
-            t => t.tankName?.toLowerCase() === node.data.label?.toLowerCase()
-          );
-          
-          if (tankMatch) {
-            console.log(`💧 Updating tank ${node.data.label} with depth:`, tankMatch.depth);
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                currentDepth: tankMatch.depth,
-                waterLevel: Math.round((tankMatch.depth / (node.data.totalDepth || 1)) * 100)
-              }
-            };
-          }
-        }
-        return node;
+  // Handler for tank data
+  const handler = payload => {
+    console.log('Socket received payload:', payload);
+    if (Array.isArray(payload.tankData)) {
+      const tanks = payload.tankData.map(t => ({
+        tankName: t.tankName.trim(),
+        percentage: parseFloat(t.percentage ?? t.depth ?? 0),
+        ...t // include all fields for debugging
       }));
+      setLiveTankData(tanks);
+    } else {
+      setLiveTankData([]); // clear if no data
     }
   };
 
-  // Sensor data handler (keep your existing flow value logic)
-  const handleSensorData = (payload) => {
-    if (payload.stacks) {
-      const effluentMap = {};
-      payload.stacks
-        .filter(s => s.stationType === 'effluent_flow')
-        .forEach(s => { 
-          effluentMap[s.stackName] = s.cumulatingFlow;
-          console.log(`🌊 Flow update for ${s.stackName}:`, s.cumulatingFlow);
-        });
-      setFlowValues(prev => ({ ...prev, ...effluentMap }));
-    }
-  };
+  socket.on('data', handler);
 
-  // Set up listeners
-  socket.on('data', (payload) => {
-    console.group('📡 Incoming Data Payload');
-    console.log('Product ID:', payload.product_id);
-    console.log('User:', payload.userName);
-    
-    if (payload.tankData) {
-      handleTankData(payload);
-    } else if (payload.stacks) {
-      handleSensorData(payload);
-    }
-    
-    console.groupEnd();
-  });
-
+  // Clean up handler on unmount or productId change
   return () => {
-    socket.off('data');
+    socket.off('data', handler);
   };
-}, [socket, socketConnected, userData]);
+}, [socket, socketConnected, productId]);
+
+
+
 
 
   // Update nodes with pump status when they change
@@ -377,8 +337,8 @@ const newNode = {
             pumpStatus: initialPumpStates[node.id]?.status || false,
             isPending: initialPumpStates[node.id]?.pending || false,
             onPumpToggle: handlePumpToggle,
-             width:  node.data.width,
-             height: node.data.height,
+            width: node.data.width,
+            height: node.data.height,
           },
         }))
       );
@@ -406,7 +366,7 @@ const newNode = {
 // 👇 Connect socket.io for real-time tank data
 useEffect(() => {
   const socket = io("https://api.ocems.ebhoom.com"); // or your hosted URL
-
+ 
   socket.on("connect", () => {
     console.log("✅ Socket connected:", socket.id);
 
@@ -427,7 +387,7 @@ useEffect(() => {
 }, []);
 const nodeTypes = useMemo(() => {
   const getNodeTypes = (liveTankData) => ({
-    svgNode: (props) => <SVGNode {...props} liveTankData={liveTankData} />,
+    svgNode: (props) => <SVGNode {...props} liveTankData={liveTankData} productId={productId} />,
     textNode: ({ data }) => (
       <div
         style={{
@@ -443,23 +403,54 @@ const nodeTypes = useMemo(() => {
       </div>
     ),
      pdfNode: PDFNode,
-       pumpNode: props => <SVGNode {...props} liveTankData={liveTankData} />,
-  blowerNode: props => <SVGNode {...props} liveTankData={liveTankData} />,
+       pumpNode: props => <SVGNode {...props} liveTankData={liveTankData} productId={productId} />,
+  blowerNode: props => <SVGNode {...props} liveTankData={liveTankData} productId={productId} />,
  flowMeterNode: props => (
     <FlowMeterNode
       {...props}
       flowValues={flowValues}
     />
   ),
-   tankNode:     (p) => <TankNode      {...p} liveTankData={liveTankData} />,
+   tankNode:     (p) => <TankNode      {...p} liveTankData={liveTankData} productId={productId} />,
   });
   return getNodeTypes(liveTankData);
-}, [liveTankData, flowValues]);
+}, [liveTankData, flowValues, productId]);
 
 //new
 const edgeTypes = {
   piping: PipingEdge,
 };
+
+// Add this effect to update only tank nodes when liveTankData changes
+useEffect(() => {
+  if (!liveTankData || liveTankData.length === 0) return;
+  setNodes((prevNodes) =>
+    prevNodes.map((node) => {
+      if (node.type === 'tankNode') {
+        // Find the matching tank data for this node
+        const tankMatch = liveTankData.find(
+          (t) => t.tankName.trim().toLowerCase() === (node.data.tankName || node.data.label || '').trim().toLowerCase()
+        );
+        if (tankMatch) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              // Update only the tank-related fields
+              percentage: tankMatch.percentage,
+              level: tankMatch.level,
+              stackName: tankMatch.stackName,
+              // Optionally add more fields if needed
+            },
+          };
+        }
+      }
+      // For non-tank nodes, return as is
+      return node;
+    })
+  );
+}, [liveTankData, setNodes]);
+
   return (
     <div className="react-flow-container" style={{ 
   width: '100%',
@@ -565,7 +556,7 @@ viewport={savedViewport}
   snapToGrid
   snapGrid={[15,15]}
 >
-  {/* only show the “+ – ⟳” controls when editing */}
+  {/* only show the "+" ⟳" controls when editing */}
   {isEditMode && <Controls />}  
   <Background />
 </ReactFlow>

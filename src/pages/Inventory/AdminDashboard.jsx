@@ -6,6 +6,8 @@ import { useSelector } from "react-redux";
 import axios from "axios";
 
 const AdminDashboard = () => {
+  const selectedUserIdFromSession = sessionStorage.getItem("selectedUserId");
+
   const [activeAdminTab, setActiveAdminTab] = useState("inventoryAdded");
   const [inventoryAddedData, setInventoryAddedData] = useState([]);
   const [usageLogs, setUsageLogs] = useState([]);
@@ -17,8 +19,8 @@ const AdminDashboard = () => {
   const [errorUsed, setErrorUsed] = useState(null);
   const [errorRequests, setErrorRequests] = useState(null);
   const { userData } = useSelector((state) => state.user);
-const [users, setUsers] = useState([]);
-const [selectedUserName, setSelectedUserName] = useState("all");
+  const [users, setUsers] = useState([]);
+  const [selectedUserName, setSelectedUserName] = useState("all");
   // New state for search filter and sort order
   const [searchTerm, setSearchTerm] = useState("");
   const [dateSortOrder, setDateSortOrder] = useState("asc");
@@ -52,47 +54,82 @@ const [selectedUserName, setSelectedUserName] = useState("all");
         });
     }
   }, [activeAdminTab, userData]);
-const fetchUsers = useCallback(async () => {
+
+  const fetchUsers = useCallback(async () => {
     try {
       const currentUser = userData?.validUserOne;
       if (!currentUser) {
         setUsers([]);
         return;
       }
-
-      let response;
-      // EBHOOM: fetch all non-tech users
+  
+      const response = await axios.get(`${API_URL}/api/getallusers`);
+      const allUsers = response.data.users || [];
+  
+      let filteredUsers = [];
+  
       if (currentUser.adminType === "EBHOOM") {
-        response = await axios.get(`${API_URL}/api/getallusers`);
-        const all = response.data.users || [];
-        setUsers(all.filter(u => !u.isTechnician && !u.isTerritorialManager && !u.isOperator));
-      }
-      // Super admin: fetch own admins + their users
-      else if (currentUser.userType === "super_admin") {
-        response = await axios.get(`${API_URL}/api/getallusers`);
-        const all = response.data.users || [];
-        const myAdmins = all.filter(u => u.createdBy === currentUser._id && u.userType === "admin");
-        const adminIds = myAdmins.map(a => a._id.toString());
-        const allowed = all.filter(u => u.createdBy === currentUser._id || adminIds.includes(u.createdBy));
-        setUsers(allowed.filter(u => !u.isTechnician && !u.isTerritorialManager && !u.isOperator));
-      }
-      // Admin: fetch users they created
-      else if (currentUser.userType === "admin") {
-        response = await axios.get(`${API_URL}/api/get-users-by-creator/${currentUser._id}`);
+        filteredUsers = allUsers.filter(
+          (u) =>
+            !u.isTechnician &&
+            !u.isTerritorialManager &&
+            !u.isOperator
+        );
+      } else if (currentUser.userType === "super_admin") {
+        const myAdmins = allUsers.filter(
+          (u) => u.createdBy === currentUser._id && u.userType === "admin"
+        );
+        const adminIds = myAdmins.map((a) => a._id.toString());
+  
+        filteredUsers = allUsers.filter(
+          (u) =>
+            (u.createdBy === currentUser._id ||
+              adminIds.includes(u.createdBy)) &&
+            !u.isTechnician &&
+            !u.isTerritorialManager &&
+            !u.isOperator
+        );
+      } else if (currentUser.userType === "admin") {
+        const response = await axios.get(
+          `${API_URL}/api/get-users-by-creator/${currentUser._id}`
+        );
         const myUsers = response.data.users || [];
-        setUsers(myUsers.filter(u => u.userType === "user"));
-      } else {
-        setUsers([]);
+        filteredUsers = myUsers.filter((u) => u.userType === "user");
       }
+  
+      // 🔍 Assigned as technician (array) or territorialManager (single ObjectId)
+      const assignedCompanies = allUsers.filter((u) => {
+        const isTechnicianMatch =
+          Array.isArray(u.technicians) &&
+          u.technicians.some(
+            (techId) => techId?.toString() === currentUser._id
+          );
+  
+        const isTerritorialManagerMatch =
+          u.territorialManager?.toString() === currentUser._id;
+  
+        return isTechnicianMatch || isTerritorialManagerMatch;
+      });
+  
+      const mergedUsers = [...filteredUsers, ...assignedCompanies];
+  
+      // ✅ Remove duplicates using _id
+      const uniqueUsers = Array.from(
+        new Map(mergedUsers.map((u) => [u._id, u])).values()
+      );
+  
+      setUsers(uniqueUsers);
     } catch (err) {
       console.error("Error fetching users:", err);
       setUsers([]);
     }
   }, [userData]);
-
-  useEffect(() => {
-    if (userData?.validUserOne?.userType === "admin" ||
-        userData?.validUserOne?.userType === "super_admin") {
+  
+ useEffect(() => {
+    if (
+      userData?.validUserOne?.userType === "admin" ||
+      userData?.validUserOne?.userType === "super_admin"
+    ) {
       fetchUsers();
     }
   }, [userData, fetchUsers]);
@@ -174,9 +211,7 @@ const fetchUsers = useCallback(async () => {
       .then(() => {
         // Refresh the request logs after update
         setRequestLogs((prev) =>
-          prev.map((req) =>
-            req._id === id ? { ...req, status } : req
-          )
+          prev.map((req) => (req._id === id ? { ...req, status } : req))
         );
       })
       .catch((error) => {
@@ -186,9 +221,9 @@ const fetchUsers = useCallback(async () => {
 
   // Compute filtered and sorted data for each tab based on searchTerm and dateSortOrder
   const filteredInventoryAddedData = inventoryAddedData
-  .filter(item =>
-  selectedUserName === "all" || item.userName === selectedUserName
-)
+    .filter(
+      (item) => selectedUserName === "all" || item.userName === selectedUserName
+    )
 
     .sort((a, b) =>
       dateSortOrder === "asc"
@@ -197,9 +232,9 @@ const fetchUsers = useCallback(async () => {
     );
 
   const filteredUsageLogs = usageLogs
-     .filter(item =>
-  selectedUserName === "all" || item.userName === selectedUserName
-)
+    .filter(
+      (item) => selectedUserName === "all" || item.userName === selectedUserName
+    )
     .sort((a, b) =>
       dateSortOrder === "asc"
         ? new Date(a.date) - new Date(b.date)
@@ -207,21 +242,36 @@ const fetchUsers = useCallback(async () => {
     );
 
   const filteredRequestLogs = requestLogs
-     .filter(item =>
-  selectedUserName === "all" || item.userName === selectedUserName
-)
+    .filter(
+      (item) => selectedUserName === "all" || item.userName === selectedUserName
+    )
     .sort((a, b) =>
       dateSortOrder === "asc"
         ? new Date(a.requestDate) - new Date(b.requestDate)
         : new Date(b.requestDate) - new Date(a.requestDate)
     );
-    const tableContainerStyle = {
-      overflowX: 'auto',
-      width: '100%',
-      margin: '1rem 0',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      borderRadius: '4px'
-    };
+  const tableContainerStyle = {
+    overflowX: "auto",
+    width: "100%",
+    margin: "1rem 0",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    borderRadius: "4px",
+  };
+
+  useEffect(() => {
+    if (users.length > 0 && selectedUserIdFromSession) {
+      const matchedUser = users.find(
+        (u) => u.userName === selectedUserIdFromSession
+      );
+      if (matchedUser) {
+        setSelectedUserName(matchedUser.userName);
+        console.log("✅ Auto-selected user from session:", matchedUser);
+      } else {
+        console.log("❌ No user matched with sessionStorage userName:", selectedUserIdFromSession);
+      }
+    }
+  }, [users, selectedUserIdFromSession]);
+  
   return (
     <div className="col-12">
       <h3 className="text-center mt-3">ADMIN INVENTORY DASHBOARD</h3>
@@ -232,7 +282,8 @@ const fetchUsers = useCallback(async () => {
             <button
               className="nav-link"
               style={{
-                color: activeAdminTab === "inventoryAdded" ? "#236a80" : "black",
+                color:
+                  activeAdminTab === "inventoryAdded" ? "#236a80" : "black",
                 fontWeight:
                   activeAdminTab === "inventoryAdded" ? "bold" : "normal",
               }}
@@ -270,193 +321,231 @@ const fetchUsers = useCallback(async () => {
       </div>
 
       {/* Global Search Bar */}
-     <div style={{ margin: "1rem 0", width: "20%" }}>
-<select
-  value={selectedUserName}
-  onChange={e => setSelectedUserName(e.target.value)}
-  style={{
-    padding: "0.5rem",
-    width: "100%",
-    borderRadius: "20px",
-    border: "1px solid #ccc",
-    backgroundColor: "#fff",
-    appearance: "none"
-  }}
->
-  <option value="all">Select Companies</option>
-  {users.map(user => (
-    <option key={user.userName} value={user.userName}>
-      {user.companyName}
-    </option>
-  ))}
-</select>
-
-</div>
-
-
+      <div style={{ margin: "1rem 0", width: "20%" }}>
+        <select
+          value={selectedUserName}
+          onChange={(e) => setSelectedUserName(e.target.value)}
+          style={{
+            padding: "0.5rem",
+            width: "100%",
+            borderRadius: "20px",
+            border: "1px solid #ccc",
+            backgroundColor: "#fff",
+            appearance: "none",
+          }}
+        >
+          <option value="all">Select Companies</option>
+          {users.map((user) => (
+            <option key={user.userName} value={user.userName}>
+              {user.companyName}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Inventory Added Tab */}
-  {/* Inventory Added Tab */}
-{activeAdminTab === "inventoryAdded" && (
-  <div>
-    <h4 className="text-center">Inventory Added</h4>
-    {loadingAdded ? (
-      <p>Loading...</p>
-    ) : errorAdded ? (
-      <p>Error: {errorAdded}</p>
-    ) : (
-      <div style={tableContainerStyle}>
-        <table className="table table-bordered">
-          <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
-            <tr>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>SKU</th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Username</th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Action</th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Quantity</th>
-              <th
-                style={{ cursor: "pointer" , backgroundColor: "#236a80", color: "#fff"}}
-                onClick={toggleSort}
-              >
-                Date {dateSortOrder === "asc" ? "▲" : "▼"}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredInventoryAddedData.map((item, index) => (
-              <tr key={index}>
-                <td>{item.skuName}</td>
-                <td>{item.userName}</td>
-                <td>Added</td>
-                <td>{item.quantity}</td>
-                <td>{new Date(item.date).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-)}
+      {/* Inventory Added Tab */}
+      {activeAdminTab === "inventoryAdded" && (
+        <div>
+          <h4 className="text-center">Inventory Added</h4>
+          {loadingAdded ? (
+            <p>Loading...</p>
+          ) : errorAdded ? (
+            <p>Error: {errorAdded}</p>
+          ) : (
+            <div style={tableContainerStyle}>
+              <table className="table table-bordered">
+                <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                  <tr>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      SKU
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Username
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Action
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Quantity
+                    </th>
+                    <th
+                      style={{
+                        cursor: "pointer",
+                        backgroundColor: "#236a80",
+                        color: "#fff",
+                      }}
+                      onClick={toggleSort}
+                    >
+                      Date {dateSortOrder === "asc" ? "▲" : "▼"}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredInventoryAddedData.map((item, index) => (
+                    <tr key={index}>
+                      <td>{item.skuName}</td>
+                      <td>{item.userName}</td>
+                      <td>Added</td>
+                      <td>{item.quantity}</td>
+                      <td>{new Date(item.date).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
-{/* Inventory Used Tab */}
-{activeAdminTab === "inventoryUsed" && (
-  <div>
-    <h2>Inventory Used</h2>
-    {loadingUsed ? (
-      <p>Loading...</p>
-    ) : errorUsed ? (
-      <p>Error: {errorUsed}</p>
-    ) : (
-      <div style={tableContainerStyle}>
-        <table className="table table-bordered">
-          <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
-            <tr>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>SKU</th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Username</th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Quantity Used</th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Left Quantity</th>
-              <th
-                style={{ cursor: "pointer" , backgroundColor: "#236a80", color: "#fff" }}
-                onClick={toggleSort}
-              >
-                Date {dateSortOrder === "asc" ? "▲" : "▼"}
-              </th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsageLogs.map((log, index) => (
-              <tr key={index}>
-                <td>{log.skuName}</td>
-                <td>{log.userName}</td>
-                <td>{log.quantityUsed}</td>
-                <td>
-                  <LeftQuantity sku={log.skuName} />
-                </td>
-                <td>{new Date(log.date).toLocaleDateString()}</td>
-                <td>{log.notes}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-)}
+      {/* Inventory Used Tab */}
+      {activeAdminTab === "inventoryUsed" && (
+        <div>
+          <h2>Inventory Used</h2>
+          {loadingUsed ? (
+            <p>Loading...</p>
+          ) : errorUsed ? (
+            <p>Error: {errorUsed}</p>
+          ) : (
+            <div style={tableContainerStyle}>
+              <table className="table table-bordered">
+                <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                  <tr>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      SKU
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Username
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Quantity Used
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Left Quantity
+                    </th>
+                    <th
+                      style={{
+                        cursor: "pointer",
+                        backgroundColor: "#236a80",
+                        color: "#fff",
+                      }}
+                      onClick={toggleSort}
+                    >
+                      Date {dateSortOrder === "asc" ? "▲" : "▼"}
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Notes
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsageLogs.map((log, index) => (
+                    <tr key={index}>
+                      <td>{log.skuName}</td>
+                      <td>{log.userName}</td>
+                      <td>{log.quantityUsed}</td>
+                      <td>
+                        <LeftQuantity sku={log.skuName} />
+                      </td>
+                      <td>{new Date(log.date).toLocaleDateString()}</td>
+                      <td>{log.notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
-{/* Requests Tab */}
-{activeAdminTab === "requests" && (
-  <div>
-    <h2>Requests</h2>
-    {loadingRequests ? (
-      <p>Loading...</p>
-    ) : errorRequests ? (
-      <p>Error: {errorRequests}</p>
-    ) : (
-      <div style={tableContainerStyle}>
-        <table className="table table-bordered">
-          <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
-            <tr>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>SKU</th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Username</th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Requested Quantity</th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Status</th>
-              <th
-                style={{ cursor: "pointer",backgroundColor: "#236a80", color: "#fff"  }}
-                onClick={toggleSort}
-              >
-                Request Date {dateSortOrder === "asc" ? "▲" : "▼"}
-              </th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Reason</th>
-              <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRequestLogs.map((req) => (
-              <tr key={req._id}>
-                <td>{req.skuName}</td>
-                <td>{req.userName}</td>
-                <td>{req.quantityRequested}</td>
-                <td
-                  style={{
-                    color:
-                      req.status === "Approved"
-                        ? "green"
-                        : req.status === "Denied"
-                        ? "red"
-                        : "orange",
-                    fontWeight: "bold",
-                  }}
-                >
-                  {req.status}
-                </td>
-                <td>
-                  {new Date(req.requestDate).toLocaleDateString()}
-                </td>
-                <td>{req.reason}</td>
-                <td className="d-flex flex-column flex-md-row gap-2">
-  <button
-    onClick={() => handleUpdateRequest(req._id, "Approved")}
-    className="btn btn-success btn-sm w-100 w-md-auto"
-  >
-    Approve
-  </button>
-  <button
-    onClick={() => handleUpdateRequest(req._id, "Denied")}
-    className="btn btn-danger btn-sm w-100 w-md-auto"
-  >
-    Deny
-  </button>
-</td>
-
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-)}
+      {/* Requests Tab */}
+      {activeAdminTab === "requests" && (
+        <div>
+          <h2>Requests</h2>
+          {loadingRequests ? (
+            <p>Loading...</p>
+          ) : errorRequests ? (
+            <p>Error: {errorRequests}</p>
+          ) : (
+            <div style={tableContainerStyle}>
+              <table className="table table-bordered">
+                <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                  <tr>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      SKU
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Username
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Requested Quantity
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Status
+                    </th>
+                    <th
+                      style={{
+                        cursor: "pointer",
+                        backgroundColor: "#236a80",
+                        color: "#fff",
+                      }}
+                      onClick={toggleSort}
+                    >
+                      Request Date {dateSortOrder === "asc" ? "▲" : "▼"}
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Reason
+                    </th>
+                    <th style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRequestLogs.map((req) => (
+                    <tr key={req._id}>
+                      <td>{req.skuName}</td>
+                      <td>{req.userName}</td>
+                      <td>{req.quantityRequested}</td>
+                      <td
+                        style={{
+                          color:
+                            req.status === "Approved"
+                              ? "green"
+                              : req.status === "Denied"
+                              ? "red"
+                              : "orange",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {req.status}
+                      </td>
+                      <td>{new Date(req.requestDate).toLocaleDateString()}</td>
+                      <td>{req.reason}</td>
+                      <td className="d-flex flex-column flex-md-row gap-2">
+                        <button
+                          onClick={() =>
+                            handleUpdateRequest(req._id, "Approved")
+                          }
+                          className="btn btn-success btn-sm w-100 w-md-auto"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleUpdateRequest(req._id, "Denied")}
+                          className="btn btn-danger btn-sm w-100 w-md-auto"
+                        >
+                          Deny
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

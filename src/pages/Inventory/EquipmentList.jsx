@@ -24,7 +24,12 @@ export default function EquipmentList() {
   const [electricalReportStatus, setElectricalReportStatus] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState([]);
-  const [selectedUserName, setSelectedUserName] = useState("all");
+  // const [selectedUserName, setSelectedUserName] = useState("all");
+  const [selectedUserName, setSelectedUserName] = useState(() => {
+    return sessionStorage.getItem("selectedUserId") || "all";
+  });
+  
+
 
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -36,92 +41,81 @@ export default function EquipmentList() {
   const [reportType, setReportType] = useState(null);
 
   const navigate = useNavigate();
-
   // 1) Fetch companies/users based on role
   const fetchUsers = useCallback(async () => {
     try {
-      let fetched = [];
-
-      // EBHOOM (root) sees all non-tech users
-      if (type.adminType === "EBHOOM") {
-        const res = await fetch(`${API_URL}/api/getallusers`);
-        const all = (await res.json()).users || [];
-        fetched = all.filter(
-          (u) =>
-            !u.isOperator &&
-            !u.isTechnician &&
-            !u.isTerritorialManager
-        );
-      }
-      // super_admin: see own admins + their users
-      else if (type.userType === "super_admin") {
-        const res = await fetch(`${API_URL}/api/getallusers`);
-        const all = (await res.json()).users || [];
-        const myAdmins = all.filter(
-          (u) =>
-            u.createdBy === type._id && u.userType === "admin"
-        );
-        const adminIds = myAdmins.map((a) => a._id.toString());
-        const allowed = all.filter(
-          (u) =>
-            u.createdBy === type._id ||
-            adminIds.includes(u.createdBy)
-        );
-        fetched = allowed.filter(
-          (u) =>
-            !u.isOperator &&
-            !u.isTechnician &&
-            !u.isTerritorialManager
-        );
-      }
-      // admin: only users they created
-      else if (type.userType === "admin") {
-        const res = await fetch(
-          `${API_URL}/api/get-users-by-creator/${type._id}`
-        );
-        const usersByAdmin = (await res.json()).users || [];
-        fetched = usersByAdmin.filter((u) => u.userType === "user");
-      }
-      // technician / territorial / operator: as before
-      else if (isTechnician) {
-        const res = await fetch(
-          `${API_URL}/api/get-companies-by-technician/${type._id}`
-        );
-        fetched = (await res.json()).companies || [];
-      } 
-      else if (territorialManager) {
-        const res = await fetch(
-          `${API_URL}/api/get-companies-by-territorialManager/${type._id}`
-        );
-        fetched = (await res.json()).companies || [];
-      } 
-      else if (isOperator) {
-        const res = await fetch(
-          `${API_URL}/api/get-companies-by-operator/${type._id}`
-        );
-        fetched = (await res.json()).companies || [];
-      }
-      // user: just themselves
-      else if (type.userType === "user") {
-        const res = await fetch(`${API_URL}/api/user/${type.userName}`);
-        const data = await res.json();
-        if (data.userName) {
-          fetched = [
-            {
-              _id: type._id,
-              userName: data.userName,
-              companyName: data.companyName,
-            },
-          ];
+      const currentUserId = type?._id;
+      if (!currentUserId) return;
+  
+      const res = await fetch(`${API_URL}/api/getallusers`);
+      const allUsers = (await res.json()).users || [];
+     
+      
+      const isAssignedToAny = allUsers.some((u) => {
+        const isOperator =
+          Array.isArray(u.operators) &&
+          u.operators.some((opId) => opId?.toString() === currentUserId);
+        const isTechnician =
+          Array.isArray(u.technicians) &&
+          u.technicians.some((techId) => techId?.toString() === currentUserId);
+        const isTerritorial =
+          u.territorialManager?.toString() === currentUserId;
+        return isOperator || isTechnician || isTerritorial;
+      });
+  
+      let filtered = [];
+      if (isAssignedToAny) {
+        // Only show companies assigned to this user
+        filtered = allUsers.filter((u) => {
+          const isOperator =
+            Array.isArray(u.operators) &&
+            u.operators.some((opId) => opId?.toString() === currentUserId);
+          const isTechnician =
+            Array.isArray(u.technicians) &&
+            u.technicians.some((techId) => techId?.toString() === currentUserId);
+          const isTerritorial =
+            u.territorialManager?.toString() === currentUserId;
+          return isOperator || isTechnician || isTerritorial;
+        });
+      } else {
+        // Default logic (admin/super_admin/EBHOOM)
+        if (type.adminType === "EBHOOM") {
+          filtered = allUsers.filter(
+            (u) =>
+              !u.isOperator &&
+              !u.isTechnician &&
+              !u.isTerritorialManager
+          );
+        } else if (type.userType === "super_admin") {
+          const myAdmins = allUsers.filter(
+            (u) => u.createdBy === currentUserId && u.userType === "admin"
+          );
+          const adminIds = myAdmins.map((a) => a._id.toString());
+          const allowed = allUsers.filter(
+            (u) =>
+              u.createdBy === currentUserId || adminIds.includes(u.createdBy)
+          );
+          filtered = allowed.filter(
+            (u) =>
+              !u.isOperator &&
+              !u.isTechnician &&
+              !u.isTerritorialManager
+          );
+        } else if (type.userType === "admin") {
+          const res = await fetch(`${API_URL}/api/get-users-by-creator/${currentUserId}`);
+          const byCreator = (await res.json()).users || [];
+          filtered = byCreator.filter((u) => u.userType === "user");
         }
       }
+  
+      setUsers(filtered);
 
-      setUsers(fetched);
     } catch (err) {
       console.error("Error fetching users:", err);
       setUsers([]);
     }
-  }, [type, isOperator, isTechnician, territorialManager]);
+  }, [type]);
+  
    useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);

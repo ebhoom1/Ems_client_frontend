@@ -1,64 +1,120 @@
-// PumpNode.jsx
-import React from 'react';
+import React, { useState } from 'react';
+import { Resizable } from 're-resizable';
 import { Handle, Position } from 'react-flow-renderer';
 
-export default function PumpNode({ data, selected }) {
+export default function PDFNode({ id, data, selected }) {
+  const [dimensions, setDimensions] = useState({
+    width: data.width || 900,
+    height: data.height || 900,
+  });
+
+  // Fit PDF to container width, hide UI
+  const pdfUrl = `${data.filePath}#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width`;
+
+  const handleResize = (e, direction, ref) => {
+    const newDimensions = {
+      width: ref.offsetWidth,
+      height: ref.offsetHeight,
+    };
+    setDimensions(newDimensions);
+
+    // Persist dimensions on node
+    data.width = newDimensions.width;
+    data.height = newDimensions.height;
+  };
+
   return (
     <div
       style={{
-        padding: 4,
-        background: '#fff',
-        /* border: selected ? '2px solid #0074D9' : '1px solid #ccc', */
-        borderRadius: 4,
-        textAlign: 'center',
-        width: 70,
-        fontSize: 10,
+        border: selected ? '2px solid #0074D9' : 'none',
+        width: '100%',
+        height: '100%',
       }}
     >
-      <Handle
-        type="target"
-        position={Position.Top}
-        style={{ background: '#555', width: 6, height: 6, top: -3 }}
-      />
+      {/* Connection handles */}
+      {['Top', 'Right', 'Bottom', 'Left'].map((pos) => (
+        <Handle
+          id={pos.toLowerCase()}
+          key={pos}
+          type={pos === 'Top' || pos === 'Left' ? 'target' : 'source'}
+          position={Position[pos]}
+          style={{
+            background: data.isEditing ? '#D9DFC6' : 'transparent',
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            zIndex: 9999,
+            position: 'absolute',
+            [pos]: -12,
+            pointerEvents: data.isEditing ? 'auto' : 'none',
+            border: data.isEditing ? '1px solid #ccc' : 'none',
+          }}
+        />
+      ))}
 
-      <div style={{ margin: '4px 0', fontWeight: 'bold', fontSize: 10 }}>
-        {data.label}
-      </div>
-
-      {/* compact toggle */}
-      <div
-        onClick={() =>
-          data.onPumpToggle(data.id, data.label, !data.pumpStatus, false)
-        }
-        style={{
-          width: 28,
-          height: 14,
-          background: data.pumpStatus ? '#2ECC40' : '#FF4136',
-          borderRadius: 7,
-          cursor: 'pointer',
-          margin: '0 auto',
-          position: 'relative',
-        }}
+      <Resizable
+        size={dimensions}
+        onResizeStop={handleResize}
+        enable={data.isEditing ? {
+          top: true, right: true, bottom: true, left: true,
+          topRight: true, bottomRight: true,
+          bottomLeft: true, topLeft: true,
+        } : {}}
+        minWidth={300}
+        minHeight={200}
+        maxWidth={1200}
+        maxHeight={900}
       >
         <div
           style={{
-            width: 12,
-            height: 12,
-            background: '#fff',
-            borderRadius: '50%',
-            position: 'absolute',
-            top: 1,
-            left: data.pumpStatus ? 14 : 1,
-            transition: 'left 0.2s',
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden',
+            backgroundColor: '#fff', // ensure white behind PDF
           }}
-        />
-      </div>
+        >
+          <iframe
+            src={pdfUrl}
+            width="100%"
+            height="100%"
+            style={{
+              border: 'none',
+              backgroundColor: '#fff',
+             /*  pointerEvents: 'none', */
+            }}
+            title={`pdf-node-${id}`}
+          />
+        </div>
+      </Resizable>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        style={{ background: '#555', width: 6, height: 6, bottom: -3 }}
-      />
+      {/* Label editing */}
+      {data.isEditing && selected && (
+        <div
+          style={{
+            width: '100%',
+            marginTop: 6,
+            fontSize: '12px',
+            border: '1px solid #ddd',
+            borderRadius: 4,
+            padding: 4,
+            backgroundColor: '#f9f9f9',
+            textAlign: 'center',
+          }}
+        >
+          <input
+            value={data.label || ''}
+            onChange={(e) => (data.label = e.target.value)}
+            placeholder="Label..."
+            style={{
+              width: '100%',
+              fontSize: '12px',
+              border: 'none',
+              textAlign: 'center',
+              outline: 'none',
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

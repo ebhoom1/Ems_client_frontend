@@ -687,7 +687,7 @@ const Water = () => {
                         className={`text-center ${
                           userData?.validUserOne?.userType === "user"
                             ? "mt-5"
-                            : "mt-3"
+                            : "mt-5"
                         }`}
                       >
                         <b> EFFLUENT DASHBOARD</b>

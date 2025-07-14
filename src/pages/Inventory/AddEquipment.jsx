@@ -25,19 +25,63 @@ const AddEquipment = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const url = userData?.validUserOne?.adminType
-          ? `${API_URL}/api/get-users-by-adminType/${userData.validUserOne.adminType}`
+        const currentUser = userData?.validUserOne;
+        const currentUserId = currentUser?._id;
+        if (!currentUserId) return;
+  
+        const url = currentUser?.adminType
+          ? `${API_URL}/api/get-users-by-adminType/${currentUser.adminType}`
           : `${API_URL}/api/getallusers`;
+  
         const response = await axios.get(url);
-        const filtered = response.data.users.filter((u) => u.userType === "user");
-        setUsers(filtered);
+        const allUsers = response.data.users || [];
+  
+        // Check if current user is assigned as operator, technician, or territorial manager to anyone
+        const isAssigned = allUsers.some((u) => {
+          const isOperator =
+            Array.isArray(u.operators) &&
+            u.operators.some((opId) => opId?.toString() === currentUserId);
+  
+          const isTechnician =
+            Array.isArray(u.technicians) &&
+            u.technicians.some((techId) => techId?.toString() === currentUserId);
+  
+          const isTerritorialManager =
+            u.territorialManager?.toString() === currentUserId;
+  
+          return isOperator || isTechnician || isTerritorialManager;
+        });
+  
+        // If user is assigned to someone, filter the users they are assigned to
+        if (isAssigned) {
+          const assignedUsers = allUsers.filter((u) => {
+            const isOperator =
+              Array.isArray(u.operators) &&
+              u.operators.some((opId) => opId?.toString() === currentUserId);
+  
+            const isTechnician =
+              Array.isArray(u.technicians) &&
+              u.technicians.some((techId) => techId?.toString() === currentUserId);
+  
+            const isTerritorialManager =
+              u.territorialManager?.toString() === currentUserId;
+  
+            return isOperator || isTechnician || isTerritorialManager;
+          });
+  
+          setUsers(assignedUsers);
+        } else {
+          // Default case — show all users from API
+          setUsers(allUsers);
+        }
       } catch (err) {
         console.error("Error fetching users:", err);
       }
     };
+  
     fetchUsers();
   }, [userData]);
-
+  
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -128,8 +172,7 @@ const AddEquipment = () => {
                 type="text"
                 className="form-control"
                 value={form.modelSerial}
-                onChange={handleChange}
-              
+                onChange={handleChange}              
                 style={{ width: "100%", padding: "15px", borderRadius: "10px" }}
               />
             </div>
