@@ -19,18 +19,15 @@ export default function EquipmentList() {
   const isOperator = type.isOperator;
   const isTechnician = type.isTechnician;
   const territorialManager = type.isTerritorialManager;
-const [mechanicalReportStatus, setMechanicalReportStatus] = useState({}); // ✅ ADD THIS
+  const [mechanicalReportStatus, setMechanicalReportStatus] = useState({});
   const [list, setList] = useState([]);
   const [electricalReportStatus, setElectricalReportStatus] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState([]);
-  // const [selectedUserName, setSelectedUserName] = useState("all");
   const [selectedUserName, setSelectedUserName] = useState(() => {
     return sessionStorage.getItem("selectedUserId") || "all";
   });
   
-
-
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedEquipmentName, setSelectedEquipmentName] = useState(null);
@@ -41,6 +38,7 @@ const [mechanicalReportStatus, setMechanicalReportStatus] = useState({}); // ✅
   const [reportType, setReportType] = useState(null);
 
   const navigate = useNavigate();
+
   // 1) Fetch companies/users based on role
   const fetchUsers = useCallback(async () => {
     try {
@@ -50,7 +48,6 @@ const [mechanicalReportStatus, setMechanicalReportStatus] = useState({}); // ✅
       const res = await fetch(`${API_URL}/api/getallusers`);
       const allUsers = (await res.json()).users || [];
      
-      
       const isAssignedToAny = allUsers.some((u) => {
         const isOperator =
           Array.isArray(u.operators) &&
@@ -119,8 +116,8 @@ const [mechanicalReportStatus, setMechanicalReportStatus] = useState({}); // ✅
    useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
-  // 2) Fetch equipment + electrical report status
-// 2) Fetch equipment + report statuses
+
+  // 2) Fetch equipment + report statuses
   useEffect(() => {
     const fetchEquipmentAndStatus = async () => {
       try {
@@ -154,15 +151,20 @@ const [mechanicalReportStatus, setMechanicalReportStatus] = useState({}); // ✅
 
         setList(equipmentData);
 
-        // Part 2: For each piece of equipment, check if reports exist
+        // Part 2: For each piece of equipment, check if reports exist for the CURRENT MONTH
         const electricalStatusMap = {};
         const mechanicalStatusMap = {};
+        
+        // Get the current date details
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-11, so add 1
 
         await Promise.all(
           equipmentData.map(async (e) => {
             // Check for Electrical Report
             try {
-              const elecRes = await fetch(`${API_URL}/api/electricalreport/exists/${e._id}`);
+              const elecRes = await fetch(`${API_URL}/api/electricalreport/exists/${e._id}?year=${currentYear}&month=${currentMonth}`);
               const elecJson = await elecRes.json();
               electricalStatusMap[e._id] = Boolean(elecJson.exists);
             } catch {
@@ -171,7 +173,7 @@ const [mechanicalReportStatus, setMechanicalReportStatus] = useState({}); // ✅
 
             // Check for Mechanical Report
             try {
-              const mechRes = await fetch(`${API_URL}/api/mechanicalreport/exists/${e._id}`);
+              const mechRes = await fetch(`${API_URL}/api/mechanicalreport/exists/${e._id}?year=${currentYear}&month=${currentMonth}`);
               const mechJson = await mechRes.json();
               mechanicalStatusMap[e._id] = Boolean(mechJson.exists);
             } catch {
@@ -221,6 +223,11 @@ const [mechanicalReportStatus, setMechanicalReportStatus] = useState({}); // ✅
           const next = { ...prev };
           delete next[id];
           return next;
+        });
+        setMechanicalReportStatus((prev) => {
+            const next = { ...prev };
+            delete next[id];
+            return next;
         });
         toast.success("Deleted");
       } else {

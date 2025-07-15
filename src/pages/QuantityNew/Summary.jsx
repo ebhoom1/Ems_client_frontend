@@ -285,7 +285,7 @@ const handleModalSubmit = () => {
         <div className="col-lg-9 col-12">
           <Hedaer />
 
-          <div className="summary-top-bar d-flex justify-content-between align-items-center p-3 border ">
+          <div className="summary-top-bar d-flex justify-content-between align-items-center p-3 border mt-5">
             <h2 className="company-name">{displayName}</h2>
             <div>
               <button

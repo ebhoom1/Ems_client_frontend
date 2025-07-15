@@ -153,6 +153,7 @@ const MonthlyFlowData = () => {
             userName,
             month: monthNum,
             year: currentYear,
+            interval: "daily", // Added interval param just in case middleware needs it
           },
         }
       );
@@ -163,9 +164,8 @@ const MonthlyFlowData = () => {
         );
         const barData = filtered.map((item) => ({
           stackName: item.stackName,
-          monthlyConsumption: parseFloat(
-            item.totalCumulatingFlowDifference.toFixed(2)
-          ),
+          // FIXED: Use 'totalDifference' from the API response
+          monthlyConsumption: parseFloat(item.totalDifference),
         }));
         setStackFlowData(barData);
 
@@ -175,9 +175,8 @@ const MonthlyFlowData = () => {
             (t) => t.stackName === selectedStack
           );
           if (found) {
-            const val = parseFloat(
-              found.totalCumulatingFlowDifference.toFixed(2)
-            );
+            // FIXED: Use 'totalDifference' from the API response
+            const val = parseFloat(found.totalDifference);
             setLastCumulatingFlow(val);
             setAnimatedProgress(0);
             setTimeout(() => setAnimatedProgress(85), 200);

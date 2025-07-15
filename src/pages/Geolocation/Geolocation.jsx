@@ -298,10 +298,10 @@ const [photoBlob, setPhotoBlob] = useState(null);
 
     const handleSuccess = (position) => {
       // For testing, we’re hardcoding Korlam Hospital Kollam coordinates:
-       const latitude = 8.864167;
-      const longitude = 76.681111;  
+     /*   const latitude = 8.864167;
+      const longitude = 76.681111;   */
       // In production, uncomment the next two lines:
-    // const { latitude, longitude } = position.coords;
+     const { latitude, longitude } = position.coords;
       // setCoords({ lat: latitude, lng: longitude });
       setCoords({ lat: latitude, lng: longitude });
     };
