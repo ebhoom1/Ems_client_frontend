@@ -115,24 +115,36 @@ const fetchData = async (userName) => {
 
     // If no real-time data, fetch the latest data from the API
     const response = await axios.get(`${API_URL}/api/latest/${userName}`);
-    if (response.data.success) {
-      const latestData = response.data.data[0]; // Get the first entry
-      const effluentFlowStacks = (latestData.stackData || [])
-        .filter(i => i.stationType === 'effluent_flow');
-      
-      if (effluentFlowStacks.length) {
-        const byName = effluentFlowStacks.reduce((acc, i) => {
-          acc[i.stackName] = {
-            ...i,
-            timestamp: latestData.timestamp // Use the timestamp from the response
-          };
-          return acc;
-        }, {});
-        setCompanyName(latestData.companyName);
-        setSearchResult(Object.values(byName));
-        setEffluentFlowStacks(Object.keys(byName));
-        setRealTimeData(byName);
+    if (response.data.success && response.data.data.length > 0) {
+      // --- UPDATED LOGIC START ---
+
+      // Find the specific record that contains effluent_flow data from the array.
+      // This checks the parent record's type and also looks inside its stackData.
+      const latestData = response.data.data.find(
+        record => record.stationType === 'effluent_flow' || 
+                 (record.stackData && record.stackData.some(s => s.stationType === 'effluent_flow'))
+      );
+
+      // Only proceed if a relevant record was found
+      if (latestData) {
+        const effluentFlowStacks = (latestData.stackData || [])
+          .filter(i => i.stationType === 'effluent_flow');
+        
+        if (effluentFlowStacks.length) {
+          const byName = effluentFlowStacks.reduce((acc, i) => {
+            acc[i.stackName] = {
+              ...i,
+              timestamp: latestData.timestamp // Use the timestamp from the found record
+            };
+            return acc;
+          }, {});
+          setCompanyName(latestData.companyName);
+          setSearchResult(Object.values(byName));
+          setEffluentFlowStacks(Object.keys(byName));
+          setRealTimeData(byName);
+        }
       }
+      // --- UPDATED LOGIC END ---
     }
   } catch (err) {
     console.error("Error fetching data:", err);
@@ -141,7 +153,6 @@ const fetchData = async (userName) => {
     setLoading(false);
   }
 };
-
 const fetchDifferenceData = async (userName) => {
   try {
     const url = `${API_URL}/api/difference/${userName}?interval=daily`;

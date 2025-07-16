@@ -494,7 +494,7 @@ const WaterQualityTable = () => {
             <div className="maindashboard">
               <Maindashboard />
             </div>
-            <div className="table-container">
+            <div className="table-container mt-5">
               <button
                 onClick={downloadPDF}
                 className={`download-btn btn btn-success ${userType === "user" ? "mt-5" : ""}`}

@@ -402,7 +402,7 @@ export default function EquipmentList() {
                   </td>
                
 <td className="d-flex align-items-center gap-2">
-  {territorialManager ? ( // Show Mechanical status for Manager
+  {territorialManager ? ( // UI for Territorial Manager
     <>
       <button
         disabled
@@ -419,7 +419,7 @@ export default function EquipmentList() {
         {mechanicalReportStatus[e._id] ? "Edit Report" : "Add Report"}
       </button>
     </>
-  ) : isTechnician ? ( // Show Electrical status for Technician
+  ) : isTechnician ? ( // UI for Technician
     <>
       <button
         disabled
@@ -436,13 +436,35 @@ export default function EquipmentList() {
         {electricalReportStatus[e._id] ? "Edit Report" : "Add Report"}
       </button>
     </>
-  ) : ( // Default 'View Report' for other users like admin
-    <button
-      className="btn btn-sm btn-success"
-      onClick={() => openReportModal(e._id)}
-    >
-      View Report
-    </button>
+  ) : ( // Default UI for other roles (like Admin, super_admin)
+    <>
+      <button
+        className="btn btn-sm btn-success"
+        onClick={() => openReportModal(e._id)}
+      >
+        View Report
+      </button>
+      
+      {/* ✨ Buttons shown only to admin users ✨ */}
+      {type.userType === 'admin' && (
+        <>
+          <button
+            className="btn btn-sm btn-info"
+            onClick={() => editEquipment(e._id)}
+            title="Edit Equipment"
+          >
+            <FaEdit />
+          </button>
+          <button
+            className="btn btn-sm btn-danger"
+            onClick={() => deleteEquipment(e._id)}
+            title="Delete Equipment"
+          >
+            <FaTrash />
+          </button>
+        </>
+      )}
+    </>
   )}
 </td>
                 </tr>
