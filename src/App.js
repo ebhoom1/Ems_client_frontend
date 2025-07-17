@@ -100,6 +100,7 @@ import RealTimeDashboard from "./pages/QuantityNew/RealTimeDashboard";
 import DayReport from "./pages/Report/DayReport";
 import PreviousQuantity from "./pages/QuantityNew/PreviousQuantity";
 import PreviousQuality from "./pages/QuantityNew/PreviousQuality";
+import AssignTechnician from "./pages/AssignReports/AssignTechnician";
 
 function App() {
   const dispatch = useDispatch();
@@ -258,8 +259,14 @@ function App() {
           path="/previous-quality"
           element={<PreviousQuality />}
         />
+         <Route
+          path="/assign-technician"
+          element={<AssignTechnician />}
+        />
 
   </Route>
+
+  
 )}
 
               {/* User Routes */}

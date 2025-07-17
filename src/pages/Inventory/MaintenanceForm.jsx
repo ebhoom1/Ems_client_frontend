@@ -109,6 +109,40 @@ const mechanicalConfig = {
       { id: 5, category: "Other observation if any", description: "" }
     ]
   },
+ "psf-acf-unit": {
+  columns: ["Proccess Status"],
+  rows: [
+    { id: 1, category: "Inlet Pressure", description: "" },
+    { id: 2, category: "Outlet Pressure", description: "" },
+    { id: 3, category: "Check if Butterfly valves working", description: "" },
+    { id: 4, category: "Check for Quality of water", description: "" },
+    { id: 5, category: "Check for any Damage", description: "" },
+    { id: 6, category: "Check for Condition of pipelines", description: "" },
+    { id: 7, category: "Check Flow rate", description: "" },
+    { id: 8, category: "Check if Open Backwash done", description: "" },
+    { id: 9, category: "Check for Condition of Vessel", description: "" },
+    { id: 10, category: "Other Observations", description: "" }
+  ]
+},
+
+"softener-unit": {
+  columns: ["Process Status"],
+  rows: [
+    { id: 1, category: "Inlet Pressure", description: "" },
+    { id: 2, category: "Outlet Pressure", description: "" },
+    { id: 3, category: "Check if Butterfly/ multiport valves working", description: "" },
+    { id: 4, category: "Check for inlet hardness", description: "" },
+    { id: 5, category: "Check for outlet hardness", description: "" },
+    { id: 6, category: "Check for any Damage", description: "" },
+    { id: 7, category: "Check for Condition of pipelines", description: "" },
+    { id: 8, category: "Check Flow rate", description: "" },
+    { id: 9, category: "Check if re-generation is done", description: "" },
+    { id: 10, category: "Check for Condition of Vessel", description: "" },
+    { id: 11, category: "Check Brine tank condition", description: "" },
+    { id: 12, category: "Other Observations", description: "" }
+  ]
+},
+
   "agitator-mechanism": {
     rows: [
       { id: 1, category: "Type of the Mechanism", description: "Direct Coupled / Chain driven / Belt Driven" },
@@ -134,39 +168,36 @@ export default function MaintenanceForm() {
   const [capacity, setCapacity] = useState("");
   const [userName, setUserName] = useState("");
 
-  const getMatchingChecklistKey = (name) => {
-    if (!name) return null;
+const getMatchingChecklistKey = (name) => {
+  if (!name) return null;
+  const lowerName = name.toLowerCase();
 
-    const lowerName = name.toLowerCase();
-
-    if (lowerName.includes("pump")) {
-      // Check for specific pump types first if they have unique checklists
-      if (lowerName.includes("raw sewage pump") || lowerName.includes("raw sewage transfer pump")) {
-        return "raw-sewage-pump";
-      }
-      // Default for any other pump
-      return "shared-standard-pump";
+  if (lowerName.includes("pump")) {
+    if (lowerName.includes("raw sewage pump") || lowerName.includes("raw sewage transfer pump")) {
+      return "raw-sewage-pump";
     }
+    return "shared-standard-pump";
+  }
 
-    if (lowerName.includes("blower")) {
-      // Check for specific blower types if they have unique checklists
-      if (lowerName.includes("mbr air blower")) {
-        return "mbr-air-blower";
-      }
-      if (lowerName.includes("et&at air blower") || lowerName.includes("eq & at air blower") || lowerName.includes("air blower at & et")) {
-        return "et&at-air-blower";
-      }
-      // Default for any other blower (if you had a generic one)
-      return "et&at-air-blower"; // Or a more generic blower key if you create one
+  if (lowerName.includes("blower")) {
+    if (lowerName.includes("mbr air blower")) return "mbr-air-blower";
+    if (lowerName.includes("et&at air blower") || lowerName.includes("eq & at air blower") || lowerName.includes("air blower at & et")) {
+      return "et&at-air-blower";
     }
+    return "et&at-air-blower";
+  }
 
-    if (lowerName.includes("bar screen")) return "bar-screen";
-    if (lowerName.includes("oil skimmer")) return "oil-skimmer";
-    if (lowerName.includes("agitator") || lowerName.includes("mixer")) return "agitator-mechanism";
-    if (lowerName.includes("filter press") || lowerName.includes("screw pump") || lowerName.includes("sludge pump") || lowerName.includes("dosing pump") || lowerName.includes("hydraulic filter press pump") || lowerName.includes("polymer dosing pump") || lowerName.includes("out side bypass pump")) return "filter-press-unit";
+  if (lowerName.includes("bar screen")) return "bar-screen";
+  if (lowerName.includes("oil skimmer")) return "oil-skimmer";
+  if (lowerName.includes("agitator") || lowerName.includes("mixer")) return "agitator-mechanism";
+  if (lowerName.includes("filter press") || lowerName.includes("screw pump") || lowerName.includes("sludge pump") || lowerName.includes("dosing pump") || lowerName.includes("hydraulic filter press pump") || lowerName.includes("polymer dosing pump") || lowerName.includes("out side bypass pump")) return "filter-press-unit";
 
-    return null; // No match found
-  };
+  if (lowerName.includes("psf") || lowerName.includes("acf")) return "psf-acf-unit";
+  if (lowerName.includes("softener")) return "softener-unit";
+
+  return null;
+};
+
 
   const slug = location.state?.equipmentName?.toLowerCase()?.trim();
   console.log("Selected equipment name:", location.state?.equipmentName);

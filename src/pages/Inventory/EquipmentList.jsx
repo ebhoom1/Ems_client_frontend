@@ -118,12 +118,15 @@ export default function EquipmentList() {
   }, [fetchUsers]);
 
   // 2) Fetch equipment + report statuses
+// src/components/EquipmentList.jsx
+
+// 2) Fetch equipment + report statuses
   useEffect(() => {
     const fetchEquipmentAndStatus = async () => {
       try {
         let equipmentData = [];
 
-        // Part 1: Fetch the list of equipment based on user role
+        // Part 1: Fetch the list of equipment (This part is unchanged)
         if (isOperator || isTechnician || territorialManager) {
           if (users.length > 0) {
             const all = [];
@@ -155,14 +158,14 @@ export default function EquipmentList() {
         const electricalStatusMap = {};
         const mechanicalStatusMap = {};
         
-        // Get the current date details
+        // ✨ CORRECTED LOGIC: Calculate the CURRENT month and year
         const currentDate = new Date();
         const currentYear = currentDate.getFullYear();
-        const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-11, so add 1
+        const currentMonth = currentDate.getMonth() + 1; // JS months are 0-11. For July, this is 7.
 
         await Promise.all(
           equipmentData.map(async (e) => {
-            // Check for Electrical Report
+            // Check for Electrical Report using the current month
             try {
               const elecRes = await fetch(`${API_URL}/api/electricalreport/exists/${e._id}?year=${currentYear}&month=${currentMonth}`);
               const elecJson = await elecRes.json();
@@ -171,7 +174,7 @@ export default function EquipmentList() {
               electricalStatusMap[e._id] = false;
             }
 
-            // Check for Mechanical Report
+            // Check for Mechanical Report using the current month
             try {
               const mechRes = await fetch(`${API_URL}/api/mechanicalreport/exists/${e._id}?year=${currentYear}&month=${currentMonth}`);
               const mechJson = await mechRes.json();

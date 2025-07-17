@@ -80,6 +80,7 @@ const name = validUser?.userName
             </a>
           </li>
 
+
           {/* Show limited menu for technician or territorial manager */}
           {userRole === "technician" || userRole === "territorialManager" ? (
             <>
@@ -148,6 +149,14 @@ const name = validUser?.userName
                       </a>
                     </li>
                   )}
+                    {/* <li className="list active text-center">
+                <a
+                  href="/assign-technician"
+                  style={{ textDecoration: "none", color: "#ffffff" }}
+                >
+                  <span className="title">Assign Users</span>
+                </a>
+              </li> */}
                   <li className="list active text-center">
                     <a
                       href="/view-notification"
