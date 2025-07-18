@@ -12,7 +12,7 @@ import Chemicals from "./Chemicals";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
-import HeaderSim from "../Header/Hedaer";
+import HeaderSim from "../Header/HeaderSim";
 import io from "socket.io-client";
 
 function LIveLayout() {
@@ -333,22 +333,6 @@ useEffect(() => {
   const selectedUserObj = users.find((u) => u.userName === selectedUser);
   console.log('Selected user object:', selectedUserObj);
   console.log('Current productId used for Canvas:', currentProductId);
-const selectedSessionUser=sessionStorage.getItem("selectedUserId");
-  useEffect(() => {
-    const savedUser = sessionStorage.getItem("selectedUserId");
-  
-    if (
-      userData?.validUserOne?.userType === "admin" ||
-      userData?.validUserOne?.userType === "super_admin"
-    ) {
-      if (savedUser) {
-        setSelectedUser(savedUser);
-      }
-    } else {
-      setSelectedUser(userData?.validUserOne?.userName || "");
-    }
-  }, [selectedSessionUser]);
-  
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -370,8 +354,8 @@ const selectedSessionUser=sessionStorage.getItem("selectedUserId");
               </div>
             </div>
 
-            
-            <div style={{ marginTop:"40px"}}>
+            <div></div>
+            <div>
               <div className="row" style={{ overflowX: "hidden" }}>
                 <div
                   className="row align-items-center"

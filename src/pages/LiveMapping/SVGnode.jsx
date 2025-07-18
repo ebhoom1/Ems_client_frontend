@@ -8,7 +8,7 @@ import "./livemapping.css";
 
 const API = "https://api.ocems.ebhoom.com";
 
-const SVGnode = ({ id, data, selected, liveTankData, productId }) => {
+const SVGnode = ({ id, data, selected }) => {
   const {
     socket,
     socketConnected,
@@ -20,11 +20,14 @@ const SVGnode = ({ id, data, selected, liveTankData, productId }) => {
     isPump = false,
     isAirblower = false,
     isTank = false,
+    waterLevel = 0,
     width: initW = 100,
     height: initH = 100,
     onPumpToggle,
     isEditing: isParentEditing,
   } = data;
+
+  const productId = "27";
 
   // Local state
   const [isOn, setIsOn] = useState(propStatus);
@@ -35,17 +38,9 @@ const SVGnode = ({ id, data, selected, liveTankData, productId }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [totalDepth, setTotalDepth] = useState(data.totalDepth || "");
 
-  const match = liveTankData.find(
-    (t) => t.tankName?.toLowerCase() === text.toLowerCase()
-  );
-  const depth = match?.depth || 0;
-  const total = totalDepth || 1;
-  const waterLevel = Math.round((depth / total) * 100);
-
   useEffect(() => {
     data.totalDepth = totalDepth;
-    data.waterLevel = waterLevel;
-  }, [totalDepth, waterLevel, data]);
+  }, [totalDepth, data]);
 
   // Handle acknowledgment from MQTT
   const handleAcknowledgment = useCallback(
@@ -185,125 +180,125 @@ const SVGnode = ({ id, data, selected, liveTankData, productId }) => {
   };
 
   // Simplified pump/airblower render
- if (isPump || isAirblower) {
-  return (
-    <div
-      style={{
+  if (isPump || isAirblower) {
+    return (
+      <div
+        style={{
 /*         border: selected ? '2px solid #0074D9' : '1px solid #ddd',
  */        borderRadius: 6,
-        padding: 2,
-        backgroundColor: '#fff',
-        minWidth: 80,
-        cursor: 'move',
-        position: 'relative',
-        fontSize: '10px',
-      }}
-    >
-      {['Top','Right','Bottom','Left'].map(pos => (
-        <Handle
-          id={pos.toLowerCase()}
-          key={pos}
-          type={pos==='Top'||pos==='Left'?'target':'source'}
-          position={Position[pos]}
-          style={{
-            background: isParentEditing?'#D9DFC6':'transparent',
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            zIndex: 9,
-            position: 'absolute',
-            [pos]: -10,
-            pointerEvents: isParentEditing?'auto':'none',
-            border: isParentEditing?'1px solid #ccc':'none',
-          }}
-        />
-      ))}
-
-      {/* Label */}
-      <div style={{ marginBottom: 4 }}>
-        <input
-          value={text}
-          onChange={e => setText(e.target.value)}
-          readOnly={!isParentEditing}
-          placeholder="Label..."
-          style={{
-            width: '100%',
-            fontSize: '10px',
-            fontWeight: 'bold',
-            border: isParentEditing?'1px solid #ddd':'none',
-            textAlign: 'center',
-            outline: 'none',
-            backgroundColor: 'transparent',
-            borderRadius: 4,
-            padding: isParentEditing?'2px':'0',
-          }}
-        />
-      </div>
-
-      {/* Status */}
-      <div
-        style={{
-          color: isPending?'#FFA500':isOn?'#2ECC40':'#FF4136',
-          fontSize: '10px',
-          textAlign: 'center',
-          marginBottom: 4,
-        }}
-      >
-        {statusText()}
-      </div>
-
-      {/* Compact toggle */}
-      <div
-        onClick={toggleDevice}
-        style={{
+          padding: 2,
+          backgroundColor: '#fff',
+          minWidth: 80,
+          cursor: 'move',
           position: 'relative',
-          width: 40,
-          height: 18,
-          borderRadius: 9,
-          cursor: socketConnected && !isPending ? 'pointer' : 'not-allowed',
-          margin: '0 auto',
-          backgroundColor: isPending?'#FFA500':isOn?'#2ECC40':'#FF4136',
-          opacity: socketConnected?1:0.5,
-          transition: 'all 0.3s ease',
+          fontSize: '10px',
         }}
-        title={!socketConnected?'Offline':isPending?'Pending...':''}
       >
-        <div
-  style={{
-    position: 'absolute',      // add absolute positioning
-    top: 1,                    // moves knob 2px from the top of the track
-    left: 0,                   // base position; we'll still shift it via transform
-    width: 14,
-    height: 16,
-    borderRadius: '50%',
-    backgroundColor: '#fff',
-    transform: isOn
-      ? 'translateX(22px)'    // when ON, slide right 22px
-      : 'translateX(0)',      // when OFF, stay at 0
-    transition: 'transform 0.3s ease',
-  }}
-/>
+        {['Top', 'Right', 'Bottom', 'Left'].map(pos => (
+          <Handle
+            id={pos.toLowerCase()}
+            key={pos}
+            type={pos === 'Top' || pos === 'Left' ? 'target' : 'source'}
+            position={Position[pos]}
+            style={{
+              background: isParentEditing ? '#D9DFC6' : 'transparent',
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              zIndex: 9,
+              position: 'absolute',
+              [pos]: -10,
+              pointerEvents: isParentEditing ? 'auto' : 'none',
+              border: isParentEditing ? '1px solid #ccc' : 'none',
+            }}
+          />
+        ))}
 
-      </div>
+        {/* Label */}
+        <div style={{ marginBottom: 4 }}>
+          <input
+            value={text}
+            onChange={e => setText(e.target.value)}
+            readOnly={!isParentEditing}
+            placeholder="Label..."
+            style={{
+              width: '100%',
+              fontSize: '10px',
+              fontWeight: 'bold',
+              border: isParentEditing ? '1px solid #ddd' : 'none',
+              textAlign: 'center',
+              outline: 'none',
+              backgroundColor: 'transparent',
+              borderRadius: 4,
+              padding: isParentEditing ? '2px' : '0',
+            }}
+          />
+        </div>
 
-      {/* Rotate icon */}
-      {isParentEditing && (
+        {/* Status */}
         <div
           style={{
-            position: 'absolute',
-            top: 6,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            cursor: 'pointer',
+            color: isPending ? '#FFA500' : isOn ? '#2ECC40' : '#FF4136',
+            fontSize: '10px',
+            textAlign: 'center',
+            marginBottom: 4,
           }}
-          onClick={rotateHandler}
         >
-          <FaSyncAlt size={14} />
+          {statusText()}
         </div>
-      )}
-    </div>
-  );
-}
+
+        {/* Compact toggle */}
+        <div
+          onClick={toggleDevice}
+          style={{
+            position: 'relative',
+            width: 40,
+            height: 18,
+            borderRadius: 9,
+            cursor: socketConnected && !isPending ? 'pointer' : 'not-allowed',
+            margin: '0 auto',
+            backgroundColor: isPending ? '#FFA500' : isOn ? '#2ECC40' : '#FF4136',
+            opacity: socketConnected ? 1 : 0.5,
+            transition: 'all 0.3s ease',
+          }}
+          title={!socketConnected ? 'Offline' : isPending ? 'Pending...' : ''}
+        >
+          <div
+            style={{
+              position: 'absolute',      // add absolute positioning
+              top: 1,                    // moves knob 2px from the top of the track
+              left: 0,                   // base position; we’ll still shift it via transform
+              width: 14,
+              height: 16,
+              borderRadius: '50%',
+              backgroundColor: '#fff',
+              transform: isOn
+                ? 'translateX(22px)'    // when ON, slide right 22px
+                : 'translateX(0)',      // when OFF, stay at 0
+              transition: 'transform 0.3s ease',
+            }}
+          />
+
+        </div>
+
+        {/* Rotate icon */}
+        {isParentEditing && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 6,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              cursor: 'pointer',
+            }}
+            onClick={rotateHandler}
+          >
+            <FaSyncAlt size={14} />
+          </div>
+        )}
+      </div>
+    );
+  }
 
 
   // Existing render for other node types (tanks, etc.)
@@ -357,20 +352,20 @@ const SVGnode = ({ id, data, selected, liveTankData, productId }) => {
         minHeight={100}
         maxWidth={300}
         maxHeight={300}
-       enable={
-    isParentEditing
-      ? {
-          top: true,
-          right: true,
-          bottom: true,
-          left: true,
-          topRight: true,
-          topLeft: true,
-          bottomRight: true,
-          bottomLeft: true,
+        enable={
+          isParentEditing
+            ? {
+              top: true,
+              right: true,
+              bottom: true,
+              left: true,
+              topRight: true,
+              topLeft: true,
+              bottomRight: true,
+              bottomLeft: true,
+            }
+            : {}
         }
-      : {}
-  }
       >
         <div style={{ position: "relative", width: "100%", height: "100%" }}>
           <img src={svgPath} alt={text} style={imageStyle} />

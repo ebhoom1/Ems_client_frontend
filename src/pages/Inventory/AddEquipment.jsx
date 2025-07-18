@@ -94,6 +94,7 @@ const AddEquipment = () => {
         body: JSON.stringify(form)
       });
       const data = await res.json();
+      console.log('data in equip', data)
       if (res.ok) {
         toast.success(data.message || "Equipment added successfully");
         const equipmentId = data.equipment?._id || JSON.stringify(data.equipment);

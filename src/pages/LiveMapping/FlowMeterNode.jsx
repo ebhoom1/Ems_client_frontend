@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Handle, Position } from 'react-flow-renderer';
 
-export default function FlowMeterNode({ data, flowValues, selected }) {
-  const { isEditing } = data;
+export default function FlowMeterNode({ data, selected }) {
+  const { isEditing, label: initialLabel, flowValues = {} } = data;
 
   // keep a local copy of label so React re-renders on change
-  const [label, setLabel] = useState(data.label || '');
+  const [label, setLabel] = useState(initialLabel || '');
   useEffect(() => {
     data.label = label;
   }, [label, data]);
