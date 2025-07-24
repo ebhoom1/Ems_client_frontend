@@ -1,5 +1,6 @@
 // src/pages/Services.jsx
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import DashboardSam from "../Dashboard/DashboardSam";
 import Header from "../Header/Hedaer";
@@ -21,9 +22,13 @@ const Services = () => {
   const userType = userData?.validUserOne?.userType;
   const userName = userData?.validUserOne?.userName;
   const navigate = useNavigate();
-  const initialTab =
-    userData?.validUserOne?.userType === "admin" ? "adminView" : "reportFault";
-  const [selectedTab, setSelectedTab] = useState(initialTab);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const defaultTabFromUrl = searchParams.get("tab");
+const initialTab =
+  defaultTabFromUrl ||
+  (userType === "admin" ? "adminView" : "reportFault");
+const [selectedTab, setSelectedTab] = useState(initialTab);
 
   const renderTabs = () => {
     const tabStyle = (tabKey) =>

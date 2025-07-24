@@ -77,17 +77,14 @@ export default function MaintenanceTypeModal({ equipmentId, equipmentName, equip
         <div className="d-grid gap-2">
           {/* territory managers only */}
           {isTerritorialManager && (
-            canMechanical
-              ? <button
+             <button
                   className="btn"
                   style={{ backgroundColor: '#236a80', color: '#fff' }}
                   onClick={() => pick('mechanical')}
                 >
                   Monthly Mechanical Maintenance
                 </button>
-              : <button className="btn btn-outline-secondary" disabled>
-                  Mechanical Already Done This Month
-                </button>
+              
           )}
 
           {/* technicians only */}

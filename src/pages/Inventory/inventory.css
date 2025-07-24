@@ -1,0 +1,18 @@
+/* Remove Bootstrap table-striped background */
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-color-type: inherit;
+    --bs-table-bg-type: transparent;
+  }
+  /* .table-striped > tbody > tr > td {
+    background-color: #366494; 
+  } */
+
+  .table-striped > tbody > tr.row-completed > td {
+    background-color: #d4edda !important; /* Green for completed */
+  }
+  
+  .table-striped > tbody > tr.row-assigned > td {
+    background-color: #fff3cd !important; /* Yellow for assigned */
+  }
+  
+  

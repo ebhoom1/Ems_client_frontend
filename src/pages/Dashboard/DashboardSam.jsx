@@ -100,6 +100,14 @@ const name = validUser?.userName
                   <span className="title">Inventory & Service</span>
                 </a>
               </li>
+              <li className="list active text-center">
+                <a
+                  href="/services?tab=equipmentList"
+                  style={{ textDecoration: "none", color: "#ffffff" }}
+                >
+                  <span className="title">Assigned Work</span> 
+                </a>
+              </li>
             </>
           ) : null}
           
@@ -139,7 +147,7 @@ const name = validUser?.userName
               {(userType === "admin" || userType === "super_admin") && (
                 <>
                   {/* Conditionally render "Manage Users" based on isEmbassyAdmin */}
-                  {!isEmbassyAdmin && (
+                 {/*  {!isEmbassyAdmin && (
                     <li className="list active text-center">
                       <a
                         href="/manage-user"
@@ -148,7 +156,15 @@ const name = validUser?.userName
                         <span className="title">Manage Users</span>
                       </a>
                     </li>
-                  )}
+                  )} */}
+                  <li className="list active text-center">
+                      <a
+                        href="/manage-user"
+                        style={{ textDecoration: "none", color: "#ffffff" }}
+                      >
+                        <span className="title">Manage Users</span>
+                      </a>
+                    </li>
                    <li className="list active text-center">
                 <a
                   href="/assign-technician"

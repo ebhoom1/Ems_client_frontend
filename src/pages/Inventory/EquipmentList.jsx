@@ -8,6 +8,8 @@ import QRCode from "react-qr-code";
 import QRCodeLib from "qrcode";
 import { useNavigate } from "react-router-dom";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import axios from "axios";
+import "./inventory.css";
 
 import MaintenanceTypeModal from "./MaintenanceTypeModal";
 import ReportTypeModal from "./ReportTypeModal";
@@ -15,6 +17,8 @@ import MonthSelectionModal from "./MonthSelectionModal";
 
 export default function EquipmentList() {
   const { userData } = useSelector((state) => state.user);
+  const currentUser = userData?.validUserOne || {};
+  console.log("new currentuser:", currentUser._id);
   const type = userData?.validUserOne || {};
   const isOperator = type.isOperator;
   const isTechnician = type.isTechnician;
@@ -27,11 +31,13 @@ export default function EquipmentList() {
   const [selectedUserName, setSelectedUserName] = useState(() => {
     return sessionStorage.getItem("selectedUserId") || "all";
   });
-  
+
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedEquipmentName, setSelectedEquipmentName] = useState(null);
-  const [selectedEquipmentUserName, setSelectedEquipmentUserName] = useState(null);
+  const [selectedEquipmentUserName, setSelectedEquipmentUserName] =
+    useState(null);
+  const [assignedUserNames, setAssignedUserNames] = useState([]);
 
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMonthModal, setShowMonthModal] = useState(false);
@@ -44,10 +50,10 @@ export default function EquipmentList() {
     try {
       const currentUserId = type?._id;
       if (!currentUserId) return;
-  
+
       const res = await fetch(`${API_URL}/api/getallusers`);
       const allUsers = (await res.json()).users || [];
-     
+
       const isAssignedToAny = allUsers.some((u) => {
         const isOperator =
           Array.isArray(u.operators) &&
@@ -59,7 +65,7 @@ export default function EquipmentList() {
           u.territorialManager?.toString() === currentUserId;
         return isOperator || isTechnician || isTerritorial;
       });
-  
+
       let filtered = [];
       if (isAssignedToAny) {
         // Only show companies assigned to this user
@@ -69,7 +75,9 @@ export default function EquipmentList() {
             u.operators.some((opId) => opId?.toString() === currentUserId);
           const isTechnician =
             Array.isArray(u.technicians) &&
-            u.technicians.some((techId) => techId?.toString() === currentUserId);
+            u.technicians.some(
+              (techId) => techId?.toString() === currentUserId
+            );
           const isTerritorial =
             u.territorialManager?.toString() === currentUserId;
           return isOperator || isTechnician || isTerritorial;
@@ -78,10 +86,7 @@ export default function EquipmentList() {
         // Default logic (admin/super_admin/EBHOOM)
         if (type.adminType === "EBHOOM") {
           filtered = allUsers.filter(
-            (u) =>
-              !u.isOperator &&
-              !u.isTechnician &&
-              !u.isTerritorialManager
+            (u) => !u.isOperator && !u.isTechnician && !u.isTerritorialManager
           );
         } else if (type.userType === "super_admin") {
           const myAdmins = allUsers.filter(
@@ -93,34 +98,32 @@ export default function EquipmentList() {
               u.createdBy === currentUserId || adminIds.includes(u.createdBy)
           );
           filtered = allowed.filter(
-            (u) =>
-              !u.isOperator &&
-              !u.isTechnician &&
-              !u.isTerritorialManager
+            (u) => !u.isOperator && !u.isTechnician && !u.isTerritorialManager
           );
         } else if (type.userType === "admin") {
-          const res = await fetch(`${API_URL}/api/get-users-by-creator/${currentUserId}`);
+          const res = await fetch(
+            `${API_URL}/api/get-users-by-creator/${currentUserId}`
+          );
           const byCreator = (await res.json()).users || [];
           filtered = byCreator.filter((u) => u.userType === "user");
         }
       }
-  
-      setUsers(filtered);
 
+      setUsers(filtered);
     } catch (err) {
       console.error("Error fetching users:", err);
       setUsers([]);
     }
   }, [type]);
-  
-   useEffect(() => {
+
+  useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
   // 2) Fetch equipment + report statuses
-// src/components/EquipmentList.jsx
+  // src/components/EquipmentList.jsx
 
-// 2) Fetch equipment + report statuses
+  // 2) Fetch equipment + report statuses
   useEffect(() => {
     const fetchEquipmentAndStatus = async () => {
       try {
@@ -157,7 +160,7 @@ export default function EquipmentList() {
         // Part 2: For each piece of equipment, check if reports exist for the CURRENT MONTH
         const electricalStatusMap = {};
         const mechanicalStatusMap = {};
-        
+
         // ✨ CORRECTED LOGIC: Calculate the CURRENT month and year
         const currentDate = new Date();
         const currentYear = currentDate.getFullYear();
@@ -167,7 +170,9 @@ export default function EquipmentList() {
           equipmentData.map(async (e) => {
             // Check for Electrical Report using the current month
             try {
-              const elecRes = await fetch(`${API_URL}/api/electricalreport/exists/${e._id}?year=${currentYear}&month=${currentMonth}`);
+              const elecRes = await fetch(
+                `${API_URL}/api/electricalreport/exists/${e._id}?year=${currentYear}&month=${currentMonth}`
+              );
               const elecJson = await elecRes.json();
               electricalStatusMap[e._id] = Boolean(elecJson.exists);
             } catch {
@@ -176,7 +181,9 @@ export default function EquipmentList() {
 
             // Check for Mechanical Report using the current month
             try {
-              const mechRes = await fetch(`${API_URL}/api/mechanicalreport/exists/${e._id}?year=${currentYear}&month=${currentMonth}`);
+              const mechRes = await fetch(
+                `${API_URL}/api/mechanicalreport/exists/${e._id}?year=${currentYear}&month=${currentMonth}`
+              );
               const mechJson = await mechRes.json();
               mechanicalStatusMap[e._id] = Boolean(mechJson.exists);
             } catch {
@@ -184,11 +191,10 @@ export default function EquipmentList() {
             }
           })
         );
-        
+
         // Part 3: Set the state for both report statuses
         setElectricalReportStatus(electricalStatusMap);
         setMechanicalReportStatus(mechanicalStatusMap);
-
       } catch (err) {
         toast.error("Error fetching equipment");
         console.error(err);
@@ -228,9 +234,9 @@ export default function EquipmentList() {
           return next;
         });
         setMechanicalReportStatus((prev) => {
-            const next = { ...prev };
-            delete next[id];
-            return next;
+          const next = { ...prev };
+          delete next[id];
+          return next;
         });
         toast.success("Deleted");
       } else {
@@ -283,6 +289,27 @@ export default function EquipmentList() {
     );
   });
 
+  useEffect(() => {
+    const fetchAssignedUserNames = async () => {
+      try {
+        const res = await axios.get(
+          `${API_URL}/api/assignments/by-assigned-to/${currentUser._id}`
+        );
+        const data = res.data;
+        console.log("assigned usernames:", data);
+        if (data.success) {
+          setAssignedUserNames(data.assignedUserNames);
+        }
+      } catch (err) {
+        console.error(
+          "Error fetching assigned usernames",
+          err.response?.data || err.message
+        );
+      }
+    };
+
+    fetchAssignedUserNames();
+  }, [currentUser._id]);
   return (
     <div className="p-3 border">
       {showModal && (isTechnician || territorialManager) && (
@@ -364,23 +391,46 @@ export default function EquipmentList() {
           <table className="table table-striped align-middle">
             <thead style={{ background: "#236a80", color: "#fff" }}>
               <tr>
-                <th  style={{ background: "#236a80", color: "#fff" }}>Name</th>
-                <th  style={{ background: "#236a80", color: "#fff" }}>User</th>
-                <th  style={{ background: "#236a80", color: "#fff" }}>Model</th>
-                <th  style={{ background: "#236a80", color: "#fff" }}>Date</th>
-                <th  style={{ background: "#236a80", color: "#fff" }}>Capacity</th>
-                <th  style={{ background: "#236a80", color: "#fff" }}>Rated Load</th>
-                <th  style={{ background: "#236a80", color: "#fff" }}>Location</th>
-                <th  style={{ background: "#236a80", color: "#fff" }}>Notes</th>
-                <th  style={{ background: "#236a80", color: "#fff" }}>QR</th>
-                <th  style={{ background: "#236a80", color: "#fff" }}>Download QR</th>
-                <th  style={{ background: "#236a80", color: "#fff" }}>Action</th>
+                <th style={{ background: "#236a80", color: "#fff" }}>Name</th>
+                <th style={{ background: "#236a80", color: "#fff" }}>User</th>
+                <th style={{ background: "#236a80", color: "#fff" }}>Model</th>
+                <th style={{ background: "#236a80", color: "#fff" }}>Date</th>
+                <th style={{ background: "#236a80", color: "#fff" }}>
+                  Capacity
+                </th>
+                <th style={{ background: "#236a80", color: "#fff" }}>
+                  Rated Load
+                </th>
+                <th style={{ background: "#236a80", color: "#fff" }}>
+                  Location
+                </th>
+                <th style={{ background: "#236a80", color: "#fff" }}>Notes</th>
+                <th style={{ background: "#236a80", color: "#fff" }}>QR</th>
+                <th style={{ background: "#236a80", color: "#fff" }}>
+                  Download QR
+                </th>
+                <th style={{ background: "#236a80", color: "#fff" }}>Action</th>
+                <th style={{ background: "#236a80", color: "#fff" }}>Assign</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((e) => (
-                <tr key={e._id}>
-                  <td>{e.equipmentName || "N/A"}</td>
+                <tr key={e._id}
+               
+  className={
+    assignedUserNames.includes(e.userName) &&
+    ((isTechnician && electricalReportStatus[e._id]) ||
+      (territorialManager && mechanicalReportStatus[e._id]))
+      ? "highlight-row"
+      : ""
+  }
+
+                >
+                  <td
+                   
+                  >
+                    {e.equipmentName || "N/A"}
+                  </td>
                   <td>{e.userName || "N/A"}</td>
                   <td>{e.modelSerial || "N/A"}</td>
                   <td>
@@ -403,73 +453,96 @@ export default function EquipmentList() {
                       Download
                     </button>
                   </td>
-               
-<td className="d-flex align-items-center gap-2">
-  {territorialManager ? ( // UI for Territorial Manager
-    <>
-      <button
-        disabled
-        className={`btn btn-sm ${
-          mechanicalReportStatus[e._id] ? "btn-primary" : "btn-danger"
-        }`}
-      >
-        {mechanicalReportStatus[e._id] ? "Submitted" : "Not Submitted"}
-      </button>
-      <button
-        className="btn btn-sm btn-warning"
-        onClick={() => openModal(e._id, e.equipmentName, e.userName)}
-      >
-        {mechanicalReportStatus[e._id] ? "Edit Report" : "Add Report"}
-      </button>
-    </>
-  ) : isTechnician ? ( // UI for Technician
-    <>
-      <button
-        disabled
-        className={`btn btn-sm ${
-          electricalReportStatus[e._id] ? "btn-primary" : "btn-danger"
-        }`}
-      >
-        {electricalReportStatus[e._id] ? "Submitted" : "Not Submitted"}
-      </button>
-      <button
-        className="btn btn-sm btn-warning"
-        onClick={() => openModal(e._id, e.equipmentName, e.userName)}
-      >
-        {electricalReportStatus[e._id] ? "Edit Report" : "Add Report"}
-      </button>
-    </>
-  ) : ( // Default UI for other roles (like Admin, super_admin)
-    <>
-      <button
-        className="btn btn-sm btn-success"
-        onClick={() => openReportModal(e._id)}
-      >
-        View Report
-      </button>
-      
-      {/* ✨ Buttons shown only to admin users ✨ */}
-      {type.userType === 'admin' && (
-        <>
-          <button
-            className="btn btn-sm btn-info"
-            onClick={() => editEquipment(e._id)}
-            title="Edit Equipment"
-          >
-            <FaEdit />
-          </button>
-          <button
-            className="btn btn-sm btn-danger"
-            onClick={() => deleteEquipment(e._id)}
-            title="Delete Equipment"
-          >
-            <FaTrash />
-          </button>
-        </>
-      )}
-    </>
-  )}
-</td>
+
+                  <td className="d-flex align-items-center gap-2">
+                    {territorialManager ? (
+                      <>
+                        <button
+                          disabled
+                          className={`btn btn-sm ${
+                            mechanicalReportStatus[e._id]
+                              ? "btn-primary"
+                              : "btn-danger"
+                          }`}
+                        >
+                          {mechanicalReportStatus[e._id]
+                            ? "Submitted"
+                            : "Not Submitted"}
+                        </button>
+                        <button
+                          className="btn btn-sm btn-warning"
+                          onClick={() =>
+                            openModal(e._id, e.equipmentName, e.userName)
+                          }
+                        >
+                          {mechanicalReportStatus[e._id]
+                            ? "Edit Report"
+                            : "Add Report"}
+                        </button>
+                      </>
+                    ) : isTechnician ? (
+                      <>
+                        <button
+                          disabled
+                          className={`btn btn-sm ${
+                            electricalReportStatus[e._id]
+                              ? "btn-primary"
+                              : "btn-danger"
+                          }`}
+                        >
+                          {electricalReportStatus[e._id]
+                            ? "Submitted"
+                            : "Not Submitted"}
+                        </button>
+                        <button
+                          className="btn btn-sm btn-warning"
+                          onClick={() =>
+                            openModal(e._id, e.equipmentName, e.userName)
+                          }
+                        >
+                          {electricalReportStatus[e._id]
+                            ? "Edit Report"
+                            : "Add Report"}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        className="btn btn-sm btn-success"
+                        onClick={() => openReportModal(e._id)}
+                      >
+                        View Report
+                      </button>
+                    )}
+
+                    <button
+                      className="btn btn-sm btn-info"
+                      onClick={() => editEquipment(e._id)}
+                      title="Edit Equipment"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => deleteEquipment(e._id)}
+                      title="Delete Equipment"
+                    >
+                      <FaTrash />
+                    </button>
+                  </td>
+
+                  <td>
+                    {assignedUserNames.includes(e.userName) && (
+                      <>
+                        {(isTechnician && electricalReportStatus[e._id]) ||
+                        (territorialManager &&
+                          mechanicalReportStatus[e._id]) ? (
+                          <span className="badge bg-success">Completed</span>
+                        ) : (
+                          <span className="badge bg-primary">Assigned</span>
+                        )}
+                      </>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

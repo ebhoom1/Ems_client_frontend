@@ -490,7 +490,7 @@ useEffect(() => {
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
+                // capture="environment"
                 onChange={(e) => handlePhotoChange(idx, e.target.files[0])}
                 className="form-control"
               />

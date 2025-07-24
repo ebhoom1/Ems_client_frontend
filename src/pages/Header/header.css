@@ -1,4 +1,4 @@
-/* Offcanvas full-screen settings */
+Offcanvas full-screen settings
 .full-screen-offcanvas .offcanvas {
   width: 100%; /* Full width on mobile */
   height: 100%; /* Full height on mobile */
@@ -39,6 +39,15 @@
   font-size: 1.2rem;
 }
 
+/* Default: Large screens — keep inline */
+.online-status {
+  display: inline-block;
+  font-size: 10px;
+  margin-left: 8px;
+  color: green;
+  white-space: normal; /* allow wrapping */
+  word-wrap: break-word;
+}
 @media (max-width: 1050px) {
   .header-navbar {
     margin-left: 0;
@@ -82,12 +91,29 @@
     text-align: left;
   }
 }
+@media (max-width: 576px) {
+  .online-status {
+    display: block;
+    font-size: 10px;
+    margin-left: 0;
+    margin-top: 2px;
+    text-align: left;
+  }
+}
 @media (max-width: 450px) {
   .drop {
     margin-top: 20%;
     background: none;
   }
+  .online-status {
+    display: block;
+    margin-left: 0;
+    margin-top: 4px;
+    font-size: 12px;
+  }
+  
 }
+
 
 /* Desktop and larger screens (min-width: 768px) */
 @media (min-width: 768px) {
@@ -95,4 +121,7 @@
     margin-top: 10%;
     background: none;
   }
+  
 }
+
+

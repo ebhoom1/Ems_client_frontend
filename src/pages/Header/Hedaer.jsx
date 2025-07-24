@@ -282,7 +282,7 @@ function Header() {
                 <b style={{ fontSize: "19px" }}>
                   {userData?.validUserOne?.userName || "Admin Developer"}
                 </b>
-                <span className="d-inline ms-2">
+                <span className="online-status">
                   {onlineStatus === "Online" ? (
                     <span className="online" style={{ fontSize: "10px" }}>
                       Online
@@ -291,6 +291,7 @@ function Header() {
                     <span className="offline">Offline</span>
                   )}
                 </span>
+
               </span>
             </Navbar.Brand>
             <div className="d-flex align-items-center">
