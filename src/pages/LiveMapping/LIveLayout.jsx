@@ -56,8 +56,11 @@ function LIveLayout() {
 // In LIveLayout.jsx
 
 // Enhanced handlePumpAcknowledgment function in LiveLayout.jsx
+// In LIveLayout.jsx
+
 const handlePumpAcknowledgment = (ackData) => {
-  console.log('Processing acknowledgment in LiveLayout:', ackData);
+   console.log('🔴 RAW DATA FROM SERVER:', ackData); 
+  console.log('✅ Received acknowledgment from server:', ackData);
   
   if (!ackData?.pumps) return;
   
@@ -67,31 +70,25 @@ const handlePumpAcknowledgment = (ackData) => {
     ackData.pumps.forEach((pump) => {
       if (!pump.pumpId) return;
 
-      const isNowOn = pump.status === 'ON' || pump.status === 1;
-      console.log('Processing pump data:', pump);
-      console.log('Current value:', pump.current);
-      console.log('Vibration value:', pump.vibration);
-      console.log('Temperature value:', pump.temperature);
+      // PRESERVE the original status as string - don't convert to boolean
+      const originalStatus = pump.status; // Keep as "ON" or "OFF"
       
-      // Store ALL pump data in the state - this is the key fix
+      console.log(`💡 Processing pump data for [${pump.pumpId}]:`, pump);
+      console.log(`   - Original Status: ${originalStatus}`);
+      console.log(`   - Sensor Data: Current=${pump.current}, Voltage=${pump.voltage}, Vibration=${pump.vibration}`);
+      
+      // Keep ALL data and preserve the original status
       updatedStates[pump.pumpId] = {
-        ...currentStates[pump.pumpId], // Keep existing data
-        ...pump,                       // Spread ALL incoming pump data
-        status: isNowOn,
+        ...currentStates[pump.pumpId], 
+        ...pump,                      
+        status: originalStatus,  // Keep original "ON"/"OFF" - DON'T convert to boolean
         pending: false,
         lastUpdated: new Date().toISOString(),
-        // Explicitly ensure these sensor values are preserved
-        current: pump.current,
-        vibration: pump.vibration,
-        temperature: pump.temperature,
-        voltage: pump.voltage,
-        fault: pump.fault,
-        acStatus: pump.acStatus,
-        pumpName: pump.pumpName || currentStates[pump.pumpId]?.name || 'Unknown Pump'
+        pumpName: pump.pumpName || currentStates[pump.pumpId]?.name || 'Unknown'
       };
     });
 
-    console.log('LiveLayout - Updated pump states:', updatedStates);
+    console.log('📊 LiveLayout - Final updated pump states:', updatedStates);
     return updatedStates;
   });
 };
@@ -124,9 +121,11 @@ const handlePumpAcknowledgment = (ackData) => {
 
  // In LIveLayout.jsx
 
-const handlePumpToggle = (pumpId, pumpName, status, isPending = false) => {
+// In LIveLayout.jsx
+
+const handlePumpToggle = (pumpId, pumpName, newStatus, isPending = false) => {
     if (!socket || !socketConnected) {
-      console.error('Socket not connected');
+      console.error('Socket not connected, cannot send command.');
       return;
     }
   
@@ -135,8 +134,8 @@ const handlePumpToggle = (pumpId, pumpName, status, isPending = false) => {
       ...prev,
       [pumpId]: {
         ...prev[pumpId], // <-- KEEP existing details (current, temp, etc.)
-        status: status === 'ON', // ONLY update the status
-        pending: isPending,      // ONLY update the pending state
+        status: newStatus, // <-- Keep as "ON"/"OFF" string
+        pending: isPending,
         name: pumpName,
         lastUpdated: new Date().toISOString()
       }
@@ -144,7 +143,7 @@ const handlePumpToggle = (pumpId, pumpName, status, isPending = false) => {
   
     // Only send the command to the server if a state change was requested
     if (isPending) {
-      const statusValue = status ? 1 : 0;
+      const statusCommand = newStatus; // Use the status directly since it's already "ON" or "OFF"
       const messageId = `cmd-${Date.now()}`;
   
       const command = {
@@ -152,16 +151,16 @@ const handlePumpToggle = (pumpId, pumpName, status, isPending = false) => {
         pumps: [{
           pumpId,
           pumpName,
-          status: statusValue
+          status: statusCommand 
         }],
         timestamp: new Date().toISOString(),
         messageId
       };
   
-      console.log('Sending pump command:', command);
+      console.log('🚀 Sending pump control command:', command);
       socket.emit('controlPump', command);
     }
-  };
+};
 
   const fetchUsers = async () => {
     try {

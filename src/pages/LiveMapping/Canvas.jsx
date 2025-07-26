@@ -130,7 +130,7 @@ function Canvas({
   }, [socket, socketConnected, userData, setNodes]);
 
   // Update nodes with pump status when pumpStates change from LiveLayout
-  useEffect(() => {
+useEffect(() => {
     console.log('Canvas - pumpStates changed:', pumpStates);
     console.log('Canvas - nodes length:', nodes.length);
     
@@ -153,8 +153,8 @@ function Canvas({
               ...node.data,
               // Pass the complete pump state as pumpDetails
               pumpDetails: pumpState,
-              // Also update the legacy props for backward compatibility
-              pumpStatus: pumpState.status,
+              // Keep the status as string "ON"/"OFF" for backward compatibility
+              pumpStatus: pumpState.status, // Keep as "ON"/"OFF"
               isPending: pumpState.pending || false,
             },
           };
@@ -162,6 +162,7 @@ function Canvas({
       );
     }
   }, [pumpStates, nodes.length, setNodes]);
+
 
   // Drag and connect handlers
   const onDragStart = () => setIsDragging(true);
@@ -191,28 +192,22 @@ function Canvas({
     event.preventDefault();
   };
 
-  const onDrop = useCallback((event) => {
+ const onDrop = useCallback((event) => {
     if (!isEditMode) return;
     event.preventDefault();
 
-    // 1) measure the full React-Flow area
     const bounds = reactFlowWrapper.current.getBoundingClientRect();
-
-    // 2) grab the drag data
     const shapeData = event.dataTransfer.getData('application/reactflow');
     if (!shapeData) return;
     const parsed = JSON.parse(shapeData);
 
-    // 3) compute the drop position within the canvas
     const position = {
       x: event.clientX - bounds.left,
       y: event.clientY - bounds.top,
     };
 
-    // 4) decide if this is your PDF node
     const isPDF = parsed.isPDF || parsed.type === 'pdfNode';
 
-    // 5) build the node, sizing PDFs to fill the entire bounds
     const newNode = {
       id: `${parsed.id}_${nodes.length}`,
       type: parsed.type,
@@ -224,10 +219,10 @@ function Canvas({
         isAirblower: parsed.label.toLowerCase().includes('blower'),
         socket,
         socketConnected,
-        pumpStatus: false,
+        pumpStatus: "OFF", // Initialize as string "OFF"
         isPending: false,
-        pumpDetails: pumpStates[`${parsed.id}_${nodes.length}`] || null, // Initialize with existing state if any
-        onPumpToggle: onPumpToggle, // Use prop from LiveLayout
+        pumpDetails: pumpStates[`${parsed.id}_${nodes.length}`] || null,
+        onPumpToggle: onPumpToggle,
         onLabelChange: (id, newLabel) => {
           setNodes(nds => nds.map(n => 
             n.id === id ? { ...n, data: { ...n.data, label: newLabel } } : n
@@ -247,7 +242,7 @@ function Canvas({
     nodes.length,
     socket,
     socketConnected,
-    onPumpToggle, // Use prop from LiveLayout
+    onPumpToggle,
     pumpStates,
     setNodes,
   ]);

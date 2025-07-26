@@ -11,10 +11,11 @@ const API = "https://api.ocems.ebhoom.com";
 const SVGnode = ({ id, data, selected, liveTankData }) => {
   console.log(`🔧 [SVGnode ID: ${id}] Full data object:`, data);
   console.log(`🔧 [SVGnode ID: ${id}] pumpDetails specifically:`, data.pumpDetails);
+  
   const {
     socket,
     socketConnected,
-    pumpStatus: propStatus = false,
+    pumpStatus: propStatus = "OFF", // Default to "OFF" string
     isPending: propPending = false,
     svgPath,
     label: initialLabel = "",
@@ -28,12 +29,12 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
     isEditing: isParentEditing,
     pumpDetails, // Get the detailed pump data
   } = data;
-
+  
   const productId = "41";
   console.log(`[SVGnode ID: ${id}] Pump Details:`, pumpDetails);
 
-  // Local state
-  const [isOn, setIsOn] = useState(propStatus);
+  // Local state - keep status as string "ON"/"OFF"
+  const [status, setStatus] = useState(propStatus); // Keep as "ON"/"OFF"
   const [isPending, setIsPending] = useState(propPending);
   const [text, setText] = useState(initialLabel);
   const [size, setSize] = useState({ width: initW, height: initH });
@@ -41,6 +42,9 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
   const [isResizing, setIsResizing] = useState(false);
   const [totalDepth, setTotalDepth] = useState(data.totalDepth || "");
   const [isHovering, setIsHovering] = useState(false);
+
+  // Helper function to check if pump is on (handle both boolean and string status)
+  const isOn = status === "ON" || status === true;
 
   // Tank data logic
   const match = liveTankData.find(
@@ -59,7 +63,14 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
   useEffect(() => {
     if (pumpDetails) {
       console.log(`[SVGnode ID: ${id}] Updating from pumpDetails:`, pumpDetails);
-      setIsOn(pumpDetails.status);
+      
+      // Handle both boolean and string status from pumpDetails
+      let newStatus = pumpDetails.status;
+      if (typeof newStatus === 'boolean') {
+        newStatus = newStatus ? "ON" : "OFF";
+      }
+      
+      setStatus(newStatus); // Keep as "ON"/"OFF" string
       setIsPending(pumpDetails.pending || false);
     }
   }, [pumpDetails, id]);
@@ -74,11 +85,21 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
       const pumpUpdate = ackData.pumps.find((p) => p.pumpId === id);
       if (!pumpUpdate) return;
 
-      const newStatus = pumpUpdate.status === 1 || pumpUpdate.status === "ON";
+      // Handle both boolean and string status from acknowledgment
+      let newStatus = pumpUpdate.status;
+      if (typeof newStatus === 'boolean') {
+        newStatus = newStatus ? "ON" : "OFF";
+      } else if (newStatus === 1 || newStatus === "1") {
+        newStatus = "ON";
+      } else if (newStatus === 0 || newStatus === "0") {
+        newStatus = "OFF";
+      }
+      
       console.log(`[SVGnode ID: ${id}] Pump update:`, pumpUpdate);
+      console.log(`[SVGnode ID: ${id}] Converted status to:`, newStatus);
 
       setIsPending(false);
-      setIsOn(newStatus);
+      setStatus(newStatus); // Set as string
 
       // Sync with backend
       axios
@@ -118,14 +139,21 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
         const { data: state } = await axios.get(
           `${API}/api/pump-states/${productId}/${id}`
         );
-        setIsOn(state.status);
+        
+        // Handle both boolean and string status from backend
+        let initialStatus = state.status;
+        if (typeof initialStatus === 'boolean') {
+          initialStatus = initialStatus ? "ON" : "OFF";
+        }
+        
+        setStatus(initialStatus); // Keep as string
         setIsPending(state.pending);
         if (onPumpToggle) {
-          onPumpToggle(id, text, state.status, state.pending);
+          onPumpToggle(id, text, initialStatus, state.pending);
         }
       } catch (err) {
         console.error("Failed to fetch initial state:", err);
-        setIsOn(propStatus || false);
+        setStatus(propStatus || "OFF");
       }
     };
 
@@ -143,7 +171,7 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
       return;
     }
 
-    const newStatus = !isOn;
+    const newStatus = isOn ? "OFF" : "ON"; // Toggle between "ON" and "OFF" strings
     console.log(`[SVGnode ID: ${id}] Toggling device to:`, newStatus);
 
     setIsPending(true);
@@ -163,7 +191,7 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
           {
             pumpId: id,
             pumpName: text,
-            status: newStatus ? "ON" : "OFF",
+            status: newStatus, // Send "ON" or "OFF" directly
             messageId: `cmd-${Date.now()}-${id}`,
           },
         ],
@@ -172,7 +200,7 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
       console.error("Toggle failed:", err);
       setIsPending(false);
       if (onPumpToggle) {
-        onPumpToggle(id, text, isOn, false);
+        onPumpToggle(id, text, status, false); // Revert to current status
       }
     }
   };
@@ -341,26 +369,27 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
         
         {/* Enhanced Tooltip */}
         {pumpDetails?.fault === 'YES' && (
-  <div
-    style={{
-      color: 'red',
-      fontWeight: 'bold',
-      textAlign: 'center',
-      fontSize: '11px',
-      marginTop: '4px',
-    }}
-  >
-    High Vibration
-  </div>
-)}
-      {isHovering && (
+          <div
+            style={{
+              color: 'red',
+              fontWeight: 'bold',
+              textAlign: 'center',
+              fontSize: '11px',
+              marginTop: '4px',
+            }}
+          >
+            High Vibration
+          </div>
+        )}
+        
+        {isHovering && (
           <div
             style={{
               position: "absolute",
               bottom: "105%",
               left: "50%",
               transform: "translateX(-50%)",
-              backgroundColor: "rgba(40, 37, 37, 0.9)", // Red background for debug
+              backgroundColor: "rgba(40, 37, 37, 0.9)",
               color: "white",
               padding: "8px",
               borderRadius: "4px",
@@ -371,7 +400,9 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
               pointerEvents: "none",
             }}
           >
-            <div><strong>DEBUG INFO:</strong></div>
+            <div><strong>PUMP STATUS:</strong></div>
+            <div>Status: {status} (Raw: {pumpDetails?.status})</div>
+            <div>IsOn: {isOn ? 'YES' : 'NO'}</div>
             <div>Has pumpDetails: {pumpDetails ? 'YES' : 'NO'}</div>
             {pumpDetails && (
               <>
@@ -380,7 +411,7 @@ const SVGnode = ({ id, data, selected, liveTankData }) => {
                 <div>Temperature: {pumpDetails.temperature || 'N/A'}</div>
                 <div>Voltage: {pumpDetails.voltage || 'N/A'}</div>
                 <div>Fault: {pumpDetails.fault || 'N/A'}</div>
-                <div>Status: {pumpDetails.status ? 'ON' : 'OFF'}</div>
+                <div>AC Status: {pumpDetails.acStatus || 'N/A'}</div>
                 <div>Last Updated: {pumpDetails.lastUpdated || 'N/A'}</div>
               </>
             )}
