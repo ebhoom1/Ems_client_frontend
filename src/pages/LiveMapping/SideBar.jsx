@@ -16,6 +16,7 @@ import pumpsingle from '../../assests/images/pumpsingle.svg';
 import energymeter from '../../assests/images/energymeter.svg';
 import settlingnew from '../../assests/images/settlingnew.svg';
 import watertanknew from '../../assests/images/watertanknew.svg';
+import expo from '../../assests/images/expo.svg'
 import './livemapping.css';
 import { API_URL } from '../../utils/apiConfig';
 
@@ -30,6 +31,8 @@ const defaultShapes = [
   { id: 'airblower',    label: 'Airblower',    isSVG: true, svgPath: airblower,    isAirblower: true },
   { id: 'pumpsingle',   label: 'Pump Single',  isSVG: true, svgPath: pumpsingle },
   { id: 'energymeter',  label: 'Energymeter',  isSVG: true, svgPath: energymeter },
+    { id: 'expo',  label: 'expo',  isSVG: true, svgPath: expo },
+
 ];
 
 // Accepted file types

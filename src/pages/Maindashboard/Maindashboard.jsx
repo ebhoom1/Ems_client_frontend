@@ -95,28 +95,31 @@ function Maindashboard() {
     <div className="col-12">
       <div className="maindashboard d-flex">
         <div className="flex-grow-1 content bg-light">
-          <Navbar
-            expand="lg"
-            className="navbg  shadow"
-            style={{ borderRadius: "10px" }}
-          >
-            <div className="d-flex justify-content-between gap-2 w-100">
-              <Navbar.Toggle aria-controls="basic-navbar-nav" />
-              <Navbar.Collapse id="basic-navbar-nav">
-                <Nav className="w-100 justify-content-evenly">
-                  {visibleLinks.map((link) => (
-                    <Nav.Link
-                      href={link.path}
-                      key={link.key}
-                      className={location.pathname === link.path ? "active-link" : ""}
-                    >
-                      {link.name}
-                    </Nav.Link>
-                  ))}
-                </Nav>
-              </Navbar.Collapse>
-            </div>
-          </Navbar>
+        {visibleLinks.length > 0 && (
+  <Navbar
+    expand="lg"
+    className="navbg shadow"
+    style={{ borderRadius: "10px" }}
+  >
+    <div className="d-flex justify-content-between gap-2 w-100">
+      <Navbar.Toggle aria-controls="basic-navbar-nav" />
+      <Navbar.Collapse id="basic-navbar-nav">
+        <Nav className="w-100 justify-content-evenly">
+          {visibleLinks.map((link) => (
+            <Nav.Link
+              href={link.path}
+              key={link.key}
+              className={location.pathname === link.path ? "active-link" : ""}
+            >
+              {link.name}
+            </Nav.Link>
+          ))}
+        </Nav>
+      </Navbar.Collapse>
+    </div>
+  </Navbar>
+)}
+
 
           {userType !== "user" && (
             <div className="flex-md-row mt-3 button-section bg-light">

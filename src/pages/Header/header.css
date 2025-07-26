@@ -111,6 +111,15 @@ Offcanvas full-screen settings
     margin-top: 4px;
     font-size: 12px;
   }
+  .username-mobile {
+    font-size: 14px !important;
+  }
+
+  .header-navbar .dropdown-toggle {
+    font-size: 10px !important;
+    padding: 6px 12px !important;
+  }
+  
   
 }
 

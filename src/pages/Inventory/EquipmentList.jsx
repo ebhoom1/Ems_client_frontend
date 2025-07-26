@@ -415,22 +415,19 @@ export default function EquipmentList() {
             </thead>
             <tbody>
               {filtered.map((e) => (
-                <tr key={e._id}
-               
-  className={
-    assignedUserNames.includes(e.userName) &&
-    ((isTechnician && electricalReportStatus[e._id]) ||
-      (territorialManager && mechanicalReportStatus[e._id]))
-      ? "highlight-row"
-      : ""
-  }
-
-                >
-                  <td
-                   
-                  >
-                    {e.equipmentName || "N/A"}
-                  </td>
+                <tr
+                key={e._id}
+                className={
+                  assignedUserNames.includes(e.userName)
+                    ? (isTechnician && electricalReportStatus[e._id]) ||
+                      (territorialManager && mechanicalReportStatus[e._id])
+                      ? "row-completed"
+                      : "row-assigned"
+                    : ""
+                }
+              >
+              
+                  <td>{e.equipmentName || "N/A"}</td>
                   <td>{e.userName || "N/A"}</td>
                   <td>{e.modelSerial || "N/A"}</td>
                   <td>

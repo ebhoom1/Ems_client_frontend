@@ -1646,6 +1646,7 @@ const UsersLog = () => {
                             <option value="Genex">Genex</option>
                             <option value="Banka_bio">Banka Bio</option>
                             <option value="IESS">IESS</option>
+                                <option value="IESS">Expo</option>
 
                             {/* Add options for companies */}
                           </select>

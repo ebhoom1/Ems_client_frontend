@@ -1,4 +1,4 @@
-//SVGnode new
+// Updated SVGNode.jsx with enhanced pump details handling
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Resizable } from "re-resizable";
@@ -8,7 +8,9 @@ import "./livemapping.css";
 
 const API = "https://api.ocems.ebhoom.com";
 
-const SVGnode = ({ id, data, selected }) => {
+const SVGnode = ({ id, data, selected, liveTankData }) => {
+  console.log(`🔧 [SVGnode ID: ${id}] Full data object:`, data);
+  console.log(`🔧 [SVGnode ID: ${id}] pumpDetails specifically:`, data.pumpDetails);
   const {
     socket,
     socketConnected,
@@ -20,14 +22,15 @@ const SVGnode = ({ id, data, selected }) => {
     isPump = false,
     isAirblower = false,
     isTank = false,
-    waterLevel = 0,
     width: initW = 100,
     height: initH = 100,
     onPumpToggle,
     isEditing: isParentEditing,
+    pumpDetails, // Get the detailed pump data
   } = data;
 
-  const productId = "27";
+  const productId = "41";
+  console.log(`[SVGnode ID: ${id}] Pump Details:`, pumpDetails);
 
   // Local state
   const [isOn, setIsOn] = useState(propStatus);
@@ -37,24 +40,47 @@ const SVGnode = ({ id, data, selected }) => {
   const [rotation, setRotation] = useState(initialRotation);
   const [isResizing, setIsResizing] = useState(false);
   const [totalDepth, setTotalDepth] = useState(data.totalDepth || "");
+  const [isHovering, setIsHovering] = useState(false);
+
+  // Tank data logic
+  const match = liveTankData.find(
+    (t) => t.tankName?.toLowerCase() === text.toLowerCase()
+  );
+  const depth = match?.depth || 0;
+  const total = totalDepth || 1;
+  const waterLevel = Math.round((depth / total) * 100);
 
   useEffect(() => {
     data.totalDepth = totalDepth;
-  }, [totalDepth, data]);
+    data.waterLevel = waterLevel;
+  }, [totalDepth, waterLevel, data]);
 
-  // Handle acknowledgment from MQTT
+  // Update local state when pumpDetails changes
+  useEffect(() => {
+    if (pumpDetails) {
+      console.log(`[SVGnode ID: ${id}] Updating from pumpDetails:`, pumpDetails);
+      setIsOn(pumpDetails.status);
+      setIsPending(pumpDetails.pending || false);
+    }
+  }, [pumpDetails, id]);
+
+  // Handle MQTT acknowledgment
   const handleAcknowledgment = useCallback(
     (ackData) => {
+      console.log(`[SVGnode ID: ${id}] Received acknowledgment:`, ackData);
+      
       if (ackData.product_id !== productId) return;
 
       const pumpUpdate = ackData.pumps.find((p) => p.pumpId === id);
       if (!pumpUpdate) return;
 
       const newStatus = pumpUpdate.status === 1 || pumpUpdate.status === "ON";
+      console.log(`[SVGnode ID: ${id}] Pump update:`, pumpUpdate);
 
       setIsPending(false);
       setIsOn(newStatus);
 
+      // Sync with backend
       axios
         .patch(`${API}/api/pump-states/${productId}/${id}`, {
           status: newStatus,
@@ -73,6 +99,7 @@ const SVGnode = ({ id, data, selected }) => {
   useEffect(() => {
     if (!socket) return;
 
+    console.log(`[SVGnode ID: ${id}] Setting up socket listeners`);
     socket.on("pumpAck", handleAcknowledgment);
     socket.on("pumpStateUpdate", handleAcknowledgment);
 
@@ -106,14 +133,6 @@ const SVGnode = ({ id, data, selected }) => {
   }, [id, isPump, isAirblower, productId, text, onPumpToggle, propStatus]);
 
   useEffect(() => {
-    setIsOn(propStatus);
-  }, [propStatus]);
-
-  useEffect(() => {
-    setIsPending(propPending);
-  }, [propPending]);
-
-  useEffect(() => {
     data.label = text;
   }, [text, data]);
 
@@ -125,6 +144,7 @@ const SVGnode = ({ id, data, selected }) => {
     }
 
     const newStatus = !isOn;
+    console.log(`[SVGnode ID: ${id}] Toggling device to:`, newStatus);
 
     setIsPending(true);
     if (onPumpToggle) {
@@ -179,129 +199,201 @@ const SVGnode = ({ id, data, selected }) => {
     return isPump ? "STOPPED" : "OFF";
   };
 
-  // Simplified pump/airblower render
+  // Enhanced tooltip data formatter
+  const formatTooltipData = () => {
+    if (!pumpDetails) return null;
+
+    return {
+      name: pumpDetails.pumpName || text,
+      current: Number(pumpDetails.current || 0).toFixed(3),
+      vibration: Number(pumpDetails.vibration || 0).toFixed(3),
+      temperature: Number(pumpDetails.temperature || 0).toFixed(2),
+      voltage: Number(pumpDetails.voltage || 0).toFixed(2),
+      fault: pumpDetails.fault || "N/A",
+      acStatus: pumpDetails.acStatus || "N/A",
+      lastUpdated: pumpDetails.lastUpdated ? new Date(pumpDetails.lastUpdated).toLocaleTimeString() : "N/A"
+    };
+  };
+
+  // Pump/Airblower render with enhanced tooltip
   if (isPump || isAirblower) {
+    const tooltipData = formatTooltipData();
+    
     return (
       <div
-        style={{
-/*         border: selected ? '2px solid #0074D9' : '1px solid #ddd',
- */        borderRadius: 6,
-          padding: 2,
-          backgroundColor: '#fff',
-          minWidth: 80,
-          cursor: 'move',
-          position: 'relative',
-          fontSize: '10px',
-        }}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        style={{ position: 'relative' }}
       >
-        {['Top', 'Right', 'Bottom', 'Left'].map(pos => (
-          <Handle
-            id={pos.toLowerCase()}
-            key={pos}
-            type={pos === 'Top' || pos === 'Left' ? 'target' : 'source'}
-            position={Position[pos]}
-            style={{
-              background: isParentEditing ? '#D9DFC6' : 'transparent',
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              zIndex: 9,
-              position: 'absolute',
-              [pos]: -10,
-              pointerEvents: isParentEditing ? 'auto' : 'none',
-              border: isParentEditing ? '1px solid #ccc' : 'none',
-            }}
-          />
-        ))}
-
-        {/* Label */}
-        <div style={{ marginBottom: 4 }}>
-          <input
-            value={text}
-            onChange={e => setText(e.target.value)}
-            readOnly={!isParentEditing}
-            placeholder="Label..."
-            style={{
-              width: '100%',
-              fontSize: '10px',
-              fontWeight: 'bold',
-              border: isParentEditing ? '1px solid #ddd' : 'none',
-              textAlign: 'center',
-              outline: 'none',
-              backgroundColor: 'transparent',
-              borderRadius: 4,
-              padding: isParentEditing ? '2px' : '0',
-            }}
-          />
-        </div>
-
-        {/* Status */}
         <div
           style={{
-            color: isPending ? '#FFA500' : isOn ? '#2ECC40' : '#FF4136',
-            fontSize: '10px',
-            textAlign: 'center',
-            marginBottom: 4,
-          }}
-        >
-          {statusText()}
-        </div>
-
-        {/* Compact toggle */}
-        <div
-          onClick={toggleDevice}
-          style={{
+            border: selected ? '2px solid #0074D9' : '1px solid #ddd',
+            borderRadius: 6,
+            padding: 2,
+            backgroundColor: '#fff',
+            minWidth: 80,
+            cursor: 'move',
             position: 'relative',
-            width: 40,
-            height: 18,
-            borderRadius: 9,
-            cursor: socketConnected && !isPending ? 'pointer' : 'not-allowed',
-            margin: '0 auto',
-            backgroundColor: isPending ? '#FFA500' : isOn ? '#2ECC40' : '#FF4136',
-            opacity: socketConnected ? 1 : 0.5,
-            transition: 'all 0.3s ease',
+            fontSize: '10px',
           }}
-          title={!socketConnected ? 'Offline' : isPending ? 'Pending...' : ''}
         >
+          {/* Connection handles */}
+          {['Top','Right','Bottom','Left'].map(pos => (
+            <Handle
+              id={pos.toLowerCase()}
+              key={pos}
+              type={pos==='Top'||pos==='Left'?'target':'source'}
+              position={Position[pos]}
+              style={{
+                background: isParentEditing?'#D9DFC6':'transparent',
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                zIndex: 9,
+                position: 'absolute',
+                [pos]: -10,
+                pointerEvents: isParentEditing?'auto':'none',
+                border: isParentEditing?'1px solid #ccc':'none',
+              }}
+            />
+          ))}
+
+          {/* Label */}
+          <div style={{ marginBottom: 4 }}>
+            <input
+              value={text}
+              onChange={e => setText(e.target.value)}
+              readOnly={!isParentEditing}
+              placeholder="Label..."
+              style={{
+                width: '100%',
+                fontSize: '10px',
+                fontWeight: 'bold',
+                border: isParentEditing?'1px solid #ddd':'none',
+                textAlign: 'center',
+                outline: 'none',
+                backgroundColor: 'transparent',
+                borderRadius: 4,
+                padding: isParentEditing?'2px':'0',
+              }}
+            />
+          </div>
+
+          {/* Status */}
           <div
             style={{
-              position: 'absolute',      // add absolute positioning
-              top: 1,                    // moves knob 2px from the top of the track
-              left: 0,                   // base position; we’ll still shift it via transform
-              width: 14,
-              height: 16,
-              borderRadius: '50%',
-              backgroundColor: '#fff',
-              transform: isOn
-                ? 'translateX(22px)'    // when ON, slide right 22px
-                : 'translateX(0)',      // when OFF, stay at 0
-              transition: 'transform 0.3s ease',
+              color: isPending?'#FFA500':isOn?'#2ECC40':'#FF4136',
+              fontSize: '10px',
+              textAlign: 'center',
+              marginBottom: 4,
             }}
-          />
-
-        </div>
-
-        {/* Rotate icon */}
-        {isParentEditing && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 6,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              cursor: 'pointer',
-            }}
-            onClick={rotateHandler}
           >
-            <FaSyncAlt size={14} />
+            {statusText()}
+          </div>
+
+          {/* Toggle switch */}
+          <div
+            onClick={toggleDevice}
+            style={{
+              position: 'relative',
+              width: 40,
+              height: 18,
+              borderRadius: 9,
+              cursor: socketConnected && !isPending ? 'pointer' : 'not-allowed',
+              margin: '0 auto',
+              backgroundColor: isPending?'#FFA500':isOn?'#2ECC40':'#FF4136',
+              opacity: socketConnected?1:0.5,
+              transition: 'all 0.3s ease',
+            }}
+            title={!socketConnected?'Offline':isPending?'Pending...':''}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: 1,
+                left: 0,
+                width: 14,
+                height: 16,
+                borderRadius: '50%',
+                backgroundColor: '#fff',
+                transform: isOn ? 'translateX(22px)' : 'translateX(0)',
+                transition: 'transform 0.3s ease',
+              }}
+            />
+          </div>
+
+          {/* Rotate icon */}
+          {isParentEditing && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 6,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                cursor: 'pointer',
+              }}
+              onClick={rotateHandler}
+            >
+              <FaSyncAlt size={14} />
+            </div>
+          )}
+        </div>
+        
+        {/* Enhanced Tooltip */}
+        {pumpDetails?.fault === 'YES' && (
+  <div
+    style={{
+      color: 'red',
+      fontWeight: 'bold',
+      textAlign: 'center',
+      fontSize: '11px',
+      marginTop: '4px',
+    }}
+  >
+    High Vibration
+  </div>
+)}
+      {isHovering && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "105%",
+              left: "50%",
+              transform: "translateX(-50%)",
+              backgroundColor: "rgba(40, 37, 37, 0.9)", // Red background for debug
+              color: "white",
+              padding: "8px",
+              borderRadius: "4px",
+              zIndex: 1000,
+              fontSize: "10px",
+              width: "200px",
+              textAlign: "left",
+              pointerEvents: "none",
+            }}
+          >
+            <div><strong>DEBUG INFO:</strong></div>
+            <div>Has pumpDetails: {pumpDetails ? 'YES' : 'NO'}</div>
+            {pumpDetails && (
+              <>
+                <div>Current: {pumpDetails.current || 'N/A'}</div>
+                <div>Vibration: {pumpDetails.vibration || 'N/A'}</div>
+                <div>Temperature: {pumpDetails.temperature || 'N/A'}</div>
+                <div>Voltage: {pumpDetails.voltage || 'N/A'}</div>
+                <div>Fault: {pumpDetails.fault || 'N/A'}</div>
+                <div>Status: {pumpDetails.status ? 'ON' : 'OFF'}</div>
+                <div>Last Updated: {pumpDetails.lastUpdated || 'N/A'}</div>
+              </>
+            )}
+            {!pumpDetails && (
+              <div style={{color: 'yellow'}}>pumpDetails is null/undefined</div>
+            )}
           </div>
         )}
       </div>
     );
   }
 
-
-  // Existing render for other node types (tanks, etc.)
+  // Rest of your existing code for other node types (tanks, etc.)
   const nodeStyle = {
     position: "relative",
     overflow: isParentEditing ? "visible" : "hidden",
@@ -355,15 +447,15 @@ const SVGnode = ({ id, data, selected }) => {
         enable={
           isParentEditing
             ? {
-              top: true,
-              right: true,
-              bottom: true,
-              left: true,
-              topRight: true,
-              topLeft: true,
-              bottomRight: true,
-              bottomLeft: true,
-            }
+                top: true,
+                right: true,
+                bottom: true,
+                left: true,
+                topRight: true,
+                topLeft: true,
+                bottomRight: true,
+                bottomLeft: true,
+              }
             : {}
         }
       >
@@ -392,7 +484,7 @@ const SVGnode = ({ id, data, selected }) => {
         </div>
       </Resizable>
 
-      {/* Label and controls - always visible */}
+      {/* Label and controls */}
       <div
         style={{
           width: "100%",

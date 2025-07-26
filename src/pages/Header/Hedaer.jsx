@@ -45,6 +45,7 @@ function Header() {
   const audioRef = useRef(new Audio(notificationSound));
   // Keep track of previous notifications count.
   const prevNotificationsCount = useRef(notifications.length);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 450); // Assuming 768px as mobile breakpoint
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
@@ -84,11 +85,11 @@ function Header() {
       try {
         const currentUser = userData?.validUserOne;
         if (!currentUser) return;
-  
+
         const res = await axios.get(`${API_URL}/api/getallusers`);
         const allUsers = res.data.users || [];
         const currentUserId = currentUser._id;
-  
+
         // ✅ Check if this user is assigned as operator/technician/territorialManager
         const isAssigned = allUsers.some((u) => {
           const isOp =
@@ -97,11 +98,10 @@ function Header() {
           const isTech =
             Array.isArray(u.technicians) &&
             u.technicians.some((id) => id?.toString() === currentUserId);
-          const isTM =
-            u.territorialManager?.toString() === currentUserId;
+          const isTM = u.territorialManager?.toString() === currentUserId;
           return isOp || isTech || isTM;
         });
-  
+
         // ✅ If assigned → show only assigned users
         if (isAssigned) {
           const assignedUsers = allUsers.filter((u) => {
@@ -111,29 +111,24 @@ function Header() {
             const isTech =
               Array.isArray(u.technicians) &&
               u.technicians.some((id) => id?.toString() === currentUserId);
-            const isTM =
-              u.territorialManager?.toString() === currentUserId;
+            const isTM = u.territorialManager?.toString() === currentUserId;
             return isOp || isTech || isTM;
           });
           setAllFetchedUsers(assignedUsers);
         } else {
           // ✅ Not assigned – apply admin/super_admin/EBHOOM logic
           let filtered = [];
-  
+
           if (currentUser.adminType === "EBHOOM") {
             filtered = allUsers.filter(
-              (u) =>
-                !u.isOperator &&
-                !u.isTechnician &&
-                !u.isTerritorialManager
+              (u) => !u.isOperator && !u.isTechnician && !u.isTerritorialManager
             );
           } else if (currentUser.userType === "super_admin") {
             const myAdmins = allUsers.filter(
-              (u) =>
-                u.createdBy === currentUserId && u.userType === "admin"
+              (u) => u.createdBy === currentUserId && u.userType === "admin"
             );
             const adminIds = myAdmins.map((a) => a._id.toString());
-  
+
             filtered = allUsers.filter(
               (u) =>
                 (u.createdBy === currentUserId ||
@@ -148,7 +143,7 @@ function Header() {
             const myUsers = response.data.users || [];
             filtered = myUsers.filter((u) => u.userType === "user");
           }
-  
+
           setAllFetchedUsers(filtered);
         }
       } catch (error) {
@@ -156,10 +151,9 @@ function Header() {
         setAllFetchedUsers([]);
       }
     };
-  
+
     fetchAndFilterUsers();
   }, [userData]);
-  
 
   useEffect(() => {
     const validateUser = async () => {
@@ -262,6 +256,19 @@ function Header() {
   const savedUserId = sessionStorage.getItem("selectedUserId");
   console.log(savedUserId);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 450); // Update based on your desired breakpoint
+    };
+
+    window.addEventListener("resize", handleResize);
+    // Call once initially
+    handleResize();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
   return (
     <div className="ms-0">
       <div className="mt-4 col-lg-12">
@@ -279,7 +286,7 @@ function Header() {
             <Navbar.Brand href="#home" className="brand-text">
               <span className="d-none d-lg-inline">Username: </span>
               <span className="text-dark">
-                <b style={{ fontSize: "19px" }}>
+                <b className="username-mobile" style={{ fontSize: "19px" }}>
                   {userData?.validUserOne?.userName || "Admin Developer"}
                 </b>
                 <span className="online-status">
@@ -291,7 +298,6 @@ function Header() {
                     <span className="offline">Offline</span>
                   )}
                 </span>
-
               </span>
             </Navbar.Brand>
             <div className="d-flex align-items-center">
@@ -309,80 +315,96 @@ function Header() {
                     </b>
                   </div>
                 )} */}
-{userData?.validUserOne?.userType !== "user" && (
-  <div
-  className="me-4 mt-2 text-dark fw-semibold"
-  style={{
-    fontSize: "12px",
-    position: "relative", // ⬅️ Required to anchor the absolute menu
-    zIndex: 2000
-  }}
->
-    <Dropdown show={isDropdownOpen} onToggle={toggleDropdown} align="start">
-    <Dropdown.Toggle
-  id="dropdown-basic"
-  style={{
-    backgroundColor: "#236a80",
-    border: "none",
-    borderRadius: "12px", // 🔵 Rounded edges
-    padding: "8px 16px",
-    fontWeight: "bold",
-    fontSize: "14px"
-  }}
->
-{selectedUserId
+              {userData?.validUserOne?.userType !== "user" && (
+                <div
+                  className="me-4 mt-2 text-dark fw-semibold"
+                  style={{
+                    fontSize: "12px",
+                    position: "relative", // ⬅️ Required to anchor the absolute menu
+                    zIndex: 2000,
+                  }}
+                >
+                  <Dropdown
+                    show={isDropdownOpen}
+                    onToggle={toggleDropdown}
+                    align="start"
+                  >
+                    <Dropdown.Toggle
+                      id="dropdown-basic"
+                      style={{
+                        backgroundColor: "#236a80",
+                        border: "none",
+                        borderRadius: "12px", // 🔵 Rounded edges
+                        padding: "8px 16px",
+                        fontWeight: "bold",
+                        fontSize: "14px",
+                      }}
+                    >
+                      {/* {selectedUserId
   ? allFetchedUsers.find((u) => u.userName === selectedUserId)?.companyName || selectedUserId
-  : "Select User"}
-</Dropdown.Toggle>
+  : "Select User"} */}
 
-      <Dropdown.Menu
-        style={{
-          maxHeight: "250px",
-          overflowY: "auto",
-          width: "300px",
-          left: 0, // ⬅️ Align to left edge
-          position: "absolute",
-          transform: "translateX(-50%)", // Adjust as needed
-          borderRadius: "12px",
-          boxShadow: "0px 4px 12px rgba(0,0,0,0.1)",
-          zIndex: 2100
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Search by user or company..."
-          className="form-control"
-          style={{
-            margin: "10px auto",
-            width: "90%",
-            padding: "8px",
-            borderRadius: "5px",
-          }}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
-        />
-        {filteredUsers.length > 0 ? (
-          filteredUsers.map((user, index) => (
-            <Dropdown.Item
-              key={index}
-              onClick={() => handleUserSelect(user.userName)}
-              style={{
-                whiteSpace: "nowrap",
-                textOverflow: "ellipsis",
-                overflow: "hidden",
-              }}
-              title={`${user.userName}: ${user.companyName}`}
-            >
-              {user.userName}: {user.companyName}
-            </Dropdown.Item>
-          ))
-        ) : (
-          <Dropdown.Item disabled>No users or companies found</Dropdown.Item>
-        )}
-      </Dropdown.Menu>
-    </Dropdown>
-  </div>
-)}
+                      {isMobile
+                        ? selectedUserId || "Select User"
+                        : selectedUserId
+                        ? allFetchedUsers.find(
+                            (u) => u.userName === selectedUserId
+                          )?.companyName || selectedUserId
+                        : "Select User"}
+                    </Dropdown.Toggle>
+
+                    <Dropdown.Menu
+                      style={{
+                        maxHeight: "250px",
+                        overflowY: "auto",
+                        width: "300px",
+                        left: 0, // ⬅️ Align to left edge
+                        position: "absolute",
+                        transform: "translateX(-50%)", // Adjust as needed
+                        borderRadius: "12px",
+                        boxShadow: "0px 4px 12px rgba(0,0,0,0.1)",
+                        zIndex: 2100,
+                      }}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Search by user or company..."
+                        className="form-control"
+                        style={{
+                          margin: "10px auto",
+                          width: "90%",
+                          padding: "8px",
+                          borderRadius: "5px",
+                        }}
+                        value={searchTerm}
+                        onChange={(e) =>
+                          setSearchTerm(e.target.value.toLowerCase())
+                        }
+                      />
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map((user, index) => (
+                          <Dropdown.Item
+                            key={index}
+                            onClick={() => handleUserSelect(user.userName)}
+                            style={{
+                              whiteSpace: "nowrap",
+                              textOverflow: "ellipsis",
+                              overflow: "hidden",
+                            }}
+                            title={`${user.userName}: ${user.companyName}`}
+                          >
+                            {user.userName}: {user.companyName}
+                          </Dropdown.Item>
+                        ))
+                      ) : (
+                        <Dropdown.Item disabled>
+                          No users or companies found
+                        </Dropdown.Item>
+                      )}
+                    </Dropdown.Menu>
+                  </Dropdown>
+                </div>
+              )}
 
               <Nav.Link
                 className="me-3 mt-2"
@@ -454,8 +476,6 @@ function Header() {
             </div>
           </div>
         </Navbar>
-
-        
 
         <Outlet context={{ searchTerm: userName, isSearchTriggered: true }} />
         <Outlet />

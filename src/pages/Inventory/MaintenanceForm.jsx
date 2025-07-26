@@ -61,6 +61,16 @@ const mechanicalConfig = {
       { id: 4, category: "Other observations if any", description: "" }
     ]
   },
+  "dosing-pump": {
+  rows: [
+    { id: 1, category: "Check the foot valve and NRV pipe", description: "" },
+    { id: 2, category: "Check chemical level in the tank", description: "" },
+    { id: 3, category: "Check for filter blockage", description: "" },
+    { id: 4, category: "Check if pump is running smoothly", description: "" },
+    { id: 5, category: "Other observations if any", description: "" }
+  ]
+},
+
   "oil-skimmer": {
     rows: [
       { id: 1, category: "Check for safety Guards", description: "" },
@@ -190,7 +200,18 @@ const getMatchingChecklistKey = (name) => {
   if (lowerName.includes("bar screen")) return "bar-screen";
   if (lowerName.includes("oil skimmer")) return "oil-skimmer";
   if (lowerName.includes("agitator") || lowerName.includes("mixer")) return "agitator-mechanism";
-  if (lowerName.includes("filter press") || lowerName.includes("screw pump") || lowerName.includes("sludge pump") || lowerName.includes("dosing pump") || lowerName.includes("hydraulic filter press pump") || lowerName.includes("polymer dosing pump") || lowerName.includes("out side bypass pump")) return "filter-press-unit";
+if (
+  lowerName.includes("filter press") ||
+  lowerName.includes("screw pump") ||
+  lowerName.includes("sludge pump") ||
+  lowerName.includes("hydraulic filter press pump") ||
+  lowerName.includes("polymer dosing pump") ||
+  lowerName.includes("out side bypass pump")
+) {
+  return "filter-press-unit";
+}
+
+if (lowerName.includes("dosing pump")) return "dosing-pump";
 
   if (lowerName.includes("psf") || lowerName.includes("acf")) return "psf-acf-unit";
   if (lowerName.includes("softener")) return "softener-unit";
