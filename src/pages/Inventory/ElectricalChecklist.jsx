@@ -94,41 +94,115 @@ export default function ElectricalChecklist({
   // ----------------------------------------------------------------------------
   // 5) Effect to fetch full equipment details if needed (and update initial 'actual' values)
   // ----------------------------------------------------------------------------
+  // useEffect(() => {
+  //   const fetchFullEquipment = async () => {
+  //     if (equipmentId) { // Use the equipmentId from location.state
+  //       try {
+  //         const response = await axios.get(`${API_URL}/api/get-equipment/${equipmentId}`);
+  //         const fetchedEquipment = response.data.equipment;
+  //         if (fetchedEquipment) {
+  //           setFullEquipmentDetails(fetchedEquipment);
+  //           // Update initial 'actual' values based on fetched equipment
+  //           setResponses(prevResponses => {
+  //             const newResponses = { ...prevResponses };
+  //             checklistItems.forEach(item => {
+  //               if (item.type === "measurement" && fetchedEquipment[item.actualKey] !== undefined) {
+  //                 newResponses[item.id] = {
+  //                   ...newResponses[item.id],
+  //                   actual: fetchedEquipment[item.actualKey]
+  //                 };
+  //               }
+  //             });
+  //             return newResponses;
+  //           });
+  //         }
+  //       } catch (error) {
+  //         console.error("Error fetching full equipment details:", error);
+  //         // Fallback to initial 'equipment' prop if fetching fails
+  //         setFullEquipmentDetails(equipment);
+  //       }
+  //     }
+  //   };
+  //   // Only fetch if initial 'equipment' prop doesn't have enough details
+  //   // For example, if it only came with _id, name, and you need capacity, ratedLoad etc.
+  //   if (!fullEquipmentDetails.capacity || !fullEquipmentDetails.ratedLoad) {
+  //     fetchFullEquipment();
+  //   }
+  // }, [equipmentId, equipment]); // Depend on equipmentId from location.state and initial 'equipment' prop
+
   useEffect(() => {
-    const fetchFullEquipment = async () => {
-      if (equipmentId) { // Use the equipmentId from location.state
-        try {
-          const response = await axios.get(`${API_URL}/api/get-equipment/${equipmentId}`);
-          const fetchedEquipment = response.data.equipment;
-          if (fetchedEquipment) {
-            setFullEquipmentDetails(fetchedEquipment);
-            // Update initial 'actual' values based on fetched equipment
-            setResponses(prevResponses => {
-              const newResponses = { ...prevResponses };
-              checklistItems.forEach(item => {
-                if (item.type === "measurement" && fetchedEquipment[item.actualKey] !== undefined) {
-                  newResponses[item.id] = {
-                    ...newResponses[item.id],
-                    actual: fetchedEquipment[item.actualKey]
-                  };
-                }
-              });
-              return newResponses;
+    const fetchFullEquipmentAndReport = async () => {
+      if (!equipmentId) return; // Exit if no equipmentId
+
+      try {
+        // --- Part 1: Fetch full equipment details (existing logic, slightly refined) ---
+        const equipmentResponse = await axios.get(`${API_URL}/api/get-equipment/${equipmentId}`);
+        const fetchedEquipment = equipmentResponse.data.equipment;
+        if (fetchedEquipment) {
+          setFullEquipmentDetails(fetchedEquipment);
+
+          // Update initial 'actual' values in responses state based on fetched equipment
+          setResponses(prevResponses => {
+            const newResponses = { ...prevResponses };
+            checklistItems.forEach(item => {
+              if (item.type === "measurement" && fetchedEquipment[item.actualKey] !== undefined) {
+                newResponses[item.id] = {
+                  ...newResponses[item.id],
+                  actual: fetchedEquipment[item.actualKey] // Set initial 'actual' from equipment data
+                };
+              }
             });
-          }
-        } catch (error) {
-          console.error("Error fetching full equipment details:", error);
-          // Fallback to initial 'equipment' prop if fetching fails
-          setFullEquipmentDetails(equipment);
+            return newResponses;
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching full equipment details:", error);
+        setFullEquipmentDetails(equipment); // Fallback to initial prop if API fails
+      }
+
+      // --- Part 2: Fetch existing electrical report for the current month ---
+      try {
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1; // JS months are 0-11
+
+        // Call the new backend endpoint to get the specific report for this month
+        const reportResponse = await axios.get(
+          `${API_URL}/api/electricalreport/equipment/${equipmentId}?year=${currentYear}&month=${currentMonth}`
+        );
+        const fetchedReport = reportResponse.data.report;
+
+        // If a report is found, use its data to pre-fill the `responses` state
+        if (fetchedReport && fetchedReport.responses) {
+          // Convert the Map-like object from the backend back into a usable structure
+          const reportResponsesMap = new Map(Object.entries(fetchedReport.responses));
+          
+          setResponses(prevResponses => {
+            const newResponses = { ...prevResponses };
+            checklistItems.forEach(item => {
+              const savedResponse = reportResponsesMap.get(String(item.id)); // Keys are strings from the Map
+              if (savedResponse) {
+                // Merge saved data into the current responses for this item
+                newResponses[item.id] = {
+                  ...newResponses[item.id],
+                  ...savedResponse 
+                };
+              }
+            });
+            return newResponses;
+          });
+        }
+      } catch (reportError) {
+        // A 404 (Not Found) for the report is expected if it hasn't been submitted yet.
+        // Only log serious errors.
+        if (reportError.response && reportError.response.status !== 404) {
+          console.error("Error fetching existing electrical report:", reportError);
         }
       }
     };
-    // Only fetch if initial 'equipment' prop doesn't have enough details
-    // For example, if it only came with _id, name, and you need capacity, ratedLoad etc.
-    if (!fullEquipmentDetails.capacity || !fullEquipmentDetails.ratedLoad) {
-      fetchFullEquipment();
-    }
-  }, [equipmentId, equipment]); // Depend on equipmentId from location.state and initial 'equipment' prop
+    
+    fetchFullEquipmentAndReport();
+  }, [equipmentId]); // Re-run this effect when equipmentId changes
 
   // ----------------------------------------------------------------------------
   // 6) Auto-calculate Power (row 3) when Voltage (row 1) or Current (row 2) change

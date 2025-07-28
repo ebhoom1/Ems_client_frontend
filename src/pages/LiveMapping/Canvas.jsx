@@ -1,3 +1,6 @@
+//Canvas new
+
+
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import ReactFlow, {
   addEdge,
@@ -15,18 +18,15 @@ import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
 import PipingEdge from "./PipingEdge";
 import PDFNode from "./PDFNode";
-import DeviceNode from "./DeviceNode"; 
+import DeviceNode from "./DeviceNode";
 import FlowMeterNode from "./FlowMeterNode";
 import TankNode from "./TankNode";
-
 function Canvas({
   selectedStation,
   isEditMode,
   setIsEditMode,
   socket,
   socketConnected,
-  pumpStates, // <- Received from LiveLayout
-  onPumpToggle, // <- Received from LiveLayout
 }) {
   const { userId } = useSelector((state) => state.selectedUser);
   const { userData } = useSelector((state) => state.user);
@@ -45,124 +45,121 @@ function Canvas({
   const [liveTankData, setLiveTankData] = useState([]);
   const [flowValues, setFlowValues] = useState({});
 
+  // Map of pumpId → {status: boolean, pending: boolean}
+  const [pumpStates, setPumpStates] = useState({});
   const [savedViewport, setSavedViewport] = useState({
     x: 0,
     y: 0,
     zoom: 1,
   });
+  const product_id = userData?.validUserOne?.productID
+  console.log('new product Id', product_id);
 
- const product_id = String(userData?.validUserOne?.productID || '');
-   console.log('Canvas - Received pumpStates from LiveLayout:', pumpStates);
-  console.log('Canvas - Product ID:', product_id);
-
-  // Tank and sensor data handling from socket
+  // Handle pump toggle from child components
+  const handlePumpToggle = useCallback((pumpId, pumpName, status, isPending) => {
+    setPumpStates(prev => ({
+      ...prev,
+      [pumpId]: {
+        status,
+        pending: isPending,
+        name: pumpName
+      }
+    }));
+  }, []);
+  // In your Canvas.jsx component
   useEffect(() => {
     if (!socket || !socketConnected) return;
 
     const userName = userData?.validUserOne?.userName;
-    console.log('🔌 Canvas - Connecting socket for user:', userName);
+    console.log('🔌 Connecting socket for user:', userName);
     socket.emit('joinRoom', userName);
 
-    // Tank data handler
-    const handleTankData = (payload) => {
-      console.log('📦 [TANK DATA RECEIVED in Canvas]', payload);
-      
-      if (payload.tankData) {
-        console.log('🏭 Processing tank data:', payload.tankData);
-        setLiveTankData(payload.tankData);
-        
-        // Update nodes with tank data
-        setNodes(nds => nds.map(node => {
-          if (node.data.isTank) {
-            const tankMatch = payload.tankData.find(
-              t => t.tankName?.toLowerCase() === node.data.label?.toLowerCase()
-            );
-            
-            if (tankMatch) {
-              console.log(`💧 Updating tank ${node.data.label} with depth:`, tankMatch.depth);
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  currentDepth: tankMatch.depth,
-                  waterLevel: Math.round((tankMatch.depth / (node.data.totalDepth || 1)) * 100)
-                }
-              };
-            }
-          }
-          return node;
-        }));
-      }
-    };
+    const handleData = (payload) => {
+      console.group('📡 Incoming Data Payload');
+      console.log('Product ID:', payload.product_id);
+      console.log('User:', payload.userName);
 
-    // Sensor data handler (keep your existing flow value logic)
-    const handleSensorData = (payload) => {
+      // It just updates the liveTankData state, nothing more.
+      if (payload.tankData) {
+        console.log('📦 [TANK DATA RECEIVED]', payload.tankData);
+        setLiveTankData(payload.tankData);
+      }
+
+      // It just updates the flowValues state, nothing more.
       if (payload.stacks) {
         const effluentMap = {};
         payload.stacks
           .filter(s => s.stationType === 'effluent_flow')
-          .forEach(s => { 
+          .forEach(s => {
             effluentMap[s.stackName] = s.cumulatingFlow;
             console.log(`🌊 Flow update for ${s.stackName}:`, s.cumulatingFlow);
           });
         setFlowValues(prev => ({ ...prev, ...effluentMap }));
       }
-    };
-
-    // Set up listeners
-    socket.on('data', (payload) => {
-      console.group('📡 Canvas - Incoming Data Payload');
-      console.log('Product ID:', payload.product_id);
-      console.log('User:', payload.userName);
-      
-      if (payload.tankData) {
-        handleTankData(payload);
-      } else if (payload.stacks) {
-        handleSensorData(payload);
-      }
-      
       console.groupEnd();
-    });
-
-    return () => {
-      socket.off('data');
     };
-  }, [socket, socketConnected, userData, setNodes]);
 
-  // Update nodes with pump status when pumpStates change from LiveLayout
-useEffect(() => {
-    console.log('Canvas - pumpStates changed:', pumpStates);
-    console.log('Canvas - nodes length:', nodes.length);
-    
-    if (nodes.length > 0 && Object.keys(pumpStates).length > 0) {
-      console.log('Canvas - Updating nodes with pump states');
-      
+    socket.on('data', handleData);
+
+    // Always clean up the listener on unmount
+    return () => {
+      socket.off('data', handleData);
+    };
+  }, [socket, socketConnected, userData?.validUserOne?.userName]);
+
+  useEffect(() => {
+    setNodes(nds =>
+      nds.map(node => {
+        // Create a copy of the node's data to avoid direct mutation.
+        const updatedData = { ...node.data };
+
+        // 1. Update Tank Data if the node is a tank
+        if (node.data.isTank) {
+          const tankMatch = liveTankData.find(
+            t => {
+              return t.tankName?.toLowerCase() === node.data.label?.toLowerCase();
+            }
+          );
+          if (tankMatch) {
+            updatedData.percentage = parseFloat(tankMatch.percentage);
+          }
+        }
+
+        // 2. Pass all flow values to every node.
+        // The FlowMeterNode component will know how to pick the value it needs from this object.
+        updatedData.flowValues = flowValues;
+
+        // 3. Return the original node but with the new, updated data object.
+        return { ...node, data: updatedData };
+      })
+    );
+  }, [liveTankData, flowValues, setNodes]);
+
+  // Update nodes with pump status when they change
+  // In Canvas.jsx
+  useEffect(() => {
+    if (nodes.length > 0) {
       setNodes(nds =>
         nds.map(node => {
-          const pumpState = pumpStates[node.id];
+          const pumpState = pumpStates[node.id] || {
+            status: false,
+            pending: false
+          };
 
-          if (!pumpState || !node.data.isPump) {
-            return node;
-          }
-          
-          console.log(`Canvas - Updating node ${node.id} with pump details:`, pumpState);
-          
           return {
             ...node,
             data: {
               ...node.data,
-              // Pass the complete pump state as pumpDetails
-              pumpDetails: pumpState,
-              // Keep the status as string "ON"/"OFF" for backward compatibility
-              pumpStatus: pumpState.status, // Keep as "ON"/"OFF"
-              isPending: pumpState.pending || false,
-            },
+              pumpStatus: pumpState.status,
+              isPending: pumpState.pending,
+              socketConnected,
+              onPumpToggle: handlePumpToggle
+            }
           };
         })
       );
     }
-  }, [pumpStates, nodes.length, setNodes]);
-
+  }, [pumpStates, socketConnected]);
 
   // Drag and connect handlers
   const onDragStart = () => setIsDragging(true);
@@ -187,27 +184,35 @@ useEffect(() => {
     },
     [isEditMode, setEdges]
   );
-
   const onDragOver = (event) => {
     event.preventDefault();
   };
 
- const onDrop = useCallback((event) => {
+  // still in Canvas.jsx, inside your Canvas component
+
+  const onDrop = useCallback((event) => {
     if (!isEditMode) return;
     event.preventDefault();
 
+    // 1) measure the full React-Flow area
     const bounds = reactFlowWrapper.current.getBoundingClientRect();
+
+    // 2) grab the drag data
     const shapeData = event.dataTransfer.getData('application/reactflow');
     if (!shapeData) return;
     const parsed = JSON.parse(shapeData);
 
+    // 3) compute the drop position within the canvas
     const position = {
       x: event.clientX - bounds.left,
       y: event.clientY - bounds.top,
     };
 
+    // 4) decide if this is your PDF node
     const isPDF = parsed.isPDF || parsed.type === 'pdfNode';
 
+    // 5) build the node, sizing PDFs to fill the entire bounds
+    // In your Canvas component where you create nodes:
     const newNode = {
       id: `${parsed.id}_${nodes.length}`,
       type: parsed.type,
@@ -219,17 +224,16 @@ useEffect(() => {
         isAirblower: parsed.label.toLowerCase().includes('blower'),
         socket,
         socketConnected,
-        pumpStatus: "OFF", // Initialize as string "OFF"
+        pumpStatus: false,
         isPending: false,
-        pumpDetails: pumpStates[`${parsed.id}_${nodes.length}`] || null,
-        onPumpToggle: onPumpToggle,
+        onPumpToggle: handlePumpToggle,
         onLabelChange: (id, newLabel) => {
-          setNodes(nds => nds.map(n => 
+          setNodes(nds => nds.map(n =>
             n.id === id ? { ...n, data: { ...n.data, label: newLabel } } : n
           ));
         },
         onRotate: (id, newRotation) => {
-          setNodes(nds => nds.map(n => 
+          setNodes(nds => nds.map(n =>
             n.id === id ? { ...n, data: { ...n.data, rotation: newRotation } } : n
           ));
         }
@@ -242,10 +246,9 @@ useEffect(() => {
     nodes.length,
     socket,
     socketConnected,
-    onPumpToggle,
-    pumpStates,
-    setNodes,
+    handlePumpToggle,
   ]);
+
 
   // Save/Delete handlers
   const handleSave = async () => {
@@ -282,9 +285,10 @@ useEffect(() => {
             width: n.width,
             height: n.height,
           },
+
         })),
         edges,
-        viewport: savedViewport,
+        viewport: savedViewport,   // ← add this line
       };
 
       await axios({ method, url: apiUrl, data: payload });
@@ -313,15 +317,14 @@ useEffect(() => {
       alert("Failed to delete");
     }
   };
-
-  // Fetch initial pump states (this might not be needed if LiveLayout handles it)
+  // Fetch initial pump states
   const fetchInitialPumpStates = async (pumpNodes) => {
     const states = {};
     await Promise.all(
       pumpNodes.map(async (node) => {
         try {
           const { data } = await axios.get(
-            `${API_URL}/api/pump-states/${product_id}/${node.id}`
+            `${API_URL}/api/pump-states/27/${node.id}`
           );
           states[node.id] = {
             status: data.status,
@@ -339,28 +342,23 @@ useEffect(() => {
     );
     return states;
   };
-
   // Load station data
   const fetchLiveStation = async (user, station) => {
-    console.log('Canvas - Fetching live station:', user, station);
     setNodes([]);
     setEdges([]);
-    
+/*     setSavedViewport(data.data.viewport || { x: 0, y: 0, zoom: 1 });
+ */    setPumpStates({});
     try {
       const { data } = await axios.get(
         `${API_URL}/api/find-live-station/${user}/${station}`
       );
       if (!data.data) throw new Error();
-      
       const { nodes: savedNodes, edges: savedEdges } = data.data;
-      
-      console.log('Canvas - Loaded nodes:', savedNodes);
-      
-      // Set viewport if available
-      if (data.data.viewport) {
-        setSavedViewport(data.data.viewport);
-      }
-      
+      const pumpNodes = savedNodes.filter(
+        (n) => n.data.label?.toLowerCase().includes("pump") || n.data.isPump
+      );
+      const initialPumpStates = await fetchInitialPumpStates(pumpNodes);
+      setPumpStates(initialPumpStates);
       setNodes(
         savedNodes.map((node) => ({
           ...node,
@@ -369,10 +367,9 @@ useEffect(() => {
             isEditing: false,
             socket,
             socketConnected,
-            pumpStatus: pumpStates[node.id]?.status || false,
-            isPending: pumpStates[node.id]?.pending || false,
-            pumpDetails: pumpStates[node.id] || null, // Add pump details from LiveLayout
-            onPumpToggle: onPumpToggle, // Use prop from LiveLayout
+            pumpStatus: initialPumpStates[node.id]?.status || false,
+            isPending: initialPumpStates[node.id]?.pending || false,
+            onPumpToggle: handlePumpToggle,
             width: node.data.width,
             height: node.data.height,
           },
@@ -383,19 +380,14 @@ useEffect(() => {
       setIsEditing(true);
       setNoLiveStation(false);
       setStationName(station);
-      
-      console.log('Canvas - Station loaded successfully');
-    } catch (error) {
-      console.error('Canvas - Failed to load station:', error);
+    } catch {
       setIsEditing(false);
       setNoLiveStation(true);
     }
   };
-
   // Load station when selected
   useEffect(() => {
     if (selectedStation?.stationName) {
-      console.log('Canvas - Selected station changed:', selectedStation);
       fetchLiveStation(selectedStation.userName, selectedStation.stationName);
     } else {
       setNodes([]);
@@ -404,54 +396,54 @@ useEffect(() => {
       setIsEditing(false);
     }
   }, [selectedStation, socketConnected]);
+  // 👇 Connect socket.io for real-time tank data
+  // useEffect(() => {
+  //   const socket = io("https://api.ocems.ebhoom.com"); // or your hosted URL
 
-  // Node types with live data
-  const nodeTypes = useMemo(() => {
-    const getNodeTypes = (liveTankData) => ({
-      svgNode: (props) => <SVGNode {...props} liveTankData={liveTankData} />,
-      textNode: ({ data }) => (
-        <div
-          style={{
-            padding: "10px",
-            backgroundColor: "#fff",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-            cursor: "move",
-            textAlign: "center",
-          }}
-        >
-          {data.label}
-        </div>
-      ),
-      pdfNode: PDFNode,
-      pumpNode: props => <SVGNode {...props} liveTankData={liveTankData} />,
-      blowerNode: props => <SVGNode {...props} liveTankData={liveTankData} />,
-      flowMeterNode: props => (
-        <FlowMeterNode
-          {...props}
-          flowValues={flowValues}
-        />
-      ),
-      tankNode: (p) => <TankNode {...p} liveTankData={liveTankData} />,
-    });
-    return getNodeTypes(liveTankData);
-  }, [liveTankData, flowValues]);
+  //   socket.on("connect", () => {
+  //     console.log("✅ Socket connected:", socket.id);
 
+  //     // Make sure this matches the `userName` used in backend `.emit()`
+  //     socket.emit("joinRoom", "CROWN_PLAZA");
+  //   });
+
+  //   socket.on("data", (tankPayload) => {
+  //     console.log("📦 Received tank payload:", tankPayload);
+  //     if (tankPayload?.tankData) {
+  //       setLiveTankData(tankPayload.tankData);
+  //     }
+  //   });
+
+  //   return () => {
+  //     socket.disconnect();
+  //   };
+  // }, []);
+
+  const nodeTypes = useMemo(() => ({
+    svgNode: SVGNode,
+    textNode: TextNode,
+    pdfNode: PDFNode,
+    pumpNode: SVGNode,
+    blowerNode: SVGNode,
+    flowMeterNode: FlowMeterNode,
+    tankNode: TankNode
+  }), []);
+
+  //new
   const edgeTypes = {
     piping: PipingEdge,
   };
-
   return (
-    <div className="react-flow-container" style={{ 
+    <div className="react-flow-container" style={{
       width: '100%',
       height: '100%',
       position: 'relative'
     }}>
       <div className="react-flow-scrollable" style={{
         width: '100%',
-        height: 'calc(100vh - 200px)',
+        height: 'calc(100vh - 200px)', // Adjust based on your header height
         overflow: 'auto',
-        '-webkit-overflow-scrolling': 'touch'
+        '-webkit-overflow-scrolling': 'touch' // For smooth scrolling on iOS
       }}>
         {noLiveStation && (
           <div className="text-danger text-center mb-3">
@@ -462,18 +454,19 @@ useEffect(() => {
             </h5>
           </div>
         )}
-
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-2">
+          {/* 1) Station name stretches on desktop, full‐width on mobile */}
           <div className="flex-fill mb-2 mb-md-0 me-md-3">
+
             <input
               className="form-control w-100"
               value={stationName}
               onChange={(e) => setStationName(e.target.value)}
               disabled={isEditing && userType !== "admin"}
-              placeholder="Enter station name"
             />
           </div>
 
+          {/* 2) Button group wraps on mobile, sits inline & centered on desktop */}
           <div className="d-flex flex-wrap gap-2">
             <button
               className="btn btn-warning"
@@ -509,18 +502,15 @@ useEffect(() => {
         <div
           ref={reactFlowWrapper}
           className="reactflow-wrapper"
-          style={{ 
-            width: "100%", 
-            height: "600px",
-            minWidth: '1000px',
+          style={{
+            width: "100%", height: "600px", minWidth: '1000px', // Minimum width to ensure content doesn't get too squeezed
             minHeight: '600px'
-          }}
-        >
+          }}>
           <ReactFlow
             style={{
               width: '100%',
               height: '100%',
-              touchAction: 'manipulation'
+              touchAction: 'manipulation' // Helps with touch events
             }}
             nodes={nodes}
             edges={edges}
@@ -548,16 +538,16 @@ useEffect(() => {
 
             connectable={isEditMode}
             snapToGrid
-            snapGrid={[15,15]}
+            snapGrid={[15, 15]}
           >
-            {/* only show the "+ – ⟳" controls when editing */}
-            {isEditMode && <Controls />}  
+            {/* only show the “+ – ⟳” controls when editing */}
+            {isEditMode && <Controls />}
             <Background />
           </ReactFlow>
+
         </div>
       </div>
     </div>
   );
 }
-
 export default Canvas;
