@@ -30,6 +30,25 @@ export default function ElectricalReport() {
   const [userName, setUserName] = useState(null);
   const [companyName, setCompanyName] = useState(null);
 
+
+  useEffect(() => {
+    const handlePopState = (event) => {
+      navigate("/services?tab=equipmentList", { replace: true });
+    };
+    window.history.pushState(
+      { mechanicalReport: true },
+      "",
+      window.location.href
+    );
+
+    window.addEventListener("popstate", handlePopState);
+
+    // Cleanup: Remove the event listener when the component unmounts
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [navigate]);
+
   // phases & checklist definitions
   const phases = ['RY', 'YB', 'BR'];
   const checklist = [

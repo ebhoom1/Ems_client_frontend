@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
 import { useSelector } from "react-redux";
-import { useLocation } from "react-router-dom"; // <-- Import useLocation
+import { useLocation,useNavigate } from "react-router-dom"; // <-- Import useLocation
 
 export default function ElectricalChecklist({
   equipment = {}, // This `equipment` prop might be partially filled or empty.
@@ -20,6 +20,7 @@ export default function ElectricalChecklist({
   // ----------------------------------------------------------------------------
   // 2) Get equipmentId and equipmentUserName from navigation state
   // ----------------------------------------------------------------------------
+  const navigate = useNavigate();
   const location = useLocation();
   // Destructure equipmentId, equipmentName, and equipmentUserName from location.state
   const { equipmentId, equipmentName, equipmentUserName } = location.state || {}; 
@@ -321,6 +322,7 @@ export default function ElectricalChecklist({
         payload
       );
       alert("Electrical report saved successfully!");
+      navigate("/services?tab=equipmentList");
     } catch (err) {
       console.error("Save failed:", err);
       alert("Failed to save report. Please try again.");

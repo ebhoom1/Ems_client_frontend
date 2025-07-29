@@ -8,11 +8,11 @@
   } */
 
   .table-striped > tbody > tr.row-completed > td {
-    background-color: #a4c2ab !important; /* Green for completed */
+    background-color: #fdfdfd !important; /* Green for completed */
   }
   
   .table-striped > tbody > tr.row-assigned > td {
-    background-color: #fff3cd !important; /* Yellow for assigned */
+    background-color: #e6e5e3 !important; /* Yellow for assigned */
   }
   
   

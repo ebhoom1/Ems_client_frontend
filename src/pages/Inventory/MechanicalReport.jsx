@@ -19,6 +19,25 @@ export default function MechanicalReport() {
   const [companyName, setCompanyName] = useState(null);
   const [equipmentInfo, setEquipmentInfo] = useState({});
 
+  useEffect(() => {
+    const handlePopState = (event) => {
+      navigate("/services?tab=equipmentList", { replace: true });
+    };
+    window.history.pushState(
+      { mechanicalReport: true },
+      "",
+      window.location.href
+    );
+
+    window.addEventListener("popstate", handlePopState);
+
+    // Cleanup: Remove the event listener when the component unmounts
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [navigate]);
+
+
   // 1) fetch equipment metadata
   useEffect(() => {
     const equipmentApiUrl = `${API_URL}/api/equiment/${equipmentId}`;
