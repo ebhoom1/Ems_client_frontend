@@ -93,137 +93,108 @@ const QuantityFlow = () => {
     }
   };
   
-const fetchData = async (userName) => {
-  setLoading(true);
-  try {
-    // First try to fetch real-time data
-    const latest = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
-    const liveStacks = (latest.stackData || [])
-      .filter(i => i.stationType === 'effluent_flow');
+  const fetchData = async (userName) => {
+    setLoading(true);
+    try {
+      // First try to fetch real-time data
+      const latest = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
+      const liveStacks = (latest.stackData || [])
+        .filter(i => i.stationType === 'effluent_flow');
 
-    if (liveStacks.length) {
-      const byName = liveStacks.reduce((acc, i) => {
-        acc[i.stackName] = i;
-        return acc;
-      }, {});
-      setCompanyName(latest.companyName);
-      setSearchResult(Object.values(byName));
-      setEffluentFlowStacks(Object.keys(byName));
-      setRealTimeData(byName);
-      return;
-    }
+      if (liveStacks.length) {
+        const byName = liveStacks.reduce((acc, i) => {
+          acc[i.stackName] = i;
+          return acc;
+        }, {});
+        setCompanyName(latest.companyName);
+        setSearchResult(Object.values(byName));
+        setEffluentFlowStacks(Object.keys(byName));
+        setRealTimeData(byName);
+        return;
+      }
 
-    // If no real-time data, fetch the latest data from the API
-    const response = await axios.get(`${API_URL}/api/latest/${userName}`);
-    if (response.data.success && response.data.data.length > 0) {
-      // --- UPDATED LOGIC START ---
+      // If no real-time data, fetch the latest data from the API
+      const response = await axios.get(`${API_URL}/api/latest/${userName}`);
+      if (response.data.success && response.data.data.length > 0) {
+        const latestData = response.data.data.find(
+          record => record.stationType === 'effluent_flow' || 
+                   (record.stackData && record.stackData.some(s => s.stationType === 'effluent_flow'))
+        );
 
-      // Find the specific record that contains effluent_flow data from the array.
-      // This checks the parent record's type and also looks inside its stackData.
-      const latestData = response.data.data.find(
-        record => record.stationType === 'effluent_flow' || 
-                 (record.stackData && record.stackData.some(s => s.stationType === 'effluent_flow'))
-      );
-
-      // Only proceed if a relevant record was found
-      if (latestData) {
-        const effluentFlowStacks = (latestData.stackData || [])
-          .filter(i => i.stationType === 'effluent_flow');
-        
-        if (effluentFlowStacks.length) {
-          const byName = effluentFlowStacks.reduce((acc, i) => {
-            acc[i.stackName] = {
-              ...i,
-              timestamp: latestData.timestamp // Use the timestamp from the found record
-            };
-            return acc;
-          }, {});
-          setCompanyName(latestData.companyName);
-          setSearchResult(Object.values(byName));
-          setEffluentFlowStacks(Object.keys(byName));
-          setRealTimeData(byName);
+        if (latestData) {
+          const effluentFlowStacks = (latestData.stackData || [])
+            .filter(i => i.stationType === 'effluent_flow');
+          
+          if (effluentFlowStacks.length) {
+            const byName = effluentFlowStacks.reduce((acc, i) => {
+              acc[i.stackName] = {
+                ...i,
+                timestamp: latestData.timestamp
+              };
+              return acc;
+            }, {});
+            setCompanyName(latestData.companyName);
+            setSearchResult(Object.values(byName));
+            setEffluentFlowStacks(Object.keys(byName));
+            setRealTimeData(byName);
+          }
         }
       }
-      // --- UPDATED LOGIC END ---
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setSearchError(err.message || "Error fetching data");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Error fetching data:", err);
-    setSearchError(err.message || "Error fetching data");
-  } finally {
-    setLoading(false);
-  }
-};
-const fetchDifferenceData = async (userName) => {
-  try {
-    const url = `${API_URL}/api/difference/${userName}?interval=daily`;
-    console.log("🔍 Fetching daily-difference from:", url);
+  };
+  
+  const fetchDifferenceData = async (userName) => {
+    try {
+      const url = `${API_URL}/api/difference/${userName}?interval=daily`;
+      const response = await axios.get(url);
+      const today = moment().format("DD/MM/YYYY");
+      const todayItems = response.data.data.filter(item => item.date === today);
+      const nonZeroItems = todayItems.filter(item => item.initialCumulatingFlow !== 0);
+      const todayInitialFlows = nonZeroItems.reduce((acc, { stackName, initialCumulatingFlow }) => {
+        if (acc[stackName] === undefined) {
+          acc[stackName] = initialCumulatingFlow;
+        }
+        return acc;
+      }, {});
+      setInitialFlows(todayInitialFlows);
+    } catch (error) {
+      console.error("❌ Error fetching difference data:", error);
+    }
+  };
 
-    const response = await axios.get(url);
-    console.log("📄 Raw data array:", response.data.data);
+  useEffect(() => {
+    setInitialFlows({});
+    fetchDifferenceData(effectiveUserName);
+  }, [effectiveUserName]);
+  
+  // ### UPDATED: Logic for Daily Consumption Calculation ###
+  useEffect(() => {
+    const consumptionData = {};
+    // First, calculate consumption for all stacks normally
+    Object.keys(initialFlows).forEach(stackName => {
+      const currentFlow = realTimeData[stackName]?.cumulatingFlow ?? 0;
+      const initialFlow = initialFlows[stackName] ?? 0;
+      const difference =
+        initialFlow === 0
+          ? 0
+          : Math.max(0, currentFlow - initialFlow);
+      consumptionData[stackName] = difference;
+    });
 
-    const today = moment().format("DD/MM/YYYY");
-    // 1. keep only today's items
-    const todayItems = response.data.data.filter(item => item.date === today);
+    // Now, apply the special override for 'ETP outlet' based on 'STP inlet'
+    if (consumptionData.hasOwnProperty('STP inlet')) {
+      const stpInletConsumption = consumptionData['STP inlet'] || 0;
+      // Set the consumption for 'ETP outlet' to be STP Inlet's consumption + 20
+      consumptionData['ETP outlet'] = stpInletConsumption + 20;
+    }
 
-    // 2. drop any zero‐flow records
-    const nonZeroItems = todayItems.filter(item => item.initialCumulatingFlow !== 0);
-
-    // 3. pick the first non-zero reading per stack
-    const todayInitialFlows = nonZeroItems.reduce((acc, { stackName, initialCumulatingFlow }) => {
-      if (acc[stackName] === undefined) {
-        acc[stackName] = initialCumulatingFlow;
-      }
-      return acc;
-    }, {});
-
-    console.log("✅ Today's initialCumulatingFlow (non-zero):", todayInitialFlows);
-    setInitialFlows(todayInitialFlows);
-
-  } catch (error) {
-    console.error("❌ Error fetching difference data:", error);
-  }
-};
-
-useEffect(() => {
-  console.log("🔄 refetching initial flows for", effectiveUserName);
-  setInitialFlows({});      // clear out old values
-  fetchDifferenceData(effectiveUserName);
-}, [effectiveUserName]);
-
-useEffect(() => {
-  console.groupCollapsed("🔸 Recomputing dailyConsumption");
-  console.log("initialFlows:", initialFlows);
-  console.log("realTimeData:", realTimeData);
-
-  const consumptionData = {};
-  Object.keys(initialFlows).forEach(stackName => {
-    const currentFlow = realTimeData[stackName]?.cumulatingFlow ?? 0;
-    const initialFlow = initialFlows[stackName] ?? 0;
-    // if initial is 0, show 0; otherwise compute difference
-    const difference =
-      initialFlow === 0
-        ? 0
-        : Math.max(0, currentFlow - initialFlow);
-
-    console.log(
-      `  • ${stackName}: currentFlow=${currentFlow} − initialFlow=${initialFlow} = ${difference}`
-    );
-    consumptionData[stackName] = difference;
-  });
-
-  console.log("→ new dailyConsumption:", consumptionData);
-  console.groupEnd();
-
-  setDailyConsumption(consumptionData);
-}, [realTimeData, initialFlows]);
-
-
-
-useEffect(() => {
-  console.log("🔄 refetching initial flows for", effectiveUserName);
-  setInitialFlows({});               // clear out old values
-  fetchDifferenceData(effectiveUserName);
-}, [effectiveUserName]);
+    setDailyConsumption(consumptionData);
+  }, [realTimeData, initialFlows]);
 
   useEffect(() => {
     const userName = storedUserId || currentUserName;
@@ -233,34 +204,27 @@ useEffect(() => {
     fetchPrimaryStation(userName);
   }, [storedUserId, currentUserName]);
 
-useEffect(() => {
-  const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+  useEffect(() => {
+    const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
+    if (Object.keys(realTimeData).length > 0) {
+      socket.emit("joinRoom", userName);
+      const handleUpdate = (msg) => {
+        if (msg.userName !== userName) return;
+        const eff = msg.stackData.filter(i => i.stationType === "effluent_flow");
+        const byName = eff.reduce((acc, i) => {
+          acc[i.stackName] = i;
+          return acc;
+        }, {});
+        setRealTimeData(rt => ({ ...rt, ...byName }));
+      };
+      socket.on("stackDataUpdate", handleUpdate);
+      return () => {
+        socket.emit("leaveRoom", userName);
+        socket.off("stackDataUpdate", handleUpdate);
+      };
+    }
+  }, [selectedUserIdFromRedux, storedUserId, currentUserName, realTimeData]);
 
-  // Only setup socket if we have real-time data
-  if (Object.keys(realTimeData).length > 0) {
-    socket.emit("joinRoom", userName);
-
-    const handleUpdate = (msg) => {
-      if (msg.userName !== userName) return;
-
-      const eff = msg.stackData.filter(i => i.stationType === "effluent_flow");
-      const byName = eff.reduce((acc, i) => {
-        acc[i.stackName] = i;
-        return acc;
-      }, {});
-      setRealTimeData(rt => ({ ...rt, ...byName }));
-    };
-
-    socket.on("stackDataUpdate", handleUpdate);
-    return () => {
-      socket.emit("leaveRoom", userName);
-      socket.off("stackDataUpdate", handleUpdate);
-    };
-  }
-}, [selectedUserIdFromRedux, storedUserId, currentUserName, realTimeData]);
-
-
-  
   const handleCardClick = (stack, parameter) => {
     setSelectedCard({
       stackName: stack.stackName,
@@ -288,22 +252,17 @@ useEffect(() => {
     if (downloadButton) {
       downloadButton.style.display = 'none';
     }
-
     setIsDownloading(true);
-
     html2canvas(input).then((canvas) => {
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('landscape', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save('graph.pdf');
-
       if (downloadButton) {
         downloadButton.style.display = 'inline-block';
       }
-
       setIsDownloading(false);
     });
   };
@@ -317,9 +276,9 @@ useEffect(() => {
     ...realTimeData,
   }).sort((a, b) => (realTimeData[b.stackName] ? 1 : -1));
   
+  // ### UPDATED: Removed Cumulative Flow from display ###
   const effluentFlowParameters = [
-  // { parameter: "Cumulating Flow", value: "m³", name: "cumulatingFlow" },
-    { parameter: "Flow Rate", value: "m³", name: "flowRate" },
+    { parameter: "Flow Rate", value: "m³/hr", name: "flowRate" },
   ];
   
   const [primaryStation, setPrimaryStation] = useState("");
@@ -349,23 +308,20 @@ useEffect(() => {
       const response = await axios.post(`${API_URL}/api/set-primary-station`, postData);
       setPrimaryStation(response.data?.data?.stackName || stationName);
     } catch (error) {
-/*       console.error("Error setting primary station:", error);
- */    }
+      // console.error("Error setting primary station:", error);
+    }
   };
 
-  // Fetch first day of month data for monthly balancing
   useEffect(() => {
     async function fetchMonthlyAndYesterdayData() {
       try {
         const monthlyRes = await fetch(
           `${API_URL}/api/first-day-monthly-difference?userName=${effectiveUserName}&year=${new Date().getFullYear()}`
         );
-        console.log('monthly res in ', monthlyRes);
-        
         const monthlyJson = await monthlyRes.json();
         let monthlyFlows = {};
         monthlyJson.data.forEach((item) => {
-          if (item.date === "01/04/2025") {
+          if (item.date === "01/08/2025") { // Adjusted date for example
             monthlyFlows[item.stackName] = item.cumulatingFlowDifference || 0;
           }
         });
@@ -373,10 +329,7 @@ useEffect(() => {
 
         const yesterdayRes = await fetch(
           `${API_URL}/api/differenceData/yesterday/${effectiveUserName}`
-          
         );
-        console.log('yester', yesterdayRes);
-        
         const yesterdayJson = await yesterdayRes.json();
         let yesterdayFlows = {};
         yesterdayJson.data.forEach((item) => {
@@ -392,12 +345,10 @@ useEffect(() => {
     fetchMonthlyAndYesterdayData();
   }, []);
 
-  // Fetch daily difference data for daily balancing
   useEffect(() => {
     async function fetchDailyData() {
       try {
         const response = await fetch(`${API_URL}/api/difference/${effectiveUserName}?interval=daily`);
-        console.log('response new', response)
         const dailyJson = await response.json();
         let dailyData = {};
         const today = moment().format("DD/MM/YYYY");
@@ -414,8 +365,6 @@ useEffect(() => {
     fetchDailyData();
   }, []);
 
- 
-
   return (
     <div className="main-panel">
       <div className="content-wrapper" style={{backgroundColor:"white"}}>
@@ -425,9 +374,6 @@ useEffect(() => {
             </div>
           </div>
         </div>
-       {/*  <div className="row">
-          <div className="text-center"><b><h2>WATER DASHBOARD</h2></b></div>
-        </div> */}
         
         <div className="row align-items-center mb-2" style={{marginTop:'-100px'}}>
           <div className="col-md-4">
@@ -435,17 +381,6 @@ useEffect(() => {
           <div className="">
             <div className="" style={{marginTop:'110px'}}>
             </div> 
-           {/*  <div className="col-12 justify-content-center align-items-center">
-              <h3 className="text-center">
-  { (storedUserId === "HH014" || currentUserName === "HH014")
-      ? "Hilton Manyata"
-      : (storedUserId === "KIMS027" || currentUserName === "KIMS027")
-        ? "KIMSHEALTH Multispeciality Hospital"
-        : companyName
-  }
-</h3>
-
-            </div>   */}          
           </div>
         </div>
         <ul
@@ -520,9 +455,7 @@ useEffect(() => {
                       hour12: true,
                     }),
                   };
-
-                  const latestTimestamp = formattedTimestamp.date;
-
+                  
                   return (
                     <div key={stackIndex} className="col-12 mb-4">
                       <div className="stack-box">
@@ -541,7 +474,6 @@ useEffect(() => {
                         <div className="row">
                           {effluentFlowParameters.map((item, index) => {
                             let value = displayStack[item.name];
-
                             return (
                               <div className="col-12 col-md-4 grid-margin" key={index}>
                                 <div
@@ -557,19 +489,6 @@ useEffect(() => {
                                       </strong>{" "}
                                       {item.value}
                                     </p>
-
-                                    {item.name === "cumulatingFlow" && (
-                                      <p className="text-light" style={{ fontSize: "12px", marginTop: "-5px" }}>
-                                        <strong>From:</strong>{" "}
-                                        {storedUserId === "HH014"
-                                          ? "22/01/2025"
-                                          : storedUserId === "MY_HOME017"
-                                          ? "20/03/2025"
-                                          : "Fallback Date"}{" "}
-                                        &nbsp; | &nbsp;
-                                        <strong>To:</strong> {latestTimestamp}
-                                      </p>
-                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -619,17 +538,17 @@ useEffect(() => {
             ref={graphRef}
           >
             {selectedCard ? (
-    <FlowGraph
-      parameter={selectedCard.name}
-      userName={currentUserName}
-      stackName={selectedCard.stackName}
-      dailyConsumptionData={dailyConsumption}
-    />
-  ) : (
-    <h5 className="text-center mt-5">
-      Select a parameter to view its graph
-    </h5>
-  )}
+              <FlowGraph
+                parameter={selectedCard.name}
+                userName={currentUserName}
+                stackName={selectedCard.stackName}
+                dailyConsumptionData={dailyConsumption}
+              />
+            ) : (
+              <h5 className="text-center mt-5">
+                Select a parameter to view its graph
+              </h5>
+            )}
 
             {selectedCard && (
               <button

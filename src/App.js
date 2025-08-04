@@ -101,6 +101,7 @@ import DayReport from "./pages/Report/DayReport";
 import PreviousQuantity from "./pages/QuantityNew/PreviousQuantity";
 import PreviousQuality from "./pages/QuantityNew/PreviousQuality";
 import AssignTechnician from "./pages/AssignReports/AssignTechnician";
+import AutonerveLayout from "./Autonerve/AutonerveLayout";
 
 function App() {
   const dispatch = useDispatch();
@@ -263,6 +264,9 @@ function App() {
           path="/assign-technician"
           element={<AssignTechnician />}
         />
+
+            <Route path="/autonerve" element={<AutonerveLayout />} />
+
 
   </Route>
 

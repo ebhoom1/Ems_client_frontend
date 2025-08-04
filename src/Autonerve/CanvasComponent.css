@@ -1,0 +1,35 @@
+.canvas-wrapper {
+  flex-grow: 1;
+  height: 100%;
+  position: relative; 
+}
+
+.save-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  padding: 8px 12px;
+  cursor: pointer;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.save-button:hover {
+    background-color: #218838;
+}
+
+.react-flow__node-default img {
+    width: 50px;
+    height: 50px;
+}
+
+@media (max-width: 768px) {
+  .save-button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+  }
+}

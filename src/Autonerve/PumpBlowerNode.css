@@ -1,0 +1,103 @@
+.pump-blower-node {
+  /* Set a smaller fixed size for the node */
+  width: 70px;
+  border-radius: 6px;
+  text-align: center;
+  box-sizing: border-box;
+  font-family: sans-serif;
+  border: 1px solid #ddd;
+  padding: auto;
+}
+
+.node-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50%;
+}
+
+.node-name {
+  font-size: 6px;
+  font-weight: 900;
+  margin: 0;
+  cursor: text;
+}
+
+.node-name-input {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px;
+  width: 90%;
+  text-align: center;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+}
+
+.node-id {
+  font-size: 5px;
+  color: #555;
+  font-family:'Courier New', Courier, monospace;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;    /* Smaller width */
+  height: 12px;   /* Smaller height */
+  margin-top: 4px;
+}
+
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #d41e1e; /* Red */
+  transition: 0.4s;
+  border-radius: 16px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 10px;
+  width: 10px;
+  left: 6px;
+  top: 1px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+
+input:checked + .slider {
+  background-color: #28a745; /* Green */
+}
+
+input:checked + .slider:before {
+  transform: translateX(16px);
+}
+
+.switch-label {
+  font-size: 8px;
+  font-weight: bold;
+}
+
+/* New rules for the conditional label color */
+.switch-label.running {
+  color: #28a745; /* Green */
+}
+
+.switch-label.off {
+  color: #d41e1e; /* Red */
+}

@@ -1,0 +1,8 @@
+/* src/Autonerve/AutonerveLayout.css */
+.layout-container {
+  display: flex;
+  /* Change flex-direction to stack them top-to-bottom */
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}

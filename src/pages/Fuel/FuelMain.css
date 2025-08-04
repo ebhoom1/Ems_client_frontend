@@ -10,9 +10,9 @@
   .switch {
     position: relative;
     display: inline-block;
-    width: 220px; /* Increase if you need even more space */
+    width: 250px; /* Increase if you need even more space */
     height: 50px; /* Increase for a taller switch */
-    margin-bottom: 20px;
+   /*  margin-bottom: 20px; */
   }
   
   /* Hide the default checkbox */
@@ -33,7 +33,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #3698ac;
+    background-color: #ec3737;
     transition: 0.4s;
     border-radius: 50px; /* Fully rounded */
     padding: 0 20px;     /* Spacing for text */
@@ -76,7 +76,7 @@
   
   /* When checkbox is checked */
   input:checked + .slider {
-    background-color: #2e667a;
+    background-color: #43d014;
   }
   
   /* Fade out the left text, fade in the right text */

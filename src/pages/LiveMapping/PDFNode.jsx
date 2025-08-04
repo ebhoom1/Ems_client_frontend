@@ -75,8 +75,8 @@ export default function PDFNode({ id, data, selected }) {
         >
           <iframe
             src={pdfUrl}
-            width="80%"
-            height="100%"
+            width="70%"
+            height="70%"
             style={{
               border: 'none',
               backgroundColor: '#fff',
