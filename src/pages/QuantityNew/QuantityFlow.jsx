@@ -64,8 +64,7 @@ const QuantityFlow = () => {
   const [dailyConsumptionData, setDailyConsumptionData] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const effectiveUserName = selectedUserIdFromRedux || storedUserId || userData?.validUserOne?.userName;
- const [isRealTimeData, setIsRealTimeData] = useState(false);
-const [previousDayConsumption, setPreviousDayConsumption] = useState({});
+ 
   const graphRef = useRef();
 
   const openModal = () => {
@@ -94,117 +93,61 @@ const [previousDayConsumption, setPreviousDayConsumption] = useState({});
     }
   };
   
-const fetchData = async (userName) => {
-  setLoading(true);
-  try {
-    // First try to fetch real-time data
-    const latest = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
-    const liveStacks = (latest.stackData || [])
-      .filter(i => i.stationType === 'effluent_flow');
+  const fetchData = async (userName) => {
+    setLoading(true);
+    try {
+      // First try to fetch real-time data
+      const latest = await dispatch(fetchUserLatestByUserName(userName)).unwrap();
+      const liveStacks = (latest.stackData || [])
+        .filter(i => i.stationType === 'effluent_flow');
 
-    if (liveStacks.length) {
-      const byName = liveStacks.reduce((acc, i) => {
-        acc[i.stackName] = i;
-        return acc;
-      }, {});
-      setCompanyName(latest.companyName);
-      setSearchResult(Object.values(byName));
-      setEffluentFlowStacks(Object.keys(byName));
-      setRealTimeData(byName);
-      setIsRealTimeData(true); // Mark as real-time data
-      return;
-    }
-
-    // If no real-time data, fetch the latest data from the API
-    const response = await axios.get(`${API_URL}/api/latest/${userName}`);
-    if (response.data.success && response.data.data.length > 0) {
-      // Find the record with stationType 'effluent_flow'
-      const effluentFlowRecord = response.data.data.find(
-        record => record.stationType === 'effluent_flow'
-      );
-
-      if (effluentFlowRecord && effluentFlowRecord.stackData) {
-        // Filter stackData for effluent_flow stationType
-        const effluentFlowStacks = effluentFlowRecord.stackData.filter(
-          stack => stack.stationType === 'effluent_flow'
-        );
-        
-        if (effluentFlowStacks.length) {
-          const byName = effluentFlowStacks.reduce((acc, stack) => {
-            acc[stack.stackName] = {
-              ...stack,
-              timestamp: effluentFlowRecord.timestamp
-            };
-            return acc;
-          }, {});
-          
-          setCompanyName(effluentFlowRecord.companyName);
-          setSearchResult(Object.values(byName));
-          setEffluentFlowStacks(Object.keys(byName));
-          setRealTimeData(byName);
-          setIsRealTimeData(false); // Mark as fallback data
-          console.log("✅ Fallback data loaded:", byName);
-          return;
-        }
+      if (liveStacks.length) {
+        const byName = liveStacks.reduce((acc, i) => {
+          acc[i.stackName] = i;
+          return acc;
+        }, {});
+        setCompanyName(latest.companyName);
+        setSearchResult(Object.values(byName));
+        setEffluentFlowStacks(Object.keys(byName));
+        setRealTimeData(byName);
+        return;
       }
 
-      // Additional fallback: Look through all records for any effluent_flow stackData
-      for (const record of response.data.data) {
-        if (record.stackData) {
-          const effluentFlowStacks = record.stackData.filter(
-            stack => stack.stationType === 'effluent_flow'
-          );
+      // If no real-time data, fetch the latest data from the API
+      const response = await axios.get(`${API_URL}/api/latest/${userName}`);
+      if (response.data.success && response.data.data.length > 0) {
+        const latestData = response.data.data.find(
+          record => record.stationType === 'effluent_flow' || 
+                   (record.stackData && record.stackData.some(s => s.stationType === 'effluent_flow'))
+        );
+
+        if (latestData) {
+          const effluentFlowStacks = (latestData.stackData || [])
+            .filter(i => i.stationType === 'effluent_flow');
           
           if (effluentFlowStacks.length) {
-            const byName = effluentFlowStacks.reduce((acc, stack) => {
-              acc[stack.stackName] = {
-                ...stack,
-                timestamp: record.timestamp
+            const byName = effluentFlowStacks.reduce((acc, i) => {
+              acc[i.stackName] = {
+                ...i,
+                timestamp: latestData.timestamp
               };
               return acc;
             }, {});
-            
-            setCompanyName(record.companyName);
+            setCompanyName(latestData.companyName);
             setSearchResult(Object.values(byName));
             setEffluentFlowStacks(Object.keys(byName));
             setRealTimeData(byName);
-            setIsRealTimeData(false); // Mark as fallback data
-            console.log("✅ Additional fallback data loaded:", byName);
-            return;
           }
         }
       }
-      
-      console.log("❌ No effluent_flow data found in latest API response");
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setSearchError(err.message || "Error fetching data");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Error fetching data:", err);
-    setSearchError(err.message || "Error fetching data");
-  } finally {
-    setLoading(false);
-  }
-};
-  // Add a new function to fetch previous day's consumption
-const fetchPreviousDayConsumption = async (userName) => {
-  try {
-    const response = await fetch(`${API_URL}/api/differenceData/yesterday/${userName}`);
-    const yesterdayJson = await response.json();
-    let yesterdayConsumption = {};
-    
-    if (yesterdayJson.success && yesterdayJson.data) {
-      yesterdayJson.data.forEach((item) => {
-        if (item.stationType === "effluent_flow") {
-          yesterdayConsumption[item.stackName] = item.cumulatingFlowDifference || 0;
-        }
-      });
-    }
-    
-    setPreviousDayConsumption(yesterdayConsumption);
-    console.log("✅ Previous day consumption loaded:", yesterdayConsumption);
-  } catch (error) {
-    console.error("Error fetching previous day consumption:", error);
-  }
-};
+  };
+  
   const fetchDifferenceData = async (userName) => {
     try {
       const url = `${API_URL}/api/difference/${userName}?interval=daily`;
@@ -253,37 +196,14 @@ const fetchPreviousDayConsumption = async (userName) => {
     setDailyConsumption(consumptionData);
   }, [realTimeData, initialFlows]);
 
- useEffect(() => {
-  const userName = storedUserId || currentUserName;
-  fetchData(userName);
-  setCurrentUserName(userName); 
-  fetchEffluentFlowStacks(userName);
-  fetchPrimaryStation(userName);
-  fetchPreviousDayConsumption(userName); // Add this line
-}, [storedUserId, currentUserName]);
-useEffect(() => {
-  if (isRealTimeData) {
-    // Use real-time calculation when we have real-time data
-    const consumptionData = {};
-    Object.keys(initialFlows).forEach(stackName => {
-      const currentFlow = realTimeData[stackName]?.cumulatingFlow ?? 0;
-      const initialFlow = initialFlows[stackName] ?? 0;
-      const difference = initialFlow === 0 ? 0 : Math.max(0, currentFlow - initialFlow);
-      consumptionData[stackName] = difference;
-    });
+  useEffect(() => {
+    const userName = storedUserId || currentUserName;
+    fetchData(userName);
+    setCurrentUserName(userName); 
+    fetchEffluentFlowStacks(userName);
+    fetchPrimaryStation(userName);
+  }, [storedUserId, currentUserName]);
 
-    // Apply the special override for 'ETP outlet' based on 'STP inlet'
-    if (consumptionData.hasOwnProperty('STP inlet')) {
-      const stpInletConsumption = consumptionData['STP inlet'] || 0;
-      consumptionData['ETP outlet'] = stpInletConsumption + 20;
-    }
-
-    setDailyConsumption(consumptionData);
-  } else {
-    // Use previous day's consumption when using fallback data
-    setDailyConsumption(previousDayConsumption);
-  }
-}, [realTimeData, initialFlows, isRealTimeData, previousDayConsumption]);
   useEffect(() => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
     if (Object.keys(realTimeData).length > 0) {
@@ -518,16 +438,24 @@ useEffect(() => {
             ).length > 0 ? (
               Object.values(realTimeData)
                 .filter(stack => selectedStack === "all" || stack.stackName === selectedStack)
-              .map((stack, stackIndex) => {
-  const displayStack = { ...stack };
+                .map((stack, stackIndex) => {
+                  const displayStack = { ...stack };
 
- const now = new Date();
-  const currentTime = now.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  });
-  const currentDate = now.toLocaleDateString("en-GB");
+                  let timestamp = displayStack?.timestamp || lastValidTimestamp || null;
+                  if (!timestamp) {
+                    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+                    timestamp = twoMinutesAgo.toISOString();
+                  }
+
+                  const formattedTimestamp = {
+                    date: new Date(timestamp).toLocaleDateString("en-GB"),
+                    time: new Date(timestamp).toLocaleTimeString("en-US", {
+                      hour: "numeric",
+                      minute: "numeric",
+                      hour12: true,
+                    }),
+                  };
+                  
                   return (
                     <div key={stackIndex} className="col-12 mb-4">
                       <div className="stack-box">
@@ -537,11 +465,12 @@ useEffect(() => {
                         </h4>
 
                         <p className="text-center text-muted">
-  Last updated:{" "}
-  <span style={{ fontSize: "14px" }}>
-    {currentTime} on {currentDate}
-  </span>
-</p>
+                          Last updated:{" "}
+                          <span style={{ fontSize: "14px" }}>
+                            {formattedTimestamp.time}
+                          </span>
+                        </p>
+
                         <div className="row">
                           {effluentFlowParameters.map((item, index) => {
                             let value = displayStack[item.name];
@@ -566,32 +495,29 @@ useEffect(() => {
                             );
                           })}
 
-                     <div 
-  className="col-md-4 grid-margin"
-  onClick={() =>
-    setSelectedCard({
-      stackName: displayStack.stackName,
-      title: isRealTimeData ? "Daily Consumption" : " Daily Consumption",
-      name: "dailyConsumption"
-    })
-  }
-  style={{ cursor: 'pointer' }}
->
-  <div className="card mb-3" style={{ border: "none" }}>
-    <div className="card-body">
-      <h5 className="text-light">
-        {isRealTimeData ? "Daily Consumption" : " Daily Consumption"}
-      </h5>
-      <p className="text-light">
-        <strong style={{ color: "#ffff", fontSize: "24px" }}>
-          {dailyConsumption[displayStack.stackName]?.toFixed(2) || "0.00"}
-        </strong>{" "}
-        m³
-      </p>
-    
-    </div>
-  </div>
-</div>
+                          <div 
+                            className="col-md-4 grid-margin"
+                            onClick={() =>
+                              setSelectedCard({
+                                stackName: displayStack.stackName,
+                                title: "Daily Consumption",
+                                name: "dailyConsumption"
+                              })
+                            }
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <div className="card mb-3" style={{ border: "none" }}>
+                              <div className="card-body">
+                                <h5 className="text-light">Daily Consumption</h5>
+                                <p className="text-light">
+                                  <strong style={{ color: "#ffff", fontSize: "24px" }}>
+                                    {dailyConsumption[displayStack.stackName]?.toFixed(2) || "0.00"}
+                                  </strong>{" "}
+                                  m³
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
