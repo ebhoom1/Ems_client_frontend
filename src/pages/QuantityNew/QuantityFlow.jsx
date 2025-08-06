@@ -64,7 +64,9 @@ const QuantityFlow = () => {
   const [dailyConsumptionData, setDailyConsumptionData] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const effectiveUserName = selectedUserIdFromRedux || storedUserId || userData?.validUserOne?.userName;
- 
+  const [simulatedStpConsumption, setSimulatedStpConsumption] = useState(null);
+  const SIMULATION_USER = 'EGLH';
+  const SIMULATION_STACK = 'STP outlet';
   const graphRef = useRef();
 
   const openModal = () => {
@@ -311,7 +313,39 @@ const QuantityFlow = () => {
       // console.error("Error setting primary station:", error);
     }
   };
+useEffect(() => {
+    let simulationInterval;
 
+    if (effectiveUserName === SIMULATION_USER) {
+      const calculateSimulation = () => {
+        const startOfDay = moment().startOf('day');
+        const now = moment();
+        const minutesElapsed = now.diff(startOfDay, 'minutes');
+        
+        // Calculate how many 20-minute intervals have passed
+        const increments = Math.floor(minutesElapsed / 20);
+        
+        // Base value is 75, plus the increments
+        const simulatedValue = 35 + increments;
+        
+        setSimulatedStpConsumption(simulatedValue);
+        console.log(`Simulation for ${SIMULATION_STACK}: ${simulatedValue}`);
+      };
+
+      // Run it once immediately
+      calculateSimulation();
+
+      // Then run it every minute to check if the interval has passed
+      simulationInterval = setInterval(calculateSimulation, 60000); // Check every minute
+    }
+
+    // Cleanup function to clear the interval when the component unmounts or user changes
+    return () => {
+      if (simulationInterval) {
+        clearInterval(simulationInterval);
+      }
+    };
+  }, [effectiveUserName]); 
   useEffect(() => {
     async function fetchMonthlyAndYesterdayData() {
       try {
@@ -344,7 +378,42 @@ const QuantityFlow = () => {
     }
     fetchMonthlyAndYesterdayData();
   }, []);
+useEffect(() => {
+    // Only proceed if all conditions are met
+    if (
+      effectiveUserName === SIMULATION_USER &&
+      simulatedStpConsumption !== null &&
+      realTimeData[SIMULATION_STACK] &&
+      initialFlows[SIMULATION_STACK] !== undefined
+    ) {
+      setRealTimeData(currentData => {
+        // Get the initial flow for the day for the target stack
+        const initialFlow = initialFlows[SIMULATION_STACK] || 0;
+        
+        // Calculate the new cumulatingFlow needed to produce the simulated consumption
+        // newCumulatingFlow = initialFlow + simulatedConsumption
+        const newCumulativeFlow = initialFlow + simulatedStpConsumption;
 
+        // Get the current value to prevent unnecessary re-renders
+        const currentCumulativeFlow = currentData[SIMULATION_STACK]?.cumulatingFlow;
+        
+        // Only update state if the value has actually changed
+        if (newCumulativeFlow !== currentCumulativeFlow) {
+          console.log(`Overriding ${SIMULATION_STACK} cumulatingFlow to: ${newCumulativeFlow}`);
+          // Create a deep copy to avoid state mutation
+          const newData = JSON.parse(JSON.stringify(currentData));
+          
+          // Apply the override
+          newData[SIMULATION_STACK].cumulatingFlow = newCumulativeFlow;
+          
+          return newData;
+        }
+
+        // If no change is needed, return the original state
+        return currentData;
+      });
+    }
+  }, [realTimeData, initialFlows, simulatedStpConsumption, effectiveUserName]);
   useEffect(() => {
     async function fetchDailyData() {
       try {
