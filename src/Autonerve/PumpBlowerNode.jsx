@@ -64,6 +64,7 @@ function PumpBlowerNode({ id, data, setNodes, sendPumpControlMessage }) {
     current = 0,
     rpm = 0,
     temperature = 0,
+    vibration=0,
     vrn = 0,
     vyn = 0,
     vbn = 0,
@@ -111,30 +112,41 @@ function PumpBlowerNode({ id, data, setNodes, sendPumpControlMessage }) {
       </div>
       {/* {data.isEditMode && <Handle type="source" position={Position.Bottom} />}  */}
 
-      {isHovered && !data.isPending && (
+       {isHovered && !data.isPending && (
         <div className="pump-tooltip">
-          <div className="tooltip-heading">Voltages</div>
-          <span className="tooltip-item">vrn: {vrn}</span>
-          <span className="tooltip-item">vyn: {vyn}</span>
-          <span className="tooltip-item">vbn: {vbn}</span>
-          <span className="tooltip-item">vry: {vry}</span>
-          <span className="tooltip-item">vyb: {vyb}</span>
-          <span className="tooltip-item">vbr: {vbr}</span>
+          <div className="tooltip-vol-heading">Voltage</div>
+          <div className="tooltip-sub-heading-neutral">
+            Line-to-neutral voltage
+          </div>
+          <span className="tooltip-item">vrn: {vrn.toFixed(2)} V</span>
+          <span className="tooltip-item">vyn: {vyn.toFixed(2)} V</span>
+          <span className="tooltip-item">vbn: {vbn.toFixed(2)} V</span>
+          <div className="tooltip-sub-heading">Line-to-line voltage</div>
+          <span className="tooltip-item">vry: {vry.toFixed(2)} V</span>
+          <span className="tooltip-item">vyb: {vyb.toFixed(2)} V</span>
+          <span className="tooltip-item">vbr: {vbr.toFixed(2)} V</span>
 
           <div className="tooltip-heading">Current</div>
           <span className="tooltip-item">
-            red_phase_current: {red_phase_current}
+            Red phase current: {red_phase_current.toFixed(2)} A
           </span>
           <span className="tooltip-item">
-            yellow_phase_current: {yellow_phase_current}
+            Yellow phase current: {yellow_phase_current.toFixed(2)} A
           </span>
           <span className="tooltip-item">
-            blue_phase_current: {blue_phase_current}
+            Blue phase current: {blue_phase_current.toFixed(2)} A
           </span>
 
           <div className="tooltip-heading"></div>
-          <span className="tooltip-item">RPM: {rpm}</span>
-          <span className="tooltip-item">Temp: {temperature}°C</span>
+          <span className="tooltip-item">
+            Temperature: {temperature.toFixed(2)} °C
+          </span>
+          <span className="tooltip-item">
+            Revolutions per minute: {rpm.toFixed(2)} rpm
+          </span>
+          <span className="tooltip-item">
+            Vibration: {vibration.toFixed(2)} m/s²
+          </span>
         </div>
       )}
     </div>

@@ -121,12 +121,12 @@ input:checked + .slider:before {
   box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.2);
 display: flex;
   flex-wrap: wrap;
-  gap: 5px; 
+  gap: 4px; 
   font-size: 7px;
   text-align: left;
   /* width: 150px; */
-  min-width: 110px;   
-  max-width: 350px;   
+  min-width: 150px;   
+  max-width: 200px; 
 }
 
 
@@ -149,11 +149,32 @@ display: flex;
   width: 100%;
   font-weight: bold;
   font-size: 7px;
-  margin-top: 4px;
+  margin-top: 2px;
   border-bottom: 1px solid rgba(255,255,255,0.2);
   padding-bottom: 2px;
 }
-
+.tooltip-vol-heading {
+  width: 100%;
+  font-weight: bold;
+  font-size: 7px;
+  margin-top: 4px;
+  
+}
+.tooltip-sub-heading {
+  width: 100%;
+  font-size: 6px;
+  margin-top: 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 2px;
+  font-weight: 500;
+}
+.tooltip-sub-heading-neutral{
+    width: 100%;
+  font-size: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 2px;
+  font-weight: 500;
+}
 
 /* PumpBlowerNode.css */
 
