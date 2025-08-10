@@ -7,6 +7,9 @@
   font-family: sans-serif;
   border: 1px solid #ddd;
   padding: auto;
+   position: relative;
+  z-index: 10;
+  overflow: visible;
 }
 
 .node-content {
@@ -89,7 +92,7 @@ input:checked + .slider:before {
 }
 
 .switch-label {
-  font-size: 8px;
+  font-size: 6px;
   font-weight: bold;
 }
 
@@ -100,4 +103,69 @@ input:checked + .slider:before {
 
 .switch-label.off {
   color: #d41e1e; /* Red */
+}
+
+
+
+
+.pump-tooltip {
+  position: absolute;
+  top: 100%; /* Position below the node */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background-color: #333;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.2);
+display: flex;
+  flex-wrap: wrap;
+  gap: 5px; 
+  font-size: 7px;
+  text-align: left;
+  /* width: 150px; */
+  min-width: 110px;   
+  max-width: 350px;   
+}
+
+
+.pump-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent transparent #333 transparent;
+}
+.tooltip-item {
+  /* flex: 1 1 auto;  */
+    display: inline-block;
+
+}
+.tooltip-heading {
+  width: 100%;
+  font-weight: bold;
+  font-size: 7px;
+  margin-top: 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  padding-bottom: 2px;
+}
+
+
+/* PumpBlowerNode.css */
+
+.switch-label.pending {
+  color: orange;
+  font-weight: bold;
+}
+.switch input:disabled + .slider {
+    background-color: orange; 
+    pointer-events: none; 
+}
+
+.react-flow__renderer {
+  overflow: visible !important;
 }

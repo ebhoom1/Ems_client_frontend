@@ -1,7 +1,10 @@
+
+/* Existing styles for canvas-wrapper and save-button */
 .canvas-wrapper {
   flex-grow: 1;
   height: 100%;
   position: relative; 
+  overflow: visible !important;
 }
 
 .save-button {
@@ -31,5 +34,144 @@
   .save-button {
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
+  }
+}
+
+/* New styles for the buttons in the canvas header */
+
+.canvas-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.header-button {
+    padding: 8px 16px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.save-new-button {
+    background-color: #007bff; /* Primary blue for a new action */
+    color: white;
+}
+
+.save-new-button:hover {
+    background-color: #0056b3;
+}
+
+.update-button {
+    background-color: #28a745; /* Success green for updating */
+    color: white;
+}
+
+.update-button:hover {
+    background-color: #218838;
+}
+
+.delete-button {
+    background-color: #dc3545; /* Danger red for deleting */
+    color: white;
+}
+
+.delete-button:hover {
+    background-color: #c82333;
+}
+
+.canvas-wrapper {
+  flex-grow: 1;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.canvas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+}
+
+.station-title {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.canvas-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.header-button {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  min-width: 90px;
+}
+
+.fullscreen-button {
+  background-color: #6c757d;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  height: 36px;
+}
+
+.fullscreen-button:hover {
+  background-color: #5a6268;
+}
+
+/* Ensure fullscreen white background */
+.fullscreen-mode:fullscreen {
+  background-color: white !important;
+  color: black; /* Optional: text color */
+}
+
+/* For WebKit (Safari, older browsers) */
+.fullscreen-mode:-webkit-full-screen {
+  background-color: white !important;
+}
+
+/* For Mozilla Firefox */
+.fullscreen-mode:-moz-full-screen {
+  background-color: white !important;
+}
+
+/* For IE/Edge (legacy) */
+.fullscreen-mode:-ms-fullscreen {
+  background-color: white !important;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 800px) and (max-height: 480px) {
+  .canvas-header {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .canvas-buttons {
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .header-button {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+  }
+
+  .station-title {
+    font-size: 1rem;
+  }
+  .fullscreen-button{
+    padding: 6px 7px;
   }
 }

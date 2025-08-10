@@ -880,7 +880,7 @@ const UsersLog = () => {
           </div>
           <div className="row mt-4">
             <div className="col-12">
-              <h1 className="text-center">Control and Monitor</h1>
+              <h1 className="text-center mt-5">Control and Monitor</h1>
             </div>
           </div>
           <div className="row justify-content-center">

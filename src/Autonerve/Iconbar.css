@@ -102,3 +102,13 @@
     height: 35px;
   }
 }
+
+@media (max-width: 800px) and (max-height: 480px) {
+  .sidebar{
+   padding: 1rem;
+  height: 4rem;
+ 
+  }
+
+  
+}

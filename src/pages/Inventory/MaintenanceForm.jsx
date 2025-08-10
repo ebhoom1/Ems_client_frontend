@@ -274,6 +274,21 @@ const mechanicalConfig = {
       { id: 11, category: "Other observation if any", description: "" },
     ]
   },
+  "fresh-air": {
+  rows: [
+    { id: 1, category: "Check for safety Guards", description: "" },
+    { id: 2, category: "Direction of rotation", description: "" },
+    { id: 3, category: "Check for Gear box sound", description: "" },
+    { id: 4, category: "Check for Motor condition", description: "" },
+    { id: 5, category: "Check belt quality", description: "" },
+    { id: 6, category: "Check for Star bush & coupling damage", description: "" },
+    { id: 7, category: "Check for Bearing sound & damage", description: "" },
+    { id: 8, category: "Check for Oil collection tray", description: "" },
+    { id: 9, category: "Check for pulley condition", description: "" },
+    { id: 10, category: "Check for base support", description: "" },
+    { id: 11, category: "Other observations if any", description: "" },
+  ],
+},
   "clariflocculator-mechanism": {
     rows: [
       { id: 1, category: "Type of the Mechanism", description: "Belt Driven" },
@@ -359,6 +374,7 @@ export default function MaintenanceForm() {
   const getMatchingChecklistKey = (name) => {
     if (!name) return null;
     const lowerName = name.toLowerCase();
+if (lowerName.includes("fresh air") || lowerName.includes("fresh-air")) return "fresh-air";
 
     if (lowerName.includes("pump")) {
       if (

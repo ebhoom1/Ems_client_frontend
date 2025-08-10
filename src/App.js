@@ -168,110 +168,189 @@ function App() {
 
               {/* Admin Routes */}
 
-             {["admin", "super_admin"].includes(userType) && (
-  <Route path="/" element={<PrivateLayout />}>
-    <Route path="/dashboard" element={<Dashboard />} />
-    <Route path="/layout" element={<Layout />} />
-    <Route path="/dashboard-dash" element={<Maindashboard />} />
-    <Route path="/quality" element={<Quality />} />
-    <Route path="/quantity" element={<FlowLayout />} />
-    <Route path="/ambient" element={<Airambient />} />
-    <Route path="/water" element={<Water />} />
-    <Route path="/noise" element={<Noise />} />
-    <Route path="/energy" element={<EnergyDashboard />} />
-    <Route path="/download-data" element={<Download />} />
-    <Route path="/add-calibration" element={<Calibrationpage />} />
-    <Route path="/view-calibration" element={<ViewCalibration />} />
-    <Route path="/edit-calibration/:userName" element={<EditCalibration />} />
-    <Route path="/report" element={<Report />} />
-    <Route path="/view-report" element={<ViewReport />} />
-    <Route path="/tank" element={<Tank />} />
-    <Route path="/download" element={<DownloadData />} />
-    <Route path="/add-parameter" element={<AddParameter />} />
-    <Route path="/view-parameter" element={<ViewParameter />} />
-    <Route path="/notification" element={<Notification />} />
-    <Route path="/subscribe" element={<Subscibe />} />
-    <Route path="/live-emmision" element={<LiveEmmission />} />
-    <Route path="/account" element={<Account />} />
-    <Route path="/support-analyser" element={<SupportAnalyser />} />
-    <Route path="/check-validate" element={<ReportCheck />} />
-    <Route path="/edit-report/:userName" element={<EditReport />} />
-    <Route path="view-report/:userName" element={<ViewReportUser />} />
-    <Route path="/calibration-exceeded" element={<CalibrationExceeded />} />
-    <Route path="/manage-user" element={<UsersLog />} />
-    <Route path="/edit/:userId" element={<Edit />} />
-    <Route path="/view/:userId" element={<ViewUser />} />
-    <Route path="/monthly" element={<MonthlyFlowData />} />
-    <Route path="/totalwaste" element={<TotalWaste />} />
-    <Route path="/view-notification" element={<Viewnotification />} />
-    <Route path="/edit-parameter/:userName" element={<EditParameter />} />
-    <Route path="/sample" element={<Mainsam />} />
-    <Route path="/live-station" element={<LIveLayout />} />
-    <Route path="/chat" element={<Chat />} />
-    <Route path="/view-data" element={<ViewComponent />} />
-    <Route path="/waste" element={<WasteDash />} />
-    <Route path="/waste-dashboard" element={<WasteDashboard />} />
-    <Route path="/waste-dash" element={<WasteDash />} />
-    <Route path="/viewdifference" element={<ViewDifference />} />
-    <Route path="/view-difference" element={<ViewDifferenceFlow />} />
-    <Route path="/waste-history/:userId" element={<WasteHistory />} />
-    <Route path="/table" element={<WaterQualityTable />} />
-    <Route path="/how-to-use" element={<UserManual />} />
-    <Route path="/customisable-report" element={<CustomisableReport />} />
-    <Route path="/exceedence-report" element={<ExceedenceReport />} />
-    <Route path="/view-exceedence-list" element={<ViewExceedenceList />} />
-    <Route path="/water-quality-report" element={<WaterQualityReport />} />
-    <Route path="/water-form" element={<WaterQualityForm />} />
-    <Route path="/view-calibration-report" element={<ViewCalibrationReport />} />
-    <Route path="/generator" element={<Generator />} />
-    <Route path="/pump" element={<Pump />} />
-    <Route path="/fuel" element={<FuelMain />} />
-    <Route path="/vehicle-history" element={<VehicleHistory />} />
-    <Route path="/view-energy" element={<ViewDifference />} />
-    <Route path="/previous-data" element={<PreviousData />} />
-    <Route path="/inventory" element={<Inventory />} />
-    <Route path="/services" element={<Services />} />
-    <Route path="/attendence" element={<Attendence />} />
-    <Route path="/attendence/history" element={<AttendanceHistory />} />
-    <Route path="/view-map" element={<MapView />} />
-    <Route path="/subscription-plans/:userName" element={<SubscriptionPlans />} />
-    <Route path="/payment/:userName" element={<PaymentPage />} />
-    <Route path="/maintenance/:type/:equipmentId" element={<MaintenanceForm />} />
-    <Route path="/maintenance/electrical/:equipmentId" element={<ElectricalMaintenance onClose={() => navigate(-1)} />} />
-    <Route path="/report/electrical/:equipmentId" element={<ElectricalReport />} />
-    <Route path="/report/mechanical/:equipmentId" element={<MechanicalReport />} />
- <Route
-              path="/report/electrical/download/:userName/:year/:month"
-              element={<MergedElectricalReport />}
-            />
-             <Route path="/mechanical-report/:userName/:year/:month" element={<MergedMechanicalReport />} />
-    <Route path="/dailylog" element={<DailyLog />} />
-    <Route path="/admin/report/:username" element={<AdminReport />} />
-    <Route path="/edit-equipment/:id" element={<EditEquipment />} />
-    <Route path="/summary" element={<Summary />} />
-    <Route path="/summary/waterquality" element={<WaterQualitySummary />} />
-    <Route path="/realtimedashboard" element={<RealTimeDashboard />} />
-    <Route path="/dayreport" element={<DayReport />} />
- <Route
-          path="/previous-quantity"
-          element={<PreviousQuantity />}
-        />
-          <Route
-          path="/previous-quality"
-          element={<PreviousQuality />}
-        />
-         <Route
-          path="/assign-technician"
-          element={<AssignTechnician />}
-        />
+              {["admin", "super_admin"].includes(userType) && (
+                <Route path="/" element={<PrivateLayout />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/layout" element={<Layout />} />
+                  <Route path="/dashboard-dash" element={<Maindashboard />} />
+                  <Route path="/quality" element={<Quality />} />
+                  <Route path="/quantity" element={<FlowLayout />} />
+                  <Route path="/ambient" element={<Airambient />} />
+                  <Route path="/water" element={<Water />} />
+                  <Route path="/noise" element={<Noise />} />
+                  <Route path="/energy" element={<EnergyDashboard />} />
+                  <Route path="/download-data" element={<Download />} />
+                  <Route
+                    path="/add-calibration"
+                    element={<Calibrationpage />}
+                  />
+                  <Route
+                    path="/view-calibration"
+                    element={<ViewCalibration />}
+                  />
+                  <Route
+                    path="/edit-calibration/:userName"
+                    element={<EditCalibration />}
+                  />
+                  <Route path="/report" element={<Report />} />
+                  <Route path="/view-report" element={<ViewReport />} />
+                  <Route path="/tank" element={<Tank />} />
+                  <Route path="/download" element={<DownloadData />} />
+                  <Route path="/add-parameter" element={<AddParameter />} />
+                  <Route path="/view-parameter" element={<ViewParameter />} />
+                  <Route path="/notification" element={<Notification />} />
+                  <Route path="/subscribe" element={<Subscibe />} />
+                  <Route path="/live-emmision" element={<LiveEmmission />} />
+                  <Route path="/account" element={<Account />} />
+                  <Route
+                    path="/support-analyser"
+                    element={<SupportAnalyser />}
+                  />
+                  <Route path="/check-validate" element={<ReportCheck />} />
+                  <Route
+                    path="/edit-report/:userName"
+                    element={<EditReport />}
+                  />
+                  <Route
+                    path="view-report/:userName"
+                    element={<ViewReportUser />}
+                  />
+                  <Route
+                    path="/calibration-exceeded"
+                    element={<CalibrationExceeded />}
+                  />
+                  <Route path="/manage-user" element={<UsersLog />} />
+                  <Route path="/edit/:userId" element={<Edit />} />
+                  <Route path="/view/:userId" element={<ViewUser />} />
+                  <Route path="/monthly" element={<MonthlyFlowData />} />
+                  <Route path="/totalwaste" element={<TotalWaste />} />
+                  <Route
+                    path="/view-notification"
+                    element={<Viewnotification />}
+                  />
+                  <Route
+                    path="/edit-parameter/:userName"
+                    element={<EditParameter />}
+                  />
+                  <Route path="/sample" element={<Mainsam />} />
+                  <Route path="/live-station" element={<LIveLayout />} />
+                  <Route path="/chat" element={<Chat />} />
+                  <Route path="/view-data" element={<ViewComponent />} />
+                  <Route path="/waste" element={<WasteDash />} />
+                  <Route path="/waste-dashboard" element={<WasteDashboard />} />
+                  <Route path="/waste-dash" element={<WasteDash />} />
+                  <Route path="/viewdifference" element={<ViewDifference />} />
+                  <Route
+                    path="/view-difference"
+                    element={<ViewDifferenceFlow />}
+                  />
+                  <Route
+                    path="/waste-history/:userId"
+                    element={<WasteHistory />}
+                  />
+                  <Route path="/table" element={<WaterQualityTable />} />
+                  <Route path="/how-to-use" element={<UserManual />} />
+                  <Route
+                    path="/customisable-report"
+                    element={<CustomisableReport />}
+                  />
+                  <Route
+                    path="/exceedence-report"
+                    element={<ExceedenceReport />}
+                  />
+                  <Route
+                    path="/view-exceedence-list"
+                    element={<ViewExceedenceList />}
+                  />
+                  <Route
+                    path="/water-quality-report"
+                    element={<WaterQualityReport />}
+                  />
+                  <Route path="/water-form" element={<WaterQualityForm />} />
+                  <Route
+                    path="/view-calibration-report"
+                    element={<ViewCalibrationReport />}
+                  />
+                  <Route path="/generator" element={<Generator />} />
+                  <Route path="/pump" element={<Pump />} />
+                  <Route path="/fuel" element={<FuelMain />} />
+                  <Route path="/vehicle-history" element={<VehicleHistory />} />
+                  <Route path="/view-energy" element={<ViewDifference />} />
+                  <Route path="/previous-data" element={<PreviousData />} />
+                  <Route path="/inventory" element={<Inventory />} />
+                  <Route path="/services" element={<Services />} />
+                  <Route path="/attendence" element={<Attendence />} />
+                  <Route
+                    path="/attendence/history"
+                    element={<AttendanceHistory />}
+                  />
+                  <Route path="/view-map" element={<MapView />} />
+                  <Route
+                    path="/subscription-plans/:userName"
+                    element={<SubscriptionPlans />}
+                  />
+                  <Route path="/payment/:userName" element={<PaymentPage />} />
+                  <Route
+                    path="/maintenance/:type/:equipmentId"
+                    element={<MaintenanceForm />}
+                  />
+                  <Route
+                    path="/maintenance/electrical/:equipmentId"
+                    element={
+                      <ElectricalMaintenance onClose={() => navigate(-1)} />
+                    }
+                  />
+                  <Route
+                    path="/report/electrical/:equipmentId"
+                    element={<ElectricalReport />}
+                  />
+                  <Route
+                    path="/report/mechanical/:equipmentId"
+                    element={<MechanicalReport />}
+                  />
+                  <Route
+                    path="/report/electrical/download/:userName/:year/:month"
+                    element={<MergedElectricalReport />}
+                  />
+                  <Route
+                    path="/mechanical-report/:userName/:year/:month"
+                    element={<MergedMechanicalReport />}
+                  />
+                  <Route path="/dailylog" element={<DailyLog />} />
+                  <Route
+                    path="/admin/report/:username"
+                    element={<AdminReport />}
+                  />
+                  <Route
+                    path="/edit-equipment/:id"
+                    element={<EditEquipment />}
+                  />
+                  <Route path="/summary" element={<Summary />} />
+                  <Route
+                    path="/summary/waterquality"
+                    element={<WaterQualitySummary />}
+                  />
+                  <Route
+                    path="/realtimedashboard"
+                    element={<RealTimeDashboard />}
+                  />
+                  <Route path="/dayreport" element={<DayReport />} />
+                  <Route
+                    path="/previous-quantity"
+                    element={<PreviousQuantity />}
+                  />
+                  <Route
+                    path="/previous-quality"
+                    element={<PreviousQuality />}
+                  />
+                  <Route
+                    path="/assign-technician"
+                    element={<AssignTechnician />}
+                  />
 
-            <Route path="/autonerve" element={<AutonerveLayout />} />
-
-
-  </Route>
-
-  
-)}
+                  <Route path="/autonerve" element={<AutonerveLayout />} />
+                </Route>
+              )}
 
               {/* User Routes */}
               {userType === "user" && (
@@ -284,12 +363,12 @@ function App() {
                   <Route path="/chat" element={<Chat />} />
                   <Route path="/download" element={<DownloadData />} />
                   <Route path="/how-to-use" element={<UserManual />} />
-                      <Route path="/pump" element={<Pump />} />
-
+                  <Route path="/pump" element={<Pump />} />
                   <Route
                     path="/customisable-report"
                     element={<CustomisableReport />}
                   />
+                  <Route path="/autonerve" element={<AutonerveLayout />} />
                   <Route path="/transactions" element={<Transcation />} />{" "}
                   {/* Assuming transaction-related routes */}
                   <Route path="/view-report" element={<ViewReport />} />
@@ -351,30 +430,35 @@ function App() {
                     path="/report/electrical/download/:year?/:month?"
                     element={<MergedElectricalReport />}
                   />
-               {/*    <Route
+                  {/*    <Route
                     path="/report/mechanical/download/:year?/:month?"
                     element={<MergedMechanicalReport />}
                   /> */}
                   <Route path="/dailylogs" element={<DailyLog />} />
                   <Route path="/geolocation" element={<Geolocation />} />
-                      <Route path="/summary" element={<Summary />} />
-        <Route path="/summary/waterquality" element={<WaterQualitySummary />} />
-                  <Route path="/realtimedashboard" element={<RealTimeDashboard />} />
-                                    <Route path="/dayreport" element={<DayReport />} />
- <Route
-          path="/previous-quantity"
-          element={<PreviousQuantity />}
-        />
-
-         <Route
-          path="/previous-quality"
-          element={<PreviousQuality />}
-        />
-        
+                  <Route path="/summary" element={<Summary />} />
+                  <Route
+                    path="/summary/waterquality"
+                    element={<WaterQualitySummary />}
+                  />
+                  <Route
+                    path="/realtimedashboard"
+                    element={<RealTimeDashboard />}
+                  />
+                  <Route path="/dayreport" element={<DayReport />} />
+                  <Route
+                    path="/previous-quantity"
+                    element={<PreviousQuantity />}
+                  />
+                  <Route
+                    path="/previous-quality"
+                    element={<PreviousQuality />}
+                  />
                 </Route>
+                
               )}
 
-                {userType === "operator" && (
+              {userType === "operator" && (
                 <Route path="/" element={<PrivateLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/water" element={<Water />} />
@@ -383,7 +467,6 @@ function App() {
                   <Route path="/account" element={<Account />} />
                   <Route path="/download" element={<DownloadData />} />
                   <Route path="/how-to-use" element={<UserManual />} />
-                 
                   {/* Assuming transaction-related routes */}
                   <Route
                     path="/edit-report/:userName"
@@ -392,7 +475,6 @@ function App() {
                   <Route path="/download-IoT-Data" element={<DownloadData />} />
                   <Route path="/quantity" element={<FlowLayout />} />
                   <Route path="/energy" element={<EnergyDashboard />} />
-                
                   <Route
                     path="/view-report/:userName"
                     element={<ViewReportUser />}
@@ -436,12 +518,15 @@ function App() {
                     path="/maintenance/electrical/:equipmentId"
                     element={<ElectricalMaintenance />}
                   />
-                                  <Route path="/report/electrical/download/:year?/:month?" element={<MergedElectricalReport />} />
-{/*                                   <Route path="/report/mechanical/download/:year?/:month?" element={<MergedMechanicalReport />} />
- */}                  <Route path="/dailylogs" element={<DailyLog />} />
+                  <Route
+                    path="/report/electrical/download/:year?/:month?"
+                    element={<MergedElectricalReport />}
+                  />
+                  {/*                                   <Route path="/report/mechanical/download/:year?/:month?" element={<MergedMechanicalReport />} />
+                   */}{" "}
+                  <Route path="/dailylogs" element={<DailyLog />} />
                   <Route path="/geolocation" element={<Geolocation />} />
-                      <Route path="/summary" element={<Summary />} />
-
+                  <Route path="/summary" element={<Summary />} />
                 </Route>
               )}
 

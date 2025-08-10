@@ -124,7 +124,7 @@ const name = validUser?.userName
               </li>
               <li className="list active text-center">
                 <a
-                  href="/live-station"
+                  href="/autonerve"
                   style={{ textDecoration: "none", color: "#ffffff" }}
                 >
                   <span className="title">AutoNerve</span>
@@ -199,7 +199,7 @@ const name = validUser?.userName
                   </li>
                   <li className="list active text-center">
                     <a
-                      href="/live-station"
+                      href="/autonerve"
                       style={{ textDecoration: "none", color: "#ffffff" }}
                     >
                       <span className="title">AutoNerve</span>
@@ -244,7 +244,7 @@ const name = validUser?.userName
                   </li>
                   <li className="list active text-center">
                     <a
-                      href="/live-station"
+                      href="/autonerve"
                       style={{ textDecoration: "none", color: "#ffffff" }}
                     >
                       <span className="title">AutoNerve</span>
