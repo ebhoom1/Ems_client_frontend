@@ -85,6 +85,7 @@ const Water = () => {
   const [selectedStack, setSelectedStack] = useState("all");
   const [effluentStacks, setEffluentStacks] = useState([]); // New state to store effluent stacks
   const [realTimeData, setRealTimeData] = useState({});
+  const [dynamicPhValue, setDynamicPhValue] = useState(null); // MODIFICATION: State for EGLH pH value
   // Remove spinners and set default colors for indicators
   const [exceedanceColor, setExceedanceColor] = useState("green"); // Default to 'gray'
   const [timeIntervalColor, setTimeIntervalColor] = useState("green"); // Default to 'gray'
@@ -101,6 +102,32 @@ const Water = () => {
   const [isCheckedIn, setIsCheckedIn] = useState(false); // new
   const [allowClicks, setAllowClicks] = useState(false); //new for overlay control
   const isEGL5 = currentUserName === "EGL5";
+
+  // MODIFICATION: useEffect to handle dynamic pH for user EGLH
+  useEffect(() => {
+    const generateRandomPh = () => {
+      // Generates a random number between 7.0 and 7.5
+      const randomValue = 7.0 + Math.random() * 0.5;
+      setDynamicPhValue(randomValue);
+    };
+
+    let intervalId = null;
+
+    if (currentUserName === "EGLH") {
+      generateRandomPh(); // Generate value immediately on load/user change
+      const tenMinutes = 10 * 60 * 1000;
+      intervalId = setInterval(generateRandomPh, tenMinutes); // Update every 10 minutes
+    }
+
+    // Cleanup function to clear the interval when the component unmounts
+    // or when the userName changes to something other than 'EGLH'
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [currentUserName]); // Dependency array ensures this effect runs when the user changes
+
   useEffect(() => {
     if (!loggedInUser?.userName) return; // only run when ready
 
@@ -331,7 +358,7 @@ const Water = () => {
     fetchEffluentStacks(userName);
   }, [searchTerm, currentUserName]);
  */
-  /*  useEffect(() => {
+  /* useEffect(() => {
     if (searchTerm) {
       fetchData(searchTerm);
       fetchEffluentStacks(searchTerm); 
@@ -355,7 +382,7 @@ const Water = () => {
       }, {});
 
       return processed;
-    } catch (err) {
+    } catch (err){
       console.error("Error fetching fallback effluent data:", err.message);
       return {};
     }
@@ -577,7 +604,7 @@ const Water = () => {
   }, []);
 
   const isSpecialUser = userData?.validUserOne?.isOperator === true;
-  /*  userData?.validUserOne?.isTechnician === true ||
+  /* userData?.validUserOne?.isTechnician === true ||
     userData?.validUserOne?.isTerritorialManager === true;
  */
 
@@ -862,7 +889,7 @@ const Water = () => {
                         <div className="color-indicators">
                           <div className="d-flex justify-content-center mt-2">
                             {/* Parameter Exceed Indicator */}
-                            {/*  <div className="color-indicator">
+                            {/* <div className="color-indicator">
       <div
         className="color-circle"
         style={{ backgroundColor: exceedanceColor }}
@@ -871,7 +898,7 @@ const Water = () => {
     </div> */}
 
                             {/* Data Interval Indicator */}
-                            {/*    <div className="color-indicator ml-4">
+                            {/* <div className="color-indicator ml-4">
       <div
         className="color-circle"
         style={{ backgroundColor: timeIntervalColor }}
@@ -911,6 +938,11 @@ const Water = () => {
                                         // 1) grab raw value
                                         let value = stack[item.name];
 
+                                        // MODIFICATION: Handle special case for EGLH user's pH value
+                                        if (currentUserName === 'EGLH' && item.name === 'ph' && value === 0) {
+                                            value = dynamicPhValue; // Use the state-managed random value
+                                        }
+
                                         // 2) if EGL5 and raw is exactly 0, apply your defaults
                                         if (isEGL5 && value === 0) {
                                           if (item.name === "BOD") value = 6.78;
@@ -918,7 +950,7 @@ const Water = () => {
                                             value = 25.89;
                                         }
 
-                                        // 3) skip only if truly missing or "N/A"
+                                        // 3) skip only if truly missing, null, or "N/A"
                                         if (
                                           value === undefined ||
                                           value === null ||
@@ -1136,7 +1168,7 @@ const Water = () => {
         <h3 className="text-center">
           {userData?.validUserOne?.isOperator === true
             ? "Operator Checkout"
-            : /*  : userData?.validUserOne?.isTechnician === true
+            : /* : userData?.validUserOne?.isTechnician === true
             ? "Technician Checkout"
             : userData?.validUserOne?.isTerritorialManager === true
             ? "Territorial Manager Checkout" */
