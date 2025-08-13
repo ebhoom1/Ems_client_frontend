@@ -102,6 +102,8 @@ import PreviousQuantity from "./pages/QuantityNew/PreviousQuantity";
 import PreviousQuality from "./pages/QuantityNew/PreviousQuality";
 import AssignTechnician from "./pages/AssignReports/AssignTechnician";
 import AutonerveLayout from "./Autonerve/AutonerveLayout";
+import FaultAlertProvider from "./provider/FaultAlertProvider";
+import FaultAlert from "./pages/faultalert/FaultAlert";
 
 function App() {
   const dispatch = useDispatch();
@@ -156,6 +158,7 @@ function App() {
       <CalibrationProvider>
         <UserProvider>
           <NotificationProvider>
+            <FaultAlertProvider>
             <Routes>
               <Route path="/" element={<LoginNew />} />
               <Route path="/login" element={<LogTest />} />
@@ -455,7 +458,7 @@ function App() {
                     element={<PreviousQuality />}
                   />
                 </Route>
-                
+
               )}
 
               {userType === "operator" && (
@@ -533,7 +536,9 @@ function App() {
               {isSpecialUser && (
                 <Route path="/geolocation" element={<Geolocation />} />
               )}
-            </Routes>
+             </Routes>
+             <FaultAlert />
+            </FaultAlertProvider>
           </NotificationProvider>
         </UserProvider>
       </CalibrationProvider>

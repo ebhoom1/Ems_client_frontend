@@ -41,6 +41,9 @@ function Header() {
   const { userData } = useSelector((state) => state.user);
 
   const selectedUserId = sessionStorage.getItem("selectedUserId");
+  // 🔔 notify same-tab listeners to refetch
+window.dispatchEvent(new CustomEvent("selectedUserIdChanged"));
+
   // Create an audio instance for the notification sound.
   const audioRef = useRef(new Audio(notificationSound));
   // Keep track of previous notifications count.
@@ -218,13 +221,26 @@ function Header() {
     setDropdownAlignment(spaceOnRight < neededSpace ? "start" : "end");
   };
 
-  const handleUserSelect = (userId) => {
-    sessionStorage.setItem("selectedUserId", userId);
-    const selectedUser = sessionStorage.getItem("selectedUserId");
-    console.log("selected useid:", selectedUser);
-    dispatch(setSelectedUser(userId));
-    setUserName(userId);
-  };
+  // const handleUserSelect = (userId,productId) => {
+  //   sessionStorage.setItem("selectedUserId", userId);
+  //   const selectedUser = sessionStorage.getItem("selectedUserId");
+  //   console.log("selected useid:", selectedUser);
+  //   dispatch(setSelectedUser(userId));
+  //   setUserName(userId);
+  // };
+
+  const handleUserSelect = (userName, productId) => {
+  // Store both userName and productId in sessionStorage
+  sessionStorage.setItem("selectedUserId", userName);
+  sessionStorage.setItem("selectedProductId", productId);
+
+  // Dispatch Redux action
+  dispatch(setSelectedUser(userName));
+  setUserName(userName);
+
+  // 🔔 Notify other tabs/components
+  window.dispatchEvent(new CustomEvent("selectedUserIdChanged"));
+};
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
@@ -274,7 +290,7 @@ function Header() {
       <div className="mt-4 col-lg-12">
         <Navbar
           expand="lg"
-          className="header-navbar"
+          className="header-navbar header-navbar-autonerve"
           style={{
             position: "fixed",
             top: "0",
@@ -385,7 +401,7 @@ function Header() {
                         filteredUsers.map((user, index) => (
                           <Dropdown.Item
                             key={index}
-                            onClick={() => handleUserSelect(user.userName)}
+                            onClick={() => handleUserSelect(user.userName,user.productID)}
                             style={{
                               whiteSpace: "nowrap",
                               textOverflow: "ellipsis",

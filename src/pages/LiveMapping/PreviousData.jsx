@@ -1,240 +1,247 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { FaArrowLeft } from 'react-icons/fa';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable'; // For generating tables in PDF
+
+import React, { useEffect, useMemo, useState } from "react";
+import { useSelector } from "react-redux";
+import axios from "axios";
+import moment from "moment";
+import { API_URL } from "../../utils/apiConfig";
 
 function PreviousData() {
-  // Updated sample data to include auto, run, trip
-  const sampleData = [
-    { id: 1, instrument: 'Instrument A', auto: '00:01:00', run: '00:00:30', trip: '00:00:30' },
-    { id: 2, instrument: 'Instrument B', auto: '00:02:00', run: '00:01:00', trip: '00:01:00' },
-    { id: 3, instrument: 'Instrument C', auto: '00:03:00', run: '00:01:30', trip: '00:01:30' },
-    { id: 4, instrument: 'Instrument A', auto: '00:01:00', run: '00:00:30', trip: '00:00:30' },
-    { id: 5, instrument: 'Instrument B', auto: '00:02:00', run: '00:01:00', trip: '00:01:00' },
-    { id: 6, instrument: 'Instrument C', auto: '00:03:00', run: '00:01:30', trip: '00:01:30' },
-    { id: 7, instrument: 'Instrument B', auto: '00:02:00', run: '00:01:00', trip: '00:01:00' },
-    { id: 8, instrument: 'Instrument C', auto: '00:03:00', run: '00:01:30', trip: '00:01:30' },
-  ];
+  const { userData } = useSelector((state) => state.user);
+  const actualUser = userData?.validUserOne || {};
 
-  // 1. Create a function to generate and download PDF
-  const handleDownloadPDF = () => {
-    // Create a new jsPDF instance
-    const doc = new jsPDF();
+  const [pumps, setPumps] = useState([]);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-    // Optional: Add a title
-    doc.setFontSize(14);
-    doc.text('Previous Running Data', 14, 16);
+  // Filters
+  const [from, setFrom] = useState(
+    moment().subtract(6, "days").format("YYYY-MM-DD")
+  ); // last 7 days
+  const [to, setTo] = useState(moment().format("YYYY-MM-DD"));
+  const [pumpId, setPumpId] = useState("ALL");
 
-    // 2. Define columns for autoTable
-    // (Here we use a simple single-row header for the PDF, but you could do multi-level headers if you prefer.)
-    const columns = [
-      { header: 'SL No', dataKey: 'id' },
-      { header: 'Instrument Name', dataKey: 'instrument' },
-      { header: 'Auto', dataKey: 'auto' },
-      { header: 'Run', dataKey: 'run' },
-      { header: 'Trip', dataKey: 'trip' },
+  const productID = actualUser?.productID;
+  const selectedUserName =
+    actualUser?.userType === "admin"
+      ? sessionStorage.getItem("selectedUserId")
+      : actualUser?.userName;
+  console.log("selectedUserName:", selectedUserName);
+  // Fetch pump list for filter (once user/product known)
+  useEffect(() => {
+    const fetchPumps = async () => {
+      if (!productID || !selectedUserName) return;
+      try {
+        const { data } = await axios.get(
+          `${API_URL}/api/runtime/pumps/${productID}/${selectedUserName}`
+        );
+        setPumps(data?.data || []);
+      } catch (e) {
+        console.error("Error fetching pumps:", e);
+      }
+    };
+    fetchPumps();
+  }, [productID, selectedUserName]);
+
+  // Fetch history
+  const fetchHistory = async () => {
+    if (!productID || !selectedUserName || !from || !to) return;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        product_id: productID,
+        userName: selectedUserName,
+        from,
+        to,
+      });
+      if (pumpId && pumpId !== "ALL") params.append("pumpId", pumpId);
+
+      const { data } = await axios.get(
+        `${API_URL}/api/runtime/history?${params.toString()}`
+      );
+      setRows(data?.data || []);
+    } catch (e) {
+      console.error("Error fetching history:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // initial load with defaults
+
+  const onApplyFilters = (e) => {
+    e.preventDefault();
+    fetchHistory();
+  };
+
+  const grouped = useMemo(() => {
+    // group by date for display
+    const byDate = {};
+    for (const r of rows) {
+      if (!byDate[r.date]) byDate[r.date] = [];
+      byDate[r.date].push(r);
+    }
+    return byDate;
+  }, [rows]);
+
+  const downloadCSV = () => {
+    if (!rows.length) return;
+    const headers = [
+      "Date",
+      "Pump ID",
+      "Pump Name",
+      "Runtime (HH:MM:SS)",
+      "Runtime (ms)",
     ];
-
-    // 3. Prepare the rows
-    const rows = sampleData.map((item) => ({
-      id: item.id,
-      instrument: item.instrument,
-      auto: item.auto,
-      run: item.run,
-      trip: item.trip,
-    }));
-
-    // 4. Generate the table
-    doc.autoTable({
-      head: [columns.map((col) => col.header)],
-      body: rows.map((row) => columns.map((col) => row[col.dataKey])),
-      startY: 22, // Start just below the title
-      styles: { halign: 'center' }, // Center align text in each cell
-      headStyles: { fillColor: '#236a80' }, // Table header color
+    const lines = [headers.join(",")];
+    for (const r of rows) {
+      lines.push(
+        [r.date, r.pumpId, `"${r.pumpName}"`, r.runtime, r.totalRuntimeMs].join(
+          ","
+        )
+      );
+    }
+    const blob = new Blob([lines.join("\n")], {
+      type: "text/csv;charset=utf-8;",
     });
-
-    // 5. Save the PDF
-    doc.save('previous_data.pdf');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `runtime_${selectedUserName}_${from}_to_${to}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      {/* Top row with Back link on the left and Download button on the right */}
-      <div
+    <div style={{ padding: 20, marginTop: 30 }}>
+      <h3>Previous Data</h3>
+
+      {/* Filters */}
+      <form
+        onSubmit={onApplyFilters}
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px',
+          display: "grid",
+          gridTemplateColumns: "repeat(5, minmax(140px, 1fr))",
+          gap: 12,
+          alignItems: "end",
+          marginBottom: 16,
         }}
       >
-        {/* Back button */}
-        <Link
-          to="/live-station"
-          style={{
-            textDecoration: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            fontSize: '16px',
-            color: 'green',
-          }}
-        >
-          <FaArrowLeft style={{ marginRight: '8px' }} /> Back
-        </Link>
+        <div>
+          <label style={{ fontWeight: 600 }}>From</label>
+          <input
+            type="date"
+            max={to}
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="form-control"
+          />
+        </div>
 
-        {/* Download PDF button */}
-        <button
-          onClick={handleDownloadPDF}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#236a80',
-            color: '#fff',
-            border: 'none',
-            cursor: 'pointer',
-            borderRadius: '4px',
-          }}
-        >
-          Download PDF
-        </button>
-      </div>
+        <div>
+          <label style={{ fontWeight: 600 }}>To</label>
+          <input
+            type="date"
+            min={from}
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="form-control"
+          />
+        </div>
 
-      {/* Table container with a fixed height and vertical scroll */}
-      <div style={{ maxHeight: '100vh', overflowY: 'auto' }}>
-        <h2>Previous Running Data</h2>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead style={{ backgroundColor: '#236a80', color: '#fff' }}>
-            {/* First row: SL No and Instrument Name have rowSpan=2, 
-                "Running Time" merges 3 columns (Auto, Run, Trip). */}
-            <tr>
-              <th
-                rowSpan="2"
-                style={{ 
-                  padding: '8px', 
-                  border: '1px solid #ddd', 
-                  textAlign: 'center', 
-                  backgroundColor:"#236a80",
-                  color:'white'
-                }}
-              >
-                SL No
-              </th>
-              <th
-                rowSpan="2"
-                style={{ 
-                  padding: '8px', 
-                  border: '1px solid #ddd', 
-                  textAlign: 'center' ,
-                   backgroundColor:"#236a80",
-                  color:'white'
-                }}
-              >
-                Instrument Name
-              </th>
-              <th
-                colSpan="3"
-                style={{ 
-                  padding: '8px', 
-                  border: '1px solid #ddd', 
-                  textAlign: 'center' ,
-                   backgroundColor:"#236a80",
-                  color:'white'
-                }}
-              >
-                Running Time
-              </th>
-            </tr>
-            {/* Second row: sub-columns under Running Time */}
-            <tr>
-              <th
-                style={{
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  textAlign: 'center',
-                   backgroundColor:"#236a80",
-                  color:'white'
-                }}
-              >
-                Auto
-              </th>
-              <th
-                style={{
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  textAlign: 'center',
-                   backgroundColor:"#236a80",
-                  color:'white'
-                }}
-              >
-                Run
-              </th>
-              <th
-                style={{
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  textAlign: 'center',
-                   backgroundColor:"#236a80",
-                  color:'white'
-                }}
-              >
-                Trip
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sampleData.map((row) => (
-              <tr key={row.id}>
-                <td
-                  style={{
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    textAlign: 'center',
-                  }}
-                >
-                  {row.id}
-                </td>
-                <td
-                  style={{
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                  }}
-                >
-                  {row.instrument}
-                </td>
-                <td
-                  style={{
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    textAlign: 'center',
-                  }}
-                >
-                  {row.auto}
-                </td>
-                <td
-                  style={{
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    textAlign: 'center',
-                  }}
-                >
-                  {row.run}
-                </td>
-                <td
-                  style={{
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    textAlign: 'center',
-                  }}
-                >
-                  {row.trip}
-                </td>
-              </tr>
+        <div>
+          <label style={{ fontWeight: 600 }}>Pump</label>
+          <select
+            className="form-control"
+            value={pumpId}
+            onChange={(e) => setPumpId(e.target.value)}
+          >
+            <option value="ALL">All Pumps</option>
+            {pumps.map((p) => (
+              <option key={p.pumpId} value={p.pumpId}>
+                {p.pumpName} ({p.pumpId})
+              </option>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </select>
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ backgroundColor: "#236a80", borderColor: "#236a80" }}
+          >
+            Apply
+          </button>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            onClick={downloadCSV}
+            className="btn btn-outline-secondary"
+            disabled={!rows.length}
+          >
+            Download CSV
+          </button>
+        </div>
+      </form>
+
+      {/* Data */}
+      {loading ? (
+        <div className="text-center p-3">Loading...</div>
+      ) : rows.length === 0 ? (
+        <div className="text-center p-3">
+          No data found for the selected range.
+        </div>
+      ) : (
+        Object.keys(grouped).map((d) => (
+          <div key={d} style={{ marginBottom: 18 }}>
+            <div
+              style={{
+                background: "#f3f7f9",
+                padding: "8px 12px",
+                fontWeight: 600,
+                border: "1px solid #e1eef3",
+                borderTopLeftRadius: 6,
+                borderTopRightRadius: 6,
+              }}
+            >
+              {d}
+            </div>
+            <div className="table-responsive">
+              <table
+                className="table table-bordered"
+                style={{ minWidth: 700, marginBottom: 0 }}
+              >
+                <thead style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                  <tr>
+                    <th>SL.NO</th>
+                    <th>Pump Name</th>
+                    <th>Pump ID</th>
+                    <th>Runtime (HH:MM:SS)</th>
+                    <th>Runtime (ms)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grouped[d].map((r, idx) => (
+                    <tr key={`${d}-${r.pumpId}`}>
+                      <td>{idx + 1}</td>
+                      <td>{r.pumpName}</td>
+                      <td>{r.pumpId}</td>
+                      <td>{r.runtime}</td>
+                      <td>{r.totalRuntimeMs}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 }
-
 export default PreviousData;

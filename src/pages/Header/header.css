@@ -20,18 +20,19 @@ Offcanvas full-screen settings
 /* Navbar styles */
 /* Header styles */
 .header-navbar {
- 
-   /* Optional: adds shadow for better visibility */
-    
-  /*  position: fixed; 
-   top: 0; 
-   z-index: 1000;
-   background: white; */ /* Set a background color to ensure text doesn't blend in with content below */
-   box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px; /* Optional: adds shadow for better visibility */
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px; /* Optional: adds shadow for better visibility */
   display: flex;
   align-items: center;
   justify-content: center;
- width: 72%;
+  width: 72%;
+  border-radius: 10px;
+}
+.autonerve-layout .header-navbar{
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px; /* Optional: adds shadow for better visibility */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   border-radius: 10px;
 }
 

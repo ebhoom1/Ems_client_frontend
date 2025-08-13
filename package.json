@@ -28,7 +28,7 @@
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "moment": "^2.30.1",
-    "pdfjs-dist": "^5.4.54",
+    "pdfjs-dist": "^4.8.69",
     "pdfmake": "^0.2.18",
     "qrcode": "^1.5.4",
     "re-resizable": "^6.10.0",
