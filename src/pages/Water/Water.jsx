@@ -367,26 +367,34 @@ const Water = () => {
       fetchEffluentStacks(currentUserName); 
     }
   }, [searchTerm, currentUserName, dispatch]); */
-  const fetchFallbackEffluentData = async (userName) => {
-    try {
-      const res = await axios.get(`${API_URL}/api/latest/${userName}`);
-      const allData = res.data?.data || [];
+ const fetchFallbackEffluentData = async (userName) => {
+  try {
+    const res = await axios.get(`${API_URL}/api/latest/${userName}`);
+    const allData = res.data?.data || [];
 
-      const effluentOnly = allData
-        .filter((entry) => entry.stationType === "effluent")
-        .flatMap((entry) => entry.stackData || []);
+    const processed = {};
 
-      const processed = effluentOnly.reduce((acc, item) => {
-        if (item.stackName) acc[item.stackName] = item;
-        return acc;
-      }, {});
+    allData.forEach(entry => {
+      if (entry.stackData && Array.isArray(entry.stackData)) {
+        // Look for effluent stacks within any entry
+        const effluentStacks = entry.stackData.filter(stack => 
+          stack.stationType === "effluent"
+        );
+        
+        effluentStacks.forEach(item => {
+          if (item.stackName) {
+            processed[item.stackName] = item;
+          }
+        });
+      }
+    });
 
-      return processed;
-    } catch (err){
-      console.error("Error fetching fallback effluent data:", err.message);
-      return {};
-    }
-  };
+    return processed;
+  } catch (err) {
+    console.error("Error fetching fallback effluent data:", err.message);
+    return {};
+  }
+};
 
   const handleStackDataUpdate = async (data) => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
