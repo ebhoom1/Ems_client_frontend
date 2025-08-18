@@ -1,0 +1,47 @@
+/* Transparent, minimal, neat */
+.tanknode {
+  background: transparent;           /* no background color */
+  color: inherit;                    /* inherit from canvas/theme */
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 5px 6px;
+  min-width: 120px;
+  max-width: 220px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.tanknode__title {
+  font-weight: 700;
+  font-size: 0.5rem;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.tanknode__value {
+  font-size: 0.6rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.tanknode__meta {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+.tanknode__row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.tanknode__hgauge {
+  display: block;
+  flex: 0 0 auto;
+}
+

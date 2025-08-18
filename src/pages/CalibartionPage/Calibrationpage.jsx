@@ -89,7 +89,7 @@ setTimeout(() => {
     <div className="container-fluid">
       <div className="row">
         {/* Sidebar */}
-        <div className="col-lg-3 d-none d-lg-block">
+        <div className="col-lg-3 d-solid 1px #236a80 d-lg-block">
           <DashboardSam />
         </div>
         {/* Main content */}
@@ -98,19 +98,19 @@ setTimeout(() => {
        <div className='maindashboard'>
        <Maindashboard/>
        </div>
-       <div className="row" >
+       <div className="row text-dark" >
             <div className="col-12 col-md-12 grid-margin">
             
-              <div className="card  mt-5">
+              <div className="text-dark  mt-5">
             
                 <div className="card-body ">
                   <form onSubmit={handleSubmit} className=" calibcard">
                     <div className="row">
                       {/* User ID */}
-                      <h1 className="text-center text-light mb-3">Calibration Added By</h1>
+                      <h1 className="text-center text-dark mb-3">Calibration Added By</h1>
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label text-light">User ID</label>
+                          <label className="form-label text-dark">User ID</label>
                           <input
                             type="text"
                             name="userName"
@@ -118,7 +118,7 @@ setTimeout(() => {
                             onChange={handleInputChange}
                             placeholder="User ID"
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none'  }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'solid 1px #236a80'  }}
                           />
                         </div>
                       </div>
@@ -126,21 +126,21 @@ setTimeout(() => {
                       {/* Date of Calibration Added */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label text-light">Date of Calibration Added</label>
+                          <label className="form-label text-dark">Date of Calibration Added</label>
                           <input
                             type="date"
                             name="dateOfCalibrationAdded"
                             value={calibrationData?.dateOfCalibrationAdded || ''}
                             onChange={handleInputChange}
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'solid 1px #236a80' }}
                           />
                         </div>
                       </div>
 
                       {/* Time of Calibration Added */}
                       <div className="col-lg-6 col-md-6 mb-4">
-                        <div className="form-group text-light">
+                        <div className="form-group text-dark">
                           <label className="form-label">Time of Calibration Added</label>
                           <input
                             type="text"
@@ -149,7 +149,7 @@ setTimeout(() => {
                             onChange={handleInputChange}
                             placeholder="Time"
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'solid 1px #236a80' }}
                           />
                         </div>
                       </div>
@@ -157,7 +157,7 @@ setTimeout(() => {
                       {/* User Name */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label text-light">User Name</label>
+                          <label className="form-label text-dark">User Name</label>
                           <input
                             type="text"
                             name="fname"
@@ -165,27 +165,27 @@ setTimeout(() => {
                             onChange={handleInputChange}
                             placeholder="User Name"
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'solid 1px #236a80' }}
                           />
                         </div>
                       </div>
                     </div>
 
                     <div className="row">
-                      <h1 className="text-center text-light mt-5">Add Calibration Details</h1>
+                      <h1 className="text-center text-dark mt-5">Add Calibration Details</h1>
                       {/* Model Name */}
 
 
                     {/*   <div className="col-lg-6 col-md-6 mb-4">
                             <label htmlFor="exampleFormControlInput5">User ID</label>
                             <input type="text" className="input-field" id="exampleFormControlInput5" placeholder="User ID" name='userName' value= {calibrationData.userName}  onChange={handleInputChange}
-                              style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                              style={{ padding: '15px', borderRadius: '10px', border: 'solid 1px #236a80' }}
                             /> */}
                             
 
                          {/*  </div> */}
                          <div className="col-lg-6 col-md-6 mb-4">
-                        <div className="form-group text-light">
+                        <div className="form-group text-dark">
                           <label className="form-label">User ID</label>
                           <input
                             type="text"
@@ -194,7 +194,7 @@ setTimeout(() => {
                             onChange={handleInputChange}
                             placeholder="User ID"
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'solid 1px #236a80' }}
                           />
                         </div>
                       </div>
@@ -203,7 +203,7 @@ setTimeout(() => {
 
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label text-light">Model Name</label>
+                          <label className="form-label text-dark">Model Name</label>
                           <input
                             type="text"
                             name="equipmentName"
@@ -211,14 +211,14 @@ setTimeout(() => {
                             onChange={handleInputChange}
                             placeholder="Model Name"
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'solid 1px #236a80' }}
                           />
                         </div>
                       </div>
 
                       {/* Date */}
                       <div className="col-lg-6 col-md-6 mb-4">
-                        <div className="form-group text-light">
+                        <div className="form-group text-dark">
                           <label className="form-label">Date of Calibration</label>
                           <input
                             type="date"
@@ -226,29 +226,29 @@ setTimeout(() => {
                             value={calibrationData?.date || ''}
                             onChange={handleInputChange}
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'solid 1px #236a80' }}
                           />
                         </div>
                       </div>
-                     <h1 className='text-center text-light mt-5'>Results</h1>
+                     <h1 className='text-center text-dark mt-5'>Results</h1>
                       {/* Before */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label text-light">Before</label>
+                          <label className="form-label text-dark">Before</label>
                           <textarea
                             name="before"
                             value={calibrationData?.before || ''}
                             onChange={handleInputChange}
                             placeholder="Before"
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'solid 1px #236a80' }}
                           />
                         </div>
                       </div>
 
                       {/* After */}
                       <div className="col-lg-6 col-md-6 mb-4">
-                        <div className="form-group text-light">
+                        <div className="form-group text-dark">
                           <label className="form-label">After</label>
                           <textarea
                             name="after"
@@ -256,7 +256,7 @@ setTimeout(() => {
                             onChange={handleInputChange}
                             placeholder="After"
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'solid 1px #236a80' }}
                           />
                         </div>
                       </div>
@@ -264,7 +264,7 @@ setTimeout(() => {
                       {/* Technician */}
                       <div className="col-lg-6 col-md-6 mb-4">
                         <div className="form-group">
-                          <label className="form-label text-light">Technician</label>
+                          <label className="form-label text-dark">Technician</label>
                           <input
                             type="text"
                             name="technician"
@@ -272,14 +272,14 @@ setTimeout(() => {
                             onChange={handleInputChange}
                             placeholder="Technician Name"
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'solid 2px #236a80' }}
                           />
                         </div>
                       </div>
 
                       {/* Notes */}
                       <div className="col-lg-6 col-md-6 mb-4">
-                        <div className="form-group text-light">
+                        <div className="form-group text-dark">
                           <label className="form-label">Notes</label>
                           <textarea
                             name="notes"
@@ -287,7 +287,7 @@ setTimeout(() => {
                             onChange={handleInputChange}
                             placeholder="Notes"
                             className="form-control"
-                            style={{ padding: '15px', borderRadius: '10px', border: 'none' }}
+                            style={{ padding: '15px', borderRadius: '10px', border: 'solid 1px #236a80' }}
                           />
                         </div>
                       </div>

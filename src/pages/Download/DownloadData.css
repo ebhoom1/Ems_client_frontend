@@ -1,0 +1,95 @@
+/* DownloadData.css */
+
+.download-container {
+  background-color: #ffffff;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  margin-top: 2rem;
+  border: 1px solid #e9ecef;
+}
+
+/* Header section with the title and description */
+.download-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.download-header h1 {
+  color: #236a80;
+  font-weight: 700;
+  font-size: 2.25rem;
+}
+
+.download-header p {
+  color: #6c757d;
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin: 0.5rem auto 0;
+}
+
+/* Styling for form labels */
+.download-form .form-label {
+  font-weight: 600;
+  color: #343a40;
+  margin-bottom: 0.75rem;
+}
+
+/* Consistent styling for all select and input fields */
+.download-form .form-select,
+.download-form .form-control {
+  background-color: #f8f9fa;
+  border: 2px solid #dee2e6;
+  border-radius: 10px;
+  padding: 15px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Visual feedback when a user interacts with a field */
+.download-form .form-select:focus,
+.download-form .form-control:focus {
+  background-color: #ffffff;
+  border-color: #236a80;
+  box-shadow: 0 0 0 4px rgba(35, 106, 128, 0.15);
+  outline: none;
+}
+
+/* Button container to center the download button */
+.button-container {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+/* The main download button */
+.btn-download {
+  background: linear-gradient(90deg, #236a80, #3c798b);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 15px 40px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(35, 106, 128, 0.2);
+}
+
+.btn-download:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(35, 106, 128, 0.3);
+}
+
+/* Media query for responsiveness */
+@media (max-width: 768px) {
+  .download-container {
+    padding: 1.5rem;
+  }
+  .download-header h1 {
+    font-size: 1.75rem;
+  }
+}

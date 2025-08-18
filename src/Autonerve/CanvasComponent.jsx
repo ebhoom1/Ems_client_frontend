@@ -24,6 +24,7 @@ import { API_URL } from "../utils/apiConfig";
 import screenfull from "screenfull";
 import { BiFullscreen } from "react-icons/bi";
 import { getSocket } from "./socketService";
+import TankNode from "./TankNode";
 
 function CanvasComponent({
   selectedStationName,
@@ -103,11 +104,51 @@ function CanvasComponent({
     return String(ui?.productID || "");
   }, [userData]);
 
+  const effectiveUserName = getOwnerUserName();
+  const effectiveProductId = getEffectiveProductId();
   const socket = useRef(null);
   const backendUrl = API_URL || "http://localhost:5555";
 
   useEffect(() => {
     socket.current = getSocket(backendUrl);
+
+    const handleTankData = (payload) => {
+            console.log("Processing tank payload:", payload);
+
+      // payload shape: { product_id, tankData: [{stackName,tankName,level,percentage}], ... }
+      if (!payload || !Array.isArray(payload.tankData)) return;
+      const nowIso = new Date().toISOString();
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.type !== "tankNode") return node;
+          const tn = (node.data?.tankName || node.data?.name || node.id || "")
+            .toString()
+            .toLowerCase();
+          const sn = (node.data?.stackName || "").toString().toLowerCase();
+          // find best match by tankName (and optional stackName)
+          const match = payload.tankData.find((t) => {
+            const tTank = (t.tankName || t.TankName || "")
+              .toString()
+              .toLowerCase();
+            const tStack = (t.stackName || "").toString().toLowerCase();
+            const tankMatches = tTank && tTank === tn;
+            const stackOk = !sn || sn === tStack; // if node has stackName, require match
+            return tankMatches && stackOk;
+          });
+          if (!match) return node;
+          const pct = Number(match.percentage);
+          const inRange = Number.isFinite(pct) && pct >= 0 && pct <= 100;
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              percentage: inRange ? pct : node.data?.percentage, // only update when valid
+              lastUpdated: nowIso,
+            },
+          };
+        })
+      );
+    };
 
     const handlePumpFeedback = (payload) => {
       console.log("Processing pump feedback:", payload);
@@ -189,34 +230,50 @@ function CanvasComponent({
 
     socket.current.on("connect", () => {
       console.log("Socket.IO connected:", socket.current.id);
-      if (productId) socket.current.emit("joinRoom", productId);
+      if (effectiveProductId)
+        socket.current.emit("joinRoom", effectiveProductId);
     });
 
+    socket.current.on("data", handleTankData);
     socket.current.on("pumpFeedback", handlePumpFeedback);
     socket.current.on("pumpAck", handlePumpAck);
 
     socket.current.on("reconnect", () => {
       console.log("Reconnected to server");
-      if (productId) socket.current.emit("joinRoom", productId);
+      if (effectiveProductId)
+        socket.current.emit("joinRoom", effectiveProductId);
     });
 
     return () => {
+      socket.current.off("data", handleTankData);
       socket.current.off("pumpFeedback", handlePumpFeedback);
       socket.current.off("pumpAck", handlePumpAck);
     };
-  }, [backendUrl, productId, setNodes, setPendingPumps, setRealtimePumpData]);
+  }, [
+    backendUrl,
+    effectiveProductId,
+    setNodes,
+    setPendingPumps,
+    setRealtimePumpData,
+  ]);
 
   useEffect(() => {
-    if (productId) {
+    if (effectiveProductId) {
       console.log(
-        `[FRONTEND] Attempting to join room with productId: ${productId}`
+        `[FRONTEND] Attempting to join room with productId: ${effectiveProductId}`
       );
-      socket.current.emit("joinRoom", productId);
+      socket.current.emit("joinRoom", effectiveProductId);
     }
-  }, [productId]);
+  }, [effectiveProductId]);
 
   const sendPumpControlMessage = useCallback(
     (prodId, pumps) => {
+      if (!prodId) {
+        showMessageBox(
+          "No product selected. Please select a user (product) first."
+        );
+        return;
+      }
       if (socket.current && socket.current.connected) {
         // Build pending and optimistic update based on the current nodes snapshot
         const newPendingState = {};
@@ -270,6 +327,7 @@ function CanvasComponent({
       ),
       imageNode: ImageNode,
       pdfNode: PdfNode,
+      tankNode: TankNode,
     }),
     [setNodes, sendPumpControlMessage]
   );
@@ -341,7 +399,7 @@ function CanvasComponent({
                   ...node.data,
                   isOn: isOn,
                   isPending: isPending,
-                  productId: productId,
+                  productId: effectiveProductId,
                   isEditMode: isEditMode,
                   realtimeValues: realtimePumpData[node.id] || {},
                 },
@@ -373,7 +431,7 @@ function CanvasComponent({
       setEdges,
       onStationNameChange,
       reactFlowInstance,
-      productId,
+      effectiveProductId,
     ]
   );
   useEffect(() => {
@@ -651,6 +709,8 @@ function CanvasComponent({
       }
 
       let deviceName = shapeData.label || manualId;
+      let tankName = undefined;
+      let stackName = undefined;
       if (isSpecialNode) {
         const nameInput = prompt(`Enter a name for device ${manualId}:`);
         if (!nameInput) {
@@ -659,6 +719,11 @@ function CanvasComponent({
           return;
         }
         deviceName = nameInput;
+      } else if (shapeData.isTank) {
+        tankName =
+          prompt(`TankName to bind (exact as device, e.g. "Equalization"):`) ||
+          deviceName;
+        // stackName = prompt(`StackName (optional, e.g. "STP_Tank"):`) || "";
       }
 
       const position = reactFlowInstance.project({
@@ -668,6 +733,7 @@ function CanvasComponent({
 
       let nodeType = "default";
       if (isSpecialNode) nodeType = "pumpBlowerNode";
+      else if (shapeData.isTank) nodeType = "tankNode";
       else if (isPngNode) nodeType = "imageNode";
       else if (isPdfNode) nodeType = "pdfNode";
 
@@ -725,7 +791,9 @@ function CanvasComponent({
         data: {
           id: manualId,
           name: deviceName,
-          productId,
+          productId: effectiveProductId,
+          tankName,
+          stackName,
           filePath: uploadedUrl, // signed URL for immediate viewing
           fileKey: uploadedKey, // persist this, refresh signed URL later when loading
           label:
@@ -745,7 +813,7 @@ function CanvasComponent({
       reactFlowInstance,
       reactFlowWrapper,
       nodes,
-      productId,
+      effectiveProductId,
       showMessageBox,
       draggedFileRef,
       clearDraggedFile,
