@@ -85,7 +85,12 @@ const Water = () => {
   const [selectedStack, setSelectedStack] = useState("all");
   const [effluentStacks, setEffluentStacks] = useState([]); // New state to store effluent stacks
   const [realTimeData, setRealTimeData] = useState({});
-  const [dynamicPhValue, setDynamicPhValue] = useState(null); // MODIFICATION: State for EGLH pH value
+  
+  // ### MODIFICATIONS START ###
+  const [dynamicPhValue, setDynamicPhValue] = useState(null);
+  const [egl2SimulatedData, setEgl2SimulatedData] = useState(null);
+  // ### MODIFICATIONS END ###
+
   // Remove spinners and set default colors for indicators
   const [exceedanceColor, setExceedanceColor] = useState("green"); // Default to 'gray'
   const [timeIntervalColor, setTimeIntervalColor] = useState("green"); // Default to 'gray'
@@ -102,8 +107,26 @@ const Water = () => {
   const [isCheckedIn, setIsCheckedIn] = useState(false); // new
   const [allowClicks, setAllowClicks] = useState(false); //new for overlay control
   const isEGL5 = currentUserName === "EGL5";
+  
+  // ### NEW: useEffect to handle simulated data for user EGL2 ###
+  useEffect(() => {
+    if (currentUserName === 'EGL2') {
+      const simulatedData = {
+        TURB: 1.01,                                     // Turbidity: fixed value
+        Temp: 28.5 + (Math.random() * 0.5 - 0.25),      // Temperature: ~28.5
+        TEMP: 28.5 + (Math.random() * 0.5 - 0.25),      // Temperature (alternative key)
+        BOD: Math.random() * 9 + 1,                     // BOD: < 10 (value between 1 and 10)
+        COD: Math.random() * 28 + 2,                    // COD: < 30 (value between 2 and 30)
+        TSS: Math.random() * 4 + 1,                     // TSS: < 5 (value between 1 and 5)
+      };
+      setEgl2SimulatedData(simulatedData);
+    } else {
+      // Clear simulated data if the user is not EGL2
+      setEgl2SimulatedData(null);
+    }
+  }, [currentUserName]);
 
-  // MODIFICATION: useEffect to handle dynamic pH for user EGLH
+  // useEffect to handle dynamic pH for user EGLH
   useEffect(() => {
     const generateRandomPh = () => {
       // Generates a random number between 7.0 and 7.5
@@ -190,7 +213,7 @@ const Water = () => {
     { parameter: "TDS", value: "mg/l", name: "TDS" },
     { parameter: "Turbidity", value: "NTU", name: "TURB" },
     { parameter: "Temperature", value: "℃", name: "Temp" },
-    { parameter: "Temperature", value: "℃", name: "TEMP" },
+  /*   { parameter: "Temperature", value: "℃", name: "TEMP" }, */
 
     //ammonicalNitrogen
     {
@@ -943,22 +966,28 @@ const Water = () => {
 )}
                                     <div className="row">
                                       {waterParameters.map((item, index) => {
-                                        // 1) grab raw value
+                                        // 1) Grab the raw value from the stack data
                                         let value = stack[item.name];
 
-                                        // MODIFICATION: Handle special case for EGLH user's pH value
+                                        // ### MODIFICATIONS START ###
+                                        // Override for EGLH user's pH if the value is 0
                                         if (currentUserName === 'EGLH' && item.name === 'ph' && value === 0) {
-                                            value = dynamicPhValue; // Use the state-managed random value
+                                            value = dynamicPhValue;
                                         }
 
-                                        // 2) if EGL5 and raw is exactly 0, apply your defaults
+                                        // Override for EGL2 user with simulated data
+                                        if (currentUserName === 'EGL2' && egl2SimulatedData && egl2SimulatedData[item.name] !== undefined) {
+                                            value = egl2SimulatedData[item.name];
+                                        }
+                                        // ### MODIFICATIONS END ###
+
+                                        // Override for EGL5 if the raw value is exactly 0
                                         if (isEGL5 && value === 0) {
                                           if (item.name === "BOD") value = 6.78;
-                                          if (item.name === "COD")
-                                            value = 25.89;
+                                          if (item.name === "COD") value = 25.89;
                                         }
 
-                                        // 3) skip only if truly missing, null, or "N/A"
+                                        // Skip rendering the card if the value is missing, null, or "N/A"
                                         if (
                                           value === undefined ||
                                           value === null ||

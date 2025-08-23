@@ -65,9 +65,10 @@ const QuantityFlow = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const effectiveUserName = selectedUserIdFromRedux || storedUserId || userData?.validUserOne?.userName;
   const [simulatedStpConsumption, setSimulatedStpConsumption] = useState(null);
-  const SIMULATION_USER = 'EGLH';
-  const SIMULATION_STACK = 'STP outlet';
-  const graphRef = useRef();
+  const SIMULATION_USER = 'EGL2';
+ const SIMULATION_STACKS = ['STP outlet', 'STP inlet'];
+  const [simulatedConsumption, setSimulatedConsumption] = useState({});
+   const graphRef = useRef();
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -325,11 +326,23 @@ useEffect(() => {
         // Calculate how many 20-minute intervals have passed
         const increments = Math.floor(minutesElapsed / 20);
         
-        // Base value is 75, plus the increments
-        const simulatedValue = 35 + increments;
+        // ### UPDATED: Calculate different values for inlet and outlet ###
         
-        setSimulatedStpConsumption(simulatedValue);
-        console.log(`Simulation for ${SIMULATION_STACK}: ${simulatedValue}`);
+        // 1. Calculate the base simulated value for the inlet
+        const simulatedInletValue = 35 + increments;
+        
+        // 2. Calculate a smaller value for the outlet (e.g., inlet value minus 5)
+        //    Using Math.max(0, ...) ensures the value never goes below zero.
+        const simulatedOutletValue = Math.max(0, simulatedInletValue - 5);
+        
+        // 3. Create the state object with the two different values
+        const newSimulatedValues = {
+          'STP inlet': simulatedInletValue,
+          'STP outlet': simulatedOutletValue,
+        };
+        
+        setSimulatedConsumption(newSimulatedValues);
+        console.log(`Simulation - Inlet: ${simulatedInletValue}, Outlet: ${simulatedOutletValue}`);
       };
 
       // Run it once immediately
@@ -345,7 +358,7 @@ useEffect(() => {
         clearInterval(simulationInterval);
       }
     };
-  }, [effectiveUserName]); 
+  }, [effectiveUserName]);
   useEffect(() => {
     async function fetchMonthlyAndYesterdayData() {
       try {
@@ -379,41 +392,45 @@ useEffect(() => {
     fetchMonthlyAndYesterdayData();
   }, []);
 useEffect(() => {
-    // Only proceed if all conditions are met
-    if (
-      effectiveUserName === SIMULATION_USER &&
-      simulatedStpConsumption !== null &&
-      realTimeData[SIMULATION_STACK] &&
-      initialFlows[SIMULATION_STACK] !== undefined
-    ) {
-      setRealTimeData(currentData => {
-        // Get the initial flow for the day for the target stack
-        const initialFlow = initialFlows[SIMULATION_STACK] || 0;
-        
-        // Calculate the new cumulatingFlow needed to produce the simulated consumption
-        // newCumulatingFlow = initialFlow + simulatedConsumption
-        const newCumulativeFlow = initialFlow + simulatedStpConsumption;
-
-        // Get the current value to prevent unnecessary re-renders
-        const currentCumulativeFlow = currentData[SIMULATION_STACK]?.cumulatingFlow;
-        
-        // Only update state if the value has actually changed
-        if (newCumulativeFlow !== currentCumulativeFlow) {
-          console.log(`Overriding ${SIMULATION_STACK} cumulatingFlow to: ${newCumulativeFlow}`);
-          // Create a deep copy to avoid state mutation
-          const newData = JSON.parse(JSON.stringify(currentData));
-          
-          // Apply the override
-          newData[SIMULATION_STACK].cumulatingFlow = newCumulativeFlow;
-          
-          return newData;
-        }
-
-        // If no change is needed, return the original state
-        return currentData;
-      });
+    // Only proceed if the user is the simulation user and we have values
+    if (effectiveUserName !== SIMULATION_USER || Object.keys(simulatedConsumption).length === 0) {
+      return;
     }
-  }, [realTimeData, initialFlows, simulatedStpConsumption, effectiveUserName]);
+
+    setRealTimeData(currentData => {
+      // Create a deep copy to avoid state mutation
+      const newData = JSON.parse(JSON.stringify(currentData));
+      let hasChanged = false;
+
+      // ### UPDATED: Loop through stacks to apply overrides ###
+      SIMULATION_STACKS.forEach(stackName => {
+        const simulatedValue = simulatedConsumption[stackName];
+        
+        // Check if all necessary data exists for the current stack
+        if (
+          simulatedValue !== undefined &&
+          newData[stackName] &&
+          initialFlows[stackName] !== undefined
+        ) {
+          const initialFlow = initialFlows[stackName] || 0;
+          
+          // Calculate the new cumulatingFlow needed to produce the simulated consumption
+          const newCumulativeFlow = initialFlow + simulatedValue;
+          const currentCumulativeFlow = newData[stackName]?.cumulatingFlow;
+          
+          // Only update if the value has actually changed
+          if (newCumulativeFlow !== currentCumulativeFlow) {
+            console.log(`Overriding ${stackName} cumulatingFlow to: ${newCumulativeFlow}`);
+            newData[stackName].cumulatingFlow = newCumulativeFlow;
+            hasChanged = true;
+          }
+        }
+      });
+
+      // Only update state if a change was actually made to prevent infinite loops
+      return hasChanged ? newData : currentData;
+    });
+  }, [realTimeData, initialFlows, simulatedConsumption, effectiveUserName]);
   useEffect(() => {
     async function fetchDailyData() {
       try {
