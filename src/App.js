@@ -82,9 +82,11 @@ import Services from "./pages/Inventory/Services";
 import SubscriptionPlans from "./pages/Subscribe/SubscriptionPlans";
 import PaymentPage from "./pages/Subscribe/PaymentPage";
 import MaintenanceForm from "./pages/Inventory/MaintenanceForm";
+import ServiceReportForm from "./pages/Inventory/ServiceReportForm";
 import ElectricalMaintenance from "./pages/Inventory/ElectricalMaintenance";
 import ElectricalReport from "./pages/Inventory/ElectricalReport";
 import MechanicalReport from "./pages/Inventory/MechanicalReport";
+import ServiceReport from './pages/Inventory/ServiceReportView';
 import MergedMechanicalReport from "./pages/Inventory/MergedMechanicalReport";
 import MergedElectricalReport from "./pages/Inventory/MergedElectricalReport";
 import DailyLog from "./pages/Inventory/DailyLog";
@@ -304,12 +306,20 @@ function App() {
                     }
                   />
                   <Route
+                    path="/maintenance/service/:equipmentId"
+                    element={<ServiceReportForm />}
+                  />
+                  <Route
                     path="/report/electrical/:equipmentId"
                     element={<ElectricalReport />}
                   />
                   <Route
                     path="/report/mechanical/:equipmentId"
                     element={<MechanicalReport />}
+                  />
+                   <Route
+                    path="/report/service/:equipmentId"
+                    element={<ServiceReport/>}
                   />
                   <Route
                     path="/report/electrical/download/:userName/:year/:month"

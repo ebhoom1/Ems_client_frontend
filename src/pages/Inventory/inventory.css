@@ -15,4 +15,20 @@
     background-color: #e6e5e3 !important; /* Yellow for assigned */
   }
   
-  
+  .add-btn {
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #236a80;
+  background: #f5f9fc;
+  border: 1px dashed #236a80;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-btn:hover {
+  background: #e0f2ff;
+  color: #0d3f66;
+}

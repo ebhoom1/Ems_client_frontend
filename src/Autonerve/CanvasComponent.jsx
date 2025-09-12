@@ -584,62 +584,115 @@ function CanvasComponent({
     [isEditMode]
   );
 
+
   // const onDrop = useCallback(
-  //   (event) => {
+  //   async (event) => {
   //     if (!isEditMode) return;
   //     event.preventDefault();
 
-  //     const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+  //     const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+  //     if (!bounds || !reactFlowInstance) return;
+
   //     const dataString = event.dataTransfer.getData("application/reactflow");
   //     if (!dataString) return;
   //     const shapeData = JSON.parse(dataString);
 
-  //     const isSpecialNode = shapeData.isPump || shapeData.isAirblower;
-  //     const isPngNode = shapeData.isPNG;
-  //     const isPdfNode = shapeData.isPDF;
+  //     const isSpecialNode = !!(shapeData.isPump || shapeData.isAirblower);
+  //     const isPngNode = !!shapeData.isPNG;
+  //     const isPdfNode = !!shapeData.isPDF;
 
   //     const promptLabel =
-  //       shapeData.isPNG || shapeData.isPDF ? "file" : shapeData.label;
+  //       isPngNode || isPdfNode ? "file" : shapeData.label || "node";
 
   //     const manualId = prompt(`Enter a unique ID for the new ${promptLabel}:`);
   //     if (!manualId) {
   //       showMessageBox("ID is required. Aborting.");
+  //       clearDraggedFile();
   //       return;
   //     }
-  //     if (nodes.some((node) => node.id === manualId)) {
+  //     if (nodes.some((n) => n.id === manualId)) {
   //       showMessageBox(
   //         `ID "${manualId}" already exists. Please choose a unique ID.`
   //       );
+  //       clearDraggedFile();
   //       return;
   //     }
 
-  //     let deviceName = shapeData.label;
+  //     let deviceName = shapeData.label || manualId;
+  //     let tankName = undefined;
+  //     let stackName = undefined;
   //     if (isSpecialNode) {
   //       const nameInput = prompt(`Enter a name for device ${manualId}:`);
   //       if (!nameInput) {
   //         showMessageBox("Name is required. Aborting.");
+  //         clearDraggedFile();
   //         return;
   //       }
   //       deviceName = nameInput;
+  //     } else if (shapeData.isTank) {
+  //       tankName =
+  //         prompt(`TankName to bind (exact as device, e.g. "Equalization"):`) ||
+  //         deviceName;
+  //       // stackName = prompt(`StackName (optional, e.g. "STP_Tank"):`) || "";
   //     }
 
   //     const position = reactFlowInstance.project({
-  //       x: event.clientX - reactFlowBounds.left,
-  //       y: event.clientY - reactFlowBounds.top,
+  //       x: event.clientX - bounds.left,
+  //       y: event.clientY - bounds.top,
   //     });
 
   //     let nodeType = "default";
   //     if (isSpecialNode) nodeType = "pumpBlowerNode";
+  //     else if (shapeData.isTank) nodeType = "tankNode";
   //     else if (isPngNode) nodeType = "imageNode";
   //     else if (isPdfNode) nodeType = "pdfNode";
 
-  //     let fileData = null;
-  //     if (isPdfNode && shapeData.fileObject) {
-  //       const fileKey = `${manualId}-${Date.now()}`;
-  //       setUploadedFiles(
-  //         (prev) => new Map(prev.set(fileKey, shapeData.fileObject))
-  //       );
-  //       fileData = fileKey;
+    
+  //     // ---- upload handling (PNG/PDF) ----
+  //     let uploadedUrl = shapeData.filePath || null; // fallback if provided
+  //     let uploadedKey = null;
+
+  //     try {
+  //       if (isPngNode || isPdfNode) {
+  //         const fileToUpload = draggedFileRef.current;
+  //         if (!fileToUpload) {
+  //           showMessageBox("File object is missing. Cannot upload.");
+  //           return;
+  //         }
+
+  //         const formData = new FormData();
+  //         formData.append(
+  //           "liveStationImage",
+  //           fileToUpload,
+  //           shapeData.label || fileToUpload.name
+  //         );
+
+  //         const resp = await fetch(`${API_URL}/api/upload-file`, {
+  //           method: "POST",
+  //           body: formData,
+  //         });
+  //         const json = await resp.json();
+
+  //         if (!resp.ok) {
+  //           showMessageBox(
+  //             `Error uploading file: ${json.message || "Unknown error"}`
+  //           );
+  //           return;
+  //         }
+
+  //         // Backend should return { fileUrl: <signedUrl>, fileKey: <s3 key> }
+  //         uploadedUrl = json.fileUrl || null;
+  //         uploadedKey = json.fileKey || null;
+
+  //         showMessageBox("File uploaded successfully.");
+  //       }
+  //     } catch (err) {
+  //       console.error("File upload failed:", err);
+  //       showMessageBox("Network error. Could not upload file.");
+  //       return;
+  //     } finally {
+  //       // Always clear the dragged file ref after handling
+  //       clearDraggedFile();
   //     }
 
   //     const newNode = {
@@ -649,9 +702,11 @@ function CanvasComponent({
   //       data: {
   //         id: manualId,
   //         name: deviceName,
-  //         productId: productId,
-  //         filePath: shapeData.filePath,
-  //         fileKey: fileData,
+  //         productId: effectiveProductId,
+  //         tankName,
+  //         stackName,
+  //         filePath: uploadedUrl, // signed URL for immediate viewing
+  //         fileKey: uploadedKey, // persist this, refresh signed URL later when loading
   //         label:
   //           !isSpecialNode && !isPngNode && !isPdfNode ? (
   //             <div style={{ textAlign: "center" }}>
@@ -665,160 +720,163 @@ function CanvasComponent({
   //     setNodes((nds) => nds.concat(newNode));
   //   },
   //   [
-  //     reactFlowInstance,
-  //     nodes,
-  //     setNodes,
-  //     setUploadedFiles,
-  //     productId,
-  //     showMessageBox,
   //     isEditMode,
+  //     reactFlowInstance,
+  //     reactFlowWrapper,
+  //     nodes,
+  //     effectiveProductId,
+  //     showMessageBox,
+  //     draggedFileRef,
+  //     clearDraggedFile,
   //   ]
   // );
 
-  const onDrop = useCallback(
-    async (event) => {
-      if (!isEditMode) return;
-      event.preventDefault();
+const onDrop = useCallback(
+  async (event) => {
+    if (!isEditMode) return;
+    event.preventDefault();
 
-      const bounds = reactFlowWrapper.current?.getBoundingClientRect();
-      if (!bounds || !reactFlowInstance) return;
+    const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+    if (!bounds || !reactFlowInstance) return;
 
-      const dataString = event.dataTransfer.getData("application/reactflow");
-      if (!dataString) return;
-      const shapeData = JSON.parse(dataString);
+    const dataString = event.dataTransfer.getData("application/reactflow");
+    if (!dataString) return;
+    const shapeData = JSON.parse(dataString);
 
-      const isSpecialNode = !!(shapeData.isPump || shapeData.isAirblower);
-      const isPngNode = !!shapeData.isPNG;
-      const isPdfNode = !!shapeData.isPDF;
+    const isSpecialNode = !!(shapeData.isPump || shapeData.isAirblower);
+    const isPngNode = !!shapeData.isPNG;
+    const isPdfNode = !!shapeData.isPDF;
 
-      const promptLabel =
-        isPngNode || isPdfNode ? "file" : shapeData.label || "node";
+    const promptLabel =
+      isPngNode || isPdfNode ? "file" : shapeData.label || "node";
 
-      const manualId = prompt(`Enter a unique ID for the new ${promptLabel}:`);
-      if (!manualId) {
-        showMessageBox("ID is required. Aborting.");
+    const manualId = prompt(`Enter a unique ID for the new ${promptLabel}:`);
+    if (!manualId) {
+      showMessageBox("ID is required. Aborting.");
+      clearDraggedFile();
+      return;
+    }
+    if (nodes.some((n) => n.id === manualId)) {
+      showMessageBox(
+        `ID "${manualId}" already exists. Please choose a unique ID.`
+      );
+      clearDraggedFile();
+      return;
+    }
+
+    let deviceName = shapeData.label || manualId;
+    let tankName = undefined;
+    let stackName = undefined;
+    if (isSpecialNode) {
+      const nameInput = prompt(`Enter a name for device ${manualId}:`);
+      if (!nameInput) {
+        showMessageBox("Name is required. Aborting.");
         clearDraggedFile();
         return;
       }
-      if (nodes.some((n) => n.id === manualId)) {
-        showMessageBox(
-          `ID "${manualId}" already exists. Please choose a unique ID.`
-        );
-        clearDraggedFile();
-        return;
-      }
+      deviceName = nameInput;
+    } else if (shapeData.isTank) {
+      tankName =
+        prompt(`TankName to bind (exact as device, e.g. "Equalization"):`) ||
+        deviceName;
+    }
 
-      let deviceName = shapeData.label || manualId;
-      let tankName = undefined;
-      let stackName = undefined;
-      if (isSpecialNode) {
-        const nameInput = prompt(`Enter a name for device ${manualId}:`);
-        if (!nameInput) {
-          showMessageBox("Name is required. Aborting.");
-          clearDraggedFile();
+    const position = reactFlowInstance.project({
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    });
+
+    let nodeType = "default";
+    if (isSpecialNode) nodeType = "pumpBlowerNode";
+    else if (shapeData.isTank) nodeType = "tankNode";
+    else if (isPngNode) nodeType = "imageNode";
+    else if (isPdfNode) nodeType = "pdfNode";
+
+    // ---- upload handling (PNG/PDF) ----
+    let uploadedUrl = shapeData.filePath || null; 
+    let uploadedKey = null;
+
+    try {
+      if (isPngNode || isPdfNode) {
+        const fileToUpload = draggedFileRef.current;
+        if (!fileToUpload) {
+          showMessageBox("File object is missing. Cannot upload.");
           return;
         }
-        deviceName = nameInput;
-      } else if (shapeData.isTank) {
-        tankName =
-          prompt(`TankName to bind (exact as device, e.g. "Equalization"):`) ||
-          deviceName;
-        // stackName = prompt(`StackName (optional, e.g. "STP_Tank"):`) || "";
-      }
 
-      const position = reactFlowInstance.project({
-        x: event.clientX - bounds.left,
-        y: event.clientY - bounds.top,
-      });
+        const formData = new FormData();
+        formData.append(
+          "liveStationImage",
+          fileToUpload,
+          shapeData.label || fileToUpload.name
+        );
 
-      let nodeType = "default";
-      if (isSpecialNode) nodeType = "pumpBlowerNode";
-      else if (shapeData.isTank) nodeType = "tankNode";
-      else if (isPngNode) nodeType = "imageNode";
-      else if (isPdfNode) nodeType = "pdfNode";
+        const resp = await fetch(`${API_URL}/api/upload-file`, {
+          method: "POST",
+          body: formData,
+        });
+        const json = await resp.json();
 
-      // ---- upload handling (PNG/PDF) ----
-      let uploadedUrl = shapeData.filePath || null; // fallback if provided
-      let uploadedKey = null;
-
-      try {
-        if (isPngNode || isPdfNode) {
-          const fileToUpload = draggedFileRef.current;
-          if (!fileToUpload) {
-            showMessageBox("File object is missing. Cannot upload.");
-            return;
-          }
-
-          const formData = new FormData();
-          formData.append(
-            "liveStationImage",
-            fileToUpload,
-            shapeData.label || fileToUpload.name
+        if (!resp.ok) {
+          showMessageBox(
+            `Error uploading file: ${json.message || "Unknown error"}`
           );
-
-          const resp = await fetch(`${API_URL}/api/upload-file`, {
-            method: "POST",
-            body: formData,
-          });
-          const json = await resp.json();
-
-          if (!resp.ok) {
-            showMessageBox(
-              `Error uploading file: ${json.message || "Unknown error"}`
-            );
-            return;
-          }
-
-          // Backend should return { fileUrl: <signedUrl>, fileKey: <s3 key> }
-          uploadedUrl = json.fileUrl || null;
-          uploadedKey = json.fileKey || null;
-
-          showMessageBox("File uploaded successfully.");
+          return;
         }
-      } catch (err) {
-        console.error("File upload failed:", err);
-        showMessageBox("Network error. Could not upload file.");
-        return;
-      } finally {
-        // Always clear the dragged file ref after handling
-        clearDraggedFile();
+
+        uploadedUrl = json.fileUrl || null;
+        uploadedKey = json.fileKey || null;
+
+        showMessageBox("File uploaded successfully.");
       }
+    } catch (err) {
+      console.error("File upload failed:", err);
+      showMessageBox("Network error. Could not upload file.");
+      return;
+    } finally {
+      clearDraggedFile();
+    }
 
-      const newNode = {
+    const newNode = {
+      id: manualId,
+      type: nodeType,
+      position,
+      data: {
         id: manualId,
-        type: nodeType,
-        position,
-        data: {
-          id: manualId,
-          name: deviceName,
-          productId: effectiveProductId,
-          tankName,
-          stackName,
-          filePath: uploadedUrl, // signed URL for immediate viewing
-          fileKey: uploadedKey, // persist this, refresh signed URL later when loading
-          label:
-            !isSpecialNode && !isPngNode && !isPdfNode ? (
-              <div style={{ textAlign: "center" }}>
-                <img src={shapeData.svgPath} alt={shapeData.label} />
-                <div>{manualId}</div>
-              </div>
-            ) : null,
-        },
-      };
+        name: deviceName,
+        productId: effectiveProductId,
+        tankName,
+        stackName,
+        filePath: uploadedUrl,
+        fileKey: uploadedKey,
+        // 🔹 Defaults so toggle + tooltip always show
+        isOn: false,
+        isPending: false,
+        realtimeValues: {},
+        label:
+          !isSpecialNode && !isPngNode && !isPdfNode ? (
+            <div style={{ textAlign: "center" }}>
+              <img src={shapeData.svgPath} alt={shapeData.label} />
+              <div>{manualId}</div>
+            </div>
+          ) : null,
+      },
+    };
 
-      setNodes((nds) => nds.concat(newNode));
-    },
-    [
-      isEditMode,
-      reactFlowInstance,
-      reactFlowWrapper,
-      nodes,
-      effectiveProductId,
-      showMessageBox,
-      draggedFileRef,
-      clearDraggedFile,
-    ]
-  );
+    setNodes((nds) => nds.concat(newNode));
+  },
+  [
+    isEditMode,
+    reactFlowInstance,
+    reactFlowWrapper,
+    nodes,
+    effectiveProductId,
+    showMessageBox,
+    draggedFileRef,
+    clearDraggedFile,
+  ]
+);
+
 
   // This useEffect ensures the correct `loadStation` function is used
   useEffect(() => {

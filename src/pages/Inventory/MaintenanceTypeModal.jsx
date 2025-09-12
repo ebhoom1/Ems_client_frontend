@@ -1,9 +1,125 @@
-// src/components/MaintenanceTypeModal.jsx
+// // src/components/MaintenanceTypeModal.jsx
+// import React, { useState, useEffect } from 'react';
+// import axios from 'axios';
+// import { useNavigate } from 'react-router-dom';
+// import { useSelector } from 'react-redux';
+// import { API_URL } from '../../utils/apiConfig';
+
+// const overlayStyle = {
+//   position: 'fixed',
+//   top: 0, left: 0,
+//   width: '100%', height: '100%',
+//   backgroundColor: 'rgba(0,0,0,0.4)',
+//   display: 'flex',
+//   alignItems: 'center',
+//   justifyContent: 'center',
+//   zIndex: 1000,
+// };
+
+// const boxStyle = {
+//   background: '#fff',
+//   padding: '20px',
+//   borderRadius: '8px',
+//   maxWidth: '400px',
+//   width: '90%',
+// };
+
+// export default function MaintenanceTypeModal({ equipmentId, equipmentName, equipmentUserName, onClose }) { // <-- ADD equipmentUserName PROP
+//   const navigate = useNavigate();
+
+//   const { validUserOne = {} } = useSelector(state => state.user.userData || {});
+//   const { isTechnician, isTerritorialManager } = validUserOne;
+
+//   const [loading, setLoading]             = useState(true);
+//   const [canMechanical, setCanMechanical] = useState(false);
+//   const [canElectrical, setCanElectrical] = useState(false);
+
+//   useEffect(() => {
+//     const fetchStatus = async () => {
+//       try {
+//         const { data } = await axios.get(
+//           `${API_URL}/api/equiment/${equipmentId}/maintenance-status`
+//         );
+//         setCanMechanical(data.canMechanical);
+//         setCanElectrical(data.canElectrical);
+//       } catch (err) {
+//         console.error('Failed to fetch maintenance status', err);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+//     fetchStatus();
+//   }, [equipmentId]);
+
+//   const pick = (type) => {
+//     onClose();
+//     navigate(`/maintenance/${type}/${equipmentId}`, {
+//       state: { equipmentName, equipmentId, equipmentUserName }, // <-- PASS equipmentUserName IN STATE
+//     });
+//   };
+
+//   if (loading) {
+//     return (
+//       <div style={overlayStyle}>
+//         <div style={boxStyle}>
+//           <p>Checking maintenance availability…</p>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div style={overlayStyle}>
+//       <div style={boxStyle}>
+//         <h5>
+//           Select Maintenance Type for: <strong>{equipmentName}</strong>
+//         </h5>
+//         <div className="d-grid gap-2">
+//           {/* territory managers only */}
+//           {isTerritorialManager && (
+//              <button
+//                   className="btn"
+//                   style={{ backgroundColor: '#236a80', color: '#fff' }}
+//                   onClick={() => pick('mechanical')}
+//                 >
+//                   Monthly Mechanical Maintenance
+//                 </button>
+              
+//           )}
+
+//           {/* technicians only */}
+//           {isTechnician && (
+//             canElectrical
+//               ? <button
+//                   className="btn"
+//                   style={{ backgroundColor: '#236a80', color: '#fff' }}
+//                   onClick={() => pick('electrical')}
+//                 >
+//                   Monthly Electrical Maintenance
+//                 </button>
+//               : <button className="btn btn-outline-secondary" disabled>
+//                   Electrical Already Done This Month
+//                 </button>
+//           )}
+
+//           <button
+//             className="btn btn-link text-danger"
+//             onClick={onClose}
+//           >
+//             Cancel
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { API_URL } from '../../utils/apiConfig';
+import { toast } from 'react-toastify';
 
 const overlayStyle = {
   position: 'fixed',
@@ -24,13 +140,13 @@ const boxStyle = {
   width: '90%',
 };
 
-export default function MaintenanceTypeModal({ equipmentId, equipmentName, equipmentUserName, onClose }) { // <-- ADD equipmentUserName PROP
+export default function MaintenanceTypeModal({ equipmentId, equipmentName, equipmentUserName, onClose }) {
   const navigate = useNavigate();
 
   const { validUserOne = {} } = useSelector(state => state.user.userData || {});
   const { isTechnician, isTerritorialManager } = validUserOne;
 
-  const [loading, setLoading]             = useState(true);
+  const [loading, setLoading] = useState(true);
   const [canMechanical, setCanMechanical] = useState(false);
   const [canElectrical, setCanElectrical] = useState(false);
 
@@ -44,6 +160,7 @@ export default function MaintenanceTypeModal({ equipmentId, equipmentName, equip
         setCanElectrical(data.canElectrical);
       } catch (err) {
         console.error('Failed to fetch maintenance status', err);
+        toast.error('Failed to load maintenance status.');
       } finally {
         setLoading(false);
       }
@@ -52,9 +169,13 @@ export default function MaintenanceTypeModal({ equipmentId, equipmentName, equip
   }, [equipmentId]);
 
   const pick = (type) => {
-    onClose();
-    navigate(`/maintenance/${type}/${equipmentId}`, {
-      state: { equipmentName, equipmentId, equipmentUserName }, // <-- PASS equipmentUserName IN STATE
+    onClose(); // Close the modal first
+
+    // Construct the path uniformly as /maintenance/:type/:equipmentId
+    const path = `/maintenance/${type}/${equipmentId}`;
+
+    navigate(path, {
+      state: { equipmentName, equipmentId, equipmentUserName },
     });
   };
 
@@ -75,31 +196,65 @@ export default function MaintenanceTypeModal({ equipmentId, equipmentName, equip
           Select Maintenance Type for: <strong>{equipmentName}</strong>
         </h5>
         <div className="d-grid gap-2">
-          {/* territory managers only */}
+          {/* Options for Territorial Managers */}
           {isTerritorialManager && (
-             <button
-                  className="btn"
-                  style={{ backgroundColor: '#236a80', color: '#fff' }}
-                  onClick={() => pick('mechanical')}
-                >
-                  Monthly Mechanical Maintenance
-                </button>
-              
+            <>
+              <button
+                className="btn"
+                style={{ backgroundColor: '#236a80', color: '#fff' }}
+                onClick={() => pick('mechanical')}
+              >
+                Monthly Mechanical Maintenance
+              </button>
+              <button
+                className="btn"
+                style={{ backgroundColor: '#17a2b8', color: '#fff' }}
+                onClick={() => pick('engineer-visit')}
+              >
+                Engineer Visit Report
+              </button>
+              {/* Added Service Report for Territorial Managers */}
+              <button
+                className="btn"
+                style={{ backgroundColor: '#ffc107', color: '#000' }}
+                onClick={() => pick('service')}
+              >
+                Service Report
+              </button>
+            </>
           )}
 
-          {/* technicians only */}
+          {/* Options for Technicians */}
           {isTechnician && (
-            canElectrical
-              ? <button
-                  className="btn"
-                  style={{ backgroundColor: '#236a80', color: '#fff' }}
-                  onClick={() => pick('electrical')}
-                >
-                  Monthly Electrical Maintenance
-                </button>
-              : <button className="btn btn-outline-secondary" disabled>
-                  Electrical Already Done This Month
-                </button>
+            <>
+              {canElectrical
+                ? <button
+                    className="btn"
+                    style={{ backgroundColor: '#236a80', color: '#fff' }}
+                    onClick={() => pick('electrical')}
+                  >
+                    Monthly Electrical Maintenance
+                  </button>
+                : <button className="btn btn-outline-secondary" disabled>
+                    Electrical Already Done This Month
+                  </button>
+              }
+              <button
+                className="btn"
+                style={{ backgroundColor: '#ffc107', color: '#000' }}
+                onClick={() => pick('service')}
+              >
+                Service Report
+              </button>
+              {/* Added Engineer Visit Report for Technicians */}
+              <button
+                className="btn"
+                style={{ backgroundColor: '#17a2b8', color: '#fff' }}
+                onClick={() => pick('engineer-visit')}
+              >
+                Engineer Visit Report
+              </button>
+            </>
           )}
 
           <button

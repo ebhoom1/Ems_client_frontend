@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-
 // --- Asset Imports ---
 import settlingnew from '../assests/images/settlingnew.svg';
 import watertanknew from '../assests/images/watertanknew.svg';
@@ -11,7 +10,6 @@ import airblower from '../assests/images/wheel.svg';
 import pumpsingle from '../assests/images/pumpsingle.svg';
 import energymeter from '../assests/images/energymeter.svg';
 import expo from '../assests/images/expo.svg';
-
 import './Iconbar.css';
 
 const defaultShapes = [
@@ -21,6 +19,12 @@ const defaultShapes = [
   { id: 'meter',        label: 'Meter',        isSVG: true, svgPath: meter },
   { id: 'pump',         label: 'Pump',         isSVG: true, svgPath: pump, isPump: true },
   { id: 'tank',         label: 'Generic Tank',         isSVG: true, svgPath: tank, isTank: true },
+  // { id: 'tank1', label: 'Tank 1', isSVG: true, svgPath: tank, isTank: true, type: 'tankNode' },
+  // { id: 'tank2', label: 'Tank 2', isSVG: true, svgPath: tank, isTank: false, isStaticImage: true, type: 'svgNode' },
+
+  // { id: 'pump1', label: 'Pump 1', isSVG: true, svgPath: pump, isPump: true, type: 'pumpBlowerNode' },
+  // { id: 'pump2', label: 'Pump 2', isSVG: true, svgPath: pump, isPump: false, isStaticImage: true, type: 'svgNode' },
+
   { id: 'airblower',    label: 'Air Blower',    isSVG: true, svgPath: airblower,    isAirblower: true },
   { id: 'pumpsingle',   label: 'Pump Single',  isSVG: true, svgPath: pumpsingle, isPump: true },
   { id: 'energymeter',  label: 'Energy Meter',  isSVG: true, svgPath: energymeter },
