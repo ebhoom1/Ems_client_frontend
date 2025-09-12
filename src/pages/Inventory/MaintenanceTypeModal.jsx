@@ -179,15 +179,15 @@ export default function MaintenanceTypeModal({ equipmentId, equipmentName, equip
     });
   };
 
-  if (loading) {
-    return (
-      <div style={overlayStyle}>
-        <div style={boxStyle}>
-          <p>Checking maintenance availability…</p>
-        </div>
-      </div>
-    );
-  }
+  // if (loading) {
+    // return (
+    //   <div style={overlayStyle}>
+    //     <div style={boxStyle}>
+    //       <p>Checking maintenance availability…</p>
+    //     </div>
+    //   </div>
+    // );
+  // }
 
   return (
     <div style={overlayStyle}>
