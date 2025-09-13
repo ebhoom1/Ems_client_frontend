@@ -112,43 +112,95 @@ function CanvasComponent({
   useEffect(() => {
     socket.current = getSocket(backendUrl);
 
-    const handleTankData = (payload) => {
-            console.log("Processing tank payload:", payload);
+    // const handleTankData = (payload) => {
+    //   console.log("Processing tank payload:", payload);
 
-      // payload shape: { product_id, tankData: [{stackName,tankName,level,percentage}], ... }
-      if (!payload || !Array.isArray(payload.tankData)) return;
-      const nowIso = new Date().toISOString();
-      setNodes((nds) =>
-        nds.map((node) => {
-          if (node.type !== "tankNode") return node;
-          const tn = (node.data?.tankName || node.data?.name || node.id || "")
-            .toString()
-            .toLowerCase();
-          const sn = (node.data?.stackName || "").toString().toLowerCase();
-          // find best match by tankName (and optional stackName)
-          const match = payload.tankData.find((t) => {
-            const tTank = (t.tankName || t.TankName || "")
-              .toString()
-              .toLowerCase();
-            const tStack = (t.stackName || "").toString().toLowerCase();
-            const tankMatches = tTank && tTank === tn;
-            const stackOk = !sn || sn === tStack; // if node has stackName, require match
-            return tankMatches && stackOk;
-          });
-          if (!match) return node;
-          const pct = Number(match.percentage);
-          const inRange = Number.isFinite(pct) && pct >= 0 && pct <= 100;
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              percentage: inRange ? pct : node.data?.percentage, // only update when valid
-              lastUpdated: nowIso,
-            },
-          };
-        })
-      );
-    };
+    //   // payload shape: { product_id, tankData: [{stackName,tankName,level,percentage}], ... }
+    //   if (!payload || !Array.isArray(payload.tankData)) return;
+    //   const nowIso = new Date().toISOString();
+    //   setNodes((nds) =>
+    //     nds.map((node) => {
+    //       if (node.type !== "tankNode") return node;
+    //       const tn = (node.data?.tankName || node.data?.name || node.id || "")
+    //         .toString()
+    //         .toLowerCase();
+    //       const sn = (node.data?.stackName || "").toString().toLowerCase();
+    //       // find best match by tankName (and optional stackName)
+    //       const match = payload.tankData.find((t) => {
+    //         const tTank = (t.tankName || t.TankName || "")
+    //           .toString()
+    //           .toLowerCase();
+    //         const tStack = (t.stackName || "").toString().toLowerCase();
+    //         const tankMatches = tTank && tTank === tn;
+    //         const stackOk = !sn || sn === tStack; // if node has stackName, require match
+    //         return tankMatches && stackOk;
+    //       });
+    //       if (!match) return node;
+    //       const pct = Number(match.percentage);
+    //       const inRange = Number.isFinite(pct) && pct >= 0 && pct <= 100;
+    //       return {
+    //         ...node,
+    //         data: {
+    //           ...node.data,
+    //           percentage: inRange ? pct : node.data?.percentage, // only update when valid
+    //           lastUpdated: nowIso,
+    //         },
+    //       };
+    //     })
+    //   );
+    // };
+    const handleTankData = (payload) => {
+  console.log("Processing tank payload:", payload);
+
+  // payload shape: { product_id, tankData: [{stackName,tankName,level,percentage}], ... }
+  if (!payload || !Array.isArray(payload.tankData)) return;
+
+  const nowIso = new Date().toISOString();
+  const incomingProductId = String(payload.product_id || "");
+
+  setNodes((nds) =>
+    nds.map((node) => {
+      if (node.type !== "tankNode") return node;
+
+      // 🔹 Only update nodes for the matching product_id
+      if (String(node.data?.productId) !== incomingProductId) {
+        return node;
+      }
+
+      const tn = (node.data?.tankName || node.data?.name || node.id || "")
+        .toString()
+        .toLowerCase();
+      const sn = (node.data?.stackName || "").toString().toLowerCase();
+
+      // find best match by tankName (and optional stackName)
+      const match = payload.tankData.find((t) => {
+        const tTank = (t.tankName || t.TankName || "")
+          .toString()
+          .toLowerCase();
+        const tStack = (t.stackName || "").toString().toLowerCase();
+        const tankMatches = tTank && tTank === tn;
+        const stackOk = !sn || sn === tStack;
+        return tankMatches && stackOk;
+      });
+
+      if (!match) return node;
+
+      const pct = Number(match.percentage);
+      const inRange = Number.isFinite(pct) && pct >= 0 && pct <= 100;
+
+     if (inRange && node.data?.percentage !== pct) {
+  node.data = {
+    ...node.data,
+    percentage: pct,
+    lastUpdated: nowIso,
+  };
+}
+return node;
+
+    })
+  );
+};
+
 
     const handlePumpFeedback = (payload) => {
       console.log("Processing pump feedback:", payload);
@@ -323,8 +375,7 @@ function CanvasComponent({
           {...props}
           setNodes={setNodes}
           sendPumpControlMessage={sendPumpControlMessage}
-  portalContainer={canvasContainerRef.current || document.body}
-
+          portalContainer={canvasContainerRef.current || document.body}
         />
       ),
       imageNode: ImageNode,
@@ -586,7 +637,6 @@ function CanvasComponent({
     [isEditMode]
   );
 
-
   // const onDrop = useCallback(
   //   async (event) => {
   //     if (!isEditMode) return;
@@ -649,7 +699,6 @@ function CanvasComponent({
   //     else if (isPngNode) nodeType = "imageNode";
   //     else if (isPdfNode) nodeType = "pdfNode";
 
-    
   //     // ---- upload handling (PNG/PDF) ----
   //     let uploadedUrl = shapeData.filePath || null; // fallback if provided
   //     let uploadedKey = null;
@@ -733,152 +782,151 @@ function CanvasComponent({
   //   ]
   // );
 
-const onDrop = useCallback(
-  async (event) => {
-    if (!isEditMode) return;
-    event.preventDefault();
+  const onDrop = useCallback(
+    async (event) => {
+      if (!isEditMode) return;
+      event.preventDefault();
 
-    const bounds = reactFlowWrapper.current?.getBoundingClientRect();
-    if (!bounds || !reactFlowInstance) return;
+      const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+      if (!bounds || !reactFlowInstance) return;
 
-    const dataString = event.dataTransfer.getData("application/reactflow");
-    if (!dataString) return;
-    const shapeData = JSON.parse(dataString);
+      const dataString = event.dataTransfer.getData("application/reactflow");
+      if (!dataString) return;
+      const shapeData = JSON.parse(dataString);
 
-    const isSpecialNode = !!(shapeData.isPump || shapeData.isAirblower);
-    const isPngNode = !!shapeData.isPNG;
-    const isPdfNode = !!shapeData.isPDF;
+      const isSpecialNode = !!(shapeData.isPump || shapeData.isAirblower);
+      const isPngNode = !!shapeData.isPNG;
+      const isPdfNode = !!shapeData.isPDF;
 
-    const promptLabel =
-      isPngNode || isPdfNode ? "file" : shapeData.label || "node";
+      const promptLabel =
+        isPngNode || isPdfNode ? "file" : shapeData.label || "node";
 
-    const manualId = prompt(`Enter a unique ID for the new ${promptLabel}:`);
-    if (!manualId) {
-      showMessageBox("ID is required. Aborting.");
-      clearDraggedFile();
-      return;
-    }
-    if (nodes.some((n) => n.id === manualId)) {
-      showMessageBox(
-        `ID "${manualId}" already exists. Please choose a unique ID.`
-      );
-      clearDraggedFile();
-      return;
-    }
-
-    let deviceName = shapeData.label || manualId;
-    let tankName = undefined;
-    let stackName = undefined;
-    if (isSpecialNode) {
-      const nameInput = prompt(`Enter a name for device ${manualId}:`);
-      if (!nameInput) {
-        showMessageBox("Name is required. Aborting.");
+      const manualId = prompt(`Enter a unique ID for the new ${promptLabel}:`);
+      if (!manualId) {
+        showMessageBox("ID is required. Aborting.");
         clearDraggedFile();
         return;
       }
-      deviceName = nameInput;
-    } else if (shapeData.isTank) {
-      tankName =
-        prompt(`TankName to bind (exact as device, e.g. "Equalization"):`) ||
-        deviceName;
-    }
-
-    const position = reactFlowInstance.project({
-      x: event.clientX - bounds.left,
-      y: event.clientY - bounds.top,
-    });
-
-    let nodeType = "default";
-    if (isSpecialNode) nodeType = "pumpBlowerNode";
-    else if (shapeData.isTank) nodeType = "tankNode";
-    else if (isPngNode) nodeType = "imageNode";
-    else if (isPdfNode) nodeType = "pdfNode";
-
-    // ---- upload handling (PNG/PDF) ----
-    let uploadedUrl = shapeData.filePath || null; 
-    let uploadedKey = null;
-
-    try {
-      if (isPngNode || isPdfNode) {
-        const fileToUpload = draggedFileRef.current;
-        if (!fileToUpload) {
-          showMessageBox("File object is missing. Cannot upload.");
-          return;
-        }
-
-        const formData = new FormData();
-        formData.append(
-          "liveStationImage",
-          fileToUpload,
-          shapeData.label || fileToUpload.name
+      if (nodes.some((n) => n.id === manualId)) {
+        showMessageBox(
+          `ID "${manualId}" already exists. Please choose a unique ID.`
         );
+        clearDraggedFile();
+        return;
+      }
 
-        const resp = await fetch(`${API_URL}/api/upload-file`, {
-          method: "POST",
-          body: formData,
-        });
-        const json = await resp.json();
-
-        if (!resp.ok) {
-          showMessageBox(
-            `Error uploading file: ${json.message || "Unknown error"}`
-          );
+      let deviceName = shapeData.label || manualId;
+      let tankName = undefined;
+      let stackName = undefined;
+      if (isSpecialNode) {
+        const nameInput = prompt(`Enter a name for device ${manualId}:`);
+        if (!nameInput) {
+          showMessageBox("Name is required. Aborting.");
+          clearDraggedFile();
           return;
         }
-
-        uploadedUrl = json.fileUrl || null;
-        uploadedKey = json.fileKey || null;
-
-        showMessageBox("File uploaded successfully.");
+        deviceName = nameInput;
+      } else if (shapeData.isTank) {
+        tankName =
+          prompt(`TankName to bind (exact as device, e.g. "Equalization"):`) ||
+          deviceName;
       }
-    } catch (err) {
-      console.error("File upload failed:", err);
-      showMessageBox("Network error. Could not upload file.");
-      return;
-    } finally {
-      clearDraggedFile();
-    }
 
-    const newNode = {
-      id: manualId,
-      type: nodeType,
-      position,
-      data: {
+      const position = reactFlowInstance.project({
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top,
+      });
+
+      let nodeType = "default";
+      if (isSpecialNode) nodeType = "pumpBlowerNode";
+      else if (shapeData.isTank) nodeType = "tankNode";
+      else if (isPngNode) nodeType = "imageNode";
+      else if (isPdfNode) nodeType = "pdfNode";
+
+      // ---- upload handling (PNG/PDF) ----
+      let uploadedUrl = shapeData.filePath || null;
+      let uploadedKey = null;
+
+      try {
+        if (isPngNode || isPdfNode) {
+          const fileToUpload = draggedFileRef.current;
+          if (!fileToUpload) {
+            showMessageBox("File object is missing. Cannot upload.");
+            return;
+          }
+
+          const formData = new FormData();
+          formData.append(
+            "liveStationImage",
+            fileToUpload,
+            shapeData.label || fileToUpload.name
+          );
+
+          const resp = await fetch(`${API_URL}/api/upload-file`, {
+            method: "POST",
+            body: formData,
+          });
+          const json = await resp.json();
+
+          if (!resp.ok) {
+            showMessageBox(
+              `Error uploading file: ${json.message || "Unknown error"}`
+            );
+            return;
+          }
+
+          uploadedUrl = json.fileUrl || null;
+          uploadedKey = json.fileKey || null;
+
+          showMessageBox("File uploaded successfully.");
+        }
+      } catch (err) {
+        console.error("File upload failed:", err);
+        showMessageBox("Network error. Could not upload file.");
+        return;
+      } finally {
+        clearDraggedFile();
+      }
+
+      const newNode = {
         id: manualId,
-        name: deviceName,
-        productId: effectiveProductId,
-        tankName,
-        stackName,
-        filePath: uploadedUrl,
-        fileKey: uploadedKey,
-        // 🔹 Defaults so toggle + tooltip always show
-        isOn: false,
-        isPending: false,
-        realtimeValues: {},
-        label:
-          !isSpecialNode && !isPngNode && !isPdfNode ? (
-            <div style={{ textAlign: "center" }}>
-              <img src={shapeData.svgPath} alt={shapeData.label} />
-              <div>{manualId}</div>
-            </div>
-          ) : null,
-      },
-    };
+        type: nodeType,
+        position,
+        data: {
+          id: manualId,
+          name: deviceName,
+          productId: effectiveProductId,
+          tankName,
+          stackName,
+          filePath: uploadedUrl,
+          fileKey: uploadedKey,
+          // 🔹 Defaults so toggle + tooltip always show
+          isOn: false,
+          isPending: false,
+          realtimeValues: {},
+          label:
+            !isSpecialNode && !isPngNode && !isPdfNode ? (
+              <div style={{ textAlign: "center" }}>
+                <img src={shapeData.svgPath} alt={shapeData.label} />
+                <div>{manualId}</div>
+              </div>
+            ) : null,
+        },
+      };
 
-    setNodes((nds) => nds.concat(newNode));
-  },
-  [
-    isEditMode,
-    reactFlowInstance,
-    reactFlowWrapper,
-    nodes,
-    effectiveProductId,
-    showMessageBox,
-    draggedFileRef,
-    clearDraggedFile,
-  ]
-);
-
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [
+      isEditMode,
+      reactFlowInstance,
+      reactFlowWrapper,
+      nodes,
+      effectiveProductId,
+      showMessageBox,
+      draggedFileRef,
+      clearDraggedFile,
+    ]
+  );
 
   // This useEffect ensures the correct `loadStation` function is used
   useEffect(() => {
