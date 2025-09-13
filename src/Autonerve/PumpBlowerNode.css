@@ -154,7 +154,7 @@ input:checked + .slider:before {
    max-width: 260px;     
   width: 260px;         
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  z-index: 1000;
+  z-index: 999999;
  
 }
 

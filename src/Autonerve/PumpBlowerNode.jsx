@@ -161,7 +161,7 @@ import { Handle, Position } from "reactflow";
 import { createPortal } from "react-dom";
 import "./PumpBlowerNode.css";
 
-function PumpBlowerNode({ id, data, setNodes, sendPumpControlMessage }) {
+function PumpBlowerNode({ id, data, setNodes, sendPumpControlMessage,portalContainer }) {
   const [isEditing, setIsEditing] = useState(false);
   const [nodeName, setNodeName] = useState(data.name);
   const [isHovered, setIsHovered] = useState(false);
@@ -327,8 +327,9 @@ function PumpBlowerNode({ id, data, setNodes, sendPumpControlMessage }) {
             Vibration: {vibration.toFixed(2)} m/s²
           </span>
         </div>,
-          document.body
-        )}
+          portalContainer
+        )
+        }
     </div>
   );
 }

@@ -323,6 +323,8 @@ function CanvasComponent({
           {...props}
           setNodes={setNodes}
           sendPumpControlMessage={sendPumpControlMessage}
+  portalContainer={canvasContainerRef.current || document.body}
+
         />
       ),
       imageNode: ImageNode,
