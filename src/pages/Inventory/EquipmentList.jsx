@@ -18,14 +18,14 @@ import MonthSelectionModal from "./MonthSelectionModal";
 export default function EquipmentList() {
   const { userData } = useSelector((state) => state.user);
   const currentUser = userData?.validUserOne || {};
-  console.log("new currentuser:", currentUser._id);
   const type = userData?.validUserOne || {};
   const isOperator = type.isOperator;
   const isTechnician = type.isTechnician;
   const territorialManager = type.isTerritorialManager;
-  const [mechanicalReportStatus, setMechanicalReportStatus] = useState({});
+
+  // --- STATE MANAGEMENT ---
   const [list, setList] = useState([]);
-  const [electricalReportStatus, setElectricalReportStatus] = useState({});
+  const [isLoading, setIsLoading] = useState(true); // ✨ 1. ADDED LOADING STATE
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState([]);
   const [selectedUserName, setSelectedUserName] = useState(() => {
@@ -35,8 +35,7 @@ export default function EquipmentList() {
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedEquipmentName, setSelectedEquipmentName] = useState(null);
-  const [selectedEquipmentUserName, setSelectedEquipmentUserName] =
-    useState(null);
+  const [selectedEquipmentUserName, setSelectedEquipmentUserName] = useState(null);
   const [assignedUserNames, setAssignedUserNames] = useState([]);
 
   const [showReportModal, setShowReportModal] = useState(false);
@@ -45,7 +44,9 @@ export default function EquipmentList() {
 
   const navigate = useNavigate();
 
-  // 1) Fetch companies/users based on role
+  // --- DATA FETCHING ---
+
+  // Fetch companies/users based on role (This logic is unchanged)
   const fetchUsers = useCallback(async () => {
     try {
       const currentUserId = type?._id;
@@ -68,7 +69,6 @@ export default function EquipmentList() {
 
       let filtered = [];
       if (isAssignedToAny) {
-        // Only show companies assigned to this user
         filtered = allUsers.filter((u) => {
           const isOperator =
             Array.isArray(u.operators) &&
@@ -83,7 +83,6 @@ export default function EquipmentList() {
           return isOperator || isTechnician || isTerritorial;
         });
       } else {
-        // Default logic (admin/super_admin/EBHOOM)
         if (type.adminType === "EBHOOM") {
           filtered = allUsers.filter(
             (u) => !u.isOperator && !u.isTechnician && !u.isTerritorialManager
@@ -108,7 +107,6 @@ export default function EquipmentList() {
           filtered = byCreator.filter((u) => u.userType === "user");
         }
       }
-
       setUsers(filtered);
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -120,100 +118,89 @@ export default function EquipmentList() {
     fetchUsers();
   }, [fetchUsers]);
 
-  // 2) Fetch equipment + report statuses
-  // src/components/EquipmentList.jsx
-
-  // 2) Fetch equipment + report statuses
+  // ✨ 2. REWRITTEN & SIMPLIFIED EQUIPMENT FETCHING LOGIC
   useEffect(() => {
-    const fetchEquipmentAndStatus = async () => {
+    const fetchEquipment = async () => {
+      setIsLoading(true); // Start loading
       try {
         let equipmentData = [];
+        let url = "";
 
-        // Part 1: Fetch the list of equipment (This part is unchanged)
         if (isOperator || isTechnician || territorialManager) {
           if (users.length > 0) {
-            const all = [];
-            for (const u of users) {
-              const res = await fetch(
-                `${API_URL}/api/operator-equipment/${u.userName}`
-              );
-              const data = await res.json();
-              all.push(...(data.equipment || data.inventoryItems || []));
-            }
-            equipmentData = all;
+            // This case might need a new backend endpoint to be truly efficient
+            const allEquipmentPromises = users.map((u) =>
+              fetch(`${API_URL}/api/operator-equipment/${u.userName}`).then(
+                (res) => res.json()
+              )
+            );
+            const results = await Promise.all(allEquipmentPromises);
+            equipmentData = results.flatMap(
+              (data) => data.equipment || data.inventoryItems || []
+            );
           }
-        } else if (type.userType === "admin") {
-          const res = await fetch(
-            `${API_URL}/api/admin-type-equipment/${type.adminType}`
-          );
-          equipmentData = (await res.json()).equipment || [];
-        } else if (type.userType === "user") {
-          const res = await fetch(`${API_URL}/api/user/${type.userName}`);
-          equipmentData = (await res.json()).equipment || [];
         } else {
-          const res = await fetch(`${API_URL}/api/all-equipment`);
+          if (type.userType === "admin") {
+            url = `${API_URL}/api/admin-type-equipment/${type.adminType}`;
+          } else if (type.userType === "user") {
+            url = `${API_URL}/api/user/${type.userName}`;
+          } else {
+            url = `${API_URL}/api/all-equipment`;
+          }
+          const res = await fetch(url);
           equipmentData = (await res.json()).equipment || [];
         }
 
         setList(equipmentData);
-
-        // Part 2: For each piece of equipment, check if reports exist for the CURRENT MONTH
-        const electricalStatusMap = {};
-        const mechanicalStatusMap = {};
-
-        // ✨ CORRECTED LOGIC: Calculate the CURRENT month and year
-        const currentDate = new Date();
-        const currentYear = currentDate.getFullYear();
-        const currentMonth = currentDate.getMonth() + 1; // JS months are 0-11. For July, this is 7.
-
-        await Promise.all(
-          equipmentData.map(async (e) => {
-            // Check for Electrical Report using the current month
-            try {
-              const elecRes = await fetch(
-                `${API_URL}/api/electricalreport/exists/${e._id}?year=${currentYear}&month=${currentMonth}`
-              );
-              const elecJson = await elecRes.json();
-              electricalStatusMap[e._id] = Boolean(elecJson.exists);
-            } catch {
-              electricalStatusMap[e._id] = false;
-            }
-
-            // Check for Mechanical Report using the current month
-            try {
-              const mechRes = await fetch(
-                `${API_URL}/api/mechanicalreport/exists/${e._id}?year=${currentYear}&month=${currentMonth}`
-              );
-              const mechJson = await mechRes.json();
-              mechanicalStatusMap[e._id] = Boolean(mechJson.exists);
-            } catch {
-              mechanicalStatusMap[e._id] = false;
-            }
-          })
-        );
-
-        // Part 3: Set the state for both report statuses
-        setElectricalReportStatus(electricalStatusMap);
-        setMechanicalReportStatus(mechanicalStatusMap);
       } catch (err) {
         toast.error("Error fetching equipment");
         console.error(err);
+      } finally {
+        setIsLoading(false); // Stop loading regardless of success or error
       }
     };
 
-    fetchEquipmentAndStatus();
+    // We only fetch equipment if the necessary prerequisite (users list) is loaded for certain roles
+    if (isOperator || isTechnician || territorialManager) {
+      if (users.length > 0) {
+        fetchEquipment();
+      }
+    } else {
+      fetchEquipment();
+    }
   }, [type, isOperator, isTechnician, territorialManager, users]); // Dependencies for the effect
 
-  // Helpers
+  // Fetch assigned usernames (unchanged)
+  useEffect(() => {
+    if (!currentUser._id) return;
+    const fetchAssignedUserNames = async () => {
+      try {
+        const res = await axios.get(
+          `${API_URL}/api/assignments/by-assigned-to/${currentUser._id}`
+        );
+        if (res.data.success) {
+          setAssignedUserNames(res.data.assignedUserNames);
+        }
+      } catch (err) {
+        console.error(
+          "Error fetching assigned usernames",
+          err.response?.data || err.message
+        );
+      }
+    };
+    fetchAssignedUserNames();
+  }, [currentUser._id]);
+
+  // --- HELPER FUNCTIONS (mostly unchanged) ---
   const downloadQR = async (value) => {
     try {
-      const png = await QRCodeLib.toDataURL(value);
-      const a = document.createElement("a");
-      a.href = png;
-      a.download = `qr-${value}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const pngUrl = await QRCodeLib.toDataURL(value);
+      const link = document.createElement("a");
+      link.href = pngUrl;
+      link.download = `qr-${value}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (err) {
       toast.error("Failed to download QR");
       console.error(err);
@@ -221,30 +208,21 @@ export default function EquipmentList() {
   };
 
   const deleteEquipment = async (id) => {
-    if (!window.confirm("Delete this equipment?")) return;
+    if (!window.confirm("Are you sure you want to delete this equipment?"))
+      return;
     try {
       const res = await fetch(`${API_URL}/api/equipment/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
         setList((prev) => prev.filter((e) => e._id !== id));
-        setElectricalReportStatus((prev) => {
-          const next = { ...prev };
-          delete next[id];
-          return next;
-        });
-        setMechanicalReportStatus((prev) => {
-          const next = { ...prev };
-          delete next[id];
-          return next;
-        });
-        toast.success("Deleted");
+        toast.success("Equipment deleted successfully");
       } else {
         const json = await res.json();
         toast.error(json.message || "Delete failed");
       }
     } catch (err) {
-      toast.error("Error deleting");
+      toast.error("Error deleting equipment");
       console.error(err);
     }
   };
@@ -289,27 +267,7 @@ export default function EquipmentList() {
     );
   });
 
-  useEffect(() => {
-    const fetchAssignedUserNames = async () => {
-      try {
-        const res = await axios.get(
-          `${API_URL}/api/assignments/by-assigned-to/${currentUser._id}`
-        );
-        const data = res.data;
-        console.log("assigned usernames:", data);
-        if (data.success) {
-          setAssignedUserNames(data.assignedUserNames);
-        }
-      } catch (err) {
-        console.error(
-          "Error fetching assigned usernames",
-          err.response?.data || err.message
-        );
-      }
-    };
-
-    fetchAssignedUserNames();
-  }, [currentUser._id]);
+  // --- RENDER ---
   return (
     <div className="p-3 border">
       {showModal && (isTechnician || territorialManager) && (
@@ -385,48 +343,44 @@ export default function EquipmentList() {
 
       {/* Equipment Table */}
       <div style={{ maxHeight: "60vh", overflow: "auto" }}>
-        {filtered.length === 0 ? (
+        {/* ✨ 3. ADDED LOADING INDICATOR */}
+        {isLoading ? (
+          <p>Loading equipment...</p>
+        ) : filtered.length === 0 ? (
           <p>No equipment found</p>
         ) : (
           <table className="table table-striped align-middle">
             <thead style={{ background: "#236a80", color: "#fff" }}>
               <tr>
-                <th style={{ background: "#236a80", color: "#fff" }}>Name</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>User</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Model</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Date</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>
-                  Capacity
-                </th>
-                <th style={{ background: "#236a80", color: "#fff" }}>
-                  Rated Load
-                </th>
-                <th style={{ background: "#236a80", color: "#fff" }}>
-                  Location
-                </th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Notes</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>QR</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>
-                  Download QR
-                </th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Action</th>
-                <th style={{ background: "#236a80", color: "#fff" }}>Assign</th>
+                {/* Table headers (unchanged) */}
+                <th>Name</th>
+                <th>User</th>
+                <th>Model</th>
+                <th>Date</th>
+                <th>Capacity</th>
+                <th>Rated Load</th>
+                <th>Location</th>
+                <th>Notes</th>
+                <th>QR</th>
+                <th>Download QR</th>
+                <th>Action</th>
+                <th>Assign</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((e) => (
+                // ✨ 4. JSX USES NEW DATA STRUCTURE (e.g., !e.canMechanical)
                 <tr
-                key={e._id}
-                className={
-                  assignedUserNames.includes(e.userName)
-                    ? (isTechnician && electricalReportStatus[e._id]) ||
-                      (territorialManager && mechanicalReportStatus[e._id])
-                      ? "row-completed"
-                      : "row-assigned"
-                    : ""
-                }
-              >
-              
+                  key={e._id}
+                  className={
+                    assignedUserNames.includes(e.userName)
+                      ? (isTechnician && !e.canElectrical) ||
+                        (territorialManager && !e.canMechanical)
+                        ? "row-completed" // Report submitted
+                        : "row-assigned" // Assigned but not submitted
+                      : ""
+                  }
+                >
                   <td>{e.equipmentName || "N/A"}</td>
                   <td>{e.userName || "N/A"}</td>
                   <td>{e.modelSerial || "N/A"}</td>
@@ -450,21 +404,16 @@ export default function EquipmentList() {
                       Download
                     </button>
                   </td>
-
                   <td className="d-flex align-items-center gap-2">
                     {territorialManager ? (
                       <>
                         <button
                           disabled
                           className={`btn btn-sm ${
-                            mechanicalReportStatus[e._id]
-                              ? "btn-primary"
-                              : "btn-danger"
+                            !e.canMechanical ? "btn-primary" : "btn-danger"
                           }`}
                         >
-                          {mechanicalReportStatus[e._id]
-                            ? "Submitted"
-                            : "Not Submitted"}
+                          {!e.canMechanical ? "Submitted" : "Not Submitted"}
                         </button>
                         <button
                           className="btn btn-sm btn-warning"
@@ -472,9 +421,7 @@ export default function EquipmentList() {
                             openModal(e._id, e.equipmentName, e.userName)
                           }
                         >
-                          {mechanicalReportStatus[e._id]
-                            ? "Edit Report"
-                            : "Add Report"}
+                          {!e.canMechanical ? "Edit Report" : "Add Report"}
                         </button>
                       </>
                     ) : isTechnician ? (
@@ -482,14 +429,10 @@ export default function EquipmentList() {
                         <button
                           disabled
                           className={`btn btn-sm ${
-                            electricalReportStatus[e._id]
-                              ? "btn-primary"
-                              : "btn-danger"
+                            !e.canElectrical ? "btn-primary" : "btn-danger"
                           }`}
                         >
-                          {electricalReportStatus[e._id]
-                            ? "Submitted"
-                            : "Not Submitted"}
+                          {!e.canElectrical ? "Submitted" : "Not Submitted"}
                         </button>
                         <button
                           className="btn btn-sm btn-warning"
@@ -497,9 +440,7 @@ export default function EquipmentList() {
                             openModal(e._id, e.equipmentName, e.userName)
                           }
                         >
-                          {electricalReportStatus[e._id]
-                            ? "Edit Report"
-                            : "Add Report"}
+                          {!e.canElectrical ? "Edit Report" : "Add Report"}
                         </button>
                       </>
                     ) : (
@@ -510,7 +451,6 @@ export default function EquipmentList() {
                         View Report
                       </button>
                     )}
-
                     <button
                       className="btn btn-sm btn-info"
                       onClick={() => editEquipment(e._id)}
@@ -526,13 +466,11 @@ export default function EquipmentList() {
                       <FaTrash />
                     </button>
                   </td>
-
                   <td>
                     {assignedUserNames.includes(e.userName) && (
                       <>
-                        {(isTechnician && electricalReportStatus[e._id]) ||
-                        (territorialManager &&
-                          mechanicalReportStatus[e._id]) ? (
+                        {(isTechnician && !e.canElectrical) ||
+                        (territorialManager && !e.canMechanical) ? (
                           <span className="badge bg-success">Completed</span>
                         ) : (
                           <span className="badge bg-primary">Assigned</span>
