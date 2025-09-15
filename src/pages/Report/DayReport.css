@@ -1,0 +1,79 @@
+/* Main container for the entire PDF report */
+.report-container-day {
+  border: 1px solid #ddd;
+  padding: 25px;
+  font-family: Arial, sans-serif;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+/* Main title for the report */
+.report-main-title-day {
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+/* The blue header bar with company info */
+.report-info-header-day {
+  background: #236a80;
+  color: white;
+  padding: 12px;
+  margin: 20px 0;
+  border-radius: 5px;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Section titles like "Quality Report" */
+.report-section-title-day {
+  font-size: 18px;
+  font-weight: bold;
+  color: #236a80;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #236a80;
+  margin-top: 30px;
+  margin-bottom: 15px;
+}
+
+/* Sub-titles for individual stacks in the Quantity Report */
+.report-stack-title-day {
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  margin-top: 20px;
+  color: #444;
+}
+
+/* Universal styling for all tables in the report */
+.report-table-day {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+
+/* Table headers (thead) */
+.report-table-day thead th {
+  background-color: #236a80;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* All table cells */
+.report-table-day th,
+.report-table-day td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Zebra-striping for readability */
+.report-table-day tbody tr:nth-of-type(even) {
+  background-color: #f9f9f9;
+}

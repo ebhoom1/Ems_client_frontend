@@ -1,42 +1,81 @@
-/* Add the styles in a separate CSS file */
-.table-container {
-    width: 100%;
-    margin: 20px auto;
-}
-.report-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-}
-.report-table th, .report-table td {
-    border: 1px solid #ddd;
-    text-align: center;
-    padding: 8px;
-}
-.report-table th {
-    background-color: #236a80;
-    color: white;
-}
-.section-header {
-    background-color: #d9ead3;
-    font-weight: bold;
-    text-align: left;
-    padding: 8px;
-    border: 1px solid #ddd;
-}
-.highlight-orange {
-    background-color: #f9cb9c;
-}
-.highlight-green {
-    background-color: #b6d7a8;
-}
-.time-row {
-    font-size: 10px;
-    text-align: center;
-    color: #666;
+/* src/components/TableStyles.css */
+
+/* Main container for the PDF report */
+.report-container {
+  padding: 15px;
+  font-family: Arial, sans-serif;
+  background-color: #fff;
+  font-size: 12px; /* Smaller font for a compact view */
+  border: 2px solid #236a80; /* ✨ ADDED BORDER for the whole report */
 }
 
-.timestamp p {
-    margin: 0;
-    padding: 0;
+/* Main title styling */
+.report-main-title {
+  text-align: center;
+  font-weight: bold;
+  font-size: 22px;
+  margin-bottom: 5px;
+}
+
+.report-sub-title {
+  text-align: center;
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+/* Green header bar for report info */
+.report-info-header {
+  /* ✨ ADDED GRADIENT to the background */
+  background: linear-gradient(to bottom, #2a7e96, #236a80);
+  color: #fff;
+  font-weight: bold;
+  text-align: center;
+  padding: 8px;
+  border: 1px solid #236a80;
+  margin-bottom: 20px;
+  border-radius: 4px; /* Optional: adds slightly rounded corners */
+}
+
+/* Section headings like "Water Quality" */
+.report-section-title {
+  text-align: left;
+  font-weight: bold;
+  font-size: 16px;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #236a80;
+}
+
+
+/* Universal style for all tables in the report */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 25px; /* Space after each table */
+}
+
+.report-table th,
+.report-table td {
+  border: 1px solid #b0b0b0; /* Lighter border */
+  padding: 6px 8px; /* Compact padding */
+  text-align: center;
+}
+
+/* This uses the new header colors you provided */
+.report-table thead th {
+  background-color: #236a80; 
+  color: rgb(247, 248, 249);
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.report-table tbody tr:nth-of-type(even) {
+  background-color: #f9f9f9;
+}
+
+/* Style for values that exceed limits */
+.exceeded-value {
+  color: red !important;
+  font-weight: bold !important;
 }
