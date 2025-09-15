@@ -357,7 +357,10 @@ const DayReport = () => {
         <div className="col-lg-3 d-none d-lg-block"><DashboardSam/></div>
         <div className="col-lg-9 col-12">
           <Header />
-          <Maindashboard />
+          <div className="mt-5">
+             <Maindashboard />
+          </div>
+        
 
           <div className="border shadow m-4 p-4" style={{borderRadius:10}}>
             <div className="row">
