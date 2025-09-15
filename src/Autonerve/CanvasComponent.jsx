@@ -142,6 +142,7 @@ function CanvasComponent({
 
   const effectiveUserName = getOwnerUserName();
   const effectiveProductId = getEffectiveProductId();
+  console.log("effectiveProductId:",effectiveProductId)
   const socket = useRef(null);
   const backendUrl = API_URL || "http://localhost:5555";
 
