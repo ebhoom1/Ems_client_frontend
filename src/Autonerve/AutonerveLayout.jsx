@@ -171,38 +171,69 @@ function AutonerveLayout() {
   const handleFileDrop = (file) => { draggedFileRef.current = file; };
   const clearDraggedFile = () => { draggedFileRef.current = null; };
 
+  // useEffect(() => {
+  //   const fetchStations = async () => {
+  //     const loggedInUserName = userData?.validUserOne?.userName;
+  //     const userType = userData?.validUserOne?.userType;
+
+  //     let effectiveUserName = loggedInUserName;
+  //     if (String(userType).toLowerCase() === "admin"||"operator") {
+  //       // prefer selectedUserId from state
+  //       effectiveUserName = selectedUserId || loggedInUserName;
+  //     }
+
+  //     if (!effectiveUserName) return;
+
+  //     try {
+  //       const response = await fetch(`${API_URL}/api/live-stations/${effectiveUserName}`);
+  //       const result = await response.json();
+  //       console.log("livestation fetch result:", result);
+
+  //       if (response.ok && Array.isArray(result?.data)) {
+  //         setSavedStations(result.data.map((s) => s.stationName).filter(Boolean));
+  //       } else {
+  //         console.error("Error fetching stations:", result?.message || "Unknown error");
+  //         setSavedStations([]);
+  //       }
+  //     } catch (error) {
+  //       console.error("Network error fetching stations:", error);
+  //       setSavedStations([]);
+  //     }
+  //   };
+
+  //   fetchStations();
+  // }, [userData, selectedUserId]); // 🔸 re-fetch when header selection changes
+
   useEffect(() => {
-    const fetchStations = async () => {
-      const loggedInUserName = userData?.validUserOne?.userName;
-      const userType = userData?.validUserOne?.userType;
+  const fetchStations = async () => {
+    const loggedInUserName = userData?.validUserOne?.userName;
+    const userType = userData?.validUserOne?.userType;
 
-      let effectiveUserName = loggedInUserName;
-      if (String(userType).toLowerCase() === "admin") {
-        // prefer selectedUserId from state
-        effectiveUserName = selectedUserId || loggedInUserName;
-      }
+    // ✅ Always prefer selectedUserId, fallback to logged in user
+    let effectiveUserName = selectedUserId || loggedInUserName;
+console.log("effectiveUserName:",effectiveUserName);
+    if (!effectiveUserName) return;
 
-      if (!effectiveUserName) return;
+    try {
+      const response = await fetch(`${API_URL}/api/live-stations/${effectiveUserName}`);
+      const result = await response.json();
+      console.log("livestation fetch result:", result);
 
-      try {
-        const response = await fetch(`${API_URL}/api/live-stations/${effectiveUserName}`);
-        const result = await response.json();
-        console.log("livestation fetch result:", result);
-
-        if (response.ok && Array.isArray(result?.data)) {
-          setSavedStations(result.data.map((s) => s.stationName).filter(Boolean));
-        } else {
-          console.error("Error fetching stations:", result?.message || "Unknown error");
-          setSavedStations([]);
-        }
-      } catch (error) {
-        console.error("Network error fetching stations:", error);
+      if (response.ok && Array.isArray(result?.data)) {
+        setSavedStations(result.data.map((s) => s.stationName).filter(Boolean));
+      } else {
+        console.error("Error fetching stations:", result?.message || "Unknown error");
         setSavedStations([]);
       }
-    };
+    } catch (error) {
+      console.error("Network error fetching stations:", error);
+      setSavedStations([]);
+    }
+  };
 
-    fetchStations();
-  }, [userData, selectedUserId]); // 🔸 re-fetch when header selection changes
+  fetchStations();
+}, [userData, selectedUserId]);
+
 
   const handleSelectStation = (stationName) => {
     setSelectedStationName(stationName);

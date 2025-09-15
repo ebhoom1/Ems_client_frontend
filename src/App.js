@@ -87,6 +87,9 @@ import ElectricalMaintenance from "./pages/Inventory/ElectricalMaintenance";
 import ElectricalReport from "./pages/Inventory/ElectricalReport";
 import MechanicalReport from "./pages/Inventory/MechanicalReport";
 import ServiceReport from './pages/Inventory/ServiceReportView';
+import SafetyReportForm from "./pages/Inventory/SafetyReportForm";
+import EngineerVisitReportForm  from "./pages/Inventory/EngineerVisitReportForm";
+import EngineerVisitReportView from "./pages/Inventory/EngineerVisitReportView";
 import MergedMechanicalReport from "./pages/Inventory/MergedMechanicalReport";
 import MergedElectricalReport from "./pages/Inventory/MergedElectricalReport";
 import DailyLog from "./pages/Inventory/DailyLog";
@@ -308,6 +311,12 @@ function App() {
                   <Route
                     path="/maintenance/service/:equipmentId"
                     element={<ServiceReportForm />}
+                  /> <Route
+                    path="/maintenance/engineer-visit/:equipmentId"
+                    element={<EngineerVisitReportForm />}
+                  /> <Route
+                    path="/maintenance/safety/:equipmentId"
+                    element={<SafetyReportForm />}
                   />
                   <Route
                     path="/report/electrical/:equipmentId"
@@ -321,6 +330,9 @@ function App() {
                     path="/report/service/:equipmentId"
                     element={<ServiceReport/>}
                   />
+                  <Route path="/report/engineer-visit/:equipmentId" element={<EngineerVisitReportView />} />
+<Route path="/report/engineer-visit-view/:equipmentId" element={<EngineerVisitReportView />} />
+
                   <Route
                     path="/report/electrical/download/:userName/:year/:month"
                     element={<MergedElectricalReport />}
@@ -480,6 +492,7 @@ function App() {
                   <Route path="/account" element={<Account />} />
                   <Route path="/download" element={<DownloadData />} />
                   <Route path="/how-to-use" element={<UserManual />} />
+             <Route path="/autonerve" element={<AutonerveLayout />} />
                   {/* Assuming transaction-related routes */}
                   <Route
                     path="/edit-report/:userName"

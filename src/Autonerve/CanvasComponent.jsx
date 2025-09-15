@@ -73,36 +73,72 @@ function CanvasComponent({
   const productId = String(userData?.validUserOne?.productID || "");
   console.log("productId:", productId);
 
+  // const getOwnerUserName = useCallback(() => {
+  //   const ui = userData?.validUserOne;
+  //   const base = ui?.userName || null;
+  //   const isAdmin = String(ui?.userType || "").toLowerCase() === "admin";
+  //   const isOperator = String(ui?.userType || "").toLowerCase() === "operator";
+
+  //   if (!isAdmin||!isOperator) return base;
+
+  //   try {
+  //     const fromSession = sessionStorage.getItem("selectedUserId");
+
+  //     if (fromSession && fromSession.trim()) return fromSession.trim();
+  //   } catch {
+  //     // ignore and fall back
+  //   }
+  // }, [userData]);
+
   const getOwnerUserName = useCallback(() => {
-    const ui = userData?.validUserOne;
-    const base = ui?.userName || null;
-    const isAdmin = String(ui?.userType || "").toLowerCase() === "admin";
+  const ui = userData?.validUserOne;
+  const base = ui?.userName || null;
+  const type = String(ui?.userType || "").toLowerCase();
 
-    if (!isAdmin) return base;
-
+  if (type === "admin" || type === "operator") {
     try {
       const fromSession = sessionStorage.getItem("selectedUserId");
       if (fromSession && fromSession.trim()) return fromSession.trim();
     } catch {
-      // ignore and fall back
+      // ignore
     }
-    return base;
-  }, [userData]);
+  }
+
+  return base;
+}, [userData]);
+
+
+  // const getEffectiveProductId = useCallback(() => {
+  //   const ui = userData?.validUserOne;
+  //   const isAdmin = String(ui?.userType || "").toLowerCase() === "admin";
+
+  //   if (isAdmin) {
+  //     try {
+  //       const fromSession = sessionStorage.getItem("selectedProductId");
+  //       return (fromSession && fromSession.trim()) || "";
+  //     } catch {
+  //       return "";
+  //     }
+  //   }
+  //   return String(ui?.productID || "");
+  // }, [userData]);
 
   const getEffectiveProductId = useCallback(() => {
-    const ui = userData?.validUserOne;
-    const isAdmin = String(ui?.userType || "").toLowerCase() === "admin";
+  const ui = userData?.validUserOne;
+  const type = String(ui?.userType || "").toLowerCase();
 
-    if (isAdmin) {
-      try {
-        const fromSession = sessionStorage.getItem("selectedProductId");
-        return (fromSession && fromSession.trim()) || "";
-      } catch {
-        return "";
-      }
+  if (type === "admin" || type === "operator") {
+    try {
+      const fromSession = sessionStorage.getItem("selectedProductId");
+      return (fromSession && fromSession.trim()) || "";
+    } catch {
+      return "";
     }
-    return String(ui?.productID || "");
-  }, [userData]);
+  }
+
+  return String(ui?.productID || "");
+}, [userData]);
+
 
   const effectiveUserName = getOwnerUserName();
   const effectiveProductId = getEffectiveProductId();
@@ -395,6 +431,7 @@ return node;
       if (!name) return;
       try {
         const ownerUserName = getOwnerUserName();
+console.log("ownerUserName:",ownerUserName);
         if (!ownerUserName) {
           showMessageBox("No user selected. Please choose a user first.");
           return;
