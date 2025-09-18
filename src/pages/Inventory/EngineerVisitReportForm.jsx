@@ -17,7 +17,10 @@ const fiscalYearRange = (iso) => {
   return `${short(s)}-${short(e)}`;
 };
 const siteCode = (site) =>
-  (site || "SITE").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "SITE";
+  (site || "SITE")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 6) || "SITE";
 const nextReportNumber = async ({ apiBase, site, isoDate }) => {
   try {
     const fy = fiscalYearRange(isoDate);
@@ -124,10 +127,15 @@ function SignatureModal({ show, onClose, onSave }) {
 }
 
 /* --- Main Component --- */
-export default function EngineerVisitReportForm({ equipmentId, equipmentName, equipmentUserName }) {
+export default function EngineerVisitReportForm({
+  equipmentId,
+  equipmentName,
+  equipmentUserName,
+}) {
   const navigate = useNavigate();
   const location = useLocation();
   const { equipmentId: paramEquipmentId } = useParams();
+  const {user}=useParams();
   const currentEquipmentId = equipmentId || paramEquipmentId;
   const currentEquipmentName = equipmentName || location.state?.equipmentName;
   const initialCustomerName = equipmentUserName || location.state?.userName;
@@ -135,13 +143,13 @@ export default function EngineerVisitReportForm({ equipmentId, equipmentName, eq
   const { validUserOne = {} } = useSelector((s) => s.user.userData || {});
   const submitterName = validUserOne.fname || "";
 
-// Header
-const [referenceNo, setReferenceNo] = useState("");
-const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-const [customerName, setCustomerName] = useState(initialCustomerName || "");
-const [plantCapacity, setPlantCapacity] = useState("");
-const [technology, setTechnology] = useState("");
-const [site, setSite] = useState("");
+  // Header
+  const [referenceNo, setReferenceNo] = useState("");
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [customerName, setCustomerName] = useState(user || "");
+  const [plantCapacity, setPlantCapacity] = useState("");
+  const [technology, setTechnology] = useState("");
+  const [site, setSite] = useState("");
 
   // Parameters
   const [parameters, setParameters] = useState({
@@ -181,8 +189,6 @@ const [site, setSite] = useState("");
   const [engineerRemarks, setEngineerRemarks] = useState("");
   const [customerRemarks, setCustomerRemarks] = useState("");
 
- 
-
   // Signatures
   const [customerSig, setCustomerSig] = useState("");
   const [engineerSig, setEngineerSig] = useState("");
@@ -197,7 +203,9 @@ const [site, setSite] = useState("");
     const loadEq = async () => {
       if (!currentEquipmentId) return;
       try {
-        const res = await axios.get(`${API_URL}/api/equiment/${currentEquipmentId}`);
+        const res = await axios.get(
+          `${API_URL}/api/equiment/${currentEquipmentId}`
+        );
         const eq = res.data.equipment;
         if (eq) {
           setPlantCapacity((p) => p || eq.capacity || "");
@@ -212,16 +220,17 @@ const [site, setSite] = useState("");
     loadEq();
   }, [currentEquipmentId]);
 
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!customerName || !submitterName) return toast.error("Missing required fields");
-    if (!customerSig || !engineerSig) return toast.error("Both signatures required");
+    if (!customerName || !submitterName)
+      return toast.error("Missing required fields");
+    if (!customerSig || !engineerSig)
+      return toast.error("Both signatures required");
 
     const fd = new FormData();
     fd.append("equipmentId", currentEquipmentId);
     fd.append("equipmentName", currentEquipmentName);
-fd.append("referenceNo", referenceNo);
+    fd.append("referenceNo", referenceNo);
     fd.append("date", date);
     fd.append("customerName", customerName);
     fd.append("engineerName", submitterName);
@@ -248,13 +257,19 @@ fd.append("referenceNo", referenceNo);
       for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
       return new Blob([u8], { type: "image/png" });
     };
-    if (customerSig) fd.append("customerSignatureImage", blob(customerSig), "cust.png");
-    if (engineerSig) fd.append("engineerSignatureImage", blob(engineerSig), "eng.png");
+    if (customerSig)
+      fd.append("customerSignatureImage", blob(customerSig), "cust.png");
+    if (engineerSig)
+      fd.append("engineerSignatureImage", blob(engineerSig), "eng.png");
 
     try {
-      const { data } = await axios.post(`${API_URL}/api/add-engineerreport`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const { data } = await axios.post(
+        `${API_URL}/api/add-engineerreport`,
+        fd,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
       if (data.success) {
         toast.success("Engineer Visit Report submitted!");
         navigate("/services?tab=equipmentList");
@@ -272,61 +287,67 @@ fd.append("referenceNo", referenceNo);
       </h3>
 
       <form onSubmit={handleSubmit}>
-      {/* Header */}
-<div className="card mb-3 border">
-  <div className="card-header text-white" style={{ backgroundColor: "#236a80" }}>
-    Report Header
-  </div>
-  <div className="card-body row g-2">
-    <div className="col-md-4">
-      <label className="form-label">Reference No.</label>
-      <input
-        className="form-control"
-        value={referenceNo}
-        onChange={(e) => setReferenceNo(e.target.value)}
-        placeholder="e.g., GUMPL/VR/001/24-25"
-      />
-    </div>
-    <div className="col-md-4">
-      <label className="form-label">Date</label>
-      <input
-        type="date"
-        className="form-control"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-      />
-    </div>
-    <div className="col-md-4">
-      <label className="form-label">Customer / Site</label>
-      <input
-        className="form-control"
-        value={customerName}
-        onChange={(e) => setCustomerName(e.target.value)}
-      />
-    </div>
-    <div className="col-md-6">
-      <label className="form-label">Plant Capacity</label>
-      <input
-        className="form-control"
-        value={plantCapacity}
-        onChange={(e) => setPlantCapacity(e.target.value)}
-      />
-    </div>
-    <div className="col-md-6">
-      <label className="form-label">Technology</label>
-      <input
-        className="form-control"
-        value={technology}
-        onChange={(e) => setTechnology(e.target.value)}
-      />
-    </div>
-  </div>
-</div>
-
+        {/* Header */}
+        <div className="card mb-3 border">
+          <div
+            className="card-header text-white"
+            style={{ backgroundColor: "#236a80" }}
+          >
+            Report Header
+          </div>
+          <div className="card-body row g-2">
+            <div className="col-md-4">
+              <label className="form-label">Reference No.</label>
+              <input
+                className="form-control"
+                value={referenceNo}
+                onChange={(e) => setReferenceNo(e.target.value)}
+                placeholder="e.g., GUMPL/VR/001/24-25"
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Date</label>
+              <input
+                type="date"
+                className="form-control"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Customer Id</label>
+              <input
+                className="form-control"
+                value={user}
+                onChange={(e) => setCustomerName(e.target.value)}
+                readOnly
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Plant Capacity</label>
+              <input
+                className="form-control"
+                value={plantCapacity}
+                onChange={(e) => setPlantCapacity(e.target.value)}
+              />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Technology</label>
+              <input
+                className="form-control"
+                value={technology}
+                onChange={(e) => setTechnology(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Parameters */}
         <div className="card mb-3 border">
-          <div className="card-header text-white" style={{ backgroundColor: "#236a80" }}>
+          <div
+            className="card-header text-white"
+            style={{ backgroundColor: "#236a80" }}
+          >
             Parameters During Visit
           </div>
           <div className="card-body row g-2">
@@ -336,7 +357,9 @@ fd.append("referenceNo", referenceNo);
                 <input
                   className="form-control"
                   value={v}
-                  onChange={(e) => setParameters({ ...parameters, [k]: e.target.value })}
+                  onChange={(e) =>
+                    setParameters({ ...parameters, [k]: e.target.value })
+                  }
                 />
               </div>
             ))}
@@ -345,7 +368,10 @@ fd.append("referenceNo", referenceNo);
 
         {/* Key Points */}
         <div className="card mb-3 border">
-          <div className="card-header text-white" style={{ backgroundColor: "#236a80" }}>
+          <div
+            className="card-header text-white"
+            style={{ backgroundColor: "#236a80" }}
+          >
             Key Points Checked
           </div>
           <div className="card-body row">
@@ -355,7 +381,9 @@ fd.append("referenceNo", referenceNo);
                   type="checkbox"
                   className="form-check-input"
                   checked={keyPoints[k]}
-                  onChange={(e) => setKeyPoints({ ...keyPoints, [k]: e.target.checked })}
+                  onChange={(e) =>
+                    setKeyPoints({ ...keyPoints, [k]: e.target.checked })
+                  }
                 />
                 <label className="form-check-label">{k}</label>
               </div>
@@ -365,7 +393,10 @@ fd.append("referenceNo", referenceNo);
 
         {/* Consumables */}
         <div className="card mb-3 border">
-          <div className="card-header text-white" style={{ backgroundColor: "#236a80" }}>
+          <div
+            className="card-header text-white"
+            style={{ backgroundColor: "#236a80" }}
+          >
             Consumables Stock
           </div>
           <div className="card-body row g-2">
@@ -375,7 +406,9 @@ fd.append("referenceNo", referenceNo);
                 <input
                   className="form-control"
                   value={v}
-                  onChange={(e) => setConsumables({ ...consumables, [k]: e.target.value })}
+                  onChange={(e) =>
+                    setConsumables({ ...consumables, [k]: e.target.value })
+                  }
                 />
               </div>
             ))}
@@ -384,60 +417,133 @@ fd.append("referenceNo", referenceNo);
 
         {/* Remarks */}
         <div className="card mb-3 border">
-          <div className="card-header text-white" style={{ backgroundColor: "#236a80" }}>
+          <div
+            className="card-header text-white"
+            style={{ backgroundColor: "#236a80" }}
+          >
             Visit & Remarks
           </div>
           <div className="card-body">
             <label className="form-label">Details of Visit Done</label>
-            <textarea className="form-control mb-3" rows="3" value={visitDetails} onChange={(e) => setVisitDetails(e.target.value)} />
+            <textarea
+              className="form-control mb-3"
+              rows="3"
+              value={visitDetails}
+              onChange={(e) => setVisitDetails(e.target.value)}
+            />
             <label className="form-label">Engineer’s Remarks</label>
-            <textarea className="form-control mb-3" rows="3" value={engineerRemarks} onChange={(e) => setEngineerRemarks(e.target.value)} />
+            <textarea
+              className="form-control mb-3"
+              rows="3"
+              value={engineerRemarks}
+              onChange={(e) => setEngineerRemarks(e.target.value)}
+            />
             <label className="form-label">Customer Remarks</label>
-            <textarea className="form-control" rows="3" value={customerRemarks} onChange={(e) => setCustomerRemarks(e.target.value)} />
+            <textarea
+              className="form-control"
+              rows="3"
+              value={customerRemarks}
+              onChange={(e) => setCustomerRemarks(e.target.value)}
+            />
           </div>
         </div>
 
-       
-
         {/* Signatures */}
         <div className="card mb-3 border">
-          <div className="card-header text-white" style={{ backgroundColor: "#236a80" }}>
+          <div
+            className="card-header text-white"
+            style={{ backgroundColor: "#236a80" }}
+          >
             Signatures
           </div>
           <div className="card-body row g-3">
             <div className="col-md-6">
               <label className="form-label">Customer Signature</label>
-              <button type="button" className="btn w-100" style={{ backgroundColor: "#236a80", color: "#fff" }} onClick={() => setShowCustModal(true)}>
-                {customerSig ? "✓ Signature Captured" : "Click to Draw Signature"}
+              <button
+                type="button"
+                className="btn w-100"
+                style={{ backgroundColor: "#236a80", color: "#fff" }}
+                onClick={() => setShowCustModal(true)}
+              >
+                {customerSig
+                  ? "✓ Signature Captured"
+                  : "Click to Draw Signature"}
               </button>
-              <input type="text" className="form-control mt-2" placeholder="Customer Name" value={custName} onChange={(e) => setCustName(e.target.value)} />
-              <input type="text" className="form-control mt-2" placeholder="Customer Designation" value={custDesig} onChange={(e) => setCustDesig(e.target.value)} />
+              <input
+                type="text"
+                className="form-control mt-2"
+                placeholder="Customer Name"
+                value={custName}
+                onChange={(e) => setCustName(e.target.value)}
+              />
+              <input
+                type="text"
+                className="form-control mt-2"
+                placeholder="Customer Designation"
+                value={custDesig}
+                onChange={(e) => setCustDesig(e.target.value)}
+              />
             </div>
             <div className="col-md-6">
               <label className="form-label">Engineer Signature</label>
-              <button type="button" className="btn w-100" style={{ backgroundColor: "#236a80", color: "#fff" }} onClick={() => setShowEngModal(true)}>
-                {engineerSig ? "✓ Signature Captured" : "Click to Draw Signature"}
+              <button
+                type="button"
+                className="btn w-100"
+                style={{ backgroundColor: "#236a80", color: "#fff" }}
+                onClick={() => setShowEngModal(true)}
+              >
+                {engineerSig
+                  ? "✓ Signature Captured"
+                  : "Click to Draw Signature"}
               </button>
-              <input type="text" className="form-control mt-2" placeholder="Engineer Name" value={engName} onChange={(e) => setEngName(e.target.value)} />
-              <input type="text" className="form-control mt-2" placeholder="Engineer Designation" value={engDesig} onChange={(e) => setEngDesig(e.target.value)} />
+              <input
+                type="text"
+                className="form-control mt-2"
+                placeholder="Engineer Name"
+                value={engName}
+                onChange={(e) => setEngName(e.target.value)}
+              />
+              <input
+                type="text"
+                className="form-control mt-2"
+                placeholder="Engineer Designation"
+                value={engDesig}
+                onChange={(e) => setEngDesig(e.target.value)}
+              />
             </div>
           </div>
         </div>
 
         {/* Actions */}
         <div className="d-flex justify-content-end gap-2">
-          <button type="button" className="btn btn-secondary" onClick={() => navigate("/services?tab=equipmentList")}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => navigate("/services?tab=equipmentList")}
+          >
             Cancel
           </button>
-          <button type="submit" className="btn" style={{ backgroundColor: "#236a80", color: "#fff" }}>
+          <button
+            type="submit"
+            className="btn"
+            style={{ backgroundColor: "#236a80", color: "#fff" }}
+          >
             Submit Engineer Visit Report
           </button>
         </div>
       </form>
 
       {/* Signature Modals */}
-      <SignatureModal show={showCustModal} onClose={() => setShowCustModal(false)} onSave={setCustomerSig} />
-      <SignatureModal show={showEngModal} onClose={() => setShowEngModal(false)} onSave={setEngineerSig} />
+      <SignatureModal
+        show={showCustModal}
+        onClose={() => setShowCustModal(false)}
+        onSave={setCustomerSig}
+      />
+      <SignatureModal
+        show={showEngModal}
+        onClose={() => setShowEngModal(false)}
+        onSave={setEngineerSig}
+      />
     </div>
   );
 }

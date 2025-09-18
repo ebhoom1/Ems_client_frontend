@@ -494,6 +494,7 @@ export default function ServiceReportForm({
       const resp = await axios.post(`${API_URL}/api/add-servicereport`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+      console.log("respose:",resp.data);
       if (resp.data.success) {
         toast.success("Service Report submitted successfully!");
         navigate("/services?tab=equipmentList");

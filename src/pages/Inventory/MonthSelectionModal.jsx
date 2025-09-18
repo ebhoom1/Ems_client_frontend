@@ -1,13 +1,13 @@
 // src/pages/MonthSelectionModal.jsx
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import { useSelector } from 'react-redux';
-import { API_URL } from '../../utils/apiConfig';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
+import { API_URL } from "../../utils/apiConfig";
+import { useNavigate } from "react-router-dom";
 
-export default function MonthSelectionModal({ onClose, reportType }) {
+export default function MonthSelectionModal({ onClose, reportType ,onMonthSelected}) {
   const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState('');
+  const [selectedUser, setSelectedUser] = useState("");
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const navigate = useNavigate();
@@ -22,7 +22,9 @@ export default function MonthSelectionModal({ onClose, reportType }) {
     (async () => {
       try {
         const res = await fetch(
-          `${API_URL}/api/get-users-by-adminType/${encodeURIComponent(adminType)}`
+          `${API_URL}/api/get-users-by-adminType/${encodeURIComponent(
+            adminType
+          )}`
         );
         const data = await res.json();
         const list = data.users || [];
@@ -32,7 +34,7 @@ export default function MonthSelectionModal({ onClose, reportType }) {
         }
       } catch (err) {
         console.error(err);
-        toast.error('Error fetching user list');
+        toast.error("Error fetching user list");
       }
     })();
   }, [adminType]);
@@ -40,10 +42,13 @@ export default function MonthSelectionModal({ onClose, reportType }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (reportType === 'electrical') {
+    if (reportType === "electrical") {
       navigate(`/report/electrical/download/${selectedUser}/${year}/${month}`);
-    } else if (reportType === 'mechanical') {
+    } else if (reportType === "mechanical") {
       navigate(`/mechanical-report/${selectedUser}/${year}/${month}`);
+    } else if (reportType === "engineer" || reportType === "safety") {
+      onMonthSelected(year, month, selectedUser);
+      return;
     }
     onClose();
   };
@@ -51,11 +56,10 @@ export default function MonthSelectionModal({ onClose, reportType }) {
   return (
     <div
       className="modal"
-      style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
+      style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
     >
       <div className="modal-dialog">
         <div className="modal-content">
-
           <div className="modal-header">
             <h5 className="modal-title">Select User, Month &amp; Year</h5>
             <button type="button" className="btn-close" onClick={onClose} />
@@ -63,7 +67,6 @@ export default function MonthSelectionModal({ onClose, reportType }) {
 
           <div className="modal-body">
             <form onSubmit={handleSubmit}>
-
               {/* User dropdown */}
               <div className="mb-3">
                 <label htmlFor="userName" className="form-label">
@@ -77,7 +80,7 @@ export default function MonthSelectionModal({ onClose, reportType }) {
                   required
                 >
                   <option value="" disabled>
-                    {users.length ? 'Select a user…' : 'Loading users…'}
+                    {users.length ? "Select a user…" : "Loading users…"}
                   </option>
                   {users.map((u) => (
                     <option key={u._id} value={u.userName}>
@@ -120,8 +123,8 @@ export default function MonthSelectionModal({ onClose, reportType }) {
                     const m = i + 1;
                     return (
                       <option key={m} value={m}>
-                        {new Date(2000, i, 1).toLocaleString('default', {
-                          month: 'long',
+                        {new Date(2000, i, 1).toLocaleString("default", {
+                          month: "long",
                         })}
                       </option>
                     );
@@ -141,14 +144,13 @@ export default function MonthSelectionModal({ onClose, reportType }) {
                 <button
                   type="submit"
                   className="btn"
-                  style={{ backgroundColor: '#236a80', color: '#fff' }}
+                  style={{ backgroundColor: "#236a80", color: "#fff" }}
                 >
                   Submit
                 </button>
               </div>
             </form>
           </div>
-
         </div>
       </div>
     </div>

@@ -133,14 +133,7 @@ export default function ReportTypeModal({ equipmentId, equipmentName, onClose })
           >
             Service Report
           </button>
-          {/* NEW: Engineer Visit Report option */}
-          <button
-            className="btn w-100 mb-2"
-            style={{ backgroundColor: "#28a745", color: "#fff" }}
-            onClick={() => pick("engineer-visit")}
-          >
-            Engineer Visit Report
-          </button>
+         
           <button
             className="btn btn-link text-danger"
             onClick={onClose}

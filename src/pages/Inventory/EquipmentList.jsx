@@ -14,6 +14,7 @@ import "./inventory.css";
 import MaintenanceTypeModal from "./MaintenanceTypeModal";
 import ReportTypeModal from "./ReportTypeModal";
 import MonthSelectionModal from "./MonthSelectionModal";
+import VisitReportTypeModal from "./VisitReportTypeModal";
 
 export default function EquipmentList() {
   const { userData } = useSelector((state) => state.user);
@@ -35,12 +36,14 @@ export default function EquipmentList() {
   const [showModal, setShowModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedEquipmentName, setSelectedEquipmentName] = useState(null);
-  const [selectedEquipmentUserName, setSelectedEquipmentUserName] = useState(null);
+  const [selectedEquipmentUserName, setSelectedEquipmentUserName] =
+    useState(null);
   const [assignedUserNames, setAssignedUserNames] = useState([]);
 
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMonthModal, setShowMonthModal] = useState(false);
   const [reportType, setReportType] = useState(null);
+  const [showVisitReportModal, setShowVisitReportModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -267,9 +270,23 @@ export default function EquipmentList() {
     );
   });
 
-  // --- RENDER ---
+  const openVisitReportModal = (id, name, userName) => {
+    setSelectedId(id);
+    setSelectedEquipmentName(name);
+    setSelectedEquipmentUserName(userName);
+    setShowVisitReportModal(true);
+  };
+
   return (
     <div className="p-3 border">
+      {showVisitReportModal && (
+        <VisitReportTypeModal
+          reportKind={showVisitReportModal.kind}
+          role={type.userType}
+          onClose={() => setShowVisitReportModal(false)}
+        />
+      )}
+
       {showModal && (isTechnician || territorialManager) && (
         <MaintenanceTypeModal
           equipmentId={selectedId}
@@ -321,7 +338,7 @@ export default function EquipmentList() {
             </select>
           </div>
         )}
-        <div className="col-md-4 d-flex justify-content-md-end gap-2">
+        {/* <div className="col-md-4 d-flex justify-content-md-end gap-2">
           {type.userType === "admin" && (
             <>
               <button
@@ -338,6 +355,38 @@ export default function EquipmentList() {
               </button>
             </>
           )}
+        </div> */}
+        <div className="col-md-6 d-flex justify-content-md-end gap-2">
+          {type.userType === "admin" && (
+            <>
+              <button
+                className="btn btn-warning"
+                onClick={() => openMergedReportModal("mechanical")}
+              >
+                Download Mechanical
+              </button>
+              <button
+                className="btn btn-warning"
+                onClick={() => openMergedReportModal("electrical")}
+              >
+                Download Electrical
+              </button>
+            </>
+          )}
+
+          {/* Visit Report Buttons */}
+          <button
+            className="btn btn-info"
+            onClick={() => setShowVisitReportModal({ kind: "engineer" })}
+          >
+            Engineer Visit Report
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowVisitReportModal({ kind: "safety" })}
+          >
+            Safety Report
+          </button>
         </div>
       </div>
 
@@ -408,32 +457,17 @@ export default function EquipmentList() {
                     {territorialManager ? (
                       <>
                         <button
-                          disabled
-                          className={`btn btn-sm ${
-                            !e.canMechanical ? "btn-primary" : "btn-danger"
-                          }`}
-                        >
-                          {!e.canMechanical ? "Submitted" : "Not Submitted"}
-                        </button>
-                        <button
                           className="btn btn-sm btn-warning"
                           onClick={() =>
                             openModal(e._id, e.equipmentName, e.userName)
                           }
                         >
-                          {!e.canMechanical ? "Edit Report" : "Add Report"}
+                          {/* {!e.canMechanical ? "Edit Report" : "Add Report"} */}
+                          Add Report
                         </button>
                       </>
                     ) : isTechnician ? (
                       <>
-                        <button
-                          disabled
-                          className={`btn btn-sm ${
-                            !e.canElectrical ? "btn-primary" : "btn-danger"
-                          }`}
-                        >
-                          {!e.canElectrical ? "Submitted" : "Not Submitted"}
-                        </button>
                         <button
                           className="btn btn-sm btn-warning"
                           onClick={() =>
@@ -466,11 +500,22 @@ export default function EquipmentList() {
                       <FaTrash />
                     </button>
                   </td>
-                  <td>
+                  {/* <td>
                     {assignedUserNames.includes(e.userName) && (
                       <>
                         {(isTechnician && !e.canElectrical) ||
                         (territorialManager && !e.canMechanical) ? (
+                          <span className="badge bg-success">Completed</span>
+                        ) : (
+                          <span className="badge bg-primary">Assigned</span>
+                        )}
+                      </>
+                    )}
+                  </td> */}
+                  <td>
+                    {assignedUserNames.includes(e.userName) && (
+                      <>
+                        {e.hasMechanical && e.hasElectrical && e.hasService ? (
                           <span className="badge bg-success">Completed</span>
                         ) : (
                           <span className="badge bg-primary">Assigned</span>

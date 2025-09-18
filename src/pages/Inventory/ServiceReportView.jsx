@@ -34,7 +34,7 @@ export default function ServiceReportView() {
   const tdStyle = {
     border: "1px solid #c8d2dc",
     padding: 8,
-    fontSize: 12,
+    fontSize: 14,
     color: "#2f4f66",
   };
   const sectionHeaderStyle = {
@@ -54,13 +54,13 @@ export default function ServiceReportView() {
     // borderBottom: "1px solid #eee",
     // paddingBottom: 5,
     // color: "#2f4f66",
-    fontWeight: "700",       // or "bold"
-  fontSize: 14,            // was 14 → increase to 16 (or 18 if you want larger)
-  marginBottom: 8,         // add a little more spacing
-  borderBottom: "1px solid #ccc",
-  paddingBottom: 6,
-  color: "#2f4f66",
-  textTransform: "uppercase",
+    fontWeight: "700", // or "bold"
+    fontSize: 14, // was 14 → increase to 16 (or 18 if you want larger)
+    marginBottom: 8, // add a little more spacing
+    borderBottom: "1px solid #ccc",
+    paddingBottom: 6,
+    color: "#2f4f66",
+    textTransform: "uppercase",
   };
 
   // back button behavior
