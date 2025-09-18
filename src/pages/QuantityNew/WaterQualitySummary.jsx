@@ -282,7 +282,7 @@ export default function WaterQualitySummary() {
           <div className="col-lg-9 col-12">
             <Hedaer />
 
-            <div className="p-3 border mb-4 d-flex justify-content-between align-items-center">
+            <div style={{marginTop:'6%'}} className="p-3 border mb-4 d-flex justify-content-between align-items-center ">
               <div>
                 <h6 className="company-name mb-0">{displayName}</h6>
                 <small className="text-muted">
@@ -443,7 +443,7 @@ export default function WaterQualitySummary() {
           >
             Cancel
           </Button>
-          <Button variant="primary" onClick={onModalSubmit}>
+          <Button style={{backgroundColor:'#236a80' , color:'#fff'}} onClick={onModalSubmit}>
             Go
           </Button>
         </Modal.Footer>

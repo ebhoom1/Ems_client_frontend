@@ -1,16 +1,10 @@
-// src/components/PreviousQuality.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { FiDownload } from "react-icons/fi";
 import { API_URL } from "../../utils/apiConfig";
-
-// Utility to generate a random number between min and max
-function randomBetween(min, max) {
-  return min + Math.random() * (max - min);
-}
 
 export default function PreviousQuality() {
   const [searchParams] = useSearchParams();
@@ -19,92 +13,62 @@ export default function PreviousQuality() {
   const year = searchParams.get("year");
 
   const [data, setData] = useState([]);
+  const [parameters, setParameters] = useState([]); // State to hold dynamic parameters
   const [loading, setLoading] = useState(true);
 
-  // Acceptable limits map (keys must match API parameter names exactly)
-  const limits = {
+  // A master map of all possible parameters and their acceptable limits.
+  // Keys are lowercase for consistent matching.
+  const allLimits = {
     ph: [7.0, 7.5],
-  
-    turb: [0.1, 2.0],  // Changed from TURB to turb and set min to 0.1 to avoid zeros
-    TSS: [0.0, 10.0],
-    BOD: [0.0, 8.0],
-    COD: [0.0, 30.0],
+    turb: [0.1, 2.0],
+    tss: [0.0, 10.0],
+    bod: [0.0, 8.0],
+    cod: [0.0, 30.0],
+    temp: [25.0, 35.0], // Example for Temperature
   };
 
-  // Fetch data when query params are available
   useEffect(() => {
     if (!user || !month || !year) return;
     setLoading(true);
     axios
       .get(`${API_URL}/api/average/user/${user}/daily/month/${year}/${month}`)
       .then((res) => {
-        if (res.data.success) {
-          console.log("Raw API data:", res.data.data); // Debug log
-          setData(res.data.data);
+        if (res.data.success && res.data.data.length > 0) {
+          // Process data to normalize parameter keys to lowercase
+          const processedData = res.data.data.map(item => {
+            const avgParams = item.stacks?.[0]?.avgParameters || {};
+            const normalizedParams = Object.keys(avgParams).reduce((acc, key) => {
+              acc[key.toLowerCase()] = avgParams[key];
+              return acc;
+            }, {});
+            
+            return {
+              ...item,
+              stacks: [{ ...(item.stacks?.[0] || {}), avgParameters: normalizedParams }]
+            };
+          });
+          
+          setData(processedData);
+
+          // Dynamically determine the parameters from the first record
+          const firstRecordParams = processedData[0]?.stacks?.[0]?.avgParameters || {};
+          const availableParams = Object.keys(firstRecordParams);
+          setParameters(availableParams); // Set the dynamic parameters for the table
+          
         } else {
           setData([]);
+          setParameters([]);
         }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [user, month, year]);
 
-  // Process data to ensure no zeros in any parameter
-  const displayedData = useMemo(() => {
-    if (!data.length) return [];
-
-    return data.map((row) => {
-      const params = row.stacks?.[0]?.avgParameters || {};
-      const newParams = {};
-
-      // Process each parameter
-      Object.entries(params).forEach(([key, val]) => {
-        const lim = limits[key];
-        if (lim) {
-          // For turbidity, ensure value is never 0
-          if (key === "turb") {
-            newParams[key] = val === 0 || val < lim[0] || val > lim[1] 
-              ? parseFloat(randomBetween(Math.max(0.1, lim[0]), lim[1]).toFixed(2))
-              : parseFloat(val.toFixed(2));
-          } 
-          // For other parameters, replace zeros or out-of-range values
-          else {
-            newParams[key] = val === 0 || val < lim[0] || val > lim[1]
-              ? parseFloat(randomBetween(lim[0], lim[1]).toFixed(2))
-              : parseFloat(val.toFixed(2));
-          }
-        } else {
-          newParams[key] = val;
-        }
-      });
-
-      // Ensure all expected parameters exist in the row
-      Object.keys(limits).forEach((key) => {
-        if (newParams[key] === undefined) {
-          newParams[key] = parseFloat(randomBetween(limits[key][0], limits[key][1]).toFixed(2));
-        }
-      });
-
-      return {
-        ...row,
-        stacks: [
-          {
-            ...(row.stacks?.[0] || {}),
-            avgParameters: newParams,
-          },
-        ],
-      };
-    });
-  }, [data]);
-
-  // Derive parameter columns from limits to ensure consistent order
-  const parameters = useMemo(() => Object.keys(limits), []);
-
   // CSV download handler
   const handleDownloadCSV = () => {
-    const header = ["Date", ...parameters].join(",");
-    const rows = displayedData.map((r) => {
-      const vals = parameters.map((p) => (r.stacks[0].avgParameters[p] ?? 0).toFixed(2));
+    const header = ["Date", ...parameters.map(p => p.toUpperCase())].join(",");
+    const rows = data.map((r) => {
+      const vals = parameters.map((p) => (r.stacks[0].avgParameters[p] ?? "N/A").toFixed(2));
       return [r.date, ...vals].join(",");
     });
     const blob = new Blob([[header, ...rows].join("\n")], { type: "text/csv" });
@@ -123,9 +87,9 @@ export default function PreviousQuality() {
     doc.autoTable({
       startY: 22,
       head: [["Date", ...parameters.map((p) => p.toUpperCase())]],
-      body: displayedData.map((r) => [
+      body: data.map((r) => [
         r.date,
-        ...parameters.map((p) => (r.stacks[0].avgParameters[p] ?? 0).toFixed(2)),
+        ...parameters.map((p) => (r.stacks[0].avgParameters[p] ?? "N/A").toFixed(2)),
       ]),
       styles: { fontSize: 8 },
       headStyles: { fillColor: [33, 150, 243] },
@@ -141,7 +105,7 @@ export default function PreviousQuality() {
     );
   }
 
-  if (!displayedData.length) {
+  if (!data.length) {
     return (
       <div className="container p-4">
         <h2>No records found for {user} in {month}/{year}</h2>
@@ -175,7 +139,7 @@ export default function PreviousQuality() {
             <tr className="table-secondary">
               <th>Acceptable Limits</th>
               {parameters.map((p) => {
-                const lim = limits[p];
+                const lim = allLimits[p]; // Look up limits in the master list
                 return (
                   <th key={p}>
                     {lim ? `${lim[0].toFixed(1)} – ${lim[1].toFixed(1)}` : "–"}
@@ -185,12 +149,12 @@ export default function PreviousQuality() {
             </tr>
           </thead>
           <tbody>
-            {displayedData.map((row, i) => (
+            {data.map((row, i) => (
               <tr key={i}>
                 <td>{row.date}</td>
                 {parameters.map((p) => (
                   <td key={p}>
-                    {row.stacks[0].avgParameters[p].toFixed(2)}
+                    {(row.stacks[0].avgParameters[p] ?? "N/A").toFixed(2)}
                   </td>
                 ))}
               </tr>
