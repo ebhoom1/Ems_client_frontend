@@ -110,6 +110,7 @@ import AssignTechnician from "./pages/AssignReports/AssignTechnician";
 import AutonerveLayout from "./Autonerve/AutonerveLayout";
 import FaultAlertProvider from "./provider/FaultAlertProvider";
 import FaultAlert from "./pages/faultalert/FaultAlert";
+import DieselDashboard from "./pages/GeneratorNew/DieselDashboard";
 
 function App() {
   const dispatch = useDispatch();
@@ -165,13 +166,14 @@ function App() {
         <UserProvider>
           <NotificationProvider>
             <FaultAlertProvider>
-              <Routes>
-                <Route path="/" element={<LoginNew />} />
-                <Route path="/login" element={<LogTest />} />
-                <Route path="/reset-password" element={<Reset />} />
-                <Route path="/reset" element={<ResetEmail />} />
-                <Route path="/download-data" element={<Download />}></Route>
-                <Route path="/log" element={<Log />} />
+            <Routes>
+              <Route path="/" element={<LoginNew />} />
+              <Route path="/login" element={<LogTest />} />
+              <Route path="/reset-password" element={<Reset />} />
+              <Route path="/reset" element={<ResetEmail />} />
+              <Route path="/download-data" element={<Download />}></Route>
+              <Route path="/log" element={<Log />} />
+                   <Route path="/diesel" element={<DieselDashboard />} />
 
                 <Route path="/" element={<LogTest />} />
 
@@ -340,45 +342,46 @@ function App() {
                     <Route path="/report/engineer/view/:user/:year/:month" element={<EngineerVisitReportView />} />
                     <Route path="/report/safety/view/:user/:year/:month" element={<SafetyReportView />} />
 
-                    <Route
-                      path="/report/electrical/download/:userName/:year/:month"
-                      element={<MergedElectricalReport />}
-                    />
-                    <Route
-                      path="/mechanical-report/:userName/:year/:month"
-                      element={<MergedMechanicalReport />}
-                    />
-                    <Route path="/dailylog" element={<DailyLog />} />
-                    <Route
-                      path="/admin/report/:username"
-                      element={<AdminReport />}
-                    />
-                    <Route
-                      path="/edit-equipment/:id"
-                      element={<EditEquipment />}
-                    />
-                    <Route path="/summary" element={<Summary />} />
-                    <Route
-                      path="/summary/waterquality"
-                      element={<WaterQualitySummary />}
-                    />
-                    <Route
-                      path="/realtimedashboard"
-                      element={<RealTimeDashboard />}
-                    />
-                    <Route path="/dayreport" element={<DayReport />} />
-                    <Route
-                      path="/previous-quantity"
-                      element={<PreviousQuantity />}
-                    />
-                    <Route
-                      path="/previous-quality"
-                      element={<PreviousQuality />}
-                    />
-                    <Route
-                      path="/assign-technician"
-                      element={<AssignTechnician />}
-                    />
+                  <Route
+                    path="/report/electrical/download/:userName/:year/:month"
+                    element={<MergedElectricalReport />}
+                  />
+                  <Route
+                    path="/mechanical-report/:userName/:year/:month"
+                    element={<MergedMechanicalReport />}
+                  />
+                  <Route path="/dailylog" element={<DailyLog />} />
+                  <Route
+                    path="/admin/report/:username"
+                    element={<AdminReport />}
+                  />
+                  <Route
+                    path="/edit-equipment/:id"
+                    element={<EditEquipment />}
+                  />
+                  <Route path="/summary" element={<Summary />} />
+                  <Route
+                    path="/summary/waterquality"
+                    element={<WaterQualitySummary />}
+                  />
+                  <Route
+                    path="/realtimedashboard"
+                    element={<RealTimeDashboard />}
+                  />
+                  <Route path="/dayreport" element={<DayReport />} />
+                  <Route
+                    path="/previous-quantity"
+                    element={<PreviousQuantity />}
+                  />
+                  <Route
+                    path="/previous-quality"
+                    element={<PreviousQuality />}
+                  />
+                  <Route
+                    path="/assign-technician"
+                    element={<AssignTechnician />}
+                  />
+                   <Route path="/diesel" element={<DieselDashboard />} />
 
                     <Route path="/autonerve" element={<AutonerveLayout />} />
                   </Route>
