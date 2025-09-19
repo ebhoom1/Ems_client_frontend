@@ -173,6 +173,14 @@ const name = validUser?.userName
                   <span className="title">Assign Users</span>
                 </a>
               </li> 
+               <li className="list active text-center">
+                      <a
+                        href="/diesel"
+                        style={{ textDecoration: "none", color: "#ffffff" }}
+                      >
+                        <span className="title">Fuel Dashboard</span>
+                      </a>
+                    </li>
                   <li className="list active text-center">
                     <a
                       href="/view-notification"
@@ -234,6 +242,14 @@ const name = validUser?.userName
                       <span className="title">Report</span>
                     </a>
                   </li>
+                    <li className="list active text-center">
+                      <a
+                        href="/diesel"
+                        style={{ textDecoration: "none", color: "#ffffff" }}
+                      >
+                        <span className="title">Fuel Dashboard</span>
+                      </a>
+                    </li>
                   <li className="list active text-center">
                     <a
                       href="/download"
