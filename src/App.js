@@ -336,6 +336,7 @@ function App() {
                       element={<MechanicalReport />}
                     />
                     <Route
+                    
                       path="/report/service/:equipmentId"
                       element={<ServiceReport />}
                     />
