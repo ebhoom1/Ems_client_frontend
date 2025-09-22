@@ -40,47 +40,60 @@ export default function VisitReportTypeModal({ reportKind, onClose }) {
   const isPureAdmin =
     type.userType === "admin" && !isTechnician && !isTerritorialManager;
 
-//   const handleAction = (action) => {
-//     if (action === "add") {
-//       onClose();
-//       if (reportKind === "engineer") {
-//         navigate(`/maintenance/engineer-visit/new`);
-//       } else if (reportKind === "safety") {
-//         navigate(`/maintenance/safety/new`);
-//       }
-//     } else {
-//       setActionType(action);
-//       setShowMonthModal(true);
-//     }
-//   };
-const handleAction = (action) => {
+  //   const handleAction = (action) => {
+  //     if (action === "add") {
+  //       onClose();
+  //       if (reportKind === "engineer") {
+  //         navigate(`/maintenance/engineer-visit/new`);
+  //       } else if (reportKind === "safety") {
+  //         navigate(`/maintenance/safety/new`);
+  //       }
+  //     } else {
+  //       setActionType(action);
+  //       setShowMonthModal(true);
+  //     }
+  //   };
+  const handleAction = (action) => {
     setActionType(action);
     setShowMonthModal(true); // ✅ Always open month modal
   };
 
-//   const handleMonthSelected = (year, month, user) => {
-//     setShowMonthModal(false);
-//     onClose();
-//     if (actionType === "view") {
-//       navigate(`/report/${reportKind}/view/${user}/${year}/${month}`);
-//     } else if (actionType === "edit") {
-//       navigate(`/report/${reportKind}/edit/${user}/${year}/${month}`);
-//     }
-//   };
- const handleMonthSelected = (year, month, user) => {
+  //  const handleMonthSelected = (year, month, user) => {
+  //     setShowMonthModal(false);
+  //     onClose();
+
+  //     if (actionType === "add") {
+  //       if (reportKind === "engineer") {
+  //         navigate(`/maintenance/engineer-visit/${user}`);
+  //       } else if (reportKind === "safety") {
+  //         navigate(`/maintenance/safety/${user}`);
+  //       }
+  //     } else if (actionType === "view") {
+  //       navigate(`/report/${reportKind}/view/${user}/${year}/${month}`);
+  //     } else if (actionType === "edit") {
+  //       navigate(`/report/${reportKind}/edit/${user}/${year}/${month}`);
+  //     }
+  //   };
+
+  const handleMonthSelected = (year, month, selectedCustomer) => {
+    console.log("selectedCustomer:",selectedCustomer)
     setShowMonthModal(false);
     onClose();
 
     if (actionType === "add") {
       if (reportKind === "engineer") {
-        navigate(`/maintenance/engineer-visit/${user}`);
+        navigate(`/maintenance/engineer-visit/${selectedCustomer}`);
       } else if (reportKind === "safety") {
-        navigate(`/maintenance/safety/${user}`);
+        navigate(`/maintenance/safety/${selectedCustomer}`);
       }
     } else if (actionType === "view") {
-      navigate(`/report/${reportKind}/view/${user}/${year}/${month}`);
+      navigate(
+        `/report/${reportKind}/view/${selectedCustomer}/${year}/${month}`
+      );
     } else if (actionType === "edit") {
-      navigate(`/report/${reportKind}/edit/${user}/${year}/${month}`);
+      navigate(
+        `/report/${reportKind}/edit/${selectedCustomer}/${year}/${month}`
+      );
     }
   };
 

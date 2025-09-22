@@ -690,6 +690,7 @@ import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { API_URL } from "../../utils/apiConfig";
 import "./inventory.css";
+import { nextReportNumber } from "./reportHelpers";
 
 /* --- Signature Modal --- */
 function SignatureModal({ show, onClose, onSave }) {
@@ -785,7 +786,9 @@ export default function SafetyReportForm() {
   const submitterName = validUserOne.fname || "";
 
   // form states
+  // const [refNo, setRefNo] = useState("");
   const [refNo, setRefNo] = useState("");
+const [site, setSite] = useState(""); // can reuse plantName or customerName
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [customerName, setCustomerName] = useState(user || "");
   const [plantName, setPlantName] = useState("");
@@ -867,6 +870,19 @@ export default function SafetyReportForm() {
     }
   };
 
+useEffect(() => {
+  (async () => {
+    if (!customerName || !date) return;
+    const generated = await nextReportNumber({
+      apiBase: API_URL,
+      site: customerName,
+      isoDate: date,
+      prefix: "SAF",   // Safety report
+    });
+    setRefNo(generated);
+  })();
+}, [customerName, date]);
+
   return (
     <div className="container py-4">
       <h3 className="mb-4" style={{ color: "#236a80" }}>
@@ -880,10 +896,38 @@ export default function SafetyReportForm() {
             Report Header
           </div>
           <div className="card-body row g-2">
-            <div className="col-md-4">
+            {/* <div className="col-md-4">
               <label className="form-label">Ref No.</label>
               <input className="form-control" value={refNo} onChange={(e) => setRefNo(e.target.value)} />
-            </div>
+            </div> */}
+          <div className="col-md-4">
+  <label className="form-label">Ref No.</label>
+  <div className="d-flex gap-2">
+    <input
+      className="form-control"
+      value={refNo}
+      readOnly
+      placeholder="AUTO"
+    />
+    <button
+      type="button"
+      className="btn btn-outline-primary"
+      onClick={async () => {
+        const newRefNo = await nextReportNumber({
+          apiBase: API_URL,
+          site: customerName,
+          isoDate: date,
+          prefix: "SAF"
+        });
+        setRefNo(newRefNo);
+      }}
+    >
+      Generate
+    </button>
+  </div>
+</div>
+
+
             <div className="col-md-4">
               <label className="form-label">Date</label>
               <input type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} />

@@ -537,10 +537,10 @@ export default function SafetyReportView() {
   if (!reports.length) return <p>No Safety Reports available</p>;
 
   const td = {
-    border: "1px solid #c8d2dc",
+    border: "1px solid #434548ff",
     padding: 8,
-    fontSize: 14,
-    color: "#2f4f66",
+    fontSize: 16,
+    color: "#101112ff",
     verticalAlign: "top",
   };
   const th = {
@@ -630,9 +630,9 @@ export default function SafetyReportView() {
               style={{
                 textAlign: "center",
                 fontWeight: "bold",
-                fontSize: 14,
-                borderTop: "2px solid #d5dee7",
-                borderBottom: "2px solid #d5dee7",
+                fontSize: 16,
+                borderTop: "2px solid #1a1b1cff",
+                borderBottom: "2px solid #1a1b1cff",
                 margin: "10px 0",
                 padding: "4px 0",
               }}
@@ -682,8 +682,8 @@ export default function SafetyReportView() {
 
             {/* Audit Details */}
             <div style={{ marginBottom: 12 }}>
-              <strong>Details of Safety Audit Done:</strong>
-              <p>{report.auditDetails || "—"}</p>
+              <strong style={{ fontSize: 16 }}>Details of Safety Audit Done:</strong>
+              <p style={{ fontSize: 14 }}>{report.auditDetails || "—"}</p>
             </div>
 
             {/* Checklist */}
@@ -735,8 +735,8 @@ export default function SafetyReportView() {
 
             {/* Observation */}
             <div style={{ marginBottom: 12 }}>
-              <strong>Observation:</strong>
-              <p>{report.observation || "—"}</p>
+              <strong style={{ fontSize: 16 }}>Observation:</strong>
+              <p style={{ fontSize: 14 }}>{report.observation || "—"}</p>
             </div>
 
             {/* Remarks & Signatures */}
@@ -757,9 +757,10 @@ export default function SafetyReportView() {
                   <td style={td}>{report.engineerRemarks || "—"}</td>
                 </tr>
                 <tr>
-                  <td style={{ ...td, textAlign: "center" }}>
+                  {/* <td style={{ ...td, textAlign: "center" }}>
                     {report.customerSignatureImage && (
                       <img
+                      crossOrigin="anonymous"
                         src={report.customerSignatureImage}
                         alt="Customer Signature"
                         style={{ maxHeight: 60 }}
@@ -769,10 +770,36 @@ export default function SafetyReportView() {
                       {report.customerSigName || "Customer"} <br />{" "}
                       {report.customerSigDesignation || ""}
                     </div>
-                  </td>
+                  </td> */}
+                  {/* Customer Signature */}
                   <td style={{ ...td, textAlign: "center" }}>
+                    {(report.customerSignatureImageUrl ||
+                      report.customerSignatureImage ||
+                      report.customerSignatureUrl ||
+                      report.customerSignature) && (
+                      <img
+                        src={
+                          report.customerSignatureImageUrl ||
+                          report.customerSignatureImage ||
+                          report.customerSignatureUrl ||
+                          report.customerSignature
+                        }
+                        alt="Customer Signature"
+                        style={{ maxHeight: 80 }}
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
+                    )}
+                    <div>
+                      {report.customerSigName || "Customer"} <br />
+                      {report.customerSigDesignation || ""}
+                    </div>
+                  </td>
+                  {/* <td style={{ ...td, textAlign: "center" }}>
                     {report.engineerSignatureImage && (
                       <img
+                      crossOrigin="anonymous"
                         src={report.engineerSignatureImage}
                         alt="Engineer Signature"
                         style={{ maxHeight: 60 }}
@@ -780,6 +807,31 @@ export default function SafetyReportView() {
                     )}
                     <div>
                       {report.engineerSigName || "Engineer"} <br />{" "}
+                      {report.engineerSigDesignation || ""}
+                    </div>
+                  </td> */}
+                  {/* Engineer Signature */}
+                  <td style={{ ...td, textAlign: "center" }}>
+                    {(report.engineerSignatureImageUrl ||
+                      report.engineerSignatureImage ||
+                      report.engineerSignatureUrl ||
+                      report.engineerSignature) && (
+                      <img
+                        src={
+                          report.engineerSignatureImageUrl ||
+                          report.engineerSignatureImage ||
+                          report.engineerSignatureUrl ||
+                          report.engineerSignature
+                        }
+                        alt="Engineer Signature"
+                        style={{ maxHeight: 80 }}
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
+                    )}
+                    <div>
+                      {report.engineerSigName || "Engineer"} <br />
                       {report.engineerSigDesignation || ""}
                     </div>
                   </td>

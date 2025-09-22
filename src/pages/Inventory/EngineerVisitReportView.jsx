@@ -457,8 +457,9 @@ export default function EngineerVisitReportView() {
   const td = {
     border: "1px solid #c8d2dc",
     padding: 6,
-    fontSize: 14,
-    color: "#2f4f66",
+    fontSize: 16,
+    color: "#101112ff",
+    
   };
   const th = {
     ...td,
@@ -483,9 +484,9 @@ export default function EngineerVisitReportView() {
         ref={reportRef}
         style={{
           fontFamily: "Arial, sans-serif",
-          fontSize: 12,
+          fontSize: 14,
           background: "#fff",
-          color: "#2f4f66",
+          color: "#0c141aff",
           padding: 15,
           border: "1px solid #c8d2dc",
         }}
@@ -558,9 +559,9 @@ export default function EngineerVisitReportView() {
               style={{
                 textAlign: "center",
                 fontWeight: "bold",
-                fontSize: 14,
-                borderTop: "2px solid #d5dee7",
-                borderBottom: "2px solid #d5dee7",
+                fontSize: 16,
+                borderTop: "2px solid #191b1cff",
+                borderBottom: "2px solid #191b1cff",
                 margin: "10px 0",
                 padding: "4px 0",
               }}

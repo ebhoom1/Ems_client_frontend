@@ -24,28 +24,29 @@ export default function ServiceReportView() {
   const [equipmentInfo, setEquipmentInfo] = useState({});
 
   const thStyle = {
-    border: "1px solid #c8d2dc",
+    border: "1px solid #1c1e1fff",
     padding: 8,
     background: "#f5f8fb",
     textAlign: "left",
-    fontSize: 12,
-    color: "#2f4f66",
+    fontSize: 15,
+   color: "#101112ff",
+    fontWeight: "bold"
   };
   const tdStyle = {
-    border: "1px solid #c8d2dc",
+    border: "1px solid #141414ff",
     padding: 8,
     fontSize: 14,
-    color: "#2f4f66",
+    color: "#101112ff",
   };
   const sectionHeaderStyle = {
     textAlign: "center",
     margin: "10px 0",
     fontSize: 14,
     fontWeight: "bold",
-    borderTop: "2px solid #d5dee7",
-    borderBottom: "2px solid #d5dee7",
+    borderTop: "2px solid #1b1c1cff",
+    borderBottom: "2px solid #181919ff",
     padding: "4px 0",
-    color: "#2f4f66",
+    color: "#0e181fff",
   };
   const subSectionTitleStyle = {
     // fontWeight: "bold",
@@ -57,9 +58,9 @@ export default function ServiceReportView() {
     fontWeight: "700", // or "bold"
     fontSize: 14, // was 14 → increase to 16 (or 18 if you want larger)
     marginBottom: 8, // add a little more spacing
-    borderBottom: "1px solid #ccc",
+    borderBottom: "1px solid #181818ff",
     paddingBottom: 6,
-    color: "#2f4f66",
+    color: "#101b23ff",
     textTransform: "uppercase",
   };
 
@@ -241,7 +242,7 @@ export default function ServiceReportView() {
     <table
       style={{
         width: "100%",
-        border: "1px solid #c8d2dc",
+        border: "1px solid #242629ff",
         borderCollapse: "collapse",
         marginBottom: 12,
         background: "#236a80",
@@ -327,7 +328,7 @@ export default function ServiceReportView() {
           color: "#000",
           background: "#fff",
           padding: 10,
-          border: "1px solid #c8d2dc",
+          border: "1px solid #171819ff",
         }}
       >
         {/* Header */}
@@ -339,7 +340,7 @@ export default function ServiceReportView() {
         <table
           style={{
             width: "100%",
-            border: "1px solid #c8d2dc",
+            border: "1px solid #17181aff",
             borderCollapse: "collapse",
             marginBottom: 12,
           }}
@@ -362,7 +363,7 @@ export default function ServiceReportView() {
           <table
             style={{
               width: "100%",
-              border: "1px solid #c8d2dc",
+              border: "1px solid #121315ff",
               borderCollapse: "collapse",
             }}
           >
@@ -395,7 +396,7 @@ export default function ServiceReportView() {
           <div
             style={{
               padding: 8,
-              border: "1px solid #ddd",
+              border: "1px solid #181717ff",
               borderRadius: 4,
               background: "#f9f9f9",
             }}
@@ -407,7 +408,7 @@ export default function ServiceReportView() {
                   style={{
                     flex: "1 1 45%",
                     padding: 5,
-                    border: "1px dashed #ccc",
+                    border: "1px dashed #121212ff",
                     borderRadius: 3,
                     background:
                       classificationCode === code ? "#e0ffe0" : "none",
@@ -449,7 +450,7 @@ export default function ServiceReportView() {
                   style={{
                     maxWidth: 280,
                     maxHeight: 280,
-                    border: "1px solid #ddd",
+                    border: "1px solid #171717ff",
                     borderRadius: 4,
                   }}
                   onError={(e) => {
@@ -513,7 +514,7 @@ export default function ServiceReportView() {
                         style={{
                           maxWidth: 280,
                           maxHeight: 280,
-                          border: "1px solid #ddd",
+                          border: "1px solid #1a1919ff",
                           borderRadius: 4,
                           display: "block",
                         }}
@@ -547,7 +548,7 @@ export default function ServiceReportView() {
                         style={{
                           maxWidth: 280,
                           maxHeight: 280,
-                          border: "1px solid #ddd",
+                          border: "1px solid #121212ff",
                           borderRadius: 4,
                           display: "block",
                         }}
@@ -597,7 +598,7 @@ export default function ServiceReportView() {
                 style={{
                   maxWidth: 310,
                   maxHeight: 310,
-                  border: "1px solid #ddd",
+                  border: "1px solid #1b1a1aff",
                 }}
               />
             </div>
@@ -639,7 +640,7 @@ export default function ServiceReportView() {
                 style={{
                   maxWidth: 310,
                   maxHeight: 310,
-                  border: "1px solid #ddd",
+                  border: "1px solid #121212ff",
                 }}
               />
             </div>
