@@ -166,7 +166,7 @@ function Maindashboard() {
                   onClick={handleDownload}
                   style={{ background: "#236a80", border: "none" }}
                 >
-                  Download
+                  Download Average
                 </Button>
                 <Button
                   className="btn buttonbg shadow m-2"
