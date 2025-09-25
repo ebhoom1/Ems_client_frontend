@@ -1,11 +1,11 @@
-// components/EnergyChart.jsx (modern gradient bar chart)
+// components/EnergyChart.jsx
 import React from "react";
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Legend } from "recharts";
 
 export default function EnergyChart({ data }) {
   return (
     <div className="bg-white rounded-2xl shadow-md p-6">
-      <h3 className="text-lg font-semibold text-[#236a80] mb-4 mt-3 text-center">Daily Energy Consumption (kWh)</h3>
+      <h3 className="text-lg font-semibold text-[#236a80] mb-4 mt-3 text-center">Hourly Energy Consumption (kWh)</h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} barSize={40}>
           <defs>

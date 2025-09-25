@@ -1,11 +1,11 @@
-// components/DieselChart.jsx (modern gradient bar chart)
+// components/DieselChart.jsx
 import React from "react";
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar, Legend } from "recharts";
 
 export default function DieselChart({ data }) {
   return (
     <div className="bg-white rounded-2xl shadow-md p-6">
-      <h3 className=" font-semibold text-[#236a80] mb-4 text-center mt-3">Daily Diesel Consumption (L)</h3>
+      <h3 className="font-semibold text-[#236a80] mb-4 text-center mt-3">Hourly Diesel Consumption (L)</h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} barSize={40}>
           <defs>
@@ -19,7 +19,7 @@ export default function DieselChart({ data }) {
           <YAxis tick={{ fill: "#4b5563", fontSize: 12 }} />
           <Tooltip contentStyle={{ borderRadius: "12px" }} cursor={{ fill: "#f0f9ff" }} />
           <Legend />
-          <Bar dataKey="diesel" fill="url(#dieselGradient)" radius={[8, 8, 0, 0]} />
+          <Bar dataKey="fuel" fill="url(#dieselGradient)" radius={[8, 8, 0, 0]} /> {/* Changed from "diesel" to "fuel" */}
         </BarChart>
       </ResponsiveContainer>
     </div>
