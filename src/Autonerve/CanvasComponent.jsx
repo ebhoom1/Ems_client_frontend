@@ -91,22 +91,21 @@ function CanvasComponent({
   // }, [userData]);
 
   const getOwnerUserName = useCallback(() => {
-  const ui = userData?.validUserOne;
-  const base = ui?.userName || null;
-  const type = String(ui?.userType || "").toLowerCase();
+    const ui = userData?.validUserOne;
+    const base = ui?.userName || null;
+    const type = String(ui?.userType || "").toLowerCase();
 
-  if (type === "admin" || type === "operator") {
-    try {
-      const fromSession = sessionStorage.getItem("selectedUserId");
-      if (fromSession && fromSession.trim()) return fromSession.trim();
-    } catch {
-      // ignore
+    if (type === "admin" || type === "operator") {
+      try {
+        const fromSession = sessionStorage.getItem("selectedUserId");
+        if (fromSession && fromSession.trim()) return fromSession.trim();
+      } catch {
+        // ignore
+      }
     }
-  }
 
-  return base;
-}, [userData]);
-
+    return base;
+  }, [userData]);
 
   // const getEffectiveProductId = useCallback(() => {
   //   const ui = userData?.validUserOne;
@@ -124,25 +123,24 @@ function CanvasComponent({
   // }, [userData]);
 
   const getEffectiveProductId = useCallback(() => {
-  const ui = userData?.validUserOne;
-  const type = String(ui?.userType || "").toLowerCase();
+    const ui = userData?.validUserOne;
+    const type = String(ui?.userType || "").toLowerCase();
 
-  if (type === "admin" || type === "operator") {
-    try {
-      const fromSession = sessionStorage.getItem("selectedProductId");
-      return (fromSession && fromSession.trim()) || "";
-    } catch {
-      return "";
+    if (type === "admin" || type === "operator") {
+      try {
+        const fromSession = sessionStorage.getItem("selectedProductId");
+        return (fromSession && fromSession.trim()) || "";
+      } catch {
+        return "";
+      }
     }
-  }
 
-  return String(ui?.productID || "");
-}, [userData]);
-
+    return String(ui?.productID || "");
+  }, [userData]);
 
   const effectiveUserName = getOwnerUserName();
   const effectiveProductId = getEffectiveProductId();
-  console.log("effectiveProductId:",effectiveProductId)
+  console.log("effectiveProductId:", effectiveProductId);
   const socket = useRef(null);
   const backendUrl = API_URL || "http://localhost:5555";
 
@@ -187,57 +185,55 @@ function CanvasComponent({
     //   );
     // };
     const handleTankData = (payload) => {
-  console.log("Processing tank payload:", payload);
+      console.log("Processing tank payload:", payload);
 
-  // payload shape: { product_id, tankData: [{stackName,tankName,level,percentage}], ... }
-  if (!payload || !Array.isArray(payload.tankData)) return;
+      // payload shape: { product_id, tankData: [{stackName,tankName,level,percentage}], ... }
+      if (!payload || !Array.isArray(payload.tankData)) return;
 
-  const nowIso = new Date().toISOString();
-  const incomingProductId = String(payload.product_id || "");
+      const nowIso = new Date().toISOString();
+      const incomingProductId = String(payload.product_id || "");
 
-  setNodes((nds) =>
-    nds.map((node) => {
-      if (node.type !== "tankNode") return node;
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.type !== "tankNode") return node;
 
-      // 🔹 Only update nodes for the matching product_id
-      if (String(node.data?.productId) !== incomingProductId) {
-        return node;
-      }
+          // 🔹 Only update nodes for the matching product_id
+          if (String(node.data?.productId) !== incomingProductId) {
+            return node;
+          }
 
-      const tn = (node.data?.tankName || node.data?.name || node.id || "")
-        .toString()
-        .toLowerCase();
-      const sn = (node.data?.stackName || "").toString().toLowerCase();
+          const tn = (node.data?.tankName || node.data?.name || node.id || "")
+            .toString()
+            .toLowerCase();
+          const sn = (node.data?.stackName || "").toString().toLowerCase();
 
-      // find best match by tankName (and optional stackName)
-      const match = payload.tankData.find((t) => {
-        const tTank = (t.tankName || t.TankName || "")
-          .toString()
-          .toLowerCase();
-        const tStack = (t.stackName || "").toString().toLowerCase();
-        const tankMatches = tTank && tTank === tn;
-        const stackOk = !sn || sn === tStack;
-        return tankMatches && stackOk;
-      });
+          // find best match by tankName (and optional stackName)
+          const match = payload.tankData.find((t) => {
+            const tTank = (t.tankName || t.TankName || "")
+              .toString()
+              .toLowerCase();
+            const tStack = (t.stackName || "").toString().toLowerCase();
+            const tankMatches = tTank && tTank === tn;
+            const stackOk = !sn || sn === tStack;
+            return tankMatches && stackOk;
+          });
 
-      if (!match) return node;
+          if (!match) return node;
 
-      const pct = Number(match.percentage);
-      const inRange = Number.isFinite(pct) && pct >= 0 && pct <= 100;
+          const pct = Number(match.percentage);
+          const inRange = Number.isFinite(pct) && pct >= 0 && pct <= 100;
 
-     if (inRange && node.data?.percentage !== pct) {
-  node.data = {
-    ...node.data,
-    percentage: pct,
-    lastUpdated: nowIso,
-  };
-}
-return node;
-
-    })
-  );
-};
-
+          if (inRange && node.data?.percentage !== pct) {
+            node.data = {
+              ...node.data,
+              percentage: pct,
+              lastUpdated: nowIso,
+            };
+          }
+          return node;
+        })
+      );
+    };
 
     const handlePumpFeedback = (payload) => {
       console.log("Processing pump feedback:", payload);
@@ -250,32 +246,51 @@ return node;
         return;
       }
       const { pumpId, status } = payload.pumpData;
+      const incomingProductId = String(
+        payload.productId || payload.product_id || ""
+      );
+      const compositeKey = `${incomingProductId}:${pumpId}`;
 
-      // Update pending map
-      setPendingPumps((prev) => ({ ...prev, [pumpId]: false }));
+      setPendingPumps((prev) => ({ ...prev, [compositeKey]: false }));
 
-      // Update node data (realtimeValues + isOn + isPending)
       setNodes((nds) =>
         nds.map((node) => {
-          if (node.id === pumpId) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                realtimeValues: { ...payload.pumpData },
-                isOn: status === "ON" || status === 1,
-                isPending: false,
-              },
-            };
-          }
+          // if (
+          //   node.id === pumpId &&
+          //   String(node.data?.productId) === incomingProductId
+          // ) {
+          //   return {
+          //     ...node,
+          //     data: {
+          //       ...node.data,
+          //       realtimeValues: { ...payload.pumpData },
+          //       isOn: status === "ON" || status === 1,
+          //       isPending: false,
+          //     },
+          //   };
+          // }
+          if (
+  node.id === pumpId &&
+  String(node.data?.productId) === incomingProductId
+) {
+  const newData = {
+    ...node.data,
+    realtimeValues: { ...payload.pumpData },
+    isOn: status === "ON" || status === 1,
+    isPending: false,
+  };
+  if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
+    return { ...node, data: newData };
+  }
+}
+
           return node;
         })
       );
 
-      // keep a copy in realtimePumpData if you want (optional)
       setRealtimePumpData((prev) => ({
         ...prev,
-        [pumpId]: { ...payload.pumpData },
+        [compositeKey]: { ...payload.pumpData },
       }));
     };
 
@@ -283,37 +298,55 @@ return node;
       console.log("Processing pump acknowledgment:", payload);
 
       const pumpMap = {};
+      const incomingProductId = String(
+        payload.productId || payload.product_id || ""
+      );
+
       payload.pumps.forEach((p) => {
-        pumpMap[p.pumpId] = p;
+        const key = `${incomingProductId}:${p.pumpId}`;
+        pumpMap[key] = p;
       });
 
-      // Clear pending flags
       setPendingPumps((prev) => {
         const copy = { ...prev };
-        payload.pumps.forEach((p) => (copy[p.pumpId] = false));
+        payload.pumps.forEach((p) => {
+          const key = `${incomingProductId}:${p.pumpId}`;
+          copy[key] = false;
+        });
         return copy;
       });
 
-      // Update nodes in one pass
       setNodes((nds) =>
         nds.map((node) => {
-          const updatedPump = pumpMap[node.id];
+          const key = `${String(node.data?.productId)}:${node.id}`;
+          const updatedPump = pumpMap[key];
+          // if (updatedPump) {
+          //   return {
+          //     ...node,
+          //     data: {
+          //       ...node.data,
+          //       realtimeValues: updatedPump,
+          //       isOn: updatedPump.status === 1 || updatedPump.status === "ON",
+          //       isPending: false,
+          //     },
+          //   };
+          // }
           if (updatedPump) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                realtimeValues: updatedPump,
-                isOn: updatedPump.status === 1 || updatedPump.status === "ON",
-                isPending: false,
-              },
-            };
-          }
+  const newData = {
+    ...node.data,
+    realtimeValues: updatedPump,
+    isOn: updatedPump.status === 1 || updatedPump.status === "ON",
+    isPending: false,
+  };
+  if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
+    return { ...node, data: newData };
+  }
+}
+
           return node;
         })
       );
 
-      // Keep realtimePumpData if you use it elsewhere
       setRealtimePumpData((prev) => ({ ...prev, ...pumpMap }));
     };
 
@@ -369,10 +402,13 @@ return node;
         const optimisticUpdate = {};
 
         pumps.forEach((p) => {
-          newPendingState[p.pumpId] = true;
+          // newPendingState[p.pumpId] = true;
+          const key = `${prodId}:${p.pumpId}`;
+          newPendingState[key] = true;
           const nodeToToggle = nodesRef.current.find((n) => n.id === p.pumpId);
           if (nodeToToggle) {
-            optimisticUpdate[p.pumpId] = !nodeToToggle.data.isOn;
+            // optimisticUpdate[p.pumpId] = !nodeToToggle.data.isOn;
+            optimisticUpdate[`${prodId}:${p.pumpId}`] = !nodeToToggle.data.isOn;
           }
         });
 
@@ -381,7 +417,10 @@ return node;
         // Optimistically update nodes' isOn in state
         setNodes((nds) =>
           nds.map((node) =>
-            optimisticUpdate.hasOwnProperty(node.id)
+            // optimisticUpdate.hasOwnProperty(node.id)
+            optimisticUpdate.hasOwnProperty(
+              `${String(node.data?.productId)}:${node.id}`
+            )
               ? {
                   ...node,
                   data: {
@@ -432,7 +471,7 @@ return node;
       if (!name) return;
       try {
         const ownerUserName = getOwnerUserName();
-console.log("ownerUserName:",ownerUserName);
+        console.log("ownerUserName:", ownerUserName);
         if (!ownerUserName) {
           showMessageBox("No user selected. Please choose a user first.");
           return;
@@ -820,6 +859,152 @@ console.log("ownerUserName:",ownerUserName);
   //   ]
   // );
 
+  // const onDrop = useCallback(
+  //   async (event) => {
+  //     if (!isEditMode) return;
+  //     event.preventDefault();
+
+  //     const bounds = reactFlowWrapper.current?.getBoundingClientRect();
+  //     if (!bounds || !reactFlowInstance) return;
+
+  //     const dataString = event.dataTransfer.getData("application/reactflow");
+  //     if (!dataString) return;
+  //     const shapeData = JSON.parse(dataString);
+
+  //     const isSpecialNode = !!(shapeData.isPump || shapeData.isAirblower);
+  //     const isPngNode = !!shapeData.isPNG;
+  //     const isPdfNode = !!shapeData.isPDF;
+
+  //     const promptLabel =
+  //       isPngNode || isPdfNode ? "file" : shapeData.label || "node";
+
+  //     const manualId = prompt(`Enter a unique ID for the new ${promptLabel}:`);
+  //     if (!manualId) {
+  //       showMessageBox("ID is required. Aborting.");
+  //       clearDraggedFile();
+  //       return;
+  //     }
+  //     if (nodes.some((n) => n.id === manualId)) {
+  //       showMessageBox(
+  //         `ID "${manualId}" already exists. Please choose a unique ID.`
+  //       );
+  //       clearDraggedFile();
+  //       return;
+  //     }
+
+  //     let deviceName = shapeData.label || manualId;
+  //     let tankName = undefined;
+  //     let stackName = undefined;
+  //     if (isSpecialNode) {
+  //       const nameInput = prompt(`Enter a name for device ${manualId}:`);
+  //       if (!nameInput) {
+  //         showMessageBox("Name is required. Aborting.");
+  //         clearDraggedFile();
+  //         return;
+  //       }
+  //       deviceName = nameInput;
+  //     } else if (shapeData.isTank) {
+  //       tankName =
+  //         prompt(`TankName to bind (exact as device, e.g. "Equalization"):`) ||
+  //         deviceName;
+  //     }
+
+  //     const position = reactFlowInstance.project({
+  //       x: event.clientX - bounds.left,
+  //       y: event.clientY - bounds.top,
+  //     });
+
+  //     let nodeType = "default";
+  //     if (isSpecialNode) nodeType = "pumpBlowerNode";
+  //     else if (shapeData.isTank) nodeType = "tankNode";
+  //     else if (isPngNode) nodeType = "imageNode";
+  //     else if (isPdfNode) nodeType = "pdfNode";
+
+  //     // ---- upload handling (PNG/PDF) ----
+  //     let uploadedUrl = shapeData.filePath || null;
+  //     let uploadedKey = null;
+
+  //     try {
+  //       if (isPngNode || isPdfNode) {
+  //         const fileToUpload = draggedFileRef.current;
+  //         if (!fileToUpload) {
+  //           showMessageBox("File object is missing. Cannot upload.");
+  //           return;
+  //         }
+
+  //         const formData = new FormData();
+  //         formData.append(
+  //           "liveStationImage",
+  //           fileToUpload,
+  //           shapeData.label || fileToUpload.name
+  //         );
+
+  //         const resp = await fetch(`${API_URL}/api/upload-file`, {
+  //           method: "POST",
+  //           body: formData,
+  //         });
+  //         const json = await resp.json();
+
+  //         if (!resp.ok) {
+  //           showMessageBox(
+  //             `Error uploading file: ${json.message || "Unknown error"}`
+  //           );
+  //           return;
+  //         }
+
+  //         uploadedUrl = json.fileUrl || null;
+  //         uploadedKey = json.fileKey || null;
+
+  //         showMessageBox("File uploaded successfully.");
+  //       }
+  //     } catch (err) {
+  //       console.error("File upload failed:", err);
+  //       showMessageBox("Network error. Could not upload file.");
+  //       return;
+  //     } finally {
+  //       clearDraggedFile();
+  //     }
+
+  //     const newNode = {
+  //       id: manualId,
+  //       type: nodeType,
+  //       position,
+  //       data: {
+  //         id: manualId,
+  //         name: deviceName,
+  //         productId: effectiveProductId,
+  //         tankName,
+  //         stackName,
+  //         filePath: uploadedUrl,
+  //         fileKey: uploadedKey,
+  //         // 🔹 Defaults so toggle + tooltip always show
+  //         isOn: false,
+  //         isPending: false,
+  //         realtimeValues: {},
+  //         label:
+  //           !isSpecialNode && !isPngNode && !isPdfNode ? (
+  //             <div style={{ textAlign: "center" }}>
+  //               <img src={shapeData.svgPath} alt={shapeData.label} />
+  //               <div>{manualId}</div>
+  //             </div>
+  //           ) : null,
+  //       },
+  //     };
+
+  //     setNodes((nds) => nds.concat(newNode));
+  //   },
+  //   [
+  //     isEditMode,
+  //     reactFlowInstance,
+  //     reactFlowWrapper,
+  //     nodes,
+  //     effectiveProductId,
+  //     showMessageBox,
+  //     draggedFileRef,
+  //     clearDraggedFile,
+  //   ]
+  // );
+
   const onDrop = useCallback(
     async (event) => {
       if (!isEditMode) return;
@@ -887,19 +1072,16 @@ console.log("ownerUserName:",ownerUserName);
 
       try {
         if (isPngNode || isPdfNode) {
-          const fileToUpload = draggedFileRef.current;
+          // ✅ Use global ref or draggedFileRef
+          const fileToUpload = window.__draggedFile__ || draggedFileRef.current;
+
           if (!fileToUpload) {
             showMessageBox("File object is missing. Cannot upload.");
             return;
           }
 
           const formData = new FormData();
-          formData.append(
-            "liveStationImage",
-            fileToUpload,
-            shapeData.label || fileToUpload.name
-          );
-
+          formData.append("file", fileToUpload, fileToUpload.name);
           const resp = await fetch(`${API_URL}/api/upload-file`, {
             method: "POST",
             body: formData,
@@ -913,17 +1095,19 @@ console.log("ownerUserName:",ownerUserName);
             return;
           }
 
-          uploadedUrl = json.fileUrl || null;
-          uploadedKey = json.fileKey || null;
+          uploadedUrl = json.filePath || null;
+          uploadedKey = json.fileName || null;
 
           showMessageBox("File uploaded successfully.");
         }
+        console.log("Uploaded PDF URL:", uploadedUrl);
       } catch (err) {
         console.error("File upload failed:", err);
         showMessageBox("Network error. Could not upload file.");
         return;
       } finally {
         clearDraggedFile();
+        window.__draggedFile__ = null; // cleanup
       }
 
       const newNode = {
@@ -938,7 +1122,6 @@ console.log("ownerUserName:",ownerUserName);
           stackName,
           filePath: uploadedUrl,
           fileKey: uploadedKey,
-          // 🔹 Defaults so toggle + tooltip always show
           isOn: false,
           isPending: false,
           realtimeValues: {},

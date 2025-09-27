@@ -145,6 +145,23 @@ function App() {
     }
   }, [dispatch, navigate, location.pathname]);
 
+useEffect(() => {
+    const isLoggedIn = localStorage.getItem("isLoggedIn");
+    const userType = localStorage.getItem("userType");
+    console.log(userType);
+
+    // Check if user is logged in and not already on the intended route
+    if (isLoggedIn && userType && location.pathname === "/") {
+      navigate("/water"); // Navigate to '/water' only when the user is on the home route
+    } else if (
+      !isLoggedIn &&
+      !["/", "/reset-password", "/reset"].includes(location.pathname)
+    ) {
+      navigate("/"); // Redirect to login if not logged in and on a restricted route
+    }
+  }, [navigate, location.pathname]);
+
+
 // Add this to your existing App.js useEffect hooks
 
 useEffect(() => {
