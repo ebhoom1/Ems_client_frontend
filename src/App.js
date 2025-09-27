@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUser } from "./redux/features/user/userSlice";
+import { subscribeUser } from './utils/pushNotifications';
 import "./App.css";
 import Log from "./pages/Login/Log";
 import Dashboard from "./pages/Dashboard/Dashboard";
@@ -111,7 +112,7 @@ import AutonerveLayout from "./Autonerve/AutonerveLayout";
 import FaultAlertProvider from "./provider/FaultAlertProvider";
 import FaultAlert from "./pages/faultalert/FaultAlert";
 import DieselDashboard from "./pages/GeneratorNew/DieselDashboard";
-
+import { API_URL } from "./utils/apiConfig";
 function App() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -144,22 +145,74 @@ function App() {
     }
   }, [dispatch, navigate, location.pathname]);
 
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-    const userType = localStorage.getItem("userType");
-    console.log(userType);
+// Add this to your existing App.js useEffect hooks
 
-    // Check if user is logged in and not already on the intended route
-    if (isLoggedIn && userType && location.pathname === "/") {
-      navigate("/water"); // Navigate to '/water' only when the user is on the home route
-    } else if (
-      !isLoggedIn &&
-      !["/", "/reset-password", "/reset"].includes(location.pathname)
-    ) {
-      navigate("/"); // Redirect to login if not logged in and on a restricted route
+useEffect(() => {
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('Service Worker registered successfully:', registration);
+      })
+      .catch(error => {
+        console.log('Service Worker registration failed:', error);
+      });
+  }
+}, []);
+
+useEffect(() => {
+  // Ask for notification permission and subscribe user
+  if ('Notification' in window) {
+    window.Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        console.log('Notification permission granted.');
+        // Subscribe user and save to backend
+        subscribeUserAndSave();
+      }
+    });
+  }
+}, [userData]); // Add userData dependency
+
+// Add this new function
+// Update your App.js subscribeUserAndSave function:
+
+const subscribeUserAndSave = async () => {
+  try {
+    const subscription = await subscribeUser();
+    
+    if (subscription && userData?.validUserOne?.userName) {
+      // Get the token from wherever you store it (adjust based on your auth system)
+      const token = localStorage.getItem('userToken') || 
+                   sessionStorage.getItem('userToken') || 
+                   document.cookie.match(/userToken=([^;]+)/)?.[1];
+      
+      // Send subscription to backend with proper headers
+      const response = await fetch(`${API_URL}/api/save-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+          // If you use cookies for auth instead:
+          // 'credentials': 'include'
+        },
+        credentials: 'include', // Include cookies if that's how you handle auth
+        body: JSON.stringify({
+          subscription: subscription,
+          userName: userData.validUserOne.userName
+        })
+      });
+      
+      if (response.ok) {
+        console.log('Subscription saved successfully');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to save subscription:', errorData);
+      }
     }
-  }, [navigate, location.pathname]);
-
+  } catch (error) {
+    console.error('Error subscribing user:', error);
+  }
+};
   return (
     <div className="App">
       <CalibrationProvider>

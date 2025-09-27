@@ -1,4 +1,3 @@
-// DieselDashboard.jsx
 import React, { useState, useEffect } from "react";
 import { Row, Col } from "react-bootstrap";
 import { io } from "socket.io-client";
@@ -36,22 +35,45 @@ export default function DieselDashboard() {
         console.log("Raw API Data:", data);
 
         if (Array.isArray(data)) {
-          const formatted = data.map((item) => {
-            // Use hour field if available, otherwise fall back to timestamp_hour
-            const hourTime = item.hour ? `${item.hour}:00` : new Date(item.timestamp_hour).toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
+          // Get today's date in YYYY-MM-DD format for comparison
+          const today = new Date();
+          const todayString = today.toLocaleDateString("en-IN", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).split("/").reverse().join("-"); // e.g., "2025-09-27"
+
+          const formatted = data
+            .filter((item) => {
+              // Extract date from timestamp_hour or another date field
+              const itemDate = item.timestamp_hour
+                ? new Date(item.timestamp_hour).toLocaleDateString("en-IN", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                  }).split("/").reverse().join("-")
+                : todayString; // Fallback to today if no timestamp_hour
+
+              return itemDate === todayString;
+            })
+            .map((item) => {
+              // Use hour field if available, otherwise fall back to timestamp_hour
+              const hourTime = item.hour
+                ? `${item.hour}:00`
+                : new Date(item.timestamp_hour).toLocaleTimeString("en-IN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  });
+
+              return {
+                date: hourTime, // e.g., "19:00" or "07:30 PM"
+                energy: parseFloat(item.energy?.consumption_kWh || 0),
+                fuel: parseFloat(item.fuel?.consumption_liters || 0),
+              };
             });
 
-            return {
-              date: hourTime, // e.g., "19:00" or "07:30 PM"
-              energy: parseFloat(item.energy?.consumption_kWh || 0),
-              fuel: parseFloat(item.fuel?.consumption_liters || 0),
-            };
-          });
-
-          console.log("Formatted Chart Data:", formatted);
+          console.log("Filtered Chart Data (Today's Data):", formatted);
           setChartData(formatted);
         }
       })
@@ -67,7 +89,7 @@ export default function DieselDashboard() {
     });
 
     socket.on("stackDataUpdate", (data) => {
-      console.log("Received stackDataUpdate:", data); // Log the incoming socket data
+      console.log("Received stackDataUpdate:", data);
 
       const latestData = data.stackData && data.stackData[0];
 
@@ -92,7 +114,7 @@ export default function DieselDashboard() {
           fuelPercent: parseFloat(latestData.fuel_level_percentage || 0),
         };
 
-        console.log("Updating KPI Data:", newKpiData); // Log the processed KPI data
+        console.log("Updating KPI Data:", newKpiData);
         setKpiData(newKpiData);
       } else {
         console.warn("No valid stackData in stackDataUpdate:", data);
