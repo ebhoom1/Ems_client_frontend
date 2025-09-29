@@ -1,4 +1,4 @@
-// src/utils/pushNotifications.js
+import { API_URL } from "./apiConfig";
 
 const VAPID_PUBLIC_KEY = "BKjIcWecFbfkpOTxHF0AfPz83AqhbJXBvRttuR3YMtyNr_uHdI_2Q8tCEl9EsCnmv3sz2w6PebtR-7OqlnfJtgQ";
 
@@ -13,8 +13,9 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+// Subscribe user for push
 export async function subscribeUser() {
-  if ('serviceWorker' in navigator && 'PushManager' in window) {
+  if ("serviceWorker" in navigator && "PushManager" in window) {
     try {
       const registration = await navigator.serviceWorker.ready;
       let subscription = await registration.pushManager.getSubscription();
@@ -25,45 +26,50 @@ export async function subscribeUser() {
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
         });
-        console.log("User subscribed:", subscription);
+        console.log("✅ New subscription created:", subscription);
       } else {
-        console.log("User is already subscribed:", subscription);
+        console.log("ℹ️ User already subscribed:", subscription);
       }
-      
+
       return subscription;
     } catch (error) {
-      console.error("Failed to subscribe the user: ", error);
+      console.error("❌ Failed to subscribe the user:", error);
       throw error;
     }
   } else {
-    throw new Error('Service workers or Push messaging not supported');
+    throw new Error("Service workers or Push messaging not supported");
   }
 }
 
-// Helper function to save subscription to backend
+// Save subscription to backend
 export async function saveSubscriptionToBackend(subscription, userName) {
   try {
-    const response = await fetch('/api/save-subscription', {
-      method: 'POST',
+    const token =
+      localStorage.getItem("userdatatoken") ||
+      sessionStorage.getItem("userdatatoken") ||
+      document.cookie.match(/userdatatoken=([^;]+)/)?.[1];
+console.log("Token being sent to backend:", token);
+    const response = await fetch(`${API_URL}/api/save-subscription`, {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('userToken')}` // Adjust based on your auth system
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
       },
       body: JSON.stringify({
-        subscription: subscription,
-        userName: userName
-      })
+        subscription,
+        userName,   // ✅ include this
+      }),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to save subscription');
+      throw new Error(`Failed to save subscription: ${response.statusText}`);
     }
 
     const result = await response.json();
-    console.log('Subscription saved successfully:', result);
+    console.log("✅ Subscription saved successfully:", result);
     return result;
   } catch (error) {
-    console.error('Error saving subscription:', error);
+    console.error("❌ Error saving subscription:", error);
     throw error;
   }
 }

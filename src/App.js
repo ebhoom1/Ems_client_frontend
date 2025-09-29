@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUser } from "./redux/features/user/userSlice";
-import { subscribeUser } from './utils/pushNotifications';
+import { subscribeUser, saveSubscriptionToBackend } from './utils/pushNotifications';
 import "./App.css";
 import Log from "./pages/Login/Log";
 import Dashboard from "./pages/Dashboard/Dashboard";
@@ -177,18 +177,22 @@ useEffect(() => {
   }
 }, []);
 
+// Corrected code
 useEffect(() => {
-  // Ask for notification permission and subscribe user
-  if ('Notification' in window) {
-    window.Notification.requestPermission().then(permission => {
-      if (permission === 'granted') {
-        console.log('Notification permission granted.');
-        // Subscribe user and save to backend
-        subscribeUserAndSave();
-      }
-    });
+  // Only proceed if we have valid user data
+   console.log("Checking userData in useEffect:", userData);
+  if (userData?.validUserOne?.userName) {
+    if ('Notification' in window) {
+      window.Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          console.log('Notification permission granted.');
+          // Now we can safely subscribe the user
+          subscribeUserAndSave();
+        }
+      });
+    }
   }
-}, [userData]); // Add userData dependency
+}, [userData]); // This dependency is correct
 
 // Add this new function
 // Update your App.js subscribeUserAndSave function:
@@ -196,40 +200,16 @@ useEffect(() => {
 const subscribeUserAndSave = async () => {
   try {
     const subscription = await subscribeUser();
-    
+
     if (subscription && userData?.validUserOne?.userName) {
-      // Get the token from wherever you store it (adjust based on your auth system)
-      const token = localStorage.getItem('userToken') || 
-                   sessionStorage.getItem('userToken') || 
-                   document.cookie.match(/userToken=([^;]+)/)?.[1];
-      
-      // Send subscription to backend with proper headers
-      const response = await fetch(`${API_URL}/api/save-subscription`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-          // If you use cookies for auth instead:
-          // 'credentials': 'include'
-        },
-        credentials: 'include', // Include cookies if that's how you handle auth
-        body: JSON.stringify({
-          subscription: subscription,
-          userName: userData.validUserOne.userName
-        })
-      });
-      
-      if (response.ok) {
-        console.log('Subscription saved successfully');
-      } else {
-        const errorData = await response.json();
-        console.error('Failed to save subscription:', errorData);
-      }
+      await saveSubscriptionToBackend(subscription, userData.validUserOne.userName); // ✅ now sends username too
+      console.log("Subscription sent to backend ✅");
     }
   } catch (error) {
-    console.error('Error subscribing user:', error);
+    console.error("Error subscribing user:", error);
   }
 };
+
   return (
     <div className="App">
       <CalibrationProvider>
