@@ -778,6 +778,7 @@ export default function SafetyReportView() {
                       report.customerSignatureUrl ||
                       report.customerSignature) && (
                       <img
+                      crossOrigin="anonymous"
                         src={
                           report.customerSignatureImageUrl ||
                           report.customerSignatureImage ||
@@ -817,6 +818,7 @@ export default function SafetyReportView() {
                       report.engineerSignatureUrl ||
                       report.engineerSignature) && (
                       <img
+                      crossOrigin="anonymous"
                         src={
                           report.engineerSignatureImageUrl ||
                           report.engineerSignatureImage ||
