@@ -48,22 +48,17 @@ export async function saveSubscriptionToBackend(subscription, userName) {
       localStorage.getItem("userdatatoken") ||
       sessionStorage.getItem("userdatatoken") ||
       document.cookie.match(/userdatatoken=([^;]+)/)?.[1];
-    console.log("Token being sent to backend:", token);
+console.log("Token being sent to backend:", token);
     const response = await fetch(`${API_URL}/api/save-subscription`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(token && { Authorization: `Bearer ${token}` }),
       },
-      // body: JSON.stringify({
-      //   subscription,
-      //   userName,   // ✅ include this
-      // }),
       body: JSON.stringify({
-        subscription: subscription.toJSON(), // safer
-        userName,
+        subscription,
+        userName,   // ✅ include this
       }),
-
     });
 
     if (!response.ok) {
