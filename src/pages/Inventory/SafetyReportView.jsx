@@ -446,7 +446,7 @@ export default function SafetyReportView() {
       >
         {reports.map((report, idx) => (
           <div key={report._id || idx} style={{ marginBottom: 60 }}>
-            {/* <div className="d-flex justify-content-end mb-2">
+            <div className="d-flex justify-content-end mb-2">
               <button
                 className="btn btn-warning"
                 onClick={() =>
@@ -457,7 +457,7 @@ export default function SafetyReportView() {
               >
                 ✏ Edit Report
               </button>
-            </div> */}
+            </div>
             {/* ========================
                 1️⃣ Dynamic Checklist Section
             ========================= */}
