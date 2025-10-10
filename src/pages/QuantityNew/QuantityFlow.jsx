@@ -16,7 +16,7 @@ import { Dropdown } from "react-bootstrap";
 import moment from 'moment';
 import Carbon from "./Carbon";
 import ConsumptionEmissionDashboard from "./Carbon";
-
+import wipro from '../../assests/images/wipro.png'
 // Initialize Socket.IO
 const socket = io(API_URL, { 
   transports: ['websocket'], 
@@ -460,7 +460,7 @@ useEffect(() => {
             </div>
           </div>
         </div>
-        
+       {/* ode  */}
         <div className="row align-items-center mb-2" style={{marginTop:'-100px'}}>
           <div className="col-md-4">
           </div>

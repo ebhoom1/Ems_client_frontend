@@ -5,7 +5,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { API_URL } from "../../utils/apiConfig";
-
+import wipro from '../../assests/images/wipro.png'
 function DashboardSam() {
   const { userData, userType } = useSelector((state) => state.user);
   const validUser = userData?.validUserOne || {};
@@ -75,7 +75,9 @@ function DashboardSam() {
               <span>Loading logo...</span>
             )}
           </div>
-
+{/*  <div>
+  <img src={wipro} alt="" width={'200px'} height={'50px'} className="ms-3" />
+</div>  */}
           {/* If user is BBUSER or BBADMIN, show only Fuel Dashboard */}
           {isBBRole ? (
             <li className="list active text-center">

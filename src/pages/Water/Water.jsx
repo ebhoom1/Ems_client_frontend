@@ -29,6 +29,7 @@ import html2canvas from "html2canvas";
 import DownloadaverageDataModal from "./DownloadaverageDataModal";
 import { fetchUserByUserName } from "../../redux/features/userLog/userLogSlice";
 import Modal from "react-modal";
+import wipro from '../../assests/images/wipro.png'
 Modal.setAppElement("#root");
 
 // Initialize Socket.IO
@@ -734,22 +735,23 @@ const Water = () => {
                 <div className="row">
                   <div className="col-12"></div>
                 </div>
-                <div className="maindashboard">
+                <div className="maindashboard mt-5">
                   <Maindashboard />
                 </div>
 
                 <div className="container-fluid water">
                   <div className="row">
                     <div className="col-lg-12 col-12 mt-2">
-                      <h5
-                        className={`text-center ${
-                          userData?.validUserOne?.userType === "user"
-                            ? "mt-5"
-                            : "mt-5"
-                        }`}
-                      >
-                        <b> EFFLUENT DASHBOARD</b>
-                      </h5>
+                  <div className="d-flex align-items-center mt-5">
+  {/* The heading grows to fill the space, and its text is centered within it */}
+  <h5 className="flex-grow-1 text-center m-0">
+    <b>EFFLUENT DASHBOARD</b>
+  </h5>
+
+  {/* The logo will be pushed to the end */}
+{/*   <img src={wipro} alt="Logo" width={'210px'} height={'60px'} /> */}
+</div>
+
                       {/* operator checkout button */}
                       {isSpecialUser && (
                         <div
