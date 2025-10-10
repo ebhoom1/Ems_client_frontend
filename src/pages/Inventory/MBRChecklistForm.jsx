@@ -434,8 +434,15 @@ const MBR_SECTIONS = [
   },
 ];
 
-export default function MBRChecklistForm({ onChecklistFilled }) {
+export default function MBRChecklistForm({ onChecklistFilled ,initialData={}}) {
   const [responses, setResponses] = useState({});
+
+  // Prefill logic — if initialData changes
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      setResponses(initialData);
+    }
+  }, [initialData]);
 
   const handleChange = (section, idx, field, value, description = "") => {
     setResponses((prev) => ({

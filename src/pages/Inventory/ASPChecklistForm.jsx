@@ -370,9 +370,15 @@ const ASP_SECTIONS = [
   },
 ];
 
-export default function ASPChecklistForm({ onChecklistFilled }) {
+export default function ASPChecklistForm({ onChecklistFilled,initialData={} }) {
   const [responses, setResponses] = useState({});
-
+// Prefill logic — if initialData changes
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      setResponses(initialData);
+    }
+  }, [initialData]);
+  
   const handleChange = (section, idx, field, value, description = "") => {
     setResponses((prev) => ({
       ...prev,

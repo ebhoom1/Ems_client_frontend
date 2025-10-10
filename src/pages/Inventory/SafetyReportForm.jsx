@@ -205,7 +205,7 @@ const editId = queryParams.get("editId"); // check if editing
 
   (async () => {
     try {
-      const { data } = await axios.get(`${API_URL}/api/safetyreport/${editId}`);
+      const { data } = await axios.get(`${API_URL}/api/safetyreport/byId/${editId}`);
       console.log("prefill data:",data);
       if (data.success && data.report) {
         const r = data.report;
@@ -328,20 +328,26 @@ const editId = queryParams.get("editId"); // check if editing
   const handleSubmit = async (e) => {
   e.preventDefault();
 
+  // ✅ Basic validation
   if (!customerName || !engineerName) {
     toast.error("Please fill required fields");
     return;
   }
 
-  if (!custSig || !engSig) {
-    toast.error("Both Customer and Engineer signatures are required");
+  if (!custSig && !editId) {
+    toast.error("Customer signature required");
+    return;
+  }
+
+  if (!engSig && !editId) {
+    toast.error("Engineer signature required");
     return;
   }
 
   try {
     const fd = new FormData();
 
-    // Append all text fields
+    // ✅ Append all text fields
     fd.append("refNo", refNo);
     fd.append("date", date);
     fd.append("customerName", customerName);
@@ -360,27 +366,33 @@ const editId = queryParams.get("editId"); // check if editing
     fd.append("engineerSigName", engName);
     fd.append("engineerSigDesignation", engDesig);
 
-    // Convert base64 signatures to Blobs
-    const blob = (dataUrl) => {
-      const [header, base64] = dataUrl.split(",");
-      const binary = atob(base64);
-      const array = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
-      return new Blob([array], { type: "image/png" });
-    };
-
-    if (custSig)
-      fd.append("customerSignatureImage", blob(custSig), "customerSignature.png");
-    if (engSig)
-      fd.append("engineerSignatureImage", blob(engSig), "engineerSignature.png");
-
-    // ✅ Detect mode (add vs edit)
+    // ✅ Signatures:
+    // - In "Add" mode: convert & upload new base64 drawings
+    // - In "Edit" mode: skip if existing URLs already in DB
     const isEdit = !!editId;
+
+    if (!isEdit) {
+      const blob = (dataUrl) => {
+        const [header, base64] = dataUrl.split(",");
+        const binary = atob(base64);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+        return new Blob([array], { type: "image/png" });
+      };
+
+      if (custSig?.startsWith("data:image"))
+        fd.append("customerSignatureImage", blob(custSig), "customerSignature.png");
+      if (engSig?.startsWith("data:image"))
+        fd.append("engineerSignatureImage", blob(engSig), "engineerSignature.png");
+    }
+
+    // ✅ API URL & method
     const url = isEdit
       ? `${API_URL}/api/safetyreport/update/${editId}`
       : `${API_URL}/api/add-safetyreport`;
     const method = isEdit ? "put" : "post";
 
+    // ✅ Send request
     const { data } = await axios({
       method,
       url,
@@ -388,8 +400,11 @@ const editId = queryParams.get("editId"); // check if editing
       headers: { "Content-Type": "multipart/form-data" },
     });
 
+    // ✅ Handle response
     if (data.success) {
-      toast.success(isEdit ? "Safety Report updated successfully!" : "Safety Report submitted!");
+      toast.success(
+        isEdit ? "Safety Report updated successfully!" : "Safety Report submitted!"
+      );
       navigate("/services?tab=equipmentList");
     } else {
       toast.error(data.message || "Error saving safety report");
