@@ -469,6 +469,17 @@ useEffect(() => {
             </div> 
           </div>
         </div>
+        <div className="d-flex align-items-center mb-2" style={{ marginTop: '20px' }}>
+  <h4 className="flex-grow-1 text-center m-0">
+    <b>FLOW DASHBOARD</b>
+  </h4>
+  {(userData?.validUserOne?.userName === "admin1_001" ||
+    userData?.validUserOne?.userName === "CONTI" ||
+    selectedUserIdFromRedux === "CONTI" ||
+    currentUserName === "CONTI") && (
+    <img src={wipro} alt="Logo" width={'200px'} height={'60px'} />
+  )}
+</div>
         <ul
           className="d-flex align-items-center justify-content-end mb-4"
           style={{ listStyleType: 'none', padding: 0, margin: 0 }}

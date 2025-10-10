@@ -232,7 +232,7 @@ function AutonerveLayout() {
           cursor: "pointer",
         }}
       >
-        PreventiveMaintanence
+        Predictive Maintanence
       </button>
     </>
   ) : null}

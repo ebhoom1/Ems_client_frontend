@@ -10,7 +10,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AdminDashboard from "./AdminDashboard";
 import HeaderSim from "../Header/Hedaer";
-
+import wipro from '../../assests/images/wipro.png'
 // RequestHistory component for non-admin users (UNCHANGED, but included for completeness)
 const RequestHistory = () => {
   const { userData } = useSelector((state) => state.user);
@@ -292,9 +292,14 @@ const Inventory = () => {
   const renderTabs = () => (
     <>
       {/* Top-level navigation (always visible for all users) */}
-      <div className="col-12" style={{ marginTop: '80px' }}>
-
-      <div className="row gx-3 gy-2 justify-content-center mb-4">
+      <div className="col-12" style={{ marginTop: '40px' }}>
+{(userData?.validUserOne?.userName === "admin1_001" ||
+    userData?.validUserOne?.userName === "CONTI" ||
+   
+    currentUserName === "CONTI") && (
+   <div className=" d-flex justify-content-end"> <img src={wipro} alt="Logo" width={'220px'} height={'70px'} /></div>
+  )}   
+    <div className="row gx-3 gy-2 justify-content-center mb-4">
         <div className="col-12 col-sm-6 col-md-4 col-lg-3">
           <button
             onClick={() => navigate("/inventory")} // Navigates to this component

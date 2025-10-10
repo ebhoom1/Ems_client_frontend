@@ -36,7 +36,7 @@ const FlowLayout = () => {
             </div>
             <div style={{marginTop:"30px"}}>
 
-            <div className={`col-12 mt-30 ${userData?.validUserOne?.userType === 'user' ? 'mt-30' : ''}`}>
+            <div className={`col-12 mt-30 ${userData?.validUserOne?.userType === 'user' ? 'mt-30' : 'mt-3'}`}>
               <Maindashboard />
             </div>
             </div>

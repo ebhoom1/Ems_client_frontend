@@ -15,7 +15,7 @@ import ServiceHistory from "./ServiceHistory";
 import ReportFault from "./ReportFault";
 // import HeaderSim from "../Header/HeaderSim";
 import HeaderSim from "../Header/Hedaer";
-
+import wipro from '../../assests/images/wipro.png'
 const Services = () => {
   const { userData } = useSelector((state) => state.user);
   console.log("userdata in services", userData);
@@ -23,6 +23,8 @@ const Services = () => {
   const userName = userData?.validUserOne?.userName;
   const navigate = useNavigate();
   const location = useLocation();
+  const currentUserName = userData?.validUserOne?.userName;
+
   const searchParams = new URLSearchParams(location.search);
   const defaultTabFromUrl = searchParams.get("tab");
 const initialTab =
@@ -159,7 +161,12 @@ const [selectedTab, setSelectedTab] = useState(initialTab);
               <HeaderSim />
             </div>
             <div className="col-12" style={{ marginTop: '80px' }}>
-
+{(userData?.validUserOne?.userName === "admin1_001" ||
+    userData?.validUserOne?.userName === "CONTI" ||
+   
+    currentUserName === "CONTI") && (
+   <div className=" d-flex justify-content-end"> <img src={wipro} alt="Logo" width={'220px'} height={'70px'} /></div>
+  )}   
             <div className="row  gx-3 gy-2 justify-content-center">
               <div className="col-12 col-sm-6 col-md-4 col-lg-3">
                 <button

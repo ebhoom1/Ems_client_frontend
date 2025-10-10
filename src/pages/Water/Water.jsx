@@ -742,14 +742,19 @@ const Water = () => {
                 <div className="container-fluid water">
                   <div className="row">
                     <div className="col-lg-12 col-12 mt-2">
-                  <div className="d-flex align-items-center mt-5">
+                <div className="d-flex align-items-center mt-5">
   {/* The heading grows to fill the space, and its text is centered within it */}
   <h5 className="flex-grow-1 text-center m-0">
     <b>EFFLUENT DASHBOARD</b>
   </h5>
 
-  {/* The logo will be pushed to the end */}
-{/*   <img src={wipro} alt="Logo" width={'210px'} height={'60px'} /> */}
+  {/* The logo will be pushed to the end, shown only for specific users */}
+  {(userData?.validUserOne?.userName === "admin1_001" ||
+    userData?.validUserOne?.userName === "CONTI" ||
+    selectedUserIdFromRedux === "CONTI" ||
+    currentUserName === "CONTI") && (
+    <img src={wipro} alt="Logo" width={'210px'} height={'60px'} />
+  )}
 </div>
 
                       {/* operator checkout button */}
