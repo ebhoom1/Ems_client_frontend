@@ -1641,6 +1641,7 @@ const UsersLog = () => {
                           >
                             <option value="select">Select</option>
                             <option value="Test">Test</option>
+                            <option value="Sample">Sample</option>
 
                             <option value="KSPCB">KSPCB</option>
                             <option value="Genex">Genex</option>

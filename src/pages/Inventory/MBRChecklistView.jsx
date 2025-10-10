@@ -77,7 +77,7 @@ export default function MBRChecklistView({ checklist }) {
           return (
             <div key={sIndex} className="mb-4">
               {/* Section Title */}
-              <div
+              {/* <div
                 className="section-title text-white p-2"
                 style={{
                   backgroundColor: "#236a80",
@@ -86,7 +86,7 @@ export default function MBRChecklistView({ checklist }) {
                 }}
               >
                 {sectionName}
-              </div>
+              </div> */}
 
               {/* Section Table */}
               <table

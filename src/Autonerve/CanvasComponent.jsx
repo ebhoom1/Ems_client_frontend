@@ -25,6 +25,7 @@ import screenfull from "screenfull";
 import { BiFullscreen } from "react-icons/bi";
 import { getSocket } from "./socketService";
 import TankNode from "./TankNode";
+import wipro from "../../src/assests/images/wipro.jpeg";
 
 function CanvasComponent({
   selectedStationName,
@@ -270,19 +271,19 @@ function CanvasComponent({
           //   };
           // }
           if (
-  node.id === pumpId &&
-  String(node.data?.productId) === incomingProductId
-) {
-  const newData = {
-    ...node.data,
-    realtimeValues: { ...payload.pumpData },
-    isOn: status === "ON" || status === 1,
-    isPending: false,
-  };
-  if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
-    return { ...node, data: newData };
-  }
-}
+            node.id === pumpId &&
+            String(node.data?.productId) === incomingProductId
+          ) {
+            const newData = {
+              ...node.data,
+              realtimeValues: { ...payload.pumpData },
+              isOn: status === "ON" || status === 1,
+              isPending: false,
+            };
+            if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
+              return { ...node, data: newData };
+            }
+          }
 
           return node;
         })
@@ -332,16 +333,16 @@ function CanvasComponent({
           //   };
           // }
           if (updatedPump) {
-  const newData = {
-    ...node.data,
-    realtimeValues: updatedPump,
-    isOn: updatedPump.status === 1 || updatedPump.status === "ON",
-    isPending: false,
-  };
-  if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
-    return { ...node, data: newData };
-  }
-}
+            const newData = {
+              ...node.data,
+              realtimeValues: updatedPump,
+              isOn: updatedPump.status === 1 || updatedPump.status === "ON",
+              isPending: false,
+            };
+            if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
+              return { ...node, data: newData };
+            }
+          }
 
           return node;
         })
@@ -1174,9 +1175,10 @@ function CanvasComponent({
   return (
     <div className="canvas-wrapper" ref={canvasContainerRef}>
       <div className="canvas-header">
-        {selectedStationName && (
+         {selectedStationName && (
           <h3 className="station-title">{selectedStationName}</h3>
-        )}
+        )} 
+        
         <div className="canvas-buttons">
           <button
             onClick={toggleFullScreen}

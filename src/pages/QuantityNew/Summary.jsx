@@ -14,6 +14,9 @@ const PAGE_SIZE = 10;
 const LIGHT_BLUE = "#EAF5F8";
 const DARK_BLUE = "#236A80";
 
+const norm = (s) =>
+  (s || "").toLowerCase().replace(/\s+/g, "").replace(/_/g, "");
+
 function getColorForValue(date, minDate, maxDate) {
   if (date === minDate) return LIGHT_BLUE;
   if (date === maxDate) return DARK_BLUE;
@@ -50,78 +53,143 @@ const Summary = () => {
   const filterUnwantedStacks = (stackName) => {
     return !stackName.includes("STP intlet") && !stackName.includes("STP iutlet");
   };
+
+
+  // useEffect(() => {
+  //   const fetchAndFilterUsers = async () => {
+  //     try {
+  //       const currentUser = userData?.validUserOne;
+  //       if (!currentUser) {
+  //         setAllFetchedUsers([]); // Clear users if no current user
+  //         return;
+  //       }
+
+  //       let response;
+  //       if (currentUser.adminType === "EBHOOM") {
+  //         // EBHOOM fetches all users
+  //         response = await axios.get(`${API_URL}/api/getallusers`);
+  //         const fetchedUsers = response.data.users || [];
+  //         // EBHOOM logic: Filter out technicians, territorial managers, and operators
+  //         const filteredForEbhoom = fetchedUsers.filter(
+  //           (user) =>
+  //             user.isTechnician !== true &&
+  //             user.isTerritorialManager !== true &&
+  //             user.isOperator !== true
+  //         );
+  //         setAllFetchedUsers(filteredForEbhoom);
+  //       } else if (currentUser.userType === "super_admin") {
+  //         response = await axios.get(`${API_URL}/api/getallusers`); // Super admin still fetches all to determine createdBy hierarchy
+  //         const fetchedUsers = response.data.users || [];
+
+  //         // Get admins created by the super admin
+  //         const myAdmins = fetchedUsers.filter(
+  //           (user) =>
+  //             user.createdBy === currentUser._id && user.userType === "admin"
+  //         );
+
+  //         const myAdminIds = myAdmins.map((admin) => admin._id.toString());
+
+  //         // Get users created by the super admin or by admins
+  //         const usersForSuperAdmin = fetchedUsers.filter(
+  //           (user) =>
+  //             user.createdBy === currentUser._id ||
+  //             myAdminIds.includes(user.createdBy)
+  //         );
+
+  //         // Filter for display in the dropdown (non-technician, non-territorial manager, non-operator)
+  //         const filteredForSuperAdmin = usersForSuperAdmin.filter(
+  //           (user) =>
+  //             user.isTechnician !== true &&
+  //             user.isTerritorialManager !== true &&
+  //             user.isOperator !== true
+  //         );
+  //         setAllFetchedUsers(filteredForSuperAdmin);
+  //       } else if (currentUser.userType === "admin") {
+  //         // Admin fetches users created by them
+  //         const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
+  //         response = await axios.get(url);
+  //         const fetchedUsers = response.data.users || [];
+
+  //         // For an 'admin', you want to show only 'user' types created by them in the dropdown
+  //         const myUsers = fetchedUsers.filter(
+  //           (user) => user.userType === "user"
+  //         );
+  //         setAllFetchedUsers(myUsers);
+  //       } else {
+  //         // Fallback for 'user' type or any other unhandled type
+  //         setAllFetchedUsers([]);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching users for header dropdown:", error);
+  //       setAllFetchedUsers([]);
+  //     }
+  //   };
+
+  //   fetchAndFilterUsers();
+  // }, [userData]);
+
   useEffect(() => {
-    const fetchAndFilterUsers = async () => {
-      try {
-        const currentUser = userData?.validUserOne;
-        if (!currentUser) {
-          setAllFetchedUsers([]); // Clear users if no current user
-          return;
-        }
+  const fetchAndFilterUsers = async () => {
+    try {
+      const currentUser = userData?.validUserOne;
+      if (!currentUser) {
+        setAllFetchedUsers([]);
+        return;
+      }
 
-        let response;
-        if (currentUser.adminType === "EBHOOM") {
-          // EBHOOM fetches all users
-          response = await axios.get(`${API_URL}/api/getallusers`);
-          const fetchedUsers = response.data.users || [];
-          // EBHOOM logic: Filter out technicians, territorial managers, and operators
-          const filteredForEbhoom = fetchedUsers.filter(
-            (user) =>
-              user.isTechnician !== true &&
-              user.isTerritorialManager !== true &&
-              user.isOperator !== true
+      const role = norm(currentUser.userType);         // "megaadmin" | "superadmin" | "admin" | "user"
+      const isEbhoom = norm(currentUser.adminType) === "ebhoom";
+
+      let response;
+      if (isEbhoom || role === "megaadmin" || role === "superadmin") {
+        response = await axios.get(`${API_URL}/api/getallusers`);
+        const fetchedUsers = response.data?.users || [];
+
+        const cleaned = fetchedUsers.filter(
+          (u) => u?.isTechnician !== true && u?.isTerritorialManager !== true && u?.isOperator !== true
+        );
+
+        if (role === "superadmin") {
+          const meId = String(currentUser._id || "");
+          const myAdmins = cleaned.filter(
+            (u) => norm(u?.userType) === "admin" && String(u?.createdBy || "") === meId
           );
-          setAllFetchedUsers(filteredForEbhoom);
-        } else if (currentUser.userType === "super_admin") {
-          response = await axios.get(`${API_URL}/api/getallusers`); // Super admin still fetches all to determine createdBy hierarchy
-          const fetchedUsers = response.data.users || [];
+          const myAdminIds = new Set(myAdmins.map((a) => String(a._id)));
 
-          // Get admins created by the super admin
-          const myAdmins = fetchedUsers.filter(
-            (user) =>
-              user.createdBy === currentUser._id && user.userType === "admin"
-          );
+          const scoped = cleaned.filter((u) => {
+            const cby = String(u?.createdBy || "");
+            return cby === meId || myAdminIds.has(cby);
+          });
 
-          const myAdminIds = myAdmins.map((admin) => admin._id.toString());
-
-          // Get users created by the super admin or by admins
-          const usersForSuperAdmin = fetchedUsers.filter(
-            (user) =>
-              user.createdBy === currentUser._id ||
-              myAdminIds.includes(user.createdBy)
-          );
-
-          // Filter for display in the dropdown (non-technician, non-territorial manager, non-operator)
-          const filteredForSuperAdmin = usersForSuperAdmin.filter(
-            (user) =>
-              user.isTechnician !== true &&
-              user.isTerritorialManager !== true &&
-              user.isOperator !== true
-          );
-          setAllFetchedUsers(filteredForSuperAdmin);
-        } else if (currentUser.userType === "admin") {
-          // Admin fetches users created by them
-          const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
-          response = await axios.get(url);
-          const fetchedUsers = response.data.users || [];
-
-          // For an 'admin', you want to show only 'user' types created by them in the dropdown
-          const myUsers = fetchedUsers.filter(
-            (user) => user.userType === "user"
-          );
-          setAllFetchedUsers(myUsers);
+          setAllFetchedUsers(scoped);
         } else {
-          // Fallback for 'user' type or any other unhandled type
-          setAllFetchedUsers([]);
+          setAllFetchedUsers(cleaned);
         }
-      } catch (error) {
-        console.error("Error fetching users for header dropdown:", error);
+      } else if (role === "admin") {
+        const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
+        response = await axios.get(url);
+        const fetchedUsers = response.data?.users || [];
+        const myUsers = fetchedUsers.filter((u) => norm(u?.userType) === "user");
+        setAllFetchedUsers(myUsers);
+      } else if (role === "user") {
+        setAllFetchedUsers([currentUser]); // let user pick self
+      } else {
         setAllFetchedUsers([]);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching users for header dropdown:", error);
+      setAllFetchedUsers([]);
+    }
+  };
 
-    fetchAndFilterUsers();
-  }, [userData]);
+  fetchAndFilterUsers();
+}, [userData]);
+
+useEffect(() => {
+  if (showModal && !modalUser) setModalUser(activeUser || "");
+}, [showModal, modalUser, activeUser]);
+
+
   useEffect(() => {
     if (companyCache.current[activeUser] && dataCache.current[activeUser]) {
       const { companyName, differences, headers } = dataCache.current[activeUser];
