@@ -144,8 +144,8 @@ function AutonerveLayout() {
     const fetchStations = async () => {
       const ui = userData?.validUserOne;
       const loggedIn = ui?.userName;
-      console.log("selectedUserId**:",selectedUserId)
-// const effectiveUserName=selectedUserId || loggedIn
+      console.log("selectedUserId**:", selectedUserId);
+      // const effectiveUserName=selectedUserId || loggedIn
       // force the calls to use KIMS027 under the hood when required
       const effectiveUserName = isForcedProfile
         ? "KIMS027"
@@ -164,8 +164,11 @@ function AutonerveLayout() {
           const stations = result.data
             .map((s) => s.stationName)
             .filter(Boolean);
-         setSavedStations(isForcedProfile ? stations.filter(n => n === "New" || n === "PDF") : stations);
-
+          setSavedStations(
+            isForcedProfile
+              ? stations.filter((n) => n === "New" || n === "PDF")
+              : stations
+          );
         } else {
           console.error(
             "Error fetching stations:",
@@ -296,6 +299,27 @@ function AutonerveLayout() {
               >
                 {isEditMode ? "View Mode" : "Edit Mode"}
               </button>
+              {!isEditMode && (
+                <div className="saved-stations-list">
+                  {savedStations.length > 0 ? (
+                    savedStations.map((name) => (
+                      <button
+                        key={name}
+                        onClick={() => handleSelectStation(name)}
+                        className={`station-list-item ${
+                          name === selectedStationName ? "active" : ""
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    ))
+                  ) : (
+                    <p className="no-stations-message">
+                      No saved stations. Create a new one!
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
