@@ -63,10 +63,24 @@ const QuantityFlow = () => {
   const [yesterday, setyesterday] = useState({});
   const [dailyConsumptionData, setDailyConsumptionData] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const effectiveUserName = selectedUserIdFromRedux || storedUserId || userData?.validUserOne?.userName;
-  const [simulatedStpConsumption, setSimulatedStpConsumption] = useState(null);
+/*   const effectiveUserName = selectedUserIdFromRedux || storedUserId || userData?.validUserOne?.userName;
+ */  const [simulatedStpConsumption, setSimulatedStpConsumption] = useState(null);
   const SIMULATION_USER = 'EGL2';
  const SIMULATION_STACKS = ['STP outlet', 'STP inlet'];
+
+ //new 
+ // ✅ Define effective user for CONTI alias (map to EGL1)
+const loggedInUserName = userData?.validUserOne?.userName;
+const selectedUserName = selectedUserIdFromRedux || storedUserId || loggedInUserName;
+
+// Only CONTI gets mapped to EGL1
+const effectiveUserName =
+  loggedInUserName === "CONTI" || selectedUserName === "CONTI"
+    ? "EGL1"
+    : selectedUserName;
+
+console.log("🔹 Effective username for QuantityFlow:", effectiveUserName);
+
   const [simulatedConsumption, setSimulatedConsumption] = useState({});
    const graphRef = useRef();
 
@@ -201,16 +215,16 @@ const QuantityFlow = () => {
 
   useEffect(() => {
     const userName = storedUserId || currentUserName;
-    fetchData(userName);
+    fetchData(effectiveUserName);
     setCurrentUserName(userName); 
-    fetchEffluentFlowStacks(userName);
-    fetchPrimaryStation(userName);
+    fetchEffluentFlowStacks(effectiveUserName);
+    fetchPrimaryStation(effectiveUserName);
   }, [storedUserId, currentUserName]);
 
   useEffect(() => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
     if (Object.keys(realTimeData).length > 0) {
-      socket.emit("joinRoom", userName);
+      socket.emit("joinRoom", effectiveUserName);
       const handleUpdate = (msg) => {
         if (msg.userName !== userName) return;
         const eff = msg.stackData.filter(i => i.stationType === "effluent_flow");
@@ -222,7 +236,7 @@ const QuantityFlow = () => {
       };
       socket.on("stackDataUpdate", handleUpdate);
       return () => {
-        socket.emit("leaveRoom", userName);
+        socket.emit("leaveRoom", effectiveUserName);
         socket.off("stackDataUpdate", handleUpdate);
       };
     }
@@ -635,12 +649,13 @@ useEffect(() => {
             ref={graphRef}
           >
             {selectedCard ? (
-              <FlowGraph
-                parameter={selectedCard.name}
-                userName={currentUserName}
-                stackName={selectedCard.stackName}
-                dailyConsumptionData={dailyConsumption}
-              />
+             <FlowGraph
+  parameter={selectedCard.name}
+  userName={effectiveUserName}
+  stackName={selectedCard.stackName}
+  dailyConsumptionData={dailyConsumption}
+/>
+
             ) : (
               <h5 className="text-center mt-5">
                 Select a parameter to view its graph

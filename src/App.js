@@ -114,6 +114,7 @@ import FaultAlert from "./pages/faultalert/FaultAlert";
 import DieselDashboard from "./pages/GeneratorNew/DieselDashboard";
 import { API_URL } from "./utils/apiConfig";
 import PreventiveMaintanence from "./Autonerve/PreventiveMaintanence";
+import Daigram from "./pages/PandD/Daigram";
 function App() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -263,7 +264,7 @@ const subscribeUserAndSave = async () => {
                     <Route path="/notification" element={<Notification />} />
                     <Route path="/subscribe" element={<Subscibe />} />
                     <Route path="/live-emmision" element={<LiveEmmission />} />
-                    <Route path="/account" element={<Account />} />
+                    <Route path="/account" element={<Account />} /> 
                     <Route
                       path="/support-analyser"
                       element={<SupportAnalyser />}
@@ -437,6 +438,7 @@ const subscribeUserAndSave = async () => {
 
                     <Route path="/autonerve" element={<AutonerveLayout />} />
                     <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
+                    <Route path="/pandd" element={<Daigram />} />
 
 
                   </Route>
@@ -544,7 +546,8 @@ const subscribeUserAndSave = async () => {
                       path="/previous-quality"
                       element={<PreviousQuality />}
                     />
-                                        <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
+                    <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
+                    <Route path="/pandd" element={<Daigram />} />
 
                   </Route>
 
@@ -639,3 +642,4 @@ const subscribeUserAndSave = async () => {
 }
 
 export default App;
+/* okay */

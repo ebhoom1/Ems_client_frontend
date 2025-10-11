@@ -5,7 +5,7 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { FiDownload } from "react-icons/fi";
 import { API_URL } from "../../utils/apiConfig";
-
+import wipro from '../../assests/images/wipro.png'
 export default function PreviousQuality() {
   const [searchParams] = useSearchParams();
   const user = searchParams.get("user");
@@ -13,18 +13,17 @@ export default function PreviousQuality() {
   const year = searchParams.get("year");
 
   const [data, setData] = useState([]);
-  const [parameters, setParameters] = useState([]); // State to hold dynamic parameters
+  const [parameters, setParameters] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // A master map of all possible parameters and their acceptable limits.
-  // Keys are lowercase for consistent matching.
+ 
   const allLimits = {
     ph: [7.0, 7.5],
     turb: [0.1, 2.0],
     tss: [0.0, 10.0],
     bod: [0.0, 8.0],
     cod: [0.0, 30.0],
-    temp: [25.0, 35.0], // Example for Temperature
+    temp: [25.0, 35.0], 
   };
 
   useEffect(() => {
@@ -34,7 +33,6 @@ export default function PreviousQuality() {
       .get(`${API_URL}/api/average/user/${user}/daily/month/${year}/${month}`)
       .then((res) => {
         if (res.data.success && res.data.data.length > 0) {
-          // Process data to normalize parameter keys to lowercase
           const processedData = res.data.data.map(item => {
             const avgParams = item.stacks?.[0]?.avgParameters || {};
             const normalizedParams = Object.keys(avgParams).reduce((acc, key) => {
@@ -50,10 +48,9 @@ export default function PreviousQuality() {
           
           setData(processedData);
 
-          // Dynamically determine the parameters from the first record
           const firstRecordParams = processedData[0]?.stacks?.[0]?.avgParameters || {};
           const availableParams = Object.keys(firstRecordParams);
-          setParameters(availableParams); // Set the dynamic parameters for the table
+          setParameters(availableParams); 
           
         } else {
           setData([]);
@@ -64,7 +61,6 @@ export default function PreviousQuality() {
       .finally(() => setLoading(false));
   }, [user, month, year]);
 
-  // CSV download handler
   const handleDownloadCSV = () => {
     const header = ["Date", ...parameters.map(p => p.toUpperCase())].join(",");
     const rows = data.map((r) => {
@@ -80,7 +76,6 @@ export default function PreviousQuality() {
     URL.revokeObjectURL(url);
   };
 
-  // PDF download handler
   const handleDownloadPDF = () => {
     const doc = new jsPDF({ orientation: "landscape" });
     doc.text(`Water Quality for ${user} — ${month}/${year}`, 14, 16);
@@ -139,7 +134,7 @@ export default function PreviousQuality() {
             <tr className="table-secondary">
               <th>Acceptable Limits</th>
               {parameters.map((p) => {
-                const lim = allLimits[p]; // Look up limits in the master list
+                const lim = allLimits[p]; 
                 return (
                   <th key={p}>
                     {lim ? `${lim[0].toFixed(1)} – ${lim[1].toFixed(1)}` : "–"}

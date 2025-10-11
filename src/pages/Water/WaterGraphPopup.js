@@ -33,15 +33,20 @@ ChartJS.register(
 );
 
 const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackName }) => {
+      // ✅ If CONTI, show EGL1 graph data
+  const effectiveUserName = userName === "CONTI" ? "EGL1" : userName;
+  console.log("🔹 WaterGraphPopup using username:", effectiveUserName);
+
     const [timeInterval, setTimeInterval] = useState('hour');
     const [graphData, setGraphData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [chartType, setChartType] = useState('line'); // 'line' or 'bar'
 
     useEffect(() => {
-        if (userName && stackName && parameter) {
-            fetchData();
-        }
+      if (effectiveUserName && stackName && parameter) {
+    fetchData();
+}
+
     }, [timeInterval, userName, stackName, parameter]);
 
     const fetchData = async () => {
@@ -49,9 +54,9 @@ const WaterGraphPopup = ({ isOpen, onRequestClose, parameter, userName, stackNam
         try {
             let url = '';
             if (timeInterval === 'hour') {
-                url = `${API_URL}/api/average/user/${userName}/stack/${stackName}/interval/hour`;
+                url = `${API_URL}/api/average/user/${effectiveUserName}/stack/${stackName}/interval/hour`;
             } else {
-                url = `${API_URL}/api/average/user/${userName}/stack/${stackName}`;
+                url = `${API_URL}/api/average/user/${effectiveUserName}/stack/${stackName}`;
             }
             const response = await fetch(url);
             const responseData = await response.json();

@@ -1,4 +1,4 @@
-// src/components/Summary.jsx
+// 📄 src/components/Summary.jsx
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSelector } from "react-redux";
 import axios from "axios";
@@ -9,7 +9,7 @@ import { API_URL } from "../../utils/apiConfig";
 import "./Summary.css";
 import EffluentBarChart from "./EffluentBarChart";
 import { useNavigate } from "react-router-dom";
-
+import wipro from '../../assests/images/wipro.png'
 const PAGE_SIZE = 10;
 const LIGHT_BLUE = "#EAF5F8";
 const DARK_BLUE = "#236A80";
@@ -27,11 +27,28 @@ const Summary = () => {
   const { userData, userType } = useSelector((s) => s.user);
   const selectedUserId = useSelector((s) => s.selectedUser.userId);
   const storedUserId = sessionStorage.getItem("selectedUserId");
+
+  // ✅ Determine effective username (CONTI → EGL1 logic)
   const currentUserName =
     userType === "admin"
       ? "KSPCB001"
       : userData?.validUserOne?.userName;
-  const activeUser = selectedUserId || storedUserId || currentUserName;
+
+  const effectiveUserName =
+    storedUserId === "CONTI" ||
+    currentUserName === "CONTI" ||
+    userData?.validUserOne?.userName === "CONTI" ||
+    selectedUserId === "CONTI"
+      ? "EGL1"
+      : selectedUserId || storedUserId || currentUserName;
+
+  console.log("🔹 Summary using username:", effectiveUserName);
+  console.log("🧩 storedUserId:", storedUserId);
+  console.log("🧩 currentUserName:", currentUserName);
+  console.log("🧩 userData.validUserOne.userName:", userData?.validUserOne?.userName);
+  console.log("🧩 selectedUserId:", selectedUserId);
+
+  const activeUser = effectiveUserName;
 
   const companyCache = useRef({});
   const dataCache = useRef({});
@@ -43,153 +60,82 @@ const Summary = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-
-   const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [allFetchedUsers, setAllFetchedUsers] = useState([]);
-  const [modalUser, setModalUser]       = useState("");
-  const [modalMonth, setModalMonth]     = useState(String(new Date().getMonth() + 1));
-  const [modalYear, setModalYear]       = useState(String(new Date().getFullYear()));
+  const [modalUser, setModalUser] = useState("");
+  const [modalMonth, setModalMonth] = useState(String(new Date().getMonth() + 1));
+  const [modalYear, setModalYear] = useState(String(new Date().getFullYear()));
 
-  const filterUnwantedStacks = (stackName) => {
-    return !stackName.includes("STP intlet") && !stackName.includes("STP iutlet");
-  };
+  const filterUnwantedStacks = (stackName) =>
+    !stackName.includes("STP intlet") && !stackName.includes("STP iutlet");
 
-
-  // useEffect(() => {
-  //   const fetchAndFilterUsers = async () => {
-  //     try {
-  //       const currentUser = userData?.validUserOne;
-  //       if (!currentUser) {
-  //         setAllFetchedUsers([]); // Clear users if no current user
-  //         return;
-  //       }
-
-  //       let response;
-  //       if (currentUser.adminType === "EBHOOM") {
-  //         // EBHOOM fetches all users
-  //         response = await axios.get(`${API_URL}/api/getallusers`);
-  //         const fetchedUsers = response.data.users || [];
-  //         // EBHOOM logic: Filter out technicians, territorial managers, and operators
-  //         const filteredForEbhoom = fetchedUsers.filter(
-  //           (user) =>
-  //             user.isTechnician !== true &&
-  //             user.isTerritorialManager !== true &&
-  //             user.isOperator !== true
-  //         );
-  //         setAllFetchedUsers(filteredForEbhoom);
-  //       } else if (currentUser.userType === "super_admin") {
-  //         response = await axios.get(`${API_URL}/api/getallusers`); // Super admin still fetches all to determine createdBy hierarchy
-  //         const fetchedUsers = response.data.users || [];
-
-  //         // Get admins created by the super admin
-  //         const myAdmins = fetchedUsers.filter(
-  //           (user) =>
-  //             user.createdBy === currentUser._id && user.userType === "admin"
-  //         );
-
-  //         const myAdminIds = myAdmins.map((admin) => admin._id.toString());
-
-  //         // Get users created by the super admin or by admins
-  //         const usersForSuperAdmin = fetchedUsers.filter(
-  //           (user) =>
-  //             user.createdBy === currentUser._id ||
-  //             myAdminIds.includes(user.createdBy)
-  //         );
-
-  //         // Filter for display in the dropdown (non-technician, non-territorial manager, non-operator)
-  //         const filteredForSuperAdmin = usersForSuperAdmin.filter(
-  //           (user) =>
-  //             user.isTechnician !== true &&
-  //             user.isTerritorialManager !== true &&
-  //             user.isOperator !== true
-  //         );
-  //         setAllFetchedUsers(filteredForSuperAdmin);
-  //       } else if (currentUser.userType === "admin") {
-  //         // Admin fetches users created by them
-  //         const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
-  //         response = await axios.get(url);
-  //         const fetchedUsers = response.data.users || [];
-
-  //         // For an 'admin', you want to show only 'user' types created by them in the dropdown
-  //         const myUsers = fetchedUsers.filter(
-  //           (user) => user.userType === "user"
-  //         );
-  //         setAllFetchedUsers(myUsers);
-  //       } else {
-  //         // Fallback for 'user' type or any other unhandled type
-  //         setAllFetchedUsers([]);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching users for header dropdown:", error);
-  //       setAllFetchedUsers([]);
-  //     }
-  //   };
-
-  //   fetchAndFilterUsers();
-  // }, [userData]);
-
+  // 🔹 Fetch all users for modal dropdown
   useEffect(() => {
-  const fetchAndFilterUsers = async () => {
-    try {
-      const currentUser = userData?.validUserOne;
-      if (!currentUser) {
-        setAllFetchedUsers([]);
-        return;
-      }
-
-      const role = norm(currentUser.userType);         // "megaadmin" | "superadmin" | "admin" | "user"
-      const isEbhoom = norm(currentUser.adminType) === "ebhoom";
-
-      let response;
-      if (isEbhoom || role === "megaadmin" || role === "superadmin") {
-        response = await axios.get(`${API_URL}/api/getallusers`);
-        const fetchedUsers = response.data?.users || [];
-
-        const cleaned = fetchedUsers.filter(
-          (u) => u?.isTechnician !== true && u?.isTerritorialManager !== true && u?.isOperator !== true
-        );
-
-        if (role === "superadmin") {
-          const meId = String(currentUser._id || "");
-          const myAdmins = cleaned.filter(
-            (u) => norm(u?.userType) === "admin" && String(u?.createdBy || "") === meId
-          );
-          const myAdminIds = new Set(myAdmins.map((a) => String(a._id)));
-
-          const scoped = cleaned.filter((u) => {
-            const cby = String(u?.createdBy || "");
-            return cby === meId || myAdminIds.has(cby);
-          });
-
-          setAllFetchedUsers(scoped);
-        } else {
-          setAllFetchedUsers(cleaned);
+    const fetchAndFilterUsers = async () => {
+      try {
+        const currentUser = userData?.validUserOne;
+        if (!currentUser) {
+          setAllFetchedUsers([]);
+          return;
         }
-      } else if (role === "admin") {
-        const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
-        response = await axios.get(url);
-        const fetchedUsers = response.data?.users || [];
-        const myUsers = fetchedUsers.filter((u) => norm(u?.userType) === "user");
-        setAllFetchedUsers(myUsers);
-      } else if (role === "user") {
-        setAllFetchedUsers([currentUser]); // let user pick self
-      } else {
+
+        const role = norm(currentUser.userType);
+        const isEbhoom = norm(currentUser.adminType) === "ebhoom";
+
+        let response;
+        if (isEbhoom || role === "megaadmin" || role === "superadmin") {
+          response = await axios.get(`${API_URL}/api/getallusers`);
+          const fetchedUsers = response.data?.users || [];
+
+          const cleaned = fetchedUsers.filter(
+            (u) =>
+              u?.isTechnician !== true &&
+              u?.isTerritorialManager !== true &&
+              u?.isOperator !== true
+          );
+
+          if (role === "superadmin") {
+            const meId = String(currentUser._id || "");
+            const myAdmins = cleaned.filter(
+              (u) => norm(u?.userType) === "admin" && String(u?.createdBy || "") === meId
+            );
+            const myAdminIds = new Set(myAdmins.map((a) => String(a._id)));
+
+            const scoped = cleaned.filter((u) => {
+              const cby = String(u?.createdBy || "");
+              return cby === meId || myAdminIds.has(cby);
+            });
+
+            setAllFetchedUsers(scoped);
+          } else {
+            setAllFetchedUsers(cleaned);
+          }
+        } else if (role === "admin") {
+          const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
+          response = await axios.get(url);
+          const fetchedUsers = response.data?.users || [];
+          const myUsers = fetchedUsers.filter((u) => norm(u?.userType) === "user");
+          setAllFetchedUsers(myUsers);
+        } else if (role === "user") {
+          setAllFetchedUsers([currentUser]);
+        } else {
+          setAllFetchedUsers([]);
+        }
+      } catch (error) {
+        console.error("Error fetching users for header dropdown:", error);
         setAllFetchedUsers([]);
       }
-    } catch (error) {
-      console.error("Error fetching users for header dropdown:", error);
-      setAllFetchedUsers([]);
-    }
-  };
+    };
 
-  fetchAndFilterUsers();
-}, [userData]);
+    fetchAndFilterUsers();
+  }, [userData]);
 
-useEffect(() => {
-  if (showModal && !modalUser) setModalUser(activeUser || "");
-}, [showModal, modalUser, activeUser]);
+  // 🔹 Set modal default user
+  useEffect(() => {
+    if (showModal && !modalUser) setModalUser(activeUser || "");
+  }, [showModal, modalUser, activeUser]);
 
-
+  // 🔹 Fetch summary data
   useEffect(() => {
     if (companyCache.current[activeUser] && dataCache.current[activeUser]) {
       const { companyName, differences, headers } = dataCache.current[activeUser];
@@ -205,15 +151,12 @@ useEffect(() => {
 
     Promise.all([
       axios.get(`${API_URL}/api/get-user-by-userName/${activeUser}`),
-      axios.get(
-        `${API_URL}/api/difference/${activeUser}?interval=daily&page=1&limit=700`
-      ),
+      axios.get(`${API_URL}/api/difference/${activeUser}?interval=daily&page=1&limit=700`),
     ])
       .then(([userRes, diffRes]) => {
         const company = userRes.data.user.companyName || "";
         let entries = diffRes.data.data || [];
 
-        // Filter for effluent_flow and remove unwanted stacks
         entries = entries.filter(
           (e) =>
             e.stationType === "effluent_flow" &&
@@ -221,23 +164,17 @@ useEffect(() => {
             filterUnwantedStacks(e.stackName)
         );
 
-        // Dedupe per date+stackName, pick latest timestamp
+        // Dedupe per date+stackName
         const byKey = {};
         entries.forEach((e) => {
           const key = `${e.date}|${e.stackName}`;
-          if (
-            !byKey[key] ||
-            new Date(e.timestamp) > new Date(byKey[key].timestamp)
-          ) {
+          if (!byKey[key] || new Date(e.timestamp) > new Date(byKey[key].timestamp)) {
             byKey[key] = e;
           }
         });
         const deduped = Object.values(byKey);
 
-        // Pick last 20 unique dates (descending)
-        const uniqDates = Array.from(
-          new Set(deduped.map((e) => e.date))
-        )
+        const uniqDates = Array.from(new Set(deduped.map((e) => e.date)))
           .sort(
             (a, b) =>
               moment(b, "DD/MM/YYYY").valueOf() -
@@ -245,7 +182,6 @@ useEffect(() => {
           )
           .slice(0, 20);
 
-        // Shape into [{ date, stacks: [ {stackName, diff}, … ] }, …]
         const byDate = uniqDates.map((date) => ({
           date,
           stacks: deduped
@@ -256,13 +192,11 @@ useEffect(() => {
             })),
         }));
 
-        // Headers for table
         const hdrs = byDate.map((d) => ({
           original: d.date,
           display: moment(d.date, "DD/MM/YYYY").format("DD-MMM"),
         }));
 
-        // Cache
         companyCache.current[activeUser] = company;
         dataCache.current[activeUser] = {
           companyName: company,
@@ -270,17 +204,16 @@ useEffect(() => {
           headers: hdrs,
         };
 
-        // Set state
         setCompanyName(company);
         setDifferences(byDate);
         setHeaders(hdrs);
         setPage(0);
       })
-      .catch(console.error)
+      .catch((err) => console.error("❌ Error fetching Summary:", err))
       .finally(() => setIsLoading(false));
   }, [activeUser]);
 
-  // grouped[stackName][date] = diff
+  // 🔹 Group by stackName
   const grouped = useMemo(() => {
     const g = {};
     differences.forEach(({ date, stacks }) => {
@@ -294,7 +227,7 @@ useEffect(() => {
     return g;
   }, [differences]);
 
-  // Dynamic list of stackNames (filtered)
+  // 🔹 Unique stack list
   const stackNames = useMemo(() => {
     const seen = [];
     differences.forEach(({ stacks }) =>
@@ -307,7 +240,7 @@ useEffect(() => {
     return seen;
   }, [differences]);
 
-  // Compute min/max date per stack
+  // 🔹 Min/max value highlight
   const extremes = useMemo(() => {
     const e = {};
     stackNames.forEach((name) => {
@@ -334,16 +267,14 @@ useEffect(() => {
 
   const displayName = (companyName || "NO COMPANY SELECTED").toUpperCase();
   const pageCount = Math.ceil(headers.length / PAGE_SIZE);
-  const pagedHeaders = headers.slice(
-    page * PAGE_SIZE,
-    page * PAGE_SIZE + PAGE_SIZE
-  );
-const handleModalSubmit = () => {
-  setShowModal(false);
-  navigate(
-    `/previous-quantity?user=${modalUser}&month=${modalMonth}&year=${modalYear}`
-  );
-};
+  const pagedHeaders = headers.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
+  const handleModalSubmit = () => {
+    setShowModal(false);
+    navigate(`/previous-quantity?user=${modalUser}&month=${modalMonth}&year=${modalYear}`);
+  };
+
+  // 🔹 Render
   return (
     <div className="container-fluid">
       <div className="row" style={{ backgroundColor: "white" }}>
@@ -352,9 +283,18 @@ const handleModalSubmit = () => {
         </div>
         <div className="col-lg-9 col-12">
           <Hedaer />
-
+{(activeUser === "CONTI" || activeUser === "EGL1") && (
+            <div className="d-flex justify-content-end  me-3" style={{marginTop:'60px'}}>
+              <img src={wipro} alt="Wipro Logo" width="200" height="70" />
+            </div>
+          )}
           <div className="summary-top-bar d-flex justify-content-between align-items-center p-3 border mt-5">
-            <h2 className="company-name">{displayName}</h2>
+           <h2 className="company-name">
+  {effectiveUserName === "EGL1" || effectiveUserName === "CONTI"
+    ? "Continental"
+    : displayName}
+</h2>
+
             <div>
               <button
                 style={{ backgroundColor: DARK_BLUE, color: "white" }}
@@ -370,14 +310,17 @@ const handleModalSubmit = () => {
               </button>
             </div>
           </div>
-  <div className="d-flex align-items-center justify-content-end mt-2">
+
+          <div className="d-flex align-items-center justify-content-end mt-2">
             <button
               className="btn btn-secondary"
               onClick={() => setShowModal(true)}
             >
               Previous Data
             </button>
-          </div>        {isLoading ? (
+          </div>
+
+          {isLoading ? (
             <div className="text-center my-4">
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
@@ -388,10 +331,10 @@ const handleModalSubmit = () => {
               <table className="table summary-table">
                 <thead>
                   <tr>
-                    <th>Parameter</th>
-                    <th>Acceptable Limits</th>
+                    <th  style={{ backgroundColor: "#236a80", color: "#fff" }}>Parameter</th>
+                    <th  style={{ backgroundColor: "#236a80", color: "#fff" }}>Acceptable Limits</th>
                     {pagedHeaders.map(({ display, original }) => (
-                      <th key={original}>{display}</th>
+                      <th  style={{ backgroundColor: "#236a80", color: "#fff" }} key={original}>{display}</th>
                     ))}
                   </tr>
                 </thead>
@@ -404,11 +347,7 @@ const handleModalSubmit = () => {
                         <td>-</td>
                         {pagedHeaders.map(({ original }) => {
                           const val = grouped[stackName]?.[original] ?? null;
-                          const bg = getColorForValue(
-                            original,
-                            minDate,
-                            maxDate
-                          );
+                          const bg = getColorForValue(original, minDate, maxDate);
                           const isMax = original === maxDate;
                           return (
                             <td
@@ -430,6 +369,7 @@ const handleModalSubmit = () => {
             </div>
           )}
 
+          {/* Pagination */}
           <div className="d-flex justify-content-end align-items-center mb-4">
             <button
               className="btn btn-secondary me-2"
@@ -443,21 +383,21 @@ const handleModalSubmit = () => {
             </span>
             <button
               className="btn btn-secondary ms-2"
-              onClick={() =>
-                setPage((p) => Math.min(pageCount - 1, p + 1))
-              }
+              onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
               disabled={page >= pageCount - 1}
             >
               ›
             </button>
           </div>
 
+          {/* Bar Chart */}
           <div className="mt-5 border p-4 m-2 shadow">
             <h3 className="mb-3">Trending Analysis (Effluent Flow)</h3>
             <EffluentBarChart userName={activeUser} />
           </div>
 
-           <div
+          {/* Modal for previous data */}
+          <div
             className={`modal fade ${showModal ? "show" : ""}`}
             style={{ display: showModal ? "block" : "none" }}
             tabIndex={-1}
@@ -529,7 +469,7 @@ const handleModalSubmit = () => {
                   </button>
                   <button
                     className="btn"
-                    style={{backgroundColor:'#236a80' , color:'#fff'}}
+                    style={{ backgroundColor: "#236a80", color: "#fff" }}
                     disabled={!modalUser}
                     onClick={handleModalSubmit}
                   >

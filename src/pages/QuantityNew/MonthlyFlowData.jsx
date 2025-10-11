@@ -45,6 +45,11 @@ const MonthlyFlowData = () => {
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [selectedMonth, setSelectedMonth] = useState("");
   const currentYear = new Date().getFullYear();
+// ✅ CONTI → EGL1 alias logic
+const loggedInUserName = userData?.validUserOne?.userName;
+const effectiveUserName =
+  selectedUser === "CONTI" || loggedInUserName === "CONTI" ? "EGL1" : selectedUser;
+console.log("🔹 MonthlyFlowData using:", effectiveUserName);
 
   // — fetch & filter users exactly like Header's logic —
   useEffect(() => {
@@ -119,7 +124,8 @@ const MonthlyFlowData = () => {
   }, [userType, userData]);
 
   // Fetch stack list for a user and filter out unwanted stacks
-  const fetchStackOptions = async (userName) => {
+const fetchStackOptions = async (userNameParam) => {
+  const userName = userNameParam === "CONTI" ? "EGL1" : userNameParam;
     if (!userName) return;
     try {
       const resp = await axios.get(
@@ -142,7 +148,8 @@ const MonthlyFlowData = () => {
   };
 
   // Unified fetch for both bar & radial charts
-  const fetchTotals = async (userName, month) => {
+const fetchTotals = async (userNameParam, month) => {
+  const userName = userNameParam === "CONTI" ? "EGL1" : userNameParam;
     if (!userName || !month) return;
     const monthNum = monthMapping[month];
     try {
@@ -216,13 +223,15 @@ const MonthlyFlowData = () => {
           <select
             className="form-select"
             value={selectedUser}
-            onChange={(e) => {
-              setSelectedUser(e.target.value);
-              fetchStackOptions(e.target.value);
-              if (selectedMonth) {
-                fetchTotals(e.target.value, selectedMonth);
-              }
-            }}
+           onChange={(e) => {
+  const newUser = e.target.value;
+  setSelectedUser(newUser);
+  fetchStackOptions(newUser === "CONTI" ? "EGL1" : newUser);
+  if (selectedMonth) {
+    fetchTotals(newUser === "CONTI" ? "EGL1" : newUser, selectedMonth);
+  }
+}}
+
           >
             <option value="">Select User</option>
             {users.map((u) => (
@@ -237,12 +246,16 @@ const MonthlyFlowData = () => {
           <select
             className="form-select"
             value={selectedStack}
-            onChange={(e) => {
-              setSelectedStack(e.target.value);
-              if (selectedUser && selectedMonth) {
-                fetchTotals(selectedUser, selectedMonth);
-              }
-            }}
+           onChange={(e) => {
+  setSelectedStack(e.target.value);
+  if (selectedUser && selectedMonth) {
+    fetchTotals(
+      selectedUser === "CONTI" ? "EGL1" : selectedUser,
+      selectedMonth
+    );
+  }
+}}
+
             disabled={!selectedUser}
           >
             <option value="">Select Stack</option>
@@ -258,12 +271,16 @@ const MonthlyFlowData = () => {
           <select
             className="form-select"
             value={selectedMonth}
-            onChange={(e) => {
-              setSelectedMonth(e.target.value);
-              if (selectedUser) {
-                fetchTotals(selectedUser, e.target.value);
-              }
-            }}
+         onChange={(e) => {
+  setSelectedMonth(e.target.value);
+  if (selectedUser) {
+    fetchTotals(
+      selectedUser === "CONTI" ? "EGL1" : selectedUser,
+      e.target.value
+    );
+  }
+}}
+
             disabled={!selectedUser}
           >
             <option value="">Select Month</option>

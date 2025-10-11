@@ -72,20 +72,31 @@ function Maindashboard() {
 
   // Filter links based on available station types, but always include "Waste" and "Fuel".
   // Also, exclude "Effluent" for specific userNames.
- const visibleLinks = allLinks.filter(link => {
-  // super_admin sees only Quality, Water Quantity, Waste & Fuel
+const visibleLinks = allLinks.filter(link => {
+  // Super admin logic stays the same
   if (userType === "super_admin") {
     return ["effluent", "effluent_flow", "waste", "fuel"].includes(link.key);
   }
 
-  // existing logic for others:
-  if (link.key === "effluent" &&
-      (userName === "BANKA_BIO_ADMIN" || userName === "MY_HOME017")) {
+  // Special case: if selected user is CONTI → always show Quality & Water Quantity
+  if (userName === "CONTI" || storedUserId === "CONTI") {
+    return ["effluent", "effluent_flow"].includes(link.key);
+  }
+
+  // Existing exclusions
+  if (
+    link.key === "effluent" &&
+    (userName === "BANKA_BIO_ADMIN" || userName === "MY_HOME017")
+  ) {
     return false;
   }
-  return availableStationTypes.includes(link.key)
-      || link.key === "waste"
-      || link.key === "fuel";
+
+  // Normal users: show links matching their station types + waste + fuel
+  return (
+    availableStationTypes.includes(link.key) ||
+    link.key === "waste" ||
+    link.key === "fuel"
+  );
 });
 
 

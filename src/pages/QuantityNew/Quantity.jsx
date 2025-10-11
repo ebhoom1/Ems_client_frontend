@@ -30,6 +30,15 @@ export default function Quantity() {
 
   // Helper to normalize stack names
   const normalizeString = (str) => str.replace(/\s+/g, " ").trim();
+// ✅ CONTI → EGL1 alias logic
+const effectiveUserName =
+  storedUserId === "CONTI" ||
+  currentUserName === "CONTI" ||
+  userData?.validUserOne?.userName === "CONTI"
+    ? "EGL1"
+    : storedUserId || currentUserName;
+
+console.log("🔹 Quantity.jsx using username:", effectiveUserName);
 
   // Group data by stackName
   const groupDataByStackName = (data, effluentFlowStacks) => {
@@ -63,7 +72,7 @@ export default function Quantity() {
       }
     };
 
-    fetchStacks(storedUserId || currentUserName);
+fetchStacks(effectiveUserName);
   }, [storedUserId, currentUserName]);
 
   // fetch all difference data
@@ -87,7 +96,7 @@ export default function Quantity() {
       }
     };
 
-    fetchAllDifferenceData(storedUserId || currentUserName);
+fetchAllDifferenceData(effectiveUserName);
   }, [effluentFlowStacks, storedUserId, currentUserName]);
 
   // compute total pages once we have data
