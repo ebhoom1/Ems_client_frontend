@@ -26,6 +26,7 @@ const AddEquipment = () => {
     const fetchUsers = async () => {
       try {
         const currentUser = userData?.validUserOne;
+        console.log("currentuser:",currentUser)
         const currentUserId = currentUser?._id;
         if (!currentUserId) return;
   
@@ -48,8 +49,12 @@ const AddEquipment = () => {
   
           const isTerritorialManager =
             u.territorialManager?.toString() === currentUserId;
+
+               const isCreatedBy =
+              u.createdBy?.toString() === currentUserId;
   
-          return isOperator || isTechnician || isTerritorialManager;
+  
+          return isOperator || isTechnician || isTerritorialManager || isCreatedBy;
         });
   
         // If user is assigned to someone, filter the users they are assigned to
@@ -65,8 +70,11 @@ const AddEquipment = () => {
   
             const isTerritorialManager =
               u.territorialManager?.toString() === currentUserId;
+
+               const isCreatedBy =
+              u.createdBy?.toString() === currentUserId;
   
-            return isOperator || isTechnician || isTerritorialManager;
+            return isOperator || isTechnician || isTerritorialManager || isCreatedBy;
           });
   
           setUsers(assignedUsers);

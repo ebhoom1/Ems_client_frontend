@@ -1,15 +1,3 @@
-
-
-// import React from 'react'
-
-// function PdfNode() {
-//   return (
-//     <div>PdfNode</div>
-//   )
-// }
-
-// export default PdfNode
-
 import React, { useCallback, useMemo, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 
@@ -55,8 +43,14 @@ function PdfNode({ data }) {
   }, [numPages]);
 
   return (
-    <div className="pdf-node" style={{ width: "100%", height: "100%", overflow: "auto" }}>
-      <div className="pdf-node-content" style={{ width: "100%", height: "100%" }}>
+    <div
+      className="pdf-node"
+      style={{ width: "100%", height: "100%", overflow: "auto" }}
+    >
+      <div
+        className="pdf-node-content"
+        style={{ width: "100%", height: "100%" }}
+      >
         {safeUrl ? (
           <div className="pdf-scroll" style={{ width: "100%", height: "100%" }}>
             <Document
@@ -71,7 +65,9 @@ function PdfNode({ data }) {
                 pageNumber={pageNumber}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
-                 scale={2} 
+                //  scale={2}
+                 width={1133}      // your desired page width
+                scale={2}    
               />
             </Document>
 
