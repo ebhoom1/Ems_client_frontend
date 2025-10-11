@@ -144,6 +144,7 @@ function AutonerveLayout() {
     const fetchStations = async () => {
       const ui = userData?.validUserOne;
       const loggedIn = ui?.userName;
+      console.log("selectedUserId**:",selectedUserId)
 // const effectiveUserName=selectedUserId || loggedIn
       // force the calls to use KIMS027 under the hood when required
       const effectiveUserName = isForcedProfile
