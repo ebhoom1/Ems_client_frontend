@@ -114,6 +114,7 @@ import FaultAlert from "./pages/faultalert/FaultAlert";
 import DieselDashboard from "./pages/GeneratorNew/DieselDashboard";
 import { API_URL } from "./utils/apiConfig";
 import PreventiveMaintanence from "./Autonerve/PreventiveMaintanence";
+import Daigram from "./pages/PandD/Daigram";
 function App() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -437,6 +438,7 @@ const subscribeUserAndSave = async () => {
 
                     <Route path="/autonerve" element={<AutonerveLayout />} />
                     <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
+                    <Route path="/pandd" element={<Daigram />} />
 
 
                   </Route>
@@ -544,7 +546,8 @@ const subscribeUserAndSave = async () => {
                       path="/previous-quality"
                       element={<PreviousQuality />}
                     />
-                                        <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
+                    <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
+                    <Route path="/pandd" element={<Daigram />} />
 
                   </Route>
 

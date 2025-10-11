@@ -7,14 +7,14 @@ import Hedaer from "../Header/Hedaer";
 import PHChart from "./PHChart";
 import { API_URL } from "../../utils/apiConfig";
 import { useNavigate } from "react-router-dom";
-import { Modal, Button, Form } from "react-bootstrap"; // or your favorite UI lib
+import { Modal, Button, Form } from "react-bootstrap";
+import wipro from "../../assests/images/wipro.png";
 
 const DARK_BLUE = "#236A80";
 const LIGHT_BLUE = "#EAF5F8";
-const DANGER_RED = "#FFCCCC"; // Light red for values exceeding limits
-const MISSING_DATA_COLOR = "#fff"; // Light yellow for missing/zero/NA data
+const DANGER_RED = "#FFCCCC";
+const MISSING_DATA_COLOR = "#fff";
 
-// Define the limits for each parameter
 const limits = {
   ph: [6.5, 8.5],
   tds: [100.0, 2100.0],
@@ -25,7 +25,6 @@ const limits = {
   COD: [0.0, 50.0],
 };
 
-// hide these system fields
 const HIDDEN = new Set([
   "cumulatingFlow",
   "flowRate",
@@ -37,21 +36,28 @@ const HIDDEN = new Set([
   "_id",
 ]);
 
-// Helper function to generate a random number within a range
-const getRandomArbitrary = (min, max) => {
-  return Math.random() * (max - min) + min;
-};
+const getRandomArbitrary = (min, max) => Math.random() * (max - min) + min;
 
 export default function WaterQualitySummary() {
   const { userData, userType } = useSelector((s) => s.user);
   const selectedUserId = useSelector((s) => s.selectedUser.userId);
   const storedUserId = sessionStorage.getItem("selectedUserId");
-  const currentUserName =
-    userType === "admin"
-      ? "KSPCB001"
-      : userData?.validUserOne?.userName;
-  const activeUser = selectedUserId || storedUserId || currentUserName;
 
+  // ✅ Apply CONTI → EGL1 logic
+  const currentUserName =
+    userType === "admin" ? "KSPCB001" : userData?.validUserOne?.userName;
+
+  const effectiveUserName =
+    storedUserId === "CONTI" ||
+    selectedUserId === "CONTI" ||
+    currentUserName === "CONTI" ||
+    userData?.validUserOne?.userName === "CONTI"
+      ? "EGL1"
+      : selectedUserId || storedUserId || currentUserName;
+
+  console.log("🔹 WaterQualitySummary using username:", effectiveUserName);
+
+  const activeUser = effectiveUserName;
   const [companyName, setCompanyName] = useState("");
   const [daily, setDaily] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,9 +67,7 @@ export default function WaterQualitySummary() {
   const [showModal, setShowModal] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   const [modalUser, setModalUser] = useState(activeUser);
-  const [modalMonth, setModalMonth] = useState(
-    moment().month() + 1
-  );
+  const [modalMonth, setModalMonth] = useState(moment().month() + 1);
   const [modalYear, setModalYear] = useState(moment().year());
 
   // fetch users for dropdown
@@ -82,9 +86,7 @@ export default function WaterQualitySummary() {
           setAllUsers(
             fetched.filter(
               (u) =>
-                !u.isTechnician &&
-                !u.isTerritorialManager &&
-                !u.isOperator
+                !u.isTechnician && !u.isTerritorialManager && !u.isOperator
             )
           );
         } else if (currentUser.userType === "super_admin") {
@@ -102,9 +104,7 @@ export default function WaterQualitySummary() {
           setAllUsers(
             usersForSuper.filter(
               (u) =>
-                !u.isTechnician &&
-                !u.isTerritorialManager &&
-                !u.isOperator
+                !u.isTechnician && !u.isTerritorialManager && !u.isOperator
             )
           );
         } else if (currentUser.userType === "admin") {
@@ -137,9 +137,7 @@ export default function WaterQualitySummary() {
     if (!activeUser) return;
     setLoading(true);
     axios
-      .get(
-        `${API_URL}/api/average/user/${activeUser}/stack/STP/last-20-days`
-      )
+      .get(`${API_URL}/api/average/user/${activeUser}/stack/STP/last-20-days`)
       .then((res) => {
         if (res.data.success) setDaily(res.data.data);
       })
@@ -149,20 +147,15 @@ export default function WaterQualitySummary() {
 
   // only valid dates
   const validDaily = useMemo(
-    () =>
-      daily.filter((e) =>
-        moment(e.date, "DD/MM/YYYY", true).isValid()
-      ),
+    () => daily.filter((e) => moment(e.date, "DD/MM/YYYY", true).isValid()),
     [daily]
   );
 
-  // headers = unique sorted dates (TODAY'S DATA FIRST)
+  // headers = unique sorted dates (today first)
   const headers = useMemo(() => {
     const dates = [...new Set(validDaily.map((e) => e.date))];
-    // Sort in descending order to show today's data first
     dates.sort(
-      (a, b) =>
-        moment(b, "DD/MM/YYYY") - moment(a, "DD/MM/YYYY") // Changed order for descending sort
+      (a, b) => moment(b, "DD/MM/YYYY") - moment(a, "DD/MM/YYYY")
     );
     return dates.map((d) => ({
       raw: d,
@@ -173,9 +166,9 @@ export default function WaterQualitySummary() {
   // visible parameters
   const parameters = useMemo(() => {
     if (!validDaily.length) return [];
-    return Object.keys(
-      validDaily[0].stackData[0].parameters
-    ).filter((k) => !HIDDEN.has(k));
+    return Object.keys(validDaily[0].stackData[0].parameters).filter(
+      (k) => !HIDDEN.has(k)
+    );
   }, [validDaily]);
 
   // lookup[param][date] = value
@@ -188,22 +181,22 @@ export default function WaterQualitySummary() {
         tbl[p] = tbl[p] || {};
         let val = params[p];
 
-        // Check for 0.00, 0, "NA" (case-insensitive), null, or undefined
         const isProblematicValue =
           val === 0 ||
           val === 0.0 ||
-          (typeof val === 'string' && val.toUpperCase() === 'NA') || // Explicitly checking for "NA" string
+          (typeof val === "string" && val.toUpperCase() === "NA") ||
           val === null ||
           val === undefined;
 
         if (limits[p]) {
           const [min, max] = limits[p];
-          // If problematic OR out of bounds, replace with random within limits
-          if (isProblematicValue || (typeof val === 'number' && (val < min || val > max))) {
+          if (
+            isProblematicValue ||
+            (typeof val === "number" && (val < min || val > max))
+          ) {
             val = parseFloat(getRandomArbitrary(min, max).toFixed(2));
           }
         } else if (isProblematicValue) {
-          // If no limits defined but data is problematic, display as "NA" string
           val = "NA";
         }
         tbl[p][d] = val;
@@ -220,10 +213,7 @@ export default function WaterQualitySummary() {
         .map((h) => lookup[p][h.raw])
         .filter((v) => typeof v === "number");
       if (vals.length) {
-        ex[p] = {
-          min: Math.min(...vals),
-          max: Math.max(...vals),
-        };
+        ex[p] = { min: Math.min(...vals), max: Math.max(...vals) };
       }
     });
     return ex;
@@ -233,15 +223,11 @@ export default function WaterQualitySummary() {
     (companyName || "NO COMPANY SELECTED").toUpperCase();
 
   const getBg = (param, val) => {
-    // Check for "NA" string and color it distinctly
     if (val === "NA") return MISSING_DATA_COLOR;
-
-    if (val == null) return null; // Original null/undefined values (before lookup processing) - though now mostly handled by "NA"
-
+    if (val == null) return null;
     if (limits[param]) {
       const [min, max] = limits[param];
-      // This check for DANGER_RED might not often trigger if values are replaced by randoms within limits
-      if (typeof val === 'number' && (val < min || val > max)) {
+      if (typeof val === "number" && (val < min || val > max)) {
         return DANGER_RED;
       }
     }
@@ -251,11 +237,11 @@ export default function WaterQualitySummary() {
   };
 
   const getTextColor = (param, val) => {
-    if (val === "NA") return "#666600"; // Darker yellow for "NA" text
-    if (val == null) return "#003366"; // Default color if still null (should be rare now)
+    if (val === "NA") return "#666600";
+    if (val == null) return "#003366";
     if (limits[param]) {
       const [min, max] = limits[param];
-      if (typeof val === 'number' && (val < min || val > max)) {
+      if (typeof val === "number" && (val < min || val > max)) {
         return "#A30000";
       }
     }
@@ -263,8 +249,6 @@ export default function WaterQualitySummary() {
     return "#003366";
   };
 
-
-  // handle modal submit
   const onModalSubmit = () => {
     setShowModal(false);
     navigate(
@@ -282,9 +266,23 @@ export default function WaterQualitySummary() {
           <div className="col-lg-9 col-12">
             <Hedaer />
 
-            <div style={{marginTop:'6%'}} className="p-3 border mb-4 d-flex justify-content-between align-items-center ">
+            {/* ✅ Wipro logo for CONTI/EGL1 */}
+            {(activeUser === "CONTI" || activeUser === "EGL1") && (
+              <div className="d-flex justify-content-end me-3" style={{marginTop:'60px'}}>
+                <img src={wipro} alt="Wipro Logo" width="200" height="70" />
+              </div>
+            )}
+
+            <div
+              style={{ marginTop: "2%" }}
+              className="p-3 border mb-4 d-flex justify-content-between align-items-center mt-5 "
+            >
               <div>
-                <h6 className="company-name mb-0">{displayName}</h6>
+                <h6 className="company-name mb-0">
+                  {activeUser === "EGL1" || activeUser === "CONTI"
+                    ? "Continental"
+                    : displayName}
+                </h6>
                 <small className="text-muted">
                   Water Quality Summary
                 </small>
@@ -317,20 +315,17 @@ export default function WaterQualitySummary() {
 
             {loading ? (
               <div className="text-center my-4">
-                <div
-                  className="spinner-border text-primary"
-                  role="status"
-                />
+                <div className="spinner-border text-primary" role="status" />
               </div>
             ) : (
               <div className="table-responsive">
                 <table className="table summary-table">
                   <thead>
                     <tr>
-                      <th>Parameter</th>
-                      <th>Acceptable Limits</th>
+                      <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Parameter</th>
+                      <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Acceptable Limits</th>
                       {headers.map((h) => (
-                        <th key={h.raw}>{h.label}</th>
+                        <th style={{ backgroundColor: "#236a80", color: "#fff" }} key={h.raw}>{h.label}</th>
                       ))}
                     </tr>
                   </thead>
@@ -340,9 +335,7 @@ export default function WaterQualitySummary() {
                         <td>{param.toUpperCase()}</td>
                         <td>
                           {limits[param]
-                            ? `${limits[param][0].toFixed(1)} - ${limits[
-                                param
-                              ][1].toFixed(1)}`
+                            ? `${limits[param][0].toFixed(1)} - ${limits[param][1].toFixed(1)}`
                             : "N/A"}
                         </td>
                         {headers.map((h) => {
@@ -357,9 +350,7 @@ export default function WaterQualitySummary() {
                                 color: textColor,
                               }}
                             >
-                              {typeof val === "number"
-                                ? val.toFixed(2)
-                                : "NA"}
+                              {typeof val === "number" ? val.toFixed(2) : "NA"}
                             </td>
                           );
                         })}
@@ -372,10 +363,7 @@ export default function WaterQualitySummary() {
 
             <div className="mt-5 border p-4 m-2 shadow">
               <h3 className="mb-3">pH Trending Analysis</h3>
-              <PHChart
-                userName={activeUser}
-                stackName="STP"
-              />
+              <PHChart userName={activeUser} stackName="STP" />
             </div>
           </div>
         </div>
@@ -405,9 +393,7 @@ export default function WaterQualitySummary() {
               <Form.Label>Month</Form.Label>
               <Form.Select
                 value={modalMonth}
-                onChange={(e) =>
-                  setModalMonth(e.target.value)
-                }
+                onChange={(e) => setModalMonth(e.target.value)}
               >
                 {Array.from({ length: 12 }).map((_, i) => (
                   <option key={i + 1} value={i + 1}>
@@ -420,9 +406,7 @@ export default function WaterQualitySummary() {
               <Form.Label>Year</Form.Label>
               <Form.Select
                 value={modalYear}
-                onChange={(e) =>
-                  setModalYear(e.target.value)
-                }
+                onChange={(e) => setModalYear(e.target.value)}
               >
                 {Array.from({ length: 5 }).map((_, idx) => {
                   const y = moment().year() - idx;
@@ -437,13 +421,13 @@ export default function WaterQualitySummary() {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button
-            variant="secondary"
-            onClick={() => setShowModal(false)}
-          >
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
             Cancel
           </Button>
-          <Button style={{backgroundColor:'#236a80' , color:'#fff'}} onClick={onModalSubmit}>
+          <Button
+            style={{ backgroundColor: "#236a80", color: "#fff" }}
+            onClick={onModalSubmit}
+          >
             Go
           </Button>
         </Modal.Footer>

@@ -16,6 +16,8 @@ function DashboardSam() {
 
   // Check if the userName is specific for the diesel dashboard
   const isBBRole = name === 'BBUSER' || name === 'BBADMIN';
+const isSpecialUser = name === 'admin1_001' || name === 'CONTI';
+console.log('isSpecialUser',isSpecialUser);
 
   // Derive the user role from the user data
   const userRole = validUser.isTechnician
@@ -197,14 +199,20 @@ function DashboardSam() {
                           <span className="title">Notification</span>
                         </a>
                       </li>
-                      <li className="list active text-center">
-                        <a
-                          href="/chat"
-                          style={{ textDecoration: "none", color: "#ffffff" }}
-                        >
-                          <span className="title">Chat</span>
-                        </a>
-                      </li>
+                     {isSpecialUser ? (
+                        <li className="list active text-center">
+                          <a href="/pandd" style={{ textDecoration: "none", color: "#ffffff" }}>
+                            <span className="title">UPW</span>
+                          </a>
+                        </li>
+                      ) : (
+                        <li className="list active text-center">
+                          <a href="/chat" style={{ textDecoration: "none", color: "#ffffff" }}>
+                            <span className="title">Chat</span>
+                          </a>
+                        </li>
+                      )}
+                      
                       <li className="list active text-center">
                         <a
                           href="/inventory"
@@ -274,14 +282,19 @@ function DashboardSam() {
                           <span className="title">AutoNerve</span>
                         </a>
                       </li>
-                      <li className="list active text-center">
-                        <a
-                          href="/chat"
-                          style={{ textDecoration: "none", color: "#ffffff" }}
-                        >
-                          <span className="title">Chat</span>
-                        </a>
-                      </li>
+                      {isSpecialUser ? (
+                        <li className="list active text-center">
+                          <a href="/pandd" style={{ textDecoration: "none", color: "#ffffff" }}>
+                            <span className="title">UPW</span>
+                          </a>
+                        </li>
+                      ) : (
+                        <li className="list active text-center">
+                          <a href="/chat" style={{ textDecoration: "none", color: "#ffffff" }}>
+                            <span className="title">Chat</span>
+                          </a>
+                        </li>
+                      )}
                       <li className="list active text-center">
                         <a
                           href="/inventory"

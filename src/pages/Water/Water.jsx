@@ -65,6 +65,7 @@ const Water = () => {
   const selectedUserIdFromRedux = useSelector(
     (state) => state.selectedUser.userId
   );
+  
   const selectedUserState = useSelector((state) => state.selectedUser);
   console.log("Full selectedUser state:", selectedUserState);
   const [userId, setUserId] = useState(null);
@@ -109,6 +110,21 @@ const Water = () => {
   const [allowClicks, setAllowClicks] = useState(false); //new for overlay control
   const isEGL5 = currentUserName === "EGL5";
   
+
+// ✅ Define effective user for CONTI alias
+const loggedInUserName = userData?.validUserOne?.userName;
+const selectedUserName =
+  selectedUserIdFromRedux || storedUserId || currentUserName;
+
+// 👉 If CONTI logged in or selected, map it to EGL1
+const effectiveUserName =
+  loggedInUserName === "CONTI" || selectedUserName === "CONTI"
+    ? "EGL1"
+    : selectedUserName;
+
+console.log("🔹 Effective username for data fetch:", effectiveUserName);
+
+
   // ### NEW: useEffect to handle simulated data for user EGL2 ###
   useEffect(() => {
     if (currentUserName === 'EGL2') {
@@ -422,10 +438,8 @@ const Water = () => {
 
   const handleStackDataUpdate = async (data) => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-    console.log(`Real-time data for ${userName}:`, data);
-
-    if (data.userName !== userName) return;
-
+   console.log(`Real-time data for ${effectiveUserName}:`, data);
+if (data.userName !== effectiveUserName) return;
     setExceedanceColor(data.ExceedanceColor || "green");
     setTimeIntervalColor(data.timeIntervalColor || "green");
 
@@ -445,30 +459,29 @@ const Water = () => {
 
     // Fallback to latest API if no real-time data
     console.log("No real-time effluent data. Using fallback...");
-    const fallback = await fetchFallbackEffluentData(userName);
+const fallback = await fetchFallbackEffluentData(effectiveUserName);
     setRealTimeData(fallback);
   };
   useEffect(() => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
     resetColors();
 
-    fetchData(userName);
-    fetchEffluentStacks(userName);
+   fetchData(effectiveUserName);
+  fetchEffluentStacks(effectiveUserName);
 
-    socket.emit("joinRoom", { userId: userName });
-    socket.on("stackDataUpdate", handleStackDataUpdate);
-
+     socket.emit("joinRoom", { userId: effectiveUserName });
+  socket.on("stackDataUpdate", handleStackDataUpdate);
     // ⏳ Fallback to latest API after 5s if no real-time data
     const fallbackTimeout = setTimeout(async () => {
       if (Object.keys(realTimeData).length === 0) {
         console.log("⏳ No real-time update received. Using fallback...");
-        const fallback = await fetchFallbackEffluentData(userName);
+        const fallback = await fetchFallbackEffluentData(effectiveUserName);
         setRealTimeData(fallback);
       }
     }, 1000);
 
     return () => {
-      socket.emit("leaveRoom", { userId: userName });
+      socket.emit("leaveRoom", { userId: effectiveUserName });
       socket.off("stackDataUpdate", handleStackDataUpdate);
       clearTimeout(fallbackTimeout); // Cleanup fallback timer
     };

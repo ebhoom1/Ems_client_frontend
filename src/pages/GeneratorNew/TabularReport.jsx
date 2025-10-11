@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+/* import React, { useEffect, useState } from "react";
 import { Table, Card, Spinner, Button, Modal, Form } from "react-bootstrap";
 import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
@@ -17,7 +17,6 @@ export default function TabularReport() {
   const [modalData, setModalData] = useState([]);
   const [modalLoading, setModalLoading] = useState(false);
 
-  // Reusable function to format API data
   const formatApiData = (data) => {
     if (!Array.isArray(data)) {
       console.error("Data received is not an array:", data);
@@ -51,7 +50,6 @@ export default function TabularReport() {
     });
   };
 
-  // Fetch and filter today's hourly consumption
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -61,7 +59,6 @@ export default function TabularReport() {
           `${API_URL}/api/hourly?userName=${USER_NAME}&date=${todayApiFormat}`
         );
 
-        // **FIX:** Ensure only today's data is shown by filtering client-side
         const todayDisplayFormat = moment().tz("Asia/Kolkata").format("DD/MM/YYYY");
         const formattedData = formatApiData(res.data);
         const filteredData = formattedData.filter(item => item.date === todayDisplayFormat);
@@ -77,7 +74,6 @@ export default function TabularReport() {
     fetchData();
   }, []);
 
-  // Handle modal form submission
   const handleModalSubmit = async (e) => {
     e.preventDefault();
     setModalLoading(true);
@@ -100,7 +96,7 @@ export default function TabularReport() {
     }
   };
   
-  // Generic download handler
+
   const handleDownload = (format) => {
     const headers = [["Date", "Hour", "Energy (kWh)", "Diesel (L)", "Efficiency (kWh/L)"]];
     const rows = modalData.map((row) => [
@@ -139,7 +135,7 @@ export default function TabularReport() {
 
   return (
     <div className="mt-4">
-      {/* Style for the custom width modal */}
+   
      
 
       <div className="shadow-sm border-0 rounded-3">
@@ -200,7 +196,7 @@ export default function TabularReport() {
         </Card.Body>
       </div>
 
-      {/* Modal for previous hour data */}
+      
       <Modal 
         show={showModal} 
         onHide={() => setShowModal(false)} 
@@ -267,7 +263,7 @@ export default function TabularReport() {
                   ))}
                 </tbody>
               </Table>
-              {/* CHANGE: Download buttons are now aligned */}
+            
               <div className="d-flex gap-2">
                 <Button variant="success" onClick={() => handleDownload('csv')}>
                   Download as CSV
@@ -285,6 +281,92 @@ export default function TabularReport() {
           </Button>
         </Modal.Footer>
       </Modal>
+    </div>
+  );
+} */
+
+  import React, { useEffect, useState } from "react";
+import { Table, Card, Spinner } from "react-bootstrap";
+import axios from "axios";
+import moment from "moment-timezone";
+import { API_URL } from "../../utils/apiConfig";
+
+export default function TabularReport({ userName, mock, mockData }) {
+  const [reportData, setReportData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (mock) {
+      setReportData(mockData);
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const todayApiFormat = moment().tz("Asia/Kolkata").format("YYYY-MM-DD");
+        const res = await axios.get(
+          `${API_URL}/api/hourly?userName=${userName}&date=${todayApiFormat}`
+        );
+        const todayDisplayFormat = moment().tz("Asia/Kolkata").format("DD/MM/YYYY");
+        const formatted = res.data
+          .map((i) => ({
+            date: moment(i.timestamp_hour).format("DD/MM/YYYY"),
+            hour: moment(i.timestamp_hour).format("hh:mm A"),
+            energy: parseFloat(i.energy?.consumption_kWh || 0).toFixed(2),
+            diesel: parseFloat(i.fuel?.consumption_liters || 0).toFixed(2),
+            efficiency: (
+              (i.energy?.consumption_kWh || 0) /
+              (i.fuel?.consumption_liters || 1)
+            ).toFixed(2),
+          }))
+          .filter((i) => i.date === todayDisplayFormat);
+        setReportData(formatted);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [mock, userName]);
+
+  return (
+    <div className="shadow-sm border-0 rounded-3">
+      <Card.Header className="bg-light text-dark fw-bold text-center">
+        <h4>
+          <b>Hourly Diesel & Energy Report</b>
+        </h4>
+      </Card.Header>
+      <Card.Body>
+        {loading ? (
+          <div className="text-center p-4">
+            <Spinner animation="border" />
+          </div>
+        ) : (
+          <Table responsive bordered hover className="align-middle">
+            <thead>
+              <tr style={{ backgroundColor: "#236a80", color: "#fff" }}>
+                <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Hour</th>
+                <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Energy (kWh)</th>
+                <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Diesel (L)</th>
+                <th style={{ backgroundColor: "#236a80", color: "#fff" }}>Efficiency (kWh/L)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reportData.map((row, idx) => (
+                <tr key={idx}>
+                 
+                  <td>{row.date}</td>
+                  <td>{row.energy}</td>
+                  <td>{row.fuel}</td>
+                  <td>{row.efficiency}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Card.Body>
     </div>
   );
 }
