@@ -264,7 +264,7 @@ const subscribeUserAndSave = async () => {
                     <Route path="/notification" element={<Notification />} />
                     <Route path="/subscribe" element={<Subscibe />} />
                     <Route path="/live-emmision" element={<LiveEmmission />} />
-                    <Route path="/account" element={<Account />} />
+                    <Route path="/account" element={<Account />} /> 
                     <Route
                       path="/support-analyser"
                       element={<SupportAnalyser />}
@@ -642,3 +642,4 @@ const subscribeUserAndSave = async () => {
 }
 
 export default App;
+/* okay */
