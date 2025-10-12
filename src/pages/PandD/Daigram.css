@@ -1,9 +1,9 @@
-/* PDF Image */
+/* PDF Image Styles (Unchanged) */
 .pdf-container-new {
   width: 100%;
   display: flex;
   justify-content: center;
-  margin-top: 25px;
+  margin-top: 40px;
 }
 
 .pdf-image-new {
@@ -13,63 +13,90 @@
   object-fit: contain;
   border-radius: 14px;
   border: 3px solid #236a80;
-  box-shadow: 0 8px 25px rgba(35, 106, 128, 0.25);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-.pdf-image-new:hover {
-  transform: scale(1.01);
-  box-shadow: 0 12px 35px rgba(35, 106, 128, 0.35);
-}
+/* --- STYLES FOR THE NEW 3-COLUMN BOXES --- */
 
-/* Modern Table Card */
-.modern-quality-card {
+.water-quality-section {
   margin-top: 30px;
-  background: #ffffff;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 6px 25px rgba(35, 106, 128, 0.15);
+  width: 100%;
 }
 
-/* Header Bar */
-.modern-table-header {
-  background: #236a80;
-  color: #ffffff;
+.section-title {
   text-align: center;
-  padding: 12px 0;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  color: #333;
+  margin-bottom: 25px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-/* Table Body */
-.modern-table-body {
+/* The fixed 3-column grid container */
+.quality-grid-fixed {
+  display: grid;
+  /* This creates exactly 3 equal-width columns */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px; /* Space between cards */
+}
+
+/* Individual card styling - styled to match your reference image */
+.quality-card-dark {
+background: linear-gradient(-90deg, #0d4e62, #3b879e);
+  color: #ffffff;
+  padding: 25px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  gap: 12px; /* Space between label and value */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Each Row */
-.modern-row {
-  display: grid;
-  grid-template-columns: 1fr 3fr 2fr;
-  padding: 12px 20px;
-  font-size: 15px;
-  color: #333;
-  transition: background 0.3s ease;
+.quality-card-dark:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px #236a80
 }
 
-.modern-row:nth-child(even) {
-  background: #f6fafd;
+/* Style for the parameter label (e.g., "Total Silica") */
+.card-label {
+  font-size: 1rem;
+  font-weight: 400;
+  opacity: 0.9;
 }
 
-.modern-row:hover {
-  background: rgba(35, 106, 128, 0.08);
+/* Container to align the main value and unit */
+.card-value-container {
+  display: flex;
+  align-items: baseline; /* Aligns the bottom of the text */
+  gap: 8px; /* Space between value and unit */
 }
 
-/* Head Row */
-.modern-head {
-  font-weight: 600;
-  background: #e7f4f8;
-  color: #236a80;
-  text-transform: uppercase;
-  font-size: 14px;
+/* Style for the main parameter value (e.g., "< 2") */
+.card-value-main {
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Style for the unit (e.g., "ppb") */
+.card-value-unit {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+/* Responsive adjustment for smaller screens */
+@media (max-width: 992px) {
+  .quality-grid-fixed {
+    /* Switch to 2 columns on medium screens */
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .quality-grid-fixed {
+    /* Switch to 1 column on small screens */
+    grid-template-columns: 1fr;
+  }
 }

@@ -291,7 +291,7 @@ const Summary = () => {
           <div className="summary-top-bar d-flex justify-content-between align-items-center p-3 border mt-5">
            <h2 className="company-name">
   {effectiveUserName === "EGL1" || effectiveUserName === "CONTI"
-    ? "Continental"
+    ? "Demo User"
     : displayName}
 </h2>
 
