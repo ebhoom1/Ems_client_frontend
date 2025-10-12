@@ -152,11 +152,7 @@
   }
 }
 
-/* Main Dashboard Layout */
-.maindashboard {
-  /* display: flex; */
-   overflow-x: hidden;
-}
+
 
 .sidebar {
   width: 275px;

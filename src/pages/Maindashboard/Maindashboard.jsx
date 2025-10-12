@@ -14,7 +14,8 @@ function Maindashboard() {
   const [availableStationTypes, setAvailableStationTypes] = useState([]); // Holds station types with values
   const { userType, userData } = useSelector((state) => state.user); // Get userData from Redux
   const storedUserId = sessionStorage.getItem("selectedUserId"); // For admin, use selected user ID
-  const userName = userType === "admin" ? storedUserId : userData?.validUserOne?.userName; // Adjusted userName
+  const userName =
+    userType === "admin" ? storedUserId : userData?.validUserOne?.userName; // Adjusted userName
 
   // Fetch station types with values
   useEffect(() => {
@@ -24,7 +25,7 @@ function Maindashboard() {
     } else if (userType === "super_admin") {
       // If super_admin, we might want to show all links by default or based on a different logic
       // For now, let's assume super_admin sees all links that are not restricted by userName
-      setAvailableStationTypes(allLinks.map(link => link.key)); // Populate with all keys to ensure visibility
+      setAvailableStationTypes(allLinks.map((link) => link.key)); // Populate with all keys to ensure visibility
     } else {
       console.log("userName is not available or userType is super_admin.");
     }
@@ -32,7 +33,9 @@ function Maindashboard() {
 
   const fetchStationTypes = async (userName) => {
     try {
-      const response = await fetch(`${API_URL}/api/get-stacknames-by-userName/${userName}`);
+      const response = await fetch(
+        `${API_URL}/api/get-stacknames-by-userName/${userName}`
+      );
       const data = await response.json();
 
       // Ensure the response contains valid station types
@@ -67,38 +70,36 @@ function Maindashboard() {
     { name: "Noise", path: "/noise", key: "noise" },
     { name: "Water Quantity", path: "/quantity", key: "effluent_flow" },
     { name: "Energy", path: "/energy", key: "energy" },
-    
   ];
 
   // Filter links based on available station types, but always include "Waste" and "Fuel".
   // Also, exclude "Effluent" for specific userNames.
-const visibleLinks = allLinks.filter(link => {
-  // Super admin logic stays the same
-  if (userType === "super_admin") {
-    return ["effluent", "effluent_flow", "waste", "fuel"].includes(link.key);
-  }
+  const visibleLinks = allLinks.filter((link) => {
+    // Super admin logic stays the same
+    if (userType === "super_admin") {
+      return ["effluent", "effluent_flow", "waste", "fuel"].includes(link.key);
+    }
 
-  // Special case: if selected user is CONTI → always show Quality & Water Quantity
-  if (userName === "CONTI" || storedUserId === "CONTI") {
-    return ["effluent", "effluent_flow"].includes(link.key);
-  }
+    // Special case: if selected user is CONTI → always show Quality & Water Quantity
+    if (userName === "CONTI" || storedUserId === "CONTI") {
+      return ["effluent", "effluent_flow"].includes(link.key);
+    }
 
-  // Existing exclusions
-  if (
-    link.key === "effluent" &&
-    (userName === "BANKA_BIO_ADMIN" || userName === "MY_HOME017")
-  ) {
-    return false;
-  }
+    // Existing exclusions
+    if (
+      link.key === "effluent" &&
+      (userName === "BANKA_BIO_ADMIN" || userName === "MY_HOME017")
+    ) {
+      return false;
+    }
 
-  // Normal users: show links matching their station types + waste + fuel
-  return (
-    availableStationTypes.includes(link.key) ||
-    link.key === "waste" ||
-    link.key === "fuel"
-  );
-});
-
+    // Normal users: show links matching their station types + waste + fuel
+    return (
+      availableStationTypes.includes(link.key) ||
+      link.key === "waste" ||
+      link.key === "fuel"
+    );
+  });
 
   console.log("Visible Links:", visibleLinks);
 
@@ -106,31 +107,32 @@ const visibleLinks = allLinks.filter(link => {
     <div className="col-12">
       <div className="maindashboard d-flex">
         <div className="flex-grow-1 content bg-light">
-        {visibleLinks.length > 0 && (
-  <Navbar
-    expand="lg"
-    className="navbg shadow"
-    style={{ borderRadius: "10px" }}
-  >
-    <div className="d-flex justify-content-between gap-2 w-100">
-      <Navbar.Toggle aria-controls="basic-navbar-nav" />
-      <Navbar.Collapse id="basic-navbar-nav">
-        <Nav className="w-100 justify-content-evenly">
-          {visibleLinks.map((link) => (
-            <Nav.Link
-              href={link.path}
-              key={link.key}
-              className={location.pathname === link.path ? "active-link" : ""}
+          {visibleLinks.length > 0 && (
+            <Navbar
+              expand="lg"
+              className="navbg shadow"
+              style={{ borderRadius: "10px" }}
             >
-              {link.name}
-            </Nav.Link>
-          ))}
-        </Nav>
-      </Navbar.Collapse>
-    </div>
-  </Navbar>
-)}
-
+              <div className="d-flex justify-content-between gap-2 w-100">
+                <Navbar.Toggle aria-controls="basic-navbar-nav" />
+                <Navbar.Collapse id="basic-navbar-nav">
+                  <Nav className="w-100 justify-content-evenly">
+                    {visibleLinks.map((link) => (
+                      <Nav.Link
+                        href={link.path}
+                        key={link.key}
+                        className={
+                          location.pathname === link.path ? "active-link" : ""
+                        }
+                      >
+                        {link.name}
+                      </Nav.Link>
+                    ))}
+                  </Nav>
+                </Navbar.Collapse>
+              </div>
+            </Navbar>
+          )}
 
           {userType !== "user" && (
             <div className="flex-md-row mt-3 button-section bg-light">

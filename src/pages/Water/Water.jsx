@@ -29,7 +29,7 @@ import html2canvas from "html2canvas";
 import DownloadaverageDataModal from "./DownloadaverageDataModal";
 import { fetchUserByUserName } from "../../redux/features/userLog/userLogSlice";
 import Modal from "react-modal";
-import wipro from '../../assests/images/wipro.png'
+import wipro from "../../assests/images/wipro.png";
 Modal.setAppElement("#root");
 
 // Initialize Socket.IO
@@ -65,7 +65,7 @@ const Water = () => {
   const selectedUserIdFromRedux = useSelector(
     (state) => state.selectedUser.userId
   );
-  
+
   const selectedUserState = useSelector((state) => state.selectedUser);
   console.log("Full selectedUser state:", selectedUserState);
   const [userId, setUserId] = useState(null);
@@ -87,7 +87,7 @@ const Water = () => {
   const [selectedStack, setSelectedStack] = useState("all");
   const [effluentStacks, setEffluentStacks] = useState([]); // New state to store effluent stacks
   const [realTimeData, setRealTimeData] = useState({});
-  
+
   // ### MODIFICATIONS START ###
   const [dynamicPhValue, setDynamicPhValue] = useState(null);
   const [egl2SimulatedData, setEgl2SimulatedData] = useState(null);
@@ -109,32 +109,30 @@ const Water = () => {
   const [isCheckedIn, setIsCheckedIn] = useState(false); // new
   const [allowClicks, setAllowClicks] = useState(false); //new for overlay control
   const isEGL5 = currentUserName === "EGL5";
-  
 
-// ✅ Define effective user for CONTI alias
-const loggedInUserName = userData?.validUserOne?.userName;
-const selectedUserName =
-  selectedUserIdFromRedux || storedUserId || currentUserName;
+  // ✅ Define effective user for CONTI alias
+  const loggedInUserName = userData?.validUserOne?.userName;
+  const selectedUserName =
+    selectedUserIdFromRedux || storedUserId || currentUserName;
 
-// 👉 If CONTI logged in or selected, map it to EGL1
-const effectiveUserName =
-  loggedInUserName === "CONTI" || selectedUserName === "CONTI"
-    ? "EGL1"
-    : selectedUserName;
+  // 👉 If CONTI logged in or selected, map it to EGL1
+  const effectiveUserName =
+    loggedInUserName === "CONTI" || selectedUserName === "CONTI"
+      ? "EGL1"
+      : selectedUserName;
 
-console.log("🔹 Effective username for data fetch:", effectiveUserName);
-
+  console.log("🔹 Effective username for data fetch:", effectiveUserName);
 
   // ### NEW: useEffect to handle simulated data for user EGL2 ###
   useEffect(() => {
-    if (currentUserName === 'EGL2') {
+    if (currentUserName === "EGL2") {
       const simulatedData = {
-        TURB: 1.01,                                     // Turbidity: fixed value
-        Temp: 28.5 + (Math.random() * 0.5 - 0.25),      // Temperature: ~28.5
-        TEMP: 28.5 + (Math.random() * 0.5 - 0.25),      // Temperature (alternative key)
-        BOD: Math.random() * 9 + 1,                     // BOD: < 10 (value between 1 and 10)
-        COD: Math.random() * 28 + 2,                    // COD: < 30 (value between 2 and 30)
-        TSS: Math.random() * 4 + 1,                     // TSS: < 5 (value between 1 and 5)
+        TURB: 1.01, // Turbidity: fixed value
+        Temp: 28.5 + (Math.random() * 0.5 - 0.25), // Temperature: ~28.5
+        TEMP: 28.5 + (Math.random() * 0.5 - 0.25), // Temperature (alternative key)
+        BOD: Math.random() * 9 + 1, // BOD: < 10 (value between 1 and 10)
+        COD: Math.random() * 28 + 2, // COD: < 30 (value between 2 and 30)
+        TSS: Math.random() * 4 + 1, // TSS: < 5 (value between 1 and 5)
       };
       setEgl2SimulatedData(simulatedData);
     } else {
@@ -230,7 +228,7 @@ console.log("🔹 Effective username for data fetch:", effectiveUserName);
     { parameter: "TDS", value: "mg/l", name: "TDS" },
     { parameter: "Turbidity", value: "NTU", name: "TURB" },
     { parameter: "Temperature", value: "℃", name: "Temp" },
-  /*   { parameter: "Temperature", value: "℃", name: "TEMP" }, */
+    /*   { parameter: "Temperature", value: "℃", name: "TEMP" }, */
 
     //ammonicalNitrogen
     {
@@ -407,39 +405,39 @@ console.log("🔹 Effective username for data fetch:", effectiveUserName);
       fetchEffluentStacks(currentUserName); 
     }
   }, [searchTerm, currentUserName, dispatch]); */
- const fetchFallbackEffluentData = async (userName) => {
-  try {
-    const res = await axios.get(`${API_URL}/api/latest/${userName}`);
-    const allData = res.data?.data || [];
+  const fetchFallbackEffluentData = async (userName) => {
+    try {
+      const res = await axios.get(`${API_URL}/api/latest/${userName}`);
+      const allData = res.data?.data || [];
 
-    const processed = {};
+      const processed = {};
 
-    allData.forEach(entry => {
-      if (entry.stackData && Array.isArray(entry.stackData)) {
-        // Look for effluent stacks within any entry
-        const effluentStacks = entry.stackData.filter(stack => 
-          stack.stationType === "effluent"
-        );
-        
-        effluentStacks.forEach(item => {
-          if (item.stackName) {
-            processed[item.stackName] = item;
-          }
-        });
-      }
-    });
+      allData.forEach((entry) => {
+        if (entry.stackData && Array.isArray(entry.stackData)) {
+          // Look for effluent stacks within any entry
+          const effluentStacks = entry.stackData.filter(
+            (stack) => stack.stationType === "effluent"
+          );
 
-    return processed;
-  } catch (err) {
-    console.error("Error fetching fallback effluent data:", err.message);
-    return {};
-  }
-};
+          effluentStacks.forEach((item) => {
+            if (item.stackName) {
+              processed[item.stackName] = item;
+            }
+          });
+        }
+      });
+
+      return processed;
+    } catch (err) {
+      console.error("Error fetching fallback effluent data:", err.message);
+      return {};
+    }
+  };
 
   const handleStackDataUpdate = async (data) => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
-   console.log(`Real-time data for ${effectiveUserName}:`, data);
-if (data.userName !== effectiveUserName) return;
+    console.log(`Real-time data for ${effectiveUserName}:`, data);
+    if (data.userName !== effectiveUserName) return;
     setExceedanceColor(data.ExceedanceColor || "green");
     setTimeIntervalColor(data.timeIntervalColor || "green");
 
@@ -459,18 +457,18 @@ if (data.userName !== effectiveUserName) return;
 
     // Fallback to latest API if no real-time data
     console.log("No real-time effluent data. Using fallback...");
-const fallback = await fetchFallbackEffluentData(effectiveUserName);
+    const fallback = await fetchFallbackEffluentData(effectiveUserName);
     setRealTimeData(fallback);
   };
   useEffect(() => {
     const userName = selectedUserIdFromRedux || storedUserId || currentUserName;
     resetColors();
 
-   fetchData(effectiveUserName);
-  fetchEffluentStacks(effectiveUserName);
+    fetchData(effectiveUserName);
+    fetchEffluentStacks(effectiveUserName);
 
-     socket.emit("joinRoom", { userId: effectiveUserName });
-  socket.on("stackDataUpdate", handleStackDataUpdate);
+    socket.emit("joinRoom", { userId: effectiveUserName });
+    socket.on("stackDataUpdate", handleStackDataUpdate);
     // ⏳ Fallback to latest API after 5s if no real-time data
     const fallbackTimeout = setTimeout(async () => {
       if (Object.keys(realTimeData).length === 0) {
@@ -755,20 +753,25 @@ const fallback = await fetchFallbackEffluentData(effectiveUserName);
                 <div className="container-fluid water">
                   <div className="row">
                     <div className="col-lg-12 col-12 mt-2">
-                <div className="d-flex align-items-center mt-5">
-  {/* The heading grows to fill the space, and its text is centered within it */}
-  <h5 className="flex-grow-1 text-center m-0">
-    <b>EFFLUENT DASHBOARD</b>
-  </h5>
+                      <div className="d-flex align-items-center mt-5">
+                        {/* The heading grows to fill the space, and its text is centered within it */}
+                        <h5 className="flex-grow-1 text-center m-0">
+                          <b>EFFLUENT DASHBOARD</b>
+                        </h5>
 
-  {/* The logo will be pushed to the end, shown only for specific users */}
-  {(userData?.validUserOne?.userName === "admin1_001" ||
-    userData?.validUserOne?.userName === "CONTI" ||
-    selectedUserIdFromRedux === "CONTI" ||
-    currentUserName === "CONTI") && (
-    <img src={wipro} alt="Logo" width={'210px'} height={'60px'} />
-  )}
-</div>
+                        {/* The logo will be pushed to the end, shown only for specific users */}
+                        {(userData?.validUserOne?.userName === "admin1_001" ||
+                          userData?.validUserOne?.userName === "CONTI" ||
+                          selectedUserIdFromRedux === "CONTI" ||
+                          currentUserName === "CONTI") && (
+                          <img
+                            src={wipro}
+                            alt="Logo"
+                            width={"210px"}
+                            height={"60px"}
+                          />
+                        )}
+                      </div>
 
                       {/* operator checkout button */}
                       {isSpecialUser && (
@@ -974,16 +977,16 @@ const fallback = await fetchFallbackEffluentData(effectiveUserName);
                               (stack, stackIndex) => (
                                 <div key={stackIndex} className="col-12 mb-4">
                                   <div className="stack-box">
-                                  {stack.stackName === "STP" && (
-  <h4 className="text-center">
-    {stack.stackName}{" "}
-    <img
-      src={effluent}
-      alt="energy image"
-      width="100px"
-    />
-  </h4>
-)}
+                                    {stack.stackName === "STP" && (
+                                      <h4 className="text-center">
+                                        {stack.stackName}{" "}
+                                        <img
+                                          src={effluent}
+                                          alt="energy image"
+                                          width="100px"
+                                        />
+                                      </h4>
+                                    )}
                                     <div className="row">
                                       {waterParameters.map((item, index) => {
                                         // 1) Grab the raw value from the stack data
@@ -991,20 +994,30 @@ const fallback = await fetchFallbackEffluentData(effectiveUserName);
 
                                         // ### MODIFICATIONS START ###
                                         // Override for EGLH user's pH if the value is 0
-                                        if (currentUserName === 'EGLH' && item.name === 'ph' && value === 0) {
-                                            value = dynamicPhValue;
+                                        if (
+                                          currentUserName === "EGLH" &&
+                                          item.name === "ph" &&
+                                          value === 0
+                                        ) {
+                                          value = dynamicPhValue;
                                         }
 
                                         // Override for EGL2 user with simulated data
-                                        if (currentUserName === 'EGL2' && egl2SimulatedData && egl2SimulatedData[item.name] !== undefined) {
-                                            value = egl2SimulatedData[item.name];
+                                        if (
+                                          currentUserName === "EGL2" &&
+                                          egl2SimulatedData &&
+                                          egl2SimulatedData[item.name] !==
+                                            undefined
+                                        ) {
+                                          value = egl2SimulatedData[item.name];
                                         }
                                         // ### MODIFICATIONS END ###
 
                                         // Override for EGL5 if the raw value is exactly 0
                                         if (isEGL5 && value === 0) {
                                           if (item.name === "BOD") value = 6.78;
-                                          if (item.name === "COD") value = 25.89;
+                                          if (item.name === "COD")
+                                            value = 25.89;
                                         }
 
                                         // Skip rendering the card if the value is missing, null, or "N/A"
