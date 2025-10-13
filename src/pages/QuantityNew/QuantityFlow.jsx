@@ -487,12 +487,12 @@ useEffect(() => {
   <h4 className="flex-grow-1 text-center m-0">
     <b>FLOW DASHBOARD</b>
   </h4>
-  {(userData?.validUserOne?.userName === "admin1_001" ||
+  {/* {(userData?.validUserOne?.userName === "admin1_001" ||
     userData?.validUserOne?.userName === "CONTI" ||
     selectedUserIdFromRedux === "CONTI" ||
     currentUserName === "CONTI") && (
     <img src={wipro} alt="Logo" width={'200px'} height={'60px'} />
-  )}
+  )} */}
 </div>
         <ul
           className="d-flex align-items-center justify-content-end mb-4"

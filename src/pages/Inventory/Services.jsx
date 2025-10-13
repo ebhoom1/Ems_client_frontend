@@ -197,13 +197,13 @@ const Services = () => {
               <HeaderSim />
             </div>
             <div className="col-12" style={{ marginTop: "80px" }}>
-              {(userData?.validUserOne?.userName === "admin1_001" ||
+              {/* {(userData?.validUserOne?.userName === "admin1_001" ||
                 userData?.validUserOne?.userName === "CONTI" ||
                 currentUserName === "CONTI") && (
                 <div className="d-flex justify-content-end">
                   <img src={wipro} alt="Logo" width={"220px"} height={"70px"} />
                 </div>
-              )}
+              )} */}
               <div className="row gx-3 gy-2 justify-content-center">
                 <div className="col-12 col-sm-6 col-md-4 col-lg-3">
                   <button

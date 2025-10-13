@@ -283,11 +283,11 @@ const Summary = () => {
         </div>
         <div className="col-lg-9 col-12">
           <Hedaer />
-{(activeUser === "CONTI" || activeUser === "EGL1") && (
+{/* {(activeUser === "CONTI" || activeUser === "EGL1") && (
             <div className="d-flex justify-content-end  me-3" style={{marginTop:'60px'}}>
               <img src={wipro} alt="Wipro Logo" width="200" height="70" />
             </div>
-          )}
+          )} */}
           <div className="summary-top-bar d-flex justify-content-between align-items-center p-3 border mt-5">
            <h2 className="company-name">
   {effectiveUserName === "EGL1" || effectiveUserName === "CONTI"

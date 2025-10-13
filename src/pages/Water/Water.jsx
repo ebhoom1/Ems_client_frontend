@@ -780,7 +780,7 @@ const wtpParameters = [
                         </h5>
 
                         {/* The logo will be pushed to the end, shown only for specific users */}
-                        {(userData?.validUserOne?.userName === "admin1_001" ||
+                       {/*  {(userData?.validUserOne?.userName === "admin1_001" ||
                           userData?.validUserOne?.userName === "CONTI" ||
                           selectedUserIdFromRedux === "CONTI" ||
                           currentUserName === "CONTI") && (
@@ -790,7 +790,7 @@ const wtpParameters = [
                             width={"210px"}
                             height={"60px"}
                           />
-                        )}
+                        )} */}
                       </div>
 
                       {/* operator checkout button */}

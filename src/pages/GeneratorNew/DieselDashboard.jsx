@@ -303,16 +303,16 @@ export default function DieselDashboard() {
           </div>
 
           {/* 🔹 Show Wipro logo + mock banner */}
-          {isMockUser && (
+         {/*  {isMockUser && (
             <div className="d-flex justify-content-between align-items-center  px-3" style={{marginTop:'60px'}}>
               <div>
               
               </div>
               <img src={wipro} alt="Wipro Logo" width="210px" height="70px" />
             </div>
-          )}
+          )} */}
 
-          <div className="p-8 bg-gray-100 min-h-screen text-gray-900 mt-4">
+          <div className="p-8 bg-gray-100 min-h-screen text-gray-900 mt-5">
             <KpiCards summary={kpiData} />
 
             <Row className="g-4 mb-4">

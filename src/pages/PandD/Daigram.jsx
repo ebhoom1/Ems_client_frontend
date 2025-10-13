@@ -56,9 +56,9 @@ export default function Daigram() {
           </div>
 
           {/* Logo */}
-          <div className="d-flex justify-content-end">
+         {/*  <div className="d-flex justify-content-end">
             <img src={wipro} alt="Wipro Logo" width="220px" height="70px" />
-          </div>
+          </div> */}
 
           {/* NEW: Water Quality Section with Fixed 3-Column Boxes */}
           <div className="water-quality-section">
