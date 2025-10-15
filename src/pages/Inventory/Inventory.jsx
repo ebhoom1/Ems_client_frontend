@@ -234,20 +234,26 @@ const Inventory = () => {
   const adminType = userData?.validUserOne?.adminType;
 
   useEffect(() => {
-    if (userType === "admin") {
-      (async () => {
-        try {
-          const res = await fetch(
-            `${API_URL}/api/get-users-by-adminType/${adminType}`
-          );
-          const body = await res.json();
-          setModalUsers(body.users || []);
-        } catch (err) {
-          toast.error("Error fetching user list");
-        }
-      })();
-    }
-  }, [userType, adminType]);
+  if (userType === "admin") {
+    (async () => {
+      try {
+        const res = await fetch(
+          `${API_URL}/api/get-users-by-adminType/${adminType}`
+        );
+        const body = await res.json();
+        // If logged-in user is admin1_001, filter out all other users and only show RMZLTD
+        const usersToShow =
+          userData?.validUserOne?.userName === "admin1_001"
+            ? body.users.filter((user) => user.userName === "RMZLTD")
+            : body.users;
+        setModalUsers(usersToShow || []);
+      } catch (err) {
+        toast.error("Error fetching user list");
+      }
+    })();
+  }
+}, [userType, adminType]);
+
 
   // Consolidated useEffect for fetching equipmentList based on userType
   useEffect(() => {
@@ -293,12 +299,12 @@ const Inventory = () => {
     <>
       {/* Top-level navigation (always visible for all users) */}
       <div className="col-12" style={{ marginTop: '40px' }}>
-{(userData?.validUserOne?.userName === "admin1_001" ||
+{/* {(userData?.validUserOne?.userName === "admin1_001" ||
     userData?.validUserOne?.userName === "CONTI" ||
    
     currentUserName === "CONTI") && (
    <div className=" d-flex justify-content-end"> <img src={wipro} alt="Logo" width={'220px'} height={'70px'} /></div>
-  )}   
+  )}  */}  
     <div className="row gx-3 gy-2 justify-content-center mb-4">
         <div className="col-12 col-sm-6 col-md-4 col-lg-3">
           <button
@@ -860,18 +866,19 @@ const Inventory = () => {
                       />
                     </div>
                     <div className="modal-body">
-                      <select
-                        className="form-select"
-                        value={selectedModalUser}
-                        onChange={(e) => setSelectedModalUser(e.target.value)}
-                      >
-                        <option value="">-- Select a user --</option>
-                        {modalUsers.map((u) => (
-                          <option key={u.userName} value={u.userName}>
-                            {u.userName}
-                          </option>
-                        ))}
-                      </select>
+                    <select
+  className="form-select"
+  value={selectedModalUser}
+  onChange={(e) => setSelectedModalUser(e.target.value)}
+>
+  <option value="">-- Select a user --</option>
+  {modalUsers.map((u) => (
+    <option key={u.userName} value={u.userName}>
+      {u.userName}
+    </option>
+  ))}
+</select>
+
                     </div>
                     <div className="modal-footer">
                       <button

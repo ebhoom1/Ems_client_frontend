@@ -550,6 +550,26 @@ const Water = () => {
   const handleStackChange = (event) => {
     setSelectedStack(event.target.value);
   };
+const wtpParameters = [
+  {
+    parameter: "pH",
+    value: "7.46 pH", // Unit
+    name: "ph",
+    displayValue: "7.85", // Simulated value
+  },
+  {
+    parameter: "Turbidity",
+    value: "0.01 NTU", // Unit
+    name: "TURB",
+    displayValue: "0.52", // Simulated value
+  },
+  {
+    parameter: "TDS",
+    value: "155.40 mg/l", // Unit
+    name: "TDS",
+    displayValue: "155.40", // Simulated value
+  },
+];
 
   const filteredData =
     selectedStack === "all"
@@ -760,7 +780,7 @@ const Water = () => {
                         </h5>
 
                         {/* The logo will be pushed to the end, shown only for specific users */}
-                        {(userData?.validUserOne?.userName === "admin1_001" ||
+                       {/*  {(userData?.validUserOne?.userName === "admin1_001" ||
                           userData?.validUserOne?.userName === "CONTI" ||
                           selectedUserIdFromRedux === "CONTI" ||
                           currentUserName === "CONTI") && (
@@ -770,7 +790,7 @@ const Water = () => {
                             width={"210px"}
                             height={"60px"}
                           />
-                        )}
+                        )} */}
                       </div>
 
                       {/* operator checkout button */}
@@ -873,24 +893,30 @@ const Water = () => {
                                 {effluentStacks.length > 0 ? (
                                   <div className="stack-dropdown">
                                     <div className="styled-select-wrapper">
-                                      <select
-                                        id="stackSelect"
-                                        className="form-select styled-select"
-                                        value={selectedStack}
-                                        onChange={handleStackChange}
-                                      >
-                                        <option value="all">All Stacks</option>
-                                        {effluentStacks.map(
-                                          (stackName, index) => (
-                                            <option
-                                              key={index}
-                                              value={stackName || "Unknown"}
-                                            >
-                                              {stackName || "Unknown Station"}
-                                            </option>
-                                          )
-                                        )}
-                                      </select>
+
+<select
+  id="stackSelect"
+  className="form-select styled-select"
+  value={selectedStack}
+  onChange={handleStackChange}
+>
+  <option value="all">All Stacks</option>
+  
+  {/* START: ADD THIS NEW OPTION */}
+  <option value="WTP">WTP</option>
+  {/* END: ADD THIS NEW OPTION */}
+
+  {effluentStacks.map(
+    (stackName, index) => (
+      <option
+        key={index}
+        value={stackName || "Unknown"}
+      >
+        {stackName || "Unknown Station"}
+      </option>
+    )
+  )}
+</select>
                                     </div>
                                   </div>
                                 ) : (
@@ -963,12 +989,149 @@ const Water = () => {
                         </div>
                       </div>
                       <div className="row mb-5">
+                       <div
+  className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
+  style={{
+    height: "65vh",
+    overflowY: "scroll",
+    borderRadius: "15px",
+  }}
+>
+  {/* --- START: Conditional Rendering Logic --- */}
+
+  {selectedStack === "WTP" ? (
+    // If 'WTP' is selected, display its static cards
+    <div className="col-12 mb-4">
+      <div className="stack-box">
+        <h4 className="text-center mt-3">WTP </h4>
+        <div className="row mt-4">
+          {wtpParameters.map((item, index) => (
+            <div
+              className="col-12 col-md-4 grid-margin"
+              key={index}
+            >
+              <div
+                className="card mb-3"
+                style={{
+                  border: "none",
+                  // Replicating your original card style
+                }}
+              >
+                <div className="card-body">
+                  <h5 className="text-light">{item.parameter}</h5>
+                  <p className="text-light">
+                    <strong style={{ color: "#fff", fontSize: "24px" }}>
+                      {item.value}
+                    </strong>{" "}
+                    {item.unit}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+  ) : (
+
+    // ELSE, use the original logic for real-time data (STP, etc.)
+    <>
+      {!loading && Object.values(realTimeData).length > 0 ? (
+        Object.values(realTimeData).map((stack, stackIndex) => (
+          <div key={stackIndex} className="col-12 mb-4">
+            <div className="stack-box">
+              {stack.stackName === "STP" && (
+                <h4 className="text-center">
+                  {stack.stackName}{" "}
+                  <img src={effluent} alt="energy image" width="100px" />
+                </h4>
+              )}
+              <div className="row">
+                {waterParameters.map((item, index) => {
+                  // 1) Grab the raw value from the stack data
+                  let value = stack[item.name];
+
+                  // Your existing override logic
+                  if (currentUserName === "EGLH" && item.name === "ph" && value === 0) {
+                    value = dynamicPhValue;
+                  }
+                  if (currentUserName === "EGL2" && egl2SimulatedData && egl2SimulatedData[item.name] !== undefined) {
+                    value = egl2SimulatedData[item.name];
+                  }
+                  if (isEGL5 && value === 0) {
+                    if (item.name === "BOD") value = 6.78;
+                    if (item.name === "COD") value = 25.89;
+                  }
+
+                  // Skip rendering the card if the value is missing
+                  if (value === undefined || value === null || value === "N/A") {
+                    return null;
+                  }
+
+                  return (
+                    <div
+                      className="col-12 col-md-4 grid-margin"
+                      key={index}
+                      onClick={() => handleCardClick({ title: item.name }, stack.stackName)}
+                    >
+                      <div
+                        className="card mb-3"
+                        style={{
+                          border: "none",
+                          cursor: "pointer",
+                          // Replicating your original card style
+                        }}
+                      >
+                        <div className="card-body">
+                          <h5 className="text-light">{item.parameter}</h5>
+                          <p className="text-light">
+                            <strong style={{ color: "#fff", fontSize: "24px" }}>
+                              {parseFloat(value).toFixed(2)}
+                            </strong>{" "}
+                            {item.value}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Your second, potentially redundant row logic is preserved here */}
+              <div className="row">
+                {(() => {
+                  const allStacks = (
+                    Array.isArray(realTimeData)
+                      ? realTimeData
+                      : Object.values(realTimeData)
+                  ).flatMap((entry) => entry.stackData || []);
+
+                  const stpStack = allStacks.find(
+                    (s) => s?.stackName === "STP"
+                  );
+                  if (!stpStack) return null;
+
+                  return waterParameters.map((item) => {
+                    const value = stpStack[item.name];
+                    const displayValue =
+                      value !== undefined && value !== null && value !== "N/A"
+                        ? parseFloat(value).toFixed(2)
+                        : "";
+                    // This section will only render cards if a stack is named 'STP'
+                    // To avoid empty space, we only render if there's a value
+                    if (!displayValue) return null;
+
+                    return (
+                      <div key={`${item.name}-extra`} className="col-6 col-md-4 col-lg-2 mb-3">
                         <div
-                          className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
+                          className="card h-100 text-center text-white"
                           style={{
-                            height: "65vh",
-                            overflowY: "scroll",
-                            borderRadius: "15px",
+                            borderRadius: "12px",
+                            minHeight: "100px",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
                           }}
                         >
                           {!loading &&
@@ -1164,6 +1327,26 @@ const Water = () => {
                             </div>
                           )}
                         </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="col-12">
+          <h5 className="text-center mt-5">
+            Waiting for real-time data...
+          </h5>
+        </div>
+      )}
+    </>
+  )}
+  {/* --- END: Conditional Rendering Logic --- */}
+</div>
 
                         <div
                           className="col-md-12 col-lg-12 col-sm-12 mb-2 graphdiv border bg-light shadow"

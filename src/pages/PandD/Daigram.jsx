@@ -5,6 +5,41 @@ import wipro from "../../assests/images/wipro.png";
 import pdf from "../../assests/images/pdfofwipro.png";
 import "./Daigram.css";
 
+// Updated data structure for better styling control (value + unit)
+const waterQualityData = [
+  {
+    label: "Resistivity @ 25°C",
+    value: "> 18.2",
+    unit: "MΩ-cm",
+  },
+  {
+    label: "Total Organic Carbon",
+    value: "< 20",
+    unit: "ppb",
+  },
+  {
+    label: "Bacteria",
+    value: "< 100",
+    unit: "cfu/ml",
+  },
+  {
+    label: "Total Silica",
+    value: "< 2",
+    unit: "ppb",
+  },
+  {
+    label: ">1μm Particle",
+    value: "≤ 0.01",
+    unit: "个/ML",
+  },
+  // You can add a 6th item here to complete the second row
+  {
+    label: "Temperature",
+    value: "27.32",
+    unit: "°C",
+  },
+];
+
 export default function Daigram() {
   return (
     <div className="container-fluid">
@@ -21,50 +56,27 @@ export default function Daigram() {
           </div>
 
           {/* Logo */}
-          <div className="d-flex justify-content-end">
+         {/*  <div className="d-flex justify-content-end">
             <img src={wipro} alt="Wipro Logo" width="220px" height="70px" />
-          </div>
+          </div> */}
 
-          {/* Redesigned Water Quality Table */}
-          <div className="modern-quality-card">
-            <div className="modern-table-header">
-              <h5>TREATED WATER QUALITY</h5>
-            </div>
-            <div className="modern-table-body">
-              <div className="modern-row modern-head">
-                <div>Sr. No.</div>
-                <div>Parameter</div>
-                <div>Specification</div>
-              </div>
-              <div className="modern-row">
-                <div>1</div>
-                <div>Resistivity @ 25°C</div>
-                <div>&gt; 18.2 MΩ-cm</div>
-              </div>
-              <div className="modern-row">
-                <div>2</div>
-                <div>Total Organic Carbon</div>
-                <div>&lt; 20 ppb</div>
-              </div>
-              <div className="modern-row">
-                <div>3</div>
-                <div>Bacteria</div>
-                <div>&lt; 100 cfu/ml</div>
-              </div>
-              <div className="modern-row">
-                <div>4</div>
-                <div>Total Silica</div>
-                <div>&lt; 2 ppb</div>
-              </div>
-              <div className="modern-row">
-                <div>5</div>
-                <div>&gt;1μm Particle</div>
-                <div>≤ 0.01 个/ML</div>
-              </div>
+          {/* NEW: Water Quality Section with Fixed 3-Column Boxes */}
+          <div className="water-quality-section">
+            <h4 className="text-center"><b>TREATED WATER QUALITY</b></h4>
+            <div className="quality-grid-fixed">
+              {waterQualityData.map((item, index) => (
+                <div key={index} className="quality-card-dark">
+                  <div className="card-label">{item.label}</div>
+                  <div className="card-value-container">
+                    <span className="card-value-main">{item.value}</span>
+                    <span className="card-value-unit">{item.unit}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* PDF Image */}
+          {/* Diagram Image */}
           <div className="pdf-container-new">
             <img src={pdf} alt="Wipro PDF" className="pdf-image-new" />
           </div>

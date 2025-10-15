@@ -5,7 +5,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { API_URL } from "../../utils/apiConfig";
-import wipro from '../../assests/images/wipro.png'
+import wipro from '../../assests/images/wiprologonew.png'
 function DashboardSam() {
   const { userData, userType } = useSelector((state) => state.user);
   const validUser = userData?.validUserOne || {};
@@ -62,21 +62,34 @@ console.log('isSpecialUser',isSpecialUser);
     <div className="dashboard-sam">
       <div className="navdash">
         <ul className="menu">
-          <div className="text-center">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={`${userName} Logo`}
-                style={{
-                  maxWidth: "120px",
-                  maxHeight: "120px",
-                  marginBottom: "10px",
-                }}
-              />
-            ) : (
-              <span>Loading logo...</span>
-            )}
-          </div>
+        <div className="text-center">
+  {isSpecialUser ? (
+    <img
+      src={wipro}
+      alt="Wipro Water Logo"
+      style={{
+        maxWidth: "220px",
+        maxHeight: "190px",
+        marginBottom: "10px",
+        borderRadius: "8px",
+      }}
+    />
+  ) : logoUrl ? (
+    <img
+      src={logoUrl}
+      alt={`${userName} Logo`}
+      style={{
+        maxWidth: "120px",
+        maxHeight: "120px",
+        marginBottom: "10px",
+      }}
+    />
+  ) : (
+    <span style={{ color: "#fff", fontSize: "12px" }}>Loading logo...</span>
+  )}
+</div>
+
+
 {/*  <div>
   <img src={wipro} alt="" width={'200px'} height={'50px'} className="ms-3" />
 </div>  */}
