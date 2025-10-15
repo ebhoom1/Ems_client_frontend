@@ -42,26 +42,26 @@
 .tanknode__hgauge {
   display: block;
   flex: 0 0 auto;
-}
- */
+} */
+
 
  .tanknode {
   background: transparent;          
   color: inherit;                    
   border: 2px solid #ddd;
   border-radius: 10px;
-  padding: 6px 8px;
-  min-width: 120px;
-  max-width: 220px;
+  padding: 18px 12px;
+  min-width: 320px;
+  max-width: 420px;
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
 }
 
 .tanknode__title {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.2rem;
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -70,7 +70,7 @@
 }
 
 .tanknode__value {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }

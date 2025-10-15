@@ -299,6 +299,22 @@ function AutonerveLayout() {
               >
                 {isEditMode ? "View Mode" : "Edit Mode"}
               </button>
+              {isEditMode && (
+                  <button
+                    onClick={handleCreateNew}
+                    className="new-station-button"
+                  >
+                    + New Station
+                  </button>
+                )}
+
+               <div className="forced-center">
+                {isEditMode ? (
+                  <div className="forced-iconbar">
+                    <Iconbar onFileDrop={handleFileDrop} />
+                  </div>
+                ) : null}
+              </div>
               {!isEditMode && (
                 <div className="saved-stations-list">
                   {savedStations.length > 0 ? (

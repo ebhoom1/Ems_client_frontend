@@ -34,7 +34,7 @@ import "./userlog.css";
 import Admins from "./Admins";
 import axios from "axios";
 import { API_URL } from "../../utils/apiConfig";
-import wipro from '../../assests/images/wipro.png'
+import wipro from "../../assests/images/wipro.png";
 const UsersLog = () => {
   const dispatch = useDispatch();
   const {
@@ -110,6 +110,7 @@ const UsersLog = () => {
     isTerritorialManager: false,
     isTechnician: false,
     isOperator: false,
+    engineerVisitNo: "",
   });
 
   const [userName, setUserName] = useState("");
@@ -514,7 +515,7 @@ const UsersLog = () => {
       // send everything, including formData.operators
       await dispatch(addUser(payload)).unwrap();
       toast.success("User added successfully", { position: "top-center" });
-
+console.log("formData:",payload);
       // reset all fields — operators too
       setformData({
         userName: "",
@@ -541,6 +542,7 @@ const UsersLog = () => {
         // reset operators array
         operators: [],
         territorialManager: "",
+       
       });
 
       // dispatch(fetchUsers());
@@ -879,17 +881,24 @@ const UsersLog = () => {
             </div>
           </div>
           <div className="row mt-4">
-           <div className="row mt-4">
-  <div className="col-12">
-    <div className="d-flex align-items-center">
-      <h1 className="flex-grow-1 text-center m-0">Control and Monitor</h1>
-      {(userData?.validUserOne?.userName === "admin1_001" ||
-        userData?.validUserOne?.userName === "CONTI") && (
-        <img src={wipro} alt="Logo" width={'200px'} height={'60px'} />
-      )}
-    </div>
-  </div>
-</div>
+            <div className="row mt-4">
+              <div className="col-12">
+                <div className="d-flex align-items-center">
+                  <h1 className="flex-grow-1 text-center m-0">
+                    Control and Monitor
+                  </h1>
+                  {(userData?.validUserOne?.userName === "admin1_001" ||
+                    userData?.validUserOne?.userName === "CONTI") && (
+                    <img
+                      src={wipro}
+                      alt="Logo"
+                      width={"200px"}
+                      height={"60px"}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
           <div className="row justify-content-center">
             <div className="col-12">
@@ -1655,7 +1664,7 @@ const UsersLog = () => {
                             <option value="Genex">Genex</option>
                             <option value="Banka_bio">Banka Bio</option>
                             <option value="IESS">IESS</option>
-                                <option value="IESS">Expo</option>
+                            <option value="IESS">Expo</option>
 
                             {/* Add options for companies */}
                           </select>
@@ -1853,6 +1862,31 @@ const UsersLog = () => {
                               ) : null;
                             })}
                           </div>
+                        </div>
+                      </div>
+                      {/* Engineer Visit No */}
+                      <div className="col-lg-6 col-md-6 mb-4">
+                        <div className="form-group">
+                          <label
+                            htmlFor="engineerVisitNo"
+                            className="form-label text-light"
+                          >
+                            Engineer Visit No
+                          </label>
+                          <input
+                            id="engineerVisitNo"
+                            type="text"
+                            placeholder="Enter Engineer Visit Number"
+                            value={formData.engineerVisitNo}
+                            onChange={handleInputChange}
+                            name="engineerVisitNo"
+                            className="form-control"
+                            style={{
+                              width: "100%",
+                              padding: "15px",
+                              borderRadius: "10px",
+                            }}
+                          />
                         </div>
                       </div>
 
@@ -2742,7 +2776,11 @@ const UsersLog = () => {
               <option value="KSPCB">KSPCB</option>
               <option value="IESS">IESS</option>
             </select>
-            <Button type="submit" style={{backgroundColor:'#236a80', color:'#fff'}} className="btn  w-100">
+            <Button
+              type="submit"
+              style={{ backgroundColor: "#236a80", color: "#fff" }}
+              className="btn  w-100"
+            >
               Add Technician
             </Button>
           </form>

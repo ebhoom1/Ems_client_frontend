@@ -9,7 +9,7 @@ import { API_URL } from "../../utils/apiConfig";
 import Dashboard from "../Dashboard/Dashboard";
 import DashboardSam from "../Dashboard/DashboardSam";
 import HeaderSim from "../Header/HeaderSim";
-import genexlogo from '../../assests/images/logonewgenex.png'
+import genexlogo from "../../assests/images/logonewgenex.png";
 
 export default function AdminReport() {
   const { username } = useParams();
@@ -85,12 +85,19 @@ export default function AdminReport() {
     );
 
     // Now take screenshot
-  const canvas = await html2canvas(reportRef.current, {
-  scale: 2,
-  useCORS: true,
-  allowTaint: false,
-  logging: true
-});
+    //   const canvas = await html2canvas(reportRef.current, {
+    //   scale: 2,
+    //   useCORS: true,
+    //   allowTaint: false,
+    //   logging: true
+    // });
+    const canvas = await html2canvas(reportRef.current, {
+      scale: 3, // better clarity for wide tables
+      useCORS: true,
+      allowTaint: false,
+      scrollX: 0,
+      scrollY: 0,
+    });
 
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({
@@ -211,7 +218,7 @@ export default function AdminReport() {
       </div>
 
       {/* PDF CONTENT */}
-      <div
+      {/* <div
         ref={reportRef}
         style={{
           fontFamily: "Arial, sans-serif",
@@ -222,6 +229,20 @@ export default function AdminReport() {
           padding: 10,
           border: "1px solid #000",
         }}
+      > */}
+      <div
+        ref={reportRef}
+        style={{
+          fontFamily: "Arial, sans-serif",
+          fontSize: "12px",
+          lineHeight: 1.2,
+          color: "#000",
+          background: "#fff",
+          padding: 10,
+          border: "1px solid #000",
+          width: "2400px", // <-- expanded width for all columns
+          overflowX: "auto", // enables horizontal scrolling on screen
+        }}
       >
         {/* Header */}
         <div
@@ -229,7 +250,7 @@ export default function AdminReport() {
           style={{ background: "#236a80", color: "#fff", padding: "10px" }}
         >
           {/* Logo on the left */}
-        <img
+          <img
             crossOrigin="anonymous"
             src={genexlogo}
             alt="Genex logo"
@@ -286,8 +307,6 @@ export default function AdminReport() {
         {/* MAIN TABLE */}
         <div
           style={{
-           /*  overflowX: "auto",
-            maxHeight: "60vh", */
             border: "1px solid #000",
             padding: "5px",
           }}
@@ -645,8 +664,8 @@ export default function AdminReport() {
                   }}
                 >
                   <img
-                   crossOrigin="anonymous"
-                   src={url}
+                    crossOrigin="anonymous"
+                    src={url}
                     alt={`Uploaded-${idx}`}
                     style={{
                       maxWidth: "100%",

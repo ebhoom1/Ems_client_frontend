@@ -32,3 +32,25 @@
   background: #e0f2ff;
   color: #0d3f66;
 }
+
+ @media print {
+  .no-print {
+    display: none !important;
+  }
+} 
+
+
+/* ... existing CSS ... */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  /* Add a margin and page break for report sections */
+  .report-page-break {
+    page-break-before: always !important;
+    margin-top: 30px !important; /* Adjust value as needed */
+    margin-bottom: 30px !important; /* Adjust value as needed */
+  }
+}

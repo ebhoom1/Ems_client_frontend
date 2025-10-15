@@ -64,6 +64,15 @@ export default function ServiceReportView() {
     textTransform: "uppercase",
   };
 
+  const pageBreakStyle = {
+  // Standard CSS property for page break avoidance
+  breakInside: "avoid",
+  // CSS for older WebKit (Chrome, Safari) - recommended for html2pdf
+  WebkitColumnBreakInside: "avoid",
+  // CSS for older Firefox/IE/Edge
+  pageBreakInside: "avoid",
+};
+
   // back button behavior
   useEffect(() => {
     const handlePopState = () =>
@@ -170,7 +179,7 @@ export default function ServiceReportView() {
       )
     );
     const opt = {
-      margin: [10, 10, 10, 10],
+      margin: [30, 10, 30, 10],
       filename: `Service_Report_${
         report?.equipmentName || equipmentInfo.equipmentName
       }_${new Date(report?.reportDate || Date.now())
@@ -246,6 +255,7 @@ export default function ServiceReportView() {
         borderCollapse: "collapse",
         marginBottom: 12,
         background: "#236a80",
+        ...pageBreakStyle
       }}
     >
       <tbody>
@@ -391,7 +401,7 @@ export default function ServiceReportView() {
         </div>
 
         {/* Classification Code */}
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: 12 ,...pageBreakStyle}}>
           <h4 style={subSectionTitleStyle}>CLASSIFICATION CODE:</h4>
           <div
             style={{

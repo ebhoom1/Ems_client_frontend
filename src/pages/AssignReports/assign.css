@@ -1,0 +1,16 @@
+tr, td, th {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.table {
+  page-break-inside: auto;
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    zoom: 1 !important;
+  }
+}

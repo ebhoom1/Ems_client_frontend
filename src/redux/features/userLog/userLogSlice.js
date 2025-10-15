@@ -120,6 +120,7 @@ export const addUser = createAsyncThunk(
           "Content-Type": "application/json",
         },
       });
+      console.log("response:",response.data);
       return response.data.storeData;
     } catch (error) {
       return rejectWithValue(error.response.data);

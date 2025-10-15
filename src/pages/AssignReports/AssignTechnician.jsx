@@ -1,10 +1,13 @@
-// import React, { useState, useEffect, useCallback } from "react";
+// import React, { useState, useEffect, useCallback, useRef } from "react";
 // import axios from "axios";
 // import { useSelector } from "react-redux";
 // import { API_URL } from "../../utils/apiConfig";
 // import { useNavigate } from "react-router-dom";
+// import html2canvas from "html2canvas";
+// import jsPDF from "jspdf";
 
 // const AssignTechnician = () => {
+//   const pageRef = useRef();
 //   const { userData } = useSelector((state) => state.user);
 //   console.log("userData:", userData?.validUserOne?._id);
 //   const [users, setUsers] = useState([]);
@@ -16,6 +19,7 @@
 //   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 //   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
 //   const navigate = useNavigate();
+
 //   // Statuses are now nested by year and month
 //   const fetchUsers = useCallback(async () => {
 //     try {
@@ -39,12 +43,36 @@
 //             user.isOperator !== true
 //         );
 //         setUsers(filtered);
+
+//         // ✅ Initialize persisted visit selections
+//         const initialStatuses = {};
+//         filtered.forEach((u) => {
+//           if (u.selectedVisits && u.selectedVisits.length > 0) {
+//             initialStatuses[u._id] = {
+//               ...initialStatuses[u._id],
+//               selectedVisits: u.selectedVisits,
+//             };
+//           }
+//         });
+//         setStatuses((prev) => ({ ...prev, ...initialStatuses }));
 //       } else if (currentUser.userType === "admin") {
 //         const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
 //         response = await axios.get(url);
 //         const fetchedUsers = response.data.users || [];
 //         const myUsers = fetchedUsers.filter((user) => user.userType === "user");
 //         setUsers(myUsers);
+
+//         // ✅ Initialize persisted visit selections
+//         const initialStatuses = {};
+//         myUsers.forEach((u) => {
+//           if (u.selectedVisits && u.selectedVisits.length > 0) {
+//             initialStatuses[u._id] = {
+//               ...initialStatuses[u._id],
+//               selectedVisits: u.selectedVisits,
+//             };
+//           }
+//         });
+//         setStatuses((prev) => ({ ...prev, ...initialStatuses }));
 //       } else {
 //         setUsers([]);
 //       }
@@ -57,13 +85,15 @@
 //   const fetchAssignments = async () => {
 //     try {
 //       const res = await axios.get(
-//         `${API_URL}/api/assignments?month=${selectedMonth + 1}&year=${selectedYear}`
+//         `${API_URL}/api/assignments?month=${
+//           selectedMonth + 1
+//         }&year=${selectedYear}`
 //       );
-  
+
 //       const assignmentData = res.data.data || [];
-  
+
 //       const newStatuses = {};
-  
+
 //       assignmentData.forEach((a) => {
 //         if (!newStatuses[a.userId]) {
 //           newStatuses[a.userId] = {};
@@ -74,18 +104,30 @@
 //           assignedToName: a.assignedToName,
 //         };
 //       });
-  
-//       setStatuses(newStatuses);
+
+//       // ✅ Merge assignments into existing statuses without removing selectedVisits
+//       setStatuses((prev) => {
+//         const merged = { ...prev };
+
+//         for (const userId in newStatuses) {
+//           merged[userId] = {
+//             ...(merged[userId] || {}),
+//             ...newStatuses[userId],
+//           };
+//         }
+
+//         return merged;
+//       });
 //     } catch (err) {
 //       console.error("Failed to fetch assignments:", err);
 //     }
 //   };
-  
+
 //   const fetchCompletionStatuses = async () => {
 //     const results = {};
 //     await Promise.all(
 //       users.map(async (user) => {
-//         const types = ["EPM", "MPM"];
+//         const types = ["EPM", "MPM", "Service"]; // Include Service here
 //         for (const type of types) {
 //           try {
 //             const res = await axios.get(
@@ -132,12 +174,14 @@
 //     fetchUsers();
 //     fetchTechnicians();
 //     fetchTerritoryManagers();
-//     fetchAssignments();
+//     fetchAssignments(); // Fetch assignments when component mounts or dependencies change
 //   }, [fetchUsers]);
 
+//   // Refetch assignments and completion statuses when month/year or users change
 //   useEffect(() => {
 //     if (users.length > 0) {
-//       fetchCompletionStatuses();
+//       fetchAssignments(); // Re-fetch assignments based on new date
+//       fetchCompletionStatuses(); // Re-fetch completion statuses based on new date
 //     }
 //   }, [users, selectedMonth, selectedYear]);
 
@@ -176,7 +220,6 @@
 //     }
 //   };
 
-  
 //   const toggleDropdown = (userId, type) => {
 //     const dropdownId = `${userId}-${type}`;
 //     if (openDropdown === dropdownId) {
@@ -185,6 +228,64 @@
 //       setOpenDropdown(dropdownId);
 //     }
 //   };
+
+  // const handleDownloadPDF = async () => {
+  //   try {
+  //     const element = pageRef.current;
+  //     const canvas = await html2canvas(element, {
+  //       scale: 2, // better quality
+  //       useCORS: true,
+  //       logging: false,
+  //       scrollX: 0,
+  //       scrollY: 0,
+  //       windowWidth: document.documentElement.scrollWidth,
+  //       windowHeight: document.documentElement.scrollHeight,
+  //     });
+
+  //     const imgData = canvas.toDataURL("image/png");
+  //     const pdf = new jsPDF("p", "mm", "a4");
+
+  //     // PDF page size
+  //     const pageWidth = pdf.internal.pageSize.getWidth();
+  //     const pageHeight = pdf.internal.pageSize.getHeight();
+
+  //     // 🧾 Margins in mm
+  //     const marginLeft = 10;
+  //     const marginTop = 10;
+  //     const marginRight = 10;
+  //     const marginBottom = 10;
+
+  //     // Effective area inside margins
+  //     const usableWidth = pageWidth - marginLeft - marginRight;
+  //     const usableHeight = pageHeight - marginTop - marginBottom;
+
+  //     // Resize image to fit within margins
+  //     const imgWidth = usableWidth;
+  //     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  //     let heightLeft = imgHeight;
+  //     let position = marginTop;
+
+  //     // Add pages dynamically if content is longer than one page
+  //     let page = 1;
+  //     while (heightLeft > 0) {
+  //       pdf.addImage(imgData, "PNG", marginLeft, position, imgWidth, imgHeight);
+  //       heightLeft -= usableHeight;
+  //       if (heightLeft > 0) {
+  //         pdf.addPage();
+  //         position = marginTop - page * usableHeight;
+  //         page++;
+  //       }
+  //     }
+
+  //     // Optional footer note
+  //     pdf.setFontSize(10);
+
+  //     pdf.save("User_Assignments.pdf");
+  //   } catch (err) {
+  //     console.error("❌ PDF generation failed:", err);
+  //   }
+  // };
 
 //   const renderStatusCell = (userId, type, list) => {
 //     const current = statuses[userId]?.[type] || {
@@ -244,7 +345,6 @@
 //             >
 //               Assigned: {current.assignedToName}
 //             </button>
-           
 //           </div>
 //         )}
 
@@ -262,111 +362,351 @@
 //     );
 //   };
 
+//   // Calculate totals, assigned, and completed counts
+//   const totalEPM = users.length;
+//   const assignedEPM = users.filter(
+//     (user) => statuses[user._id]?.EPM?.status === "Assigned"
+//   ).length;
+//   const completedEPM = users.filter(
+//     (user) => statuses[user._id]?.EPM?.status === "Completed"
+//   ).length;
+
+//   const totalMPM = users.length;
+//   const assignedMPM = users.filter(
+//     (user) => statuses[user._id]?.MPM?.status === "Assigned"
+//   ).length;
+//   const completedMPM = users.filter(
+//     (user) => statuses[user._id]?.MPM?.status === "Completed"
+//   ).length;
+
+//   // Add handlers for month and year changes
+//   const handleMonthChange = (e) => {
+//     setSelectedMonth(parseInt(e.target.value) - 1); // Adjust for 0-indexed month
+//   };
+
+//   const handleYearChange = (e) => {
+//     setSelectedYear(parseInt(e.target.value));
+//   };
+
 //   return (
 //     <div className="container mt-2">
-//       <button onClick={() => navigate("/water")} className="btn btn-success">
-//         Back
-//       </button>
-//       <h3
-//         style={{
-//           textAlign: "center",
-//           fontSize: "4rem",
-//           fontWeight: "900",
-//           color: "rgba(0, 0, 0, 0.2)",
-//           textTransform: "uppercase",
-//         }}
-//       >
-//         User Assignment
-//       </h3>
-//       <div
-//         className="d-flex gap-2 align-items-center justify-content-end mb-2"
-//         style={{ marginLeft: "1rem" }}
-//       >
-//         <select className="form-select" style={{ width: "auto" }}>
-//           <option value="">Month</option>
-//           <option value="1">January</option>
-//           <option value="2">February</option>
-//           <option value="3">March</option>
-//           <option value="4">April</option>
-//           <option value="5">May</option>
-//           <option value="6">June</option>
-//           <option value="7">July</option>
-//           <option value="8">August</option>
-//           <option value="9">September</option>
-//           <option value="10">October</option>
-//           <option value="11">November</option>
-//           <option value="12">December</option>
-//         </select>
+//       <div className="d-flex justify-content-between align-items-center mb-3">
+//         <button onClick={() => navigate("/water")} className="btn btn-success">
+//           Back
+//         </button>
 
-//         <select className="form-select" style={{ width: "auto" }}>
-//           <option value="">Year</option>
-//           {Array.from({ length: 10 }, (_, i) => {
-//             const year = new Date().getFullYear() - i;
-//             return (
-//               <option key={year} value={year}>
-//                 {year}
-//               </option>
-//             );
-//           })}
-//         </select>
+//         <button onClick={handleDownloadPDF} className="btn btn-secondary">
+//           📄 Download
+//         </button>
 //       </div>
+//       <div ref={pageRef}>
+//         <h3
+//           style={{
+//             textAlign: "center",
+//             fontSize: "4rem",
+//             fontWeight: "900",
+//             color: "rgba(0, 0, 0, 0.2)",
+//             textTransform: "uppercase",
+//           }}
+//         >
+//           User Assignment
+//         </h3>
 
-//       <table className="table table-bordered">
-//         <thead>
-//           <tr>
-//             <th style={{ backgroundColor: "#236a80", color: "white" }}>User</th>
-//             <th style={{ backgroundColor: "#236a80", color: "white" }}>EPM</th>
-//             <th style={{ backgroundColor: "#236a80", color: "white" }}>MPM</th>
-//             <th style={{ backgroundColor: "#236a80", color: "white" }}>
-//               Service Report
-//             </th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {users.map((user) => (
+//         {/* Date Selection */}
+//         <div
+//           className="d-flex gap-2 align-items-center justify-content-end mb-2"
+//           style={{ marginLeft: "1rem" }}
+//         >
+//           <select
+//             className="form-select"
+//             style={{ width: "auto" }}
+//             value={selectedMonth + 1} // Display 1-indexed month
+//             onChange={handleMonthChange}
+//           >
+//             <option value="">Month</option>
+//             <option value="1">January</option>
+//             <option value="2">February</option>
+//             <option value="3">March</option>
+//             <option value="4">April</option>
+//             <option value="5">May</option>
+//             <option value="6">June</option>
+//             <option value="7">July</option>
+//             <option value="8">August</option>
+//             <option value="9">September</option>
+//             <option value="10">October</option>
+//             <option value="11">November</option>
+//             <option value="12">December</option>
+//           </select>
+
+//           <select
+//             className="form-select"
+//             style={{ width: "auto" }}
+//             value={selectedYear}
+//             onChange={handleYearChange}
+//           >
+//             <option value="">Year</option>
+//             {Array.from({ length: 10 }, (_, i) => {
+//               const year = new Date().getFullYear() - i;
+//               return (
+//                 <option key={year} value={year}>
+//                   {year}
+//                 </option>
+//               );
+//             })}
+//           </select>
+//         </div>
+
+//         {/* New Section for Totals and Assigned/Completed - Standardized and Smaller */}
+//         <div className="row mb-4">
+//           {" "}
+//           {/* Increased mb for slight separation */}
+//           <div className="col-md-6 mb-2">
+//             {" "}
+//             {/* Added mb for consistent spacing */}
+//             <div className="card text-center text-white h-100">
+//               {" "}
+//               {/* Added h-100 for equal height cards */}
+//               <div className="card-body py-3">
+//                 {" "}
+//                 {/* Reduced vertical padding */}
+//                 <h6
+//                   className="card-title text-uppercase mb-2"
+//                   style={{ fontSize: "1rem" }}
+//                 >
+//                   EPM Assignments
+//                 </h6>{" "}
+//                 {/* Smaller title, uppercase */}
+//                 <ul className="list-group list-group-flush bg-info">
+//                   {" "}
+//                   {/* Using list group for structured display */}
+//                   <li
+//                     className="list-group-item d-flex justify-content-between align-items-center  text-white py-1"
+//                     style={{ fontSize: "0.9rem", backgroundColor: "#236a80" }}
+//                   >
+//                     <span>Total Sites:</span>
+//                     <span className="fw-bold">{totalEPM}</span>
+//                   </li>
+//                   <li
+//                     className="list-group-item d-flex justify-content-between align-items-center  text-white py-1"
+//                     style={{ fontSize: "0.9rem", backgroundColor: "#236a80" }}
+//                   >
+//                     <span>Pending Sites:</span>
+//                     <span className="fw-bold">{assignedEPM}</span>
+//                   </li>
+//                   <li
+//                     className="list-group-item d-flex justify-content-between align-items-center  text-white py-1"
+//                     style={{ fontSize: "0.9rem", backgroundColor: "#236a80" }}
+//                   >
+//                     <span>Completed Sites:</span>
+//                     <span className="fw-bold">{completedEPM}</span>
+//                   </li>
+//                 </ul>
+//               </div>
+//             </div>
+//           </div>
+//           <div className="col-md-6 mb-2">
+//             {" "}
+//             {/* Added mb for consistent spacing */}
+//             <div className="card text-center bg-primary text-white h-100">
+//               {" "}
+//               {/* Added h-100 for equal height cards */}
+//               <div className="card-body py-3">
+//                 {" "}
+//                 {/* Reduced vertical padding */}
+//                 <h6
+//                   className="card-title text-uppercase mb-2"
+//                   style={{ fontSize: "1rem" }}
+//                 >
+//                   MPM Assignments
+//                 </h6>{" "}
+//                 {/* Smaller title, uppercase */}
+//                 <ul className="list-group list-group-flush bg-primary">
+//                   {" "}
+//                   {/* Using list group for structured display */}
+//                   <li
+//                     className="list-group-item d-flex justify-content-between align-items-center  text-white py-1"
+//                     style={{ fontSize: "0.9rem", backgroundColor: "#236a80" }}
+//                   >
+//                     <span>Total Sites:</span>
+//                     <span className="fw-bold">{totalMPM}</span>
+//                   </li>
+//                   <li
+//                     className="list-group-item d-flex justify-content-between align-items-center  text-white py-1"
+//                     style={{ fontSize: "0.9rem", backgroundColor: "#236a80" }}
+//                   >
+//                     <span>Pending Sites:</span>
+//                     <span className="fw-bold">{assignedMPM}</span>
+//                   </li>
+//                   <li
+//                     className="list-group-item d-flex justify-content-between align-items-center  text-white py-1"
+//                     style={{ fontSize: "0.9rem", backgroundColor: "#236a80" }}
+//                   >
+//                     <span>Completed Sites:</span>
+//                     <span className="fw-bold">{completedMPM}</span>
+//                   </li>
+//                 </ul>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+
+//         <table className="table table-bordered">
+//           <thead>
+//             <tr>
+//               <th style={{ backgroundColor: "#236a80", color: "white" }}>
+//                 User
+//               </th>
+//               <th style={{ backgroundColor: "#236a80", color: "white" }}>
+//                 EPM
+//               </th>
+//               <th style={{ backgroundColor: "#236a80", color: "white" }}>
+//                 MPM
+//               </th>
+//               <th style={{ backgroundColor: "#236a80", color: "white" }}>
+//                 Service Report
+//               </th>{" "}
+//               <th style={{ backgroundColor: "#236a80", color: "white" }}>
+//                 Engineer Visit Count
+//               </th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {/* {users.map((user) => (
 //             <tr key={user._id}>
 //               <td>{user.companyName}</td>
 //               {renderStatusCell(user._id, "EPM", technicians)}
 //               {renderStatusCell(user._id, "MPM", territoryManagers)}
 //               {renderStatusCell(user._id, "Service", technicians)}
 //             </tr>
-//           ))}
-//         </tbody>
-//       </table>
+//           ))} */}
+//             {users.map((user) => (
+//               <tr key={user._id}>
+//                 <td>{user.companyName}</td>
+//                 {renderStatusCell(user._id, "EPM", technicians)}
+//                 {renderStatusCell(user._id, "MPM", territoryManagers)}
+//                 {renderStatusCell(user._id, "Service", technicians)}
+
+//                 {/* Engineer Visit column */}
+//                 <td>
+//                   {user.engineerVisitNo && user.engineerVisitNo > 0 ? (
+//                     <div>
+//                       {/* Checkboxes for each visit */}
+//                       <div className="d-flex flex-wrap gap-2">
+//                         {[...Array(user.engineerVisitNo)].map((_, idx) => {
+//                           const visitNum = idx + 1;
+//                           const selectedVisits =
+//                             statuses[user._id]?.selectedVisits || [];
+//                           const isSelected = selectedVisits.includes(visitNum);
+
+//                           return (
+//                             <div
+//                               key={visitNum}
+//                               onClick={async () => {
+//                                 const updatedVisits = isSelected
+//                                   ? selectedVisits.filter((v) => v !== visitNum)
+//                                   : [...selectedVisits, visitNum];
+
+//                                 // Update local state
+//                                 setStatuses((prev) => ({
+//                                   ...prev,
+//                                   [user._id]: {
+//                                     ...(prev[user._id] || {}),
+//                                     selectedVisits: updatedVisits,
+//                                   },
+//                                 }));
+
+//                                 // Save to backend
+//                                 try {
+//                                   await axios.post(
+//                                     `${API_URL}/api/update-engineer-visits`,
+//                                     {
+//                                       userId: user._id,
+//                                       selectedVisits: updatedVisits,
+//                                     }
+//                                   );
+//                                   setUsers((prev) =>
+//                                     prev.map((u) =>
+//                                       u._id === user._id
+//                                         ? {
+//                                             ...u,
+//                                             selectedVisits: updatedVisits,
+//                                           }
+//                                         : u
+//                                     )
+//                                   );
+//                                 } catch (err) {
+//                                   console.error(
+//                                     "❌Failed to update visits:",
+//                                     err
+//                                   );
+//                                 }
+//                               }}
+//                               style={{
+//                                 width: "35px",
+//                                 height: "25px",
+//                                 display: "flex",
+//                                 alignItems: "center",
+//                                 justifyContent: "center",
+//                                 backgroundColor: isSelected
+//                                   ? "#28a745"
+//                                   : "#dc3545",
+//                                 color: "white",
+//                                 fontWeight: "700",
+//                                 fontSize: "0.8rem",
+//                                 borderRadius: "5px",
+//                                 cursor: "pointer",
+//                                 userSelect: "none",
+//                                 transition: "all 0.2s ease-in-out",
+//                                 boxShadow: isSelected
+//                                   ? "0 0 6px rgba(40, 167, 69, 0.5)"
+//                                   : "0 0 4px rgba(220, 53, 69, 0.3)",
+//                               }}
+//                             >
+//                               {visitNum}
+//                             </div>
+//                           );
+//                         })}
+//                       </div>
+//                     </div>
+//                   ) : (
+//                     <span className="text-muted"></span>
+//                   )}
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
 //     </div>
 //   );
 // };
 
 // export default AssignTechnician;
 
-
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
 import { API_URL } from "../../utils/apiConfig";
 import { useNavigate } from "react-router-dom";
+import html2canvas from "html2canvas";
+import html2pdf from "html2pdf.js";
+import jsPDF from "jspdf";
+import './assign.css';
 
 const AssignTechnician = () => {
+  const pageRef = useRef();
   const { userData } = useSelector((state) => state.user);
-  console.log("userData:", userData?.validUserOne?._id);
   const [users, setUsers] = useState([]);
-  const [technicians, setTechnicians] = useState([]);
-  const [territoryManagers, setTerritoryManagers] = useState([]);
   const [statuses, setStatuses] = useState({});
-  const [openDropdown, setOpenDropdown] = useState(null); // State to manage which dropdown is open
-  // State for date selection
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const navigate = useNavigate();
 
-  // Statuses are now nested by year and month
+  // Fetch Users (same logic as before)
   const fetchUsers = useCallback(async () => {
     try {
       const currentUser = userData?.validUserOne;
-      if (!currentUser) {
-        setUsers([]);
-        return;
-      }
+      if (!currentUser) return setUsers([]);
 
       let response;
       if (
@@ -374,388 +714,272 @@ const AssignTechnician = () => {
         currentUser.userType === "super_admin"
       ) {
         response = await axios.get(`${API_URL}/api/getallusers`);
-        const fetchedUsers = response.data.users || [];
-        const filtered = fetchedUsers.filter(
-          (user) =>
-            user.isTechnician !== true &&
-            user.isTerritorialManager !== true &&
-            user.isOperator !== true
+        const fetched = response.data.users || [];
+        const filtered = fetched.filter(
+          (u) => !u.isTechnician && !u.isTerritorialManager && !u.isOperator
         );
         setUsers(filtered);
       } else if (currentUser.userType === "admin") {
-        const url = `${API_URL}/api/get-users-by-creator/${currentUser._id}`;
-        response = await axios.get(url);
-        const fetchedUsers = response.data.users || [];
-        const myUsers = fetchedUsers.filter((user) => user.userType === "user");
-        setUsers(myUsers);
+        const res = await axios.get(
+          `${API_URL}/api/get-users-by-creator/${currentUser._id}`
+        );
+        const fetched = res.data.users || [];
+        setUsers(fetched.filter((u) => u.userType === "user"));
       } else {
         setUsers([]);
       }
     } catch (err) {
-      console.error(err);
+      console.error("User fetch failed:", err);
       setUsers([]);
     }
   }, [userData]);
 
-  const fetchAssignments = async () => {
+  // 🟢 Fetch Summary for All Reports (auto-status logic)
+  const fetchSummary = async () => {
     try {
       const res = await axios.get(
-        `${API_URL}/api/assignments?month=${selectedMonth + 1}&year=${selectedYear}`
+        `${API_URL}/api/summary/${selectedMonth + 1}/${selectedYear}`
       );
+      const data = res.data.summary || {};
+      console.log("response:", data);
+      const updated = {};
 
-      const assignmentData = res.data.data || [];
-
-      const newStatuses = {};
-
-      assignmentData.forEach((a) => {
-        if (!newStatuses[a.userId]) {
-          newStatuses[a.userId] = {};
-        }
-        newStatuses[a.userId][a.type] = {
-          status: a.status,
-          assignedToId: a.assignedToId,
-          assignedToName: a.assignedToName,
+      users.forEach((u) => {
+        const name = u.userName || u.companyName || u.customerName;
+        const info = data[name] || {};
+        console.log("info:", info);
+        updated[u._id] = {
+          EPM: { status: info.EPM ? "Completed" : "Pending" },
+          MPM: { status: info.MPM ? "Completed" : "Pending" },
+          Service: { status: info.Service ? "Completed" : "Pending" },
+          Safety: { status: info.Safety ? "Completed" : "Pending" },
+          selectedVisits: Array.from(
+            { length: Number(info.EngineerVisits) || 0 },
+            (_, i) => i + 1
+          ),
+          totalVisits: u.engineerVisitNo || 0,
         };
       });
 
-      setStatuses(newStatuses);
+      setStatuses(updated);
     } catch (err) {
-      console.error("Failed to fetch assignments:", err);
+      console.error("Summary fetch failed:", err);
     }
-  };
-
-  const fetchCompletionStatuses = async () => {
-    const results = {};
-    await Promise.all(
-      users.map(async (user) => {
-        const types = ["EPM", "MPM", "Service"]; // Include Service here
-        for (const type of types) {
-          try {
-            const res = await axios.get(
-              `${API_URL}/api/assignments/completion-status/${
-                user._id
-              }/${type}/${selectedMonth + 1}/${selectedYear}`
-            );
-            if (res.data.completed) {
-              results[`${user._id}-${type}`] = true;
-            }
-          } catch (err) {
-            console.error("Status fetch error", err);
-          }
-        }
-      })
-    );
-
-    // Mark statuses as completed
-    setStatuses((prev) => {
-      const updated = { ...prev };
-      for (const key in results) {
-        const [userId, type] = key.split("-");
-        if (updated[userId] && updated[userId][type]) {
-          updated[userId][type].status = "Completed";
-        }
-      }
-      return updated;
-    });
-  };
-
-  const fetchTechnicians = async () => {
-    const res = await axios.get(`${API_URL}/api/getAll-technicians`);
-    const techList = res.data.users || [];
-    setTechnicians(techList);
-  };
-
-  const fetchTerritoryManagers = async () => {
-    const res = await axios.get(`${API_URL}/api/getAll-territory-managers`);
-    const mgrList = res.data.users || [];
-    setTerritoryManagers(mgrList);
   };
 
   useEffect(() => {
     fetchUsers();
-    fetchTechnicians();
-    fetchTerritoryManagers();
-    fetchAssignments(); // Fetch assignments when component mounts or dependencies change
   }, [fetchUsers]);
 
-  // Refetch assignments and completion statuses when month/year or users change
   useEffect(() => {
-    if (users.length > 0) {
-      fetchAssignments(); // Re-fetch assignments based on new date
-      fetchCompletionStatuses(); // Re-fetch completion statuses based on new date
-    }
+    if (users.length > 0) fetchSummary();
   }, [users, selectedMonth, selectedYear]);
 
+  
 
-  const handleAssign = async (userId, type, assignedToId, list) => {
-    const person = list.find((item) => item._id === assignedToId);
-    if (!person) return;
+   const handleDownloadPDF = async () => {
+  try {
+    const element = pageRef.current;
 
-    const payload = {
-      userId,
-      type,
-      assignedToId,
-      assignedToName: person.fname,
-      assignedBy: userData?.validUserOne?._id, // current logged in user
-      assignedByName: userData?.validUserOne?.fname, // optional
-      year: selectedYear,
-      month: selectedMonth + 1,
-    };
+    const options = {
+  margin: [5, 5, 5, 5], // reduce side margins to widen content
+  filename: "User_Assignments.pdf",
+  image: { type: "jpeg", quality: 1 },
+  html2canvas: {
+    scale: 3, // higher resolution
+    useCORS: true,
+    scrollX: 0,
+    scrollY: 0,
+    windowWidth: document.documentElement.scrollWidth * 1.5, // widen capture width
+    windowHeight: document.documentElement.scrollHeight,
+  },
+  jsPDF: {
+    unit: "mm",
+    format: "a4",
+    orientation: "landscape", // use landscape for wider layout
+  },
+  pagebreak: {
+    mode: ["avoid-all", "css", "legacy"],
+  },
+};
 
-    try {
-      const res = await axios.post(`${API_URL}/api/assign`, payload);
-      console.log("handle assign response:", res.data);
-      setStatuses((prev) => ({
-        ...prev,
-        [userId]: {
-          ...prev[userId],
-          [type]: {
-            status: "Assigned",
-            assignedToId: person._id,
-            assignedToName: person.fname,
-          },
-        },
-      }));
-      setOpenDropdown(null);
-    } catch (err) {
-      console.error("Assignment failed:", err);
-    }
+
+    await html2pdf().set(options).from(element).save();
+  } catch (err) {
+    console.error("❌ PDF generation failed:", err);
+  }
+};
+
+  const handleMonthChange = (e) =>
+    setSelectedMonth(parseInt(e.target.value) - 1);
+  const handleYearChange = (e) => setSelectedYear(parseInt(e.target.value));
+
+  const renderCell = (userId, type) => {
+    const current = statuses[userId]?.[type]?.status || "Pending";
+    const isCompleted = current === "Completed";
+    return (
+      <td className="text-center">
+        <span
+          className={`badge ${
+            isCompleted ? "bg-success" : "bg-warning text-dark"
+          }`}
+          style={{ fontSize: "0.85rem" }}
+        >
+          {isCompleted ? "Completed" : "Pending"}
+        </span>
+      </td>
+    );
   };
 
-
-  const toggleDropdown = (userId, type) => {
-    const dropdownId = `${userId}-${type}`;
-    if (openDropdown === dropdownId) {
-      setOpenDropdown(null);
-    } else {
-      setOpenDropdown(dropdownId);
-    }
-  };
-
-  const renderStatusCell = (userId, type, list) => {
-    const current = statuses[userId]?.[type] || {
-      status: "Pending",
-      assignedToId: "",
-      assignedToName: "",
-    };
-
-    const commonButtonStyle = {
-      borderRadius: "5px",
-    };
-
-    const dropdownId = `${userId}-${type}`;
-
+  const renderEngineerVisits = (userId) => {
+    const total = statuses[userId]?.totalVisits || 0;
+    const completed = statuses[userId]?.selectedVisits || [];
     return (
       <td>
-        {/* PENDING STATE */}
-        {current.status === "Pending" && (
-          <div className="dropdown">
-            <button
-              className="btn btn-warning btn-sm dropdown-toggle"
-              style={commonButtonStyle}
-              onClick={() => toggleDropdown(userId, type)}
-            >
-              Pending
-            </button>
-            {openDropdown === dropdownId && (
-              <div
-                className="dropdown-menu d-block"
-                style={{ position: "absolute" }}
-              >
-                {list.map((item) => (
-                  <a
-                    key={item._id}
-                    className="dropdown-item"
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleAssign(userId, type, item._id, list);
-                    }}
-                  >
-                    {item.fname}
-                  </a>
-                ))}
-              </div>
-            )}
+        {total > 0 ? (
+          <div className="d-flex flex-wrap gap-2">
+            {[...Array(total)].map((_, idx) => {
+              const visitNum = idx + 1;
+              const isSelected = completed.includes(visitNum);
+              return (
+                <div
+                  key={visitNum}
+                  style={{
+                    width: "35px",
+                    height: "25px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: isSelected ? "#035c18ff" : "#b10617ff",
+                    color: "white",
+                    fontWeight: "700",
+                    fontSize: "0.8rem",
+                    borderRadius: "5px",
+                    userSelect: "none",
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  {visitNum}
+                </div>
+              );
+            })}
           </div>
-        )}
-
-        {/* ASSIGNED STATE */}
-        {current.status === "Assigned" && (
-          <div className="d-flex align-items-center">
-            <button
-              className="btn btn-primary btn-sm"
-              style={commonButtonStyle}
-              disabled
-            >
-              Assigned: {current.assignedToName}
-            </button>
-
-          </div>
-        )}
-
-        {/* COMPLETED STATE */}
-        {current.status === "Completed" && (
-          <button
-            className="btn btn-success btn-sm"
-            style={commonButtonStyle}
-            disabled
-          >
-            ✅Completed
-          </button>
+        ) : (
+          <span className="text-muted"></span>
         )}
       </td>
     );
   };
 
-  // Calculate totals, assigned, and completed counts
-  const totalEPM = users.length;
-  const assignedEPM = users.filter(user => statuses[user._id]?.EPM?.status === "Assigned").length;
-  const completedEPM = users.filter(user => statuses[user._id]?.EPM?.status === "Completed").length;
-
-  const totalMPM = users.length;
-  const assignedMPM = users.filter(user => statuses[user._id]?.MPM?.status === "Assigned").length;
-  const completedMPM = users.filter(user => statuses[user._id]?.MPM?.status === "Completed").length;
-
-  // Add handlers for month and year changes
-  const handleMonthChange = (e) => {
-    setSelectedMonth(parseInt(e.target.value) - 1); // Adjust for 0-indexed month
-  };
-
-  const handleYearChange = (e) => {
-    setSelectedYear(parseInt(e.target.value));
-  };
-
-
   return (
     <div className="container mt-2">
-      <button onClick={() => navigate("/water")} className="btn btn-success">
-        Back
-      </button>
-      <h3
-        style={{
-          textAlign: "center",
-          fontSize: "4rem",
-          fontWeight: "900",
-          color: "rgba(0, 0, 0, 0.2)",
-          textTransform: "uppercase",
-        }}
-      >
-        User Assignment
-      </h3>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <button onClick={() => navigate("/water")} className="btn btn-success">
+          Back
+        </button>
+        <button onClick={handleDownloadPDF} className="btn btn-secondary">
+          📄 Download
+        </button>
+      </div>
 
-      {/* Date Selection */}
-      <div
-        className="d-flex gap-2 align-items-center justify-content-end mb-2"
-        style={{ marginLeft: "1rem" }}
-      >
-        <select
-          className="form-select"
-          style={{ width: "auto" }}
-          value={selectedMonth + 1} // Display 1-indexed month
-          onChange={handleMonthChange}
+      <div ref={pageRef}>
+        <h3
+          style={{
+            textAlign: "center",
+            fontSize: "4rem",
+            fontWeight: "900",
+            color: "rgba(0, 0, 0, 0.2)",
+            textTransform: "uppercase",
+          }}
         >
-          <option value="">Month</option>
-          <option value="1">January</option>
-          <option value="2">February</option>
-          <option value="3">March</option>
-          <option value="4">April</option>
-          <option value="5">May</option>
-          <option value="6">June</option>
-          <option value="7">July</option>
-          <option value="8">August</option>
-          <option value="9">September</option>
-          <option value="10">October</option>
-          <option value="11">November</option>
-          <option value="12">December</option>
-        </select>
+          User Assignment
+        </h3>
 
-        <select
-          className="form-select"
-          style={{ width: "auto" }}
-          value={selectedYear}
-          onChange={handleYearChange}
-        >
-          <option value="">Year</option>
-          {Array.from({ length: 10 }, (_, i) => {
-            const year = new Date().getFullYear() - i;
-            return (
-              <option key={year} value={year}>
-                {year}
+        {/* Month-Year Filters */}
+        <div className="d-flex gap-2 justify-content-end mb-3">
+          <select
+            className="form-select"
+            style={{ width: "auto" }}
+            value={selectedMonth + 1}
+            onChange={handleMonthChange}
+          >
+            <option value="">Month</option>
+            {[
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "May",
+              "Jun",
+              "Jul",
+              "Aug",
+              "Sep",
+              "Oct",
+              "Nov",
+              "Dec",
+            ].map((m, i) => (
+              <option key={i} value={i + 1}>
+                {m}
               </option>
-            );
-          })}
-        </select>
-      </div>
+            ))}
+          </select>
 
-      {/* New Section for Totals and Assigned/Completed - Standardized and Smaller */}
-      <div className="row mb-4"> {/* Increased mb for slight separation */}
-        <div className="col-md-6 mb-2"> {/* Added mb for consistent spacing */}
-          <div className="card text-center text-white h-100"> {/* Added h-100 for equal height cards */}
-            <div className="card-body py-3"> {/* Reduced vertical padding */}
-              <h6 className="card-title text-uppercase mb-2" style={{fontSize: '1rem'}}>EPM Assignments</h6> {/* Smaller title, uppercase */}
-              <ul className="list-group list-group-flush bg-info"> {/* Using list group for structured display */}
-                <li className="list-group-item d-flex justify-content-between align-items-center  text-white py-1" style={{fontSize: '0.9rem',backgroundColor: '#236a80'}}>
-                  <span>Total Sites:</span>
-                  <span className="fw-bold">{totalEPM}</span>
-                </li>
-                <li className="list-group-item d-flex justify-content-between align-items-center  text-white py-1" style={{fontSize: '0.9rem',backgroundColor: '#236a80'}}>
-                  <span>Assigned Sites:</span>
-                  <span className="fw-bold">{assignedEPM}</span>
-                </li>
-                <li className="list-group-item d-flex justify-content-between align-items-center  text-white py-1" style={{fontSize: '0.9rem',backgroundColor: '#236a80'}}>
-                  <span>Completed Sites:</span>
-                  <span className="fw-bold">{completedEPM}</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+          <select
+            className="form-select"
+            style={{ width: "auto" }}
+            value={selectedYear}
+            onChange={handleYearChange}
+          >
+            {Array.from({ length: 10 }, (_, i) => {
+              const year = new Date().getFullYear() - i;
+              return (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              );
+            })}
+          </select>
         </div>
-        <div className="col-md-6 mb-2"> {/* Added mb for consistent spacing */}
-          <div className="card text-center bg-primary text-white h-100"> {/* Added h-100 for equal height cards */}
-            <div className="card-body py-3"> {/* Reduced vertical padding */}
-              <h6 className="card-title text-uppercase mb-2" style={{fontSize: '1rem'}}>MPM Assignments</h6> {/* Smaller title, uppercase */}
-              <ul className="list-group list-group-flush bg-primary"> {/* Using list group for structured display */}
-                <li className="list-group-item d-flex justify-content-between align-items-center  text-white py-1" style={{fontSize: '0.9rem',backgroundColor: '#236a80'}}>
-                  <span>Total Sites:</span>
-                  <span className="fw-bold">{totalMPM}</span>
-                </li>
-                <li className="list-group-item d-flex justify-content-between align-items-center  text-white py-1" style={{fontSize: '0.9rem',backgroundColor: '#236a80'}}>
-                  <span>Assigned Sites:</span>
-                  <span className="fw-bold">{assignedMPM}</span>
-                </li>
-                <li className="list-group-item d-flex justify-content-between align-items-center  text-white py-1" style={{fontSize: '0.9rem',backgroundColor: '#236a80'}}>
-                  <span>Completed Sites:</span>
-                  <span className="fw-bold">{completedMPM}</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <table className="table table-bordered">
-        <thead>
-          <tr>
-            <th style={{ backgroundColor: "#236a80", color: "white" }}>User</th>
-            <th style={{ backgroundColor: "#236a80", color: "white" }}>EPM</th>
-            <th style={{ backgroundColor: "#236a80", color: "white" }}>MPM</th>
-            <th style={{ backgroundColor: "#236a80", color: "white" }}>
-              Service Report
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user._id}>
-              <td>{user.companyName}</td>
-              {renderStatusCell(user._id, "EPM", technicians)}
-              {renderStatusCell(user._id, "MPM", territoryManagers)}
-              {renderStatusCell(user._id, "Service", technicians)}
+        {/* Table */}
+        <table className="table table-bordered">
+          <thead>
+            <tr>
+              <th style={{ backgroundColor: "#236a80", color: "white" }}>
+                User
+              </th>
+              <th style={{ backgroundColor: "#236a80", color: "white" }}>
+                EPM
+              </th>
+              <th style={{ backgroundColor: "#236a80", color: "white" }}>
+                MPM
+              </th>
+              <th style={{ backgroundColor: "#236a80", color: "white" }}>
+                Service
+              </th>
+              <th style={{ backgroundColor: "#236a80", color: "white" }}>
+                Safety
+              </th>
+              <th style={{ backgroundColor: "#236a80", color: "white" }}>
+                Engineer Visit Count
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {users.map((u) => (
+              <tr key={u._id}>
+                <td>{u.companyName || u.userName}</td>
+                {renderCell(u._id, "EPM")}
+                {renderCell(u._id, "MPM")}
+                {renderCell(u._id, "Service")}
+                {renderCell(u._id, "Safety")}
+                {renderEngineerVisits(u._id)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

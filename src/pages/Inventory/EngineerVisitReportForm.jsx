@@ -135,7 +135,7 @@ export default function EngineerVisitReportForm({
   const navigate = useNavigate();
   const location = useLocation();
   const { equipmentId: paramEquipmentId } = useParams();
-  const {user}=useParams();
+  const { user } = useParams();
   const currentEquipmentId = equipmentId || paramEquipmentId;
   const currentEquipmentName = equipmentName || location.state?.equipmentName;
   const initialCustomerName = equipmentUserName || location.state?.userName;

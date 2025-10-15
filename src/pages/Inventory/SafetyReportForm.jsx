@@ -173,18 +173,16 @@ const editId = queryParams.get("editId"); // check if editing
 
   // Callback passed to child checklist form
   const handleChecklistFilled = (data) => {
-    console.log("✅ Received checklist data:", data);
+    // console.log("✅Received checklist data:", data);
     setDynamicChecklist(data);
   };
 
-  useEffect(() => {
-    console.log("Current Dynamic Checklist:", dynamicChecklist);
-  }, [dynamicChecklist]);
 
-  <ChecklistDisplay
-    type={checklistType}
-    onChecklistFilled={(data) => setDynamicChecklist(data)}
-  />;
+  // <ChecklistDisplay
+  //   type={checklistType}
+  //   onChecklistFilled={(data) => setDynamicChecklist(data)}
+  // />;
+
   const [auditDetails, setAuditDetails] = useState("");
   const [observation, setObservation] = useState("");
   const [customerRemarks, setCustomerRemarks] = useState("");
@@ -430,6 +428,8 @@ const editId = queryParams.get("editId"); // check if editing
       setRefNo(generated);
     })();
   }, [customerName, date]);
+
+  
 
   return (
     <div className="container py-4">
