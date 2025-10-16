@@ -407,7 +407,7 @@ export default function ASPChecklistForm({ onChecklistFilled,initialData={} }) {
           >
             {sec.title}
           </div>
-          <div className="card-body p-0">
+          <div className="card-body p-0 table-responsive">
             <table className="table table-bordered checklist-table m-0">
               <thead className="table-light">
                 <tr>

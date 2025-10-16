@@ -54,3 +54,33 @@
     margin-bottom: 30px !important; /* Adjust value as needed */
   }
 }
+
+
+/* ✅ Enable horizontal scroll on mobile */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 3px;
+}
+
+@media (max-width: 768px) {
+  .checklist-table th,
+  .checklist-table td {
+    white-space: nowrap;
+    font-size: 13px;
+    padding: 6px;
+  }
+
+  .container {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}

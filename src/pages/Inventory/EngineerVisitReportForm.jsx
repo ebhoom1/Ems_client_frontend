@@ -35,11 +35,13 @@ const nextReportNumber = async ({ apiBase, site, isoDate }) => {
 };
 
 /* --- Signature Modal --- */
+/* --- Signature Modal --- */
 function SignatureModal({ show, onClose, onSave }) {
   const canvasRef = useRef(null);
   const drawing = useRef(false);
   const last = useRef({ x: 0, y: 0 });
 
+  // Initialize canvas when modal opens
   useEffect(() => {
     if (!show) return;
     const canvas = canvasRef.current;
@@ -51,6 +53,18 @@ function SignatureModal({ show, onClose, onSave }) {
     ctx.lineCap = "round";
   }, [show]);
 
+  // ✅ Prevent background scrolling when modal is open
+  useEffect(() => {
+    if (show) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [show]);
+
   const pos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const t = e.touches?.[0];
@@ -59,6 +73,7 @@ function SignatureModal({ show, onClose, onSave }) {
       y: (t ? t.clientY : e.clientY) - rect.top,
     };
   };
+
   const start = (e) => {
     e.preventDefault();
     drawing.current = true;
@@ -76,12 +91,14 @@ function SignatureModal({ show, onClose, onSave }) {
     last.current = { x, y };
   };
   const end = () => (drawing.current = false);
+
   const clear = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   };
+
   const save = () => {
     const dataUrl = canvasRef.current.toDataURL("image/png");
     onSave(dataUrl);
@@ -125,6 +142,7 @@ function SignatureModal({ show, onClose, onSave }) {
     </div>
   );
 }
+
 
 /* --- Main Component --- */
 export default function EngineerVisitReportForm({

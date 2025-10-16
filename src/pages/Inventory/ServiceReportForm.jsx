@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { API_URL } from "../../utils/apiConfig";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import './inventory.css';
+import "./inventory.css";
 
 /* ============== Lightweight Signature Pad (mouse + touch) ============== */
 function SignaturePad({ value, onChange, height = 130 }) {
@@ -172,6 +172,131 @@ const nextReportNumber = async ({ apiBase, site, isoDate }) => {
   return localSeries({ site, isoDate });
 };
 
+/* --- Signature Modal --- */
+function SignatureModal({ show, onClose, onSave }) {
+  const canvasRef = useRef(null);
+  const drawing = useRef(false);
+  const last = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (!show) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+  }, [show]);
+
+  // ✅ Prevent background scroll when modal is open
+  useEffect(() => {
+    if (show) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [show]);
+
+  const pos = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const t = e.touches?.[0];
+    return {
+      x: (t ? t.clientX : e.clientX) - rect.left,
+      y: (t ? t.clientY : e.clientY) - rect.top,
+    };
+  };
+
+  const start = (e) => {
+    e.preventDefault();
+    drawing.current = true;
+    last.current = pos(e);
+  };
+  const move = (e) => {
+    if (!drawing.current) return;
+    e.preventDefault();
+    const { x, y } = pos(e);
+    const ctx = canvasRef.current.getContext("2d");
+    ctx.beginPath();
+    ctx.moveTo(last.current.x, last.current.y);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    last.current = { x, y };
+  };
+  const end = () => (drawing.current = false);
+  const clear = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  };
+  const save = () => {
+    const dataUrl = canvasRef.current.toDataURL("image/png");
+    onSave(dataUrl);
+    onClose();
+  };
+
+  if (!show) return null;
+  return (
+    <div style={overlayStyle}>
+      <div style={modalBoxStyle}>
+        <h5 style={{ color: "#236a80" }}>Draw Signature</h5>
+        <canvas
+          ref={canvasRef}
+          width={450}
+          height={200}
+          style={{ border: "1px solid #ccc", borderRadius: 6, width: "100%" }}
+          onMouseDown={start}
+          onMouseMove={move}
+          onMouseUp={end}
+          onMouseLeave={end}
+          onTouchStart={start}
+          onTouchMove={move}
+          onTouchEnd={end}
+        />
+        <div className="d-flex justify-content-between mt-3">
+          <button className="btn btn-secondary" onClick={clear}>
+            Clear
+          </button>
+          <button className="btn btn-danger" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className="btn"
+            style={{ backgroundColor: "#236a80", color: "#fff" }}
+            onClick={save}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const overlayStyle = {
+  position: "fixed",
+  top: 0,
+  left: 0,
+  width: "100%",
+  height: "100%",
+  background: "rgba(0,0,0,0.5)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 2000,
+};
+const modalBoxStyle = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 8,
+  width: "90%",
+  maxWidth: 500,
+};
+
 export default function ServiceReportForm({
   equipmentId,
   equipmentName,
@@ -221,9 +346,14 @@ export default function ServiceReportForm({
     useState("");
 
   // signatures: now MANUAL ONLY (canvas → PNG)
-  const [customerSignatureDataUrl, setCustomerSignatureDataUrl] = useState("");
-  const [technicianSignatureDataUrl, setTechnicianSignatureDataUrl] =
-    useState("");
+  // const [customerSignatureDataUrl, setCustomerSignatureDataUrl] = useState("");
+  // const [technicianSignatureDataUrl, setTechnicianSignatureDataUrl] =
+  //   useState("");
+
+  const [customerSig, setCustomerSig] = useState("");
+  const [technicianSig, setTechnicianSig] = useState("");
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showTechnicianModal, setShowTechnicianModal] = useState(false);
 
   // new states for signatures
   const [customerSigName, setCustomerSigName] = useState("");
@@ -395,9 +525,9 @@ export default function ServiceReportForm({
       return toast.error("Select a Classification Code.");
 
     // NEW: Require hand-written signatures
-    if (!customerSignatureDataUrl)
+    if (!customerSig)
       return toast.error("Please draw the customer's signature.");
-    if (!technicianSignatureDataUrl)
+    if (!technicianSig)
       return toast.error("Please draw the engineer/technician signature.");
 
     const fd = new FormData();
@@ -475,8 +605,9 @@ export default function ServiceReportForm({
     });
 
     // SIGNATURE IMAGES (PNG blobs)
-    const custSigBlob = dataURLToBlob(customerSignatureDataUrl);
-    const techSigBlob = dataURLToBlob(technicianSignatureDataUrl);
+    const custSigBlob = dataURLToBlob(customerSig);
+    const techSigBlob = dataURLToBlob(technicianSig);
+
     if (custSigBlob)
       fd.append(
         "customerSignatureImage",
@@ -494,7 +625,7 @@ export default function ServiceReportForm({
       const resp = await axios.post(`${API_URL}/api/add-servicereport`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      console.log("respose:",resp.data);
+      console.log("respose:", resp.data);
       if (resp.data.success) {
         toast.success("Service Report submitted successfully!");
         navigate("/services?tab=equipmentList");
@@ -984,7 +1115,7 @@ export default function ServiceReportForm({
         </div>
 
         {/* SIGNATURES — MANUAL ONLY */}
-        <div className="mb-3">
+        {/* <div className="mb-3">
           <label className="form-label">
             <strong>Customer Signature (draw below):</strong>
           </label>
@@ -1029,7 +1160,89 @@ export default function ServiceReportForm({
             value={technicianSigDesignation}
             onChange={(e) => setTechnicianSigDesignation(e.target.value)}
           />
+        </div> */}
+        {/* --- Signatures (modal style) --- */}
+        <div className="card mb-3 border">
+          <div
+            className="card-header text-white"
+            style={{ backgroundColor: "#236a80" }}
+          >
+            Signatures
+          </div>
+          <div className="card-body row g-3">
+            {/* Customer */}
+            <div className="col-md-6">
+              <label className="form-label">Customer Signature</label>
+              <button
+                type="button"
+                className="btn w-100"
+                style={{ backgroundColor: "#236a80", color: "#fff" }}
+                onClick={() => setShowCustomerModal(true)}
+              >
+                {customerSig
+                  ? "✓ Signature Captured"
+                  : "Click to Draw Signature"}
+              </button>
+              <input
+                type="text"
+                className="form-control mt-2"
+                placeholder="Customer Name"
+                value={customerSigName}
+                onChange={(e) => setCustomerSigName(e.target.value)}
+              />
+              <input
+                type="text"
+                className="form-control mt-2"
+                placeholder="Customer Designation"
+                value={customerSigDesignation}
+                onChange={(e) => setCustomerSigDesignation(e.target.value)}
+              />
+            </div>
+
+            {/* Technician */}
+            <div className="col-md-6">
+              <label className="form-label">
+                Engineer/Technician Signature
+              </label>
+              <button
+                type="button"
+                className="btn w-100"
+                style={{ backgroundColor: "#236a80", color: "#fff" }}
+                onClick={() => setShowTechnicianModal(true)}
+              >
+                {technicianSig
+                  ? "✓ Signature Captured"
+                  : "Click to Draw Signature"}
+              </button>
+              <input
+                type="text"
+                className="form-control mt-2"
+                placeholder="Engineer/Technician Name"
+                value={technicianSigName}
+                onChange={(e) => setTechnicianSigName(e.target.value)}
+              />
+              <input
+                type="text"
+                className="form-control mt-2"
+                placeholder="Engineer/Technician Designation"
+                value={technicianSigDesignation}
+                onChange={(e) => setTechnicianSigDesignation(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
+
+        {/* --- Signature Modals --- */}
+        <SignatureModal
+          show={showCustomerModal}
+          onClose={() => setShowCustomerModal(false)}
+          onSave={setCustomerSig}
+        />
+        <SignatureModal
+          show={showTechnicianModal}
+          onClose={() => setShowTechnicianModal(false)}
+          onSave={setTechnicianSig}
+        />
 
         <div className="d-flex justify-content-end gap-2">
           <button

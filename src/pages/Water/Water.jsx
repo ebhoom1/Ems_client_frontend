@@ -797,10 +797,7 @@ const wtpParameters = [
                       {isSpecialUser && (
                         <div
                           className="d-flex justify-content-end align-items-center px-3 gap-2"
-                          style={{
-                            position: "relative",
-                            zIndex: 1000, // ✅ always above overlay (which is 10)
-                          }}
+                          
                         >
                           <button
                             onClick={() => {

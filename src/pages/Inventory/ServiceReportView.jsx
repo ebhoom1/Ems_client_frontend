@@ -33,7 +33,7 @@ export default function ServiceReportView() {
     fontWeight: "bold"
   };
   const tdStyle = {
-    border: "1px solid #141414ff",
+    // border: "1px solid #141414ff",
     padding: 8,
     fontSize: 14,
     color: "#101112ff",
@@ -606,9 +606,9 @@ export default function ServiceReportView() {
                 src={customerSigUrl}
                 alt="Customer Signature"
                 style={{
-                  maxWidth: 310,
-                  maxHeight: 310,
-                  border: "1px solid #1b1a1aff",
+                  maxWidth: 210,
+                  maxHeight: 210,
+                  // border: "1px solid #1b1a1aff",
                 }}
               />
             </div>
@@ -648,9 +648,8 @@ export default function ServiceReportView() {
                 src={technicianSigUrl}
                 alt="Technician Signature"
                 style={{
-                  maxWidth: 310,
-                  maxHeight: 310,
-                  border: "1px solid #121212ff",
+                  maxWidth: 210,
+                  maxHeight: 210,
                 }}
               />
             </div>
