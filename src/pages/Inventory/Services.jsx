@@ -42,7 +42,7 @@ const Services = () => {
           usersToShow = ["RMZLTD"];
         } else {
           // For other admins, fetch all users and extract their usernames
-          const res = await fetch(`${API_URL}/api/get-users`);
+          const res = await fetch(`${API_URL}/api/getallusers`);
           const body = await res.json();
           // Ensure we get a consistent array of strings (usernames)
           usersToShow = (body.users || []).map(user => user.userName);
