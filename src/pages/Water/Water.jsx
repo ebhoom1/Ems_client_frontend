@@ -797,7 +797,10 @@ const wtpParameters = [
                       {isSpecialUser && (
                         <div
                           className="d-flex justify-content-end align-items-center px-3 gap-2"
-                          
+                           style={{
+      position: "relative",
+zIndex: !isCheckedIn ? 20 : "auto",
+    }}
                         >
                           <button
                             onClick={() => {
