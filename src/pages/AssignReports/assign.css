@@ -1,16 +1,37 @@
-tr, td, th {
-  page-break-inside: avoid !important;
-  break-inside: avoid !important;
+/* Make the modal almost full screen width */
+.custom-wide-modal .modal-dialog {
+  max-width: 98% !important;   /* increase from 90% → 98% */
+  width: 98%;
+  margin: auto;
 }
 
-.table {
-  page-break-inside: auto;
+.custom-wide-modal .modal-content {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0px 6px 25px rgba(0, 0, 0, 0.25);
+  border: 1px solid #d1d5db;
 }
 
-@media print {
-  body {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    zoom: 1 !important;
+.custom-wide-modal .modal-body {
+  padding: 20px 30px;
+  overflow-x: auto;
+  background-color: #fff;
+}
+.modal-content{
+  width: 900px;
+}
+
+/* Force report container to 120% width inside the modal */
+.custom-wide-modal .modal-body > div[style] {
+  width: 120% !important;
+  max-width: none !important;
+  margin-left: -10%; /* center it visually */
+}
+
+@media screen {
+  .custom-wide-modal .modal-body > div[style] {
+    width: 120% !important;
+    max-width: none !important;
+    margin-left: -10%;
   }
 }

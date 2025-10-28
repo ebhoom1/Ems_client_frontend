@@ -36,7 +36,10 @@ function CanvasComponent({
   draggedFileRef, // New prop
   clearDraggedFile, // New prop
   ownerUserNameOverride, // new optional prop
+  expoProductId,
 }) {
+  console.log("ownerUserNameOverride:",ownerUserNameOverride);
+  console.log(" expoProductId:",expoProductId);
   const reactFlowWrapper = useRef(null);
   const canvasContainerRef = useRef(null);
 
@@ -495,9 +498,13 @@ function CanvasComponent({
 
         if (response.ok) {
           // const effectiveProductId = getEffectiveProductId();
+          // let effectiveProductId = ownerUserNameOverride
+          //   ? "27"
+          //   : getEffectiveProductId();
           let effectiveProductId = ownerUserNameOverride
-            ? "27"
+            ? expoProductId || ""
             : getEffectiveProductId();
+          console.log("EXPO_USER Product ID being used:", effectiveProductId);
 
           if (!effectiveProductId) {
             showMessageBox(

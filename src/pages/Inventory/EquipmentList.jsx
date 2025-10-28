@@ -10,6 +10,9 @@ import { useNavigate } from "react-router-dom";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import axios from "axios";
 import "./inventory.css";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import Dropdown from "react-bootstrap/Dropdown";
 
 import MaintenanceTypeModal from "./MaintenanceTypeModal";
 import ReportTypeModal from "./ReportTypeModal";
@@ -44,6 +47,183 @@ export default function EquipmentList() {
   const [showMonthModal, setShowMonthModal] = useState(false);
   const [reportType, setReportType] = useState(null);
   const [showVisitReportModal, setShowVisitReportModal] = useState(false);
+
+  const [selectedEquipments, setSelectedEquipments] = useState([]);
+
+  // --- FUNCTION TO HANDLE CHECKBOX CHANGE ---
+  const handleCheckboxChange = (equipment) => {
+    setSelectedEquipments((prev) => {
+      const exists = prev.find((e) => e._id === equipment._id);
+      if (exists) {
+        return prev.filter((e) => e._id !== equipment._id);
+      } else {
+        return [...prev, equipment];
+      }
+    });
+  };
+
+  // --- helper: build a QR image (PNG DataURL) with captions under it ---
+  const buildQrWithCaption = async (value, { name, ratedLoad, capacity }) => {
+    // 1) draw the QR to an offscreen canvas
+    const qrCanvas = document.createElement("canvas");
+    await QRCodeLib.toCanvas(qrCanvas, value, { width: 280, margin: 1 }); // big for crisp output
+
+    // 2) measure caption width
+    const padding = 20;
+    const fontSize = 16;
+    const lineGap = 6;
+    const lines = [
+      `Name: ${name || "N/A"}`,
+      `Rated Load: ${ratedLoad || "–"}`,
+      `Capacity: ${capacity || "–"}`,
+    ];
+    const meas = document.createElement("canvas").getContext("2d");
+    meas.font = `${fontSize}px Arial`;
+    const textW = Math.max(...lines.map((l) => meas.measureText(l).width));
+
+    // 3) final canvas with white background, border, QR + centered text
+    const canvasWidth =
+      Math.max(qrCanvas.width, Math.ceil(textW)) + padding * 2;
+    const canvasHeight =
+      qrCanvas.height + padding * 2 + lines.length * (fontSize + lineGap) + 10;
+
+    const out = document.createElement("canvas");
+    out.width = canvasWidth;
+    out.height = canvasHeight;
+
+    const ctx = out.getContext("2d");
+    // background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    // soft border
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, canvasWidth - 2, canvasHeight - 2);
+
+    // QR centered at top
+    const qrX = (canvasWidth - qrCanvas.width) / 2;
+    ctx.drawImage(qrCanvas, qrX, padding);
+
+    // captions (centered)
+    ctx.font = `${fontSize}px Arial`;
+    ctx.fillStyle = "#111827";
+    ctx.textAlign = "center";
+    let y = padding + qrCanvas.height + 10 + fontSize;
+    const cx = canvasWidth / 2;
+    lines.forEach((line) => {
+      ctx.fillText(line, cx, y);
+      y += fontSize + lineGap;
+    });
+
+    return {
+      dataUrl: out.toDataURL("image/png"),
+      widthPx: out.width,
+      heightPx: out.height,
+    };
+  };
+
+  // --- FUNCTION TO DOWNLOAD MULTI-QR PDF ---
+  // --- FUNCTION TO DOWNLOAD MULTI-QR PDF (styled two-column cards) ---
+  const downloadSelectedQRCodes = async () => {
+    if (selectedEquipments.length === 0) {
+      toast.warn("Please select at least one equipment");
+      return;
+    }
+
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+
+    const margin = 12;
+    const cols = 3;
+    const gap = 6;
+    const headerH = 10;
+
+    // Card size fits two columns nicely
+    const cardW = (pageW - margin * 2 - gap * (cols - 1)) / cols;
+    const cardH = 70;
+
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("Equipment QR Pack", margin, margin);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(new Date().toLocaleString("en-GB"), pageW - margin, margin, {
+      align: "right",
+    });
+
+    let col = 0;
+    let x = margin;
+    let y = margin + headerH;
+
+    for (let i = 0; i < selectedEquipments.length; i++) {
+      const eq = selectedEquipments[i];
+
+      // Build QR image with captions under it
+      const img = await buildQrWithCaption(eq._id, {
+        name: eq.equipmentName,
+        ratedLoad: eq.ratedLoad,
+        capacity: eq.capacity,
+      });
+
+      // New page if no vertical space left
+      if (y + cardH > pageH - margin) {
+        doc.addPage();
+        // re-draw a small header for continuity
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("Equipment QR Pack (cont.)", margin, margin);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(new Date().toLocaleString("en-GB"), pageW - margin, margin, {
+          align: "right",
+        });
+        y = margin + headerH;
+        col = 0;
+        x = margin;
+      }
+
+      // Card outline
+      doc.setDrawColor(220);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(x, y, cardW, cardH, 3, 3);
+
+      // Title (centered)
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+
+      // Center the QR+caption image INSIDE the card (fit by width/height, then center)
+      const ratio = img.heightPx / img.widthPx;
+      const maxW = cardW - 16; // horizontal padding inside card
+      const maxH = cardH - 16; // vertical padding inside card
+      let innerW = maxW;
+      let innerH = innerW * ratio;
+      if (innerH > maxH) {
+        innerH = maxH;
+        innerW = innerH / ratio;
+      }
+      const imgX = x + (cardW - innerW) / 2;
+      const imgY = y + (cardH - innerH) / 2;
+      doc.addImage(img.dataUrl, "PNG", imgX, imgY, innerW, innerH);
+
+      // Optional tiny footer line (ID)
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+
+      // Next column/row
+      col++;
+      if (col === cols) {
+        col = 0;
+        x = margin;
+        y += cardH + gap;
+      } else {
+        x += cardW + gap;
+      }
+    }
+
+    doc.save("Selected_Equipments_QR.pdf");
+  };
 
   const navigate = useNavigate();
 
@@ -195,12 +375,18 @@ export default function EquipmentList() {
   }, [currentUser._id]);
 
   // --- HELPER FUNCTIONS (mostly unchanged) ---
-  const downloadQR = async (value) => {
+  // --- replace this function ---
+  const downloadQR = async (equipment) => {
     try {
-      const pngUrl = await QRCodeLib.toDataURL(value);
+      const { dataUrl } = await buildQrWithCaption(equipment._id, {
+        name: equipment.equipmentName,
+        ratedLoad: equipment.ratedLoad,
+        capacity: equipment.capacity,
+      });
+
       const link = document.createElement("a");
-      link.href = pngUrl;
-      link.download = `qr-${value}.png`;
+      link.href = dataUrl;
+      link.download = `qr-${equipment.equipmentName || equipment._id}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -338,54 +524,50 @@ export default function EquipmentList() {
             </select>
           </div>
         )}
-        {/* <div className="col-md-4 d-flex justify-content-md-end gap-2">
-          {type.userType === "admin" && (
-            <>
-              <button
-                className="btn btn-warning"
-                onClick={() => openMergedReportModal("mechanical")}
-              >
-                Download Mechanical
-              </button>
-              <button
-                className="btn btn-warning"
-                onClick={() => openMergedReportModal("electrical")}
-              >
-                Download Electrical
-              </button>
-            </>
-          )}
-        </div> */}
-        <div className="col-md-6 d-flex justify-content-md-end gap-2">
-          {type.userType === "admin" && (
-            <>
-              <button
-                className="btn btn-warning"
-                onClick={() => openMergedReportModal("mechanical")}
-              >
-                Download Mechanical
-              </button>
-              <button
-                className="btn btn-warning"
-                onClick={() => openMergedReportModal("electrical")}
-              >
-                Download Electrical
-              </button>
-            </>
-          )}
+        {/*Button section */}
+        {/* Button Section */}
+        <div className="col-md-6 d-flex justify-content-start gap-2">
+          <Dropdown>
+            <Dropdown.Toggle variant="primary" id="dropdown-basic">
+              All Reports
+            </Dropdown.Toggle>
 
-          {/* Visit Report Buttons */}
-          <button
-            className="btn btn-info"
-            onClick={() => setShowVisitReportModal({ kind: "engineer" })}
-          >
-            Engineer Visit Report
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setShowVisitReportModal({ kind: "safety" })}
-          >
-            Safety Report
+            <Dropdown.Menu>
+              {/* {type.userType === "admin" && ( */}
+                {/* <> */}
+                  <Dropdown.Item
+                    onClick={() => openMergedReportModal("mechanical")}
+                  >
+                    Download Mechanical
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={() => openMergedReportModal("electrical")}
+                  >
+                    Download Electrical
+                  </Dropdown.Item>
+                {/* </> */}
+              {/* )} */}
+              <Dropdown.Item
+                onClick={() => setShowVisitReportModal({ kind: "engineer" })}
+              >
+                Engineer Visit Report
+              </Dropdown.Item>
+              <Dropdown.Item
+                onClick={() => setShowVisitReportModal({ kind: "safety" })}
+              >
+                Safety Report
+              </Dropdown.Item>
+              <Dropdown.Item
+                onClick={() => setShowVisitReportModal({ kind: "service" })}
+              >
+                Service Report
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          </Dropdown>
+
+          {/* Keep Download QR separate */}
+          <button className="btn btn-success" onClick={downloadSelectedQRCodes}>
+            Download QR
           </button>
         </div>
       </div>
@@ -402,6 +584,7 @@ export default function EquipmentList() {
             <thead style={{ background: "#236a80", color: "#fff" }}>
               <tr>
                 {/* Table headers (unchanged) */}
+                <th>Select</th>
                 <th>Name</th>
                 <th>User</th>
                 <th>Model</th>
@@ -413,7 +596,7 @@ export default function EquipmentList() {
                 <th>QR</th>
                 <th>Download QR</th>
                 <th>Action</th>
-                <th>Assign</th>
+                {/* <th>Assign</th> */}
               </tr>
             </thead>
             <tbody>
@@ -430,6 +613,15 @@ export default function EquipmentList() {
                       : ""
                   }
                 >
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedEquipments.some(
+                        (eq) => eq._id === e._id
+                      )}
+                      onChange={() => handleCheckboxChange(e)}
+                    />
+                  </td>
                   <td>{e.equipmentName || "N/A"}</td>
                   <td>{e.userName || "N/A"}</td>
                   <td>{e.modelSerial || "N/A"}</td>
@@ -448,7 +640,7 @@ export default function EquipmentList() {
                   <td>
                     <button
                       className="btn btn-sm btn-outline-success"
-                      onClick={() => downloadQR(e._id)}
+                      onClick={() => downloadQR(e)}
                     >
                       Download
                     </button>
@@ -512,17 +704,6 @@ export default function EquipmentList() {
                       </>
                     )}
                   </td> */}
-                  <td>
-                    {assignedUserNames.includes(e.userName) && (
-                      <>
-                        {e.hasMechanical && e.hasElectrical && e.hasService ? (
-                          <span className="badge bg-success">Completed</span>
-                        ) : (
-                          <span className="badge bg-primary">Assigned</span>
-                        )}
-                      </>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>

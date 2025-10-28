@@ -685,9 +685,9 @@ export default function ServiceReportForm({
                 <a href={`mailto:${submitter.email}`}>{submitter.email}</a>)
               </div>
             ) : (
-              <div className="text-danger">
-                Submitter data missing. Please log in.
-              </div>
+              <div className="text-primary">
+        {validUserOne?.email || "No email available"}
+      </div>
             )}
           </div>
         </div>

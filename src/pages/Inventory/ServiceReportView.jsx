@@ -9,7 +9,11 @@ import { API_URL } from "../../utils/apiConfig";
 import genexlogo from "../../assests/images/logonewgenex.png";
 
 export default function ServiceReportView() {
-  const { equipmentId } = useParams();
+  // const { equipmentId } = useParams();
+  // const { userName, year, month } = useParams();
+   const { userName, year, month } = useParams();
+ const decodedUserName = decodeURIComponent(userName || "");
+
   const navigate = useNavigate();
   const reportRef = useRef();
   const [report, setReport] = useState(null);
@@ -19,7 +23,7 @@ export default function ServiceReportView() {
   const adminType = useSelector(
     (s) => s.user.userData?.validUserOne?.adminType
   );
-  const [userName, setUserName] = useState(null);
+  // const [userName, setUserName] = useState(null);
   const [companyName, setCompanyName] = useState("—");
   const [equipmentInfo, setEquipmentInfo] = useState({});
 
@@ -87,31 +91,31 @@ export default function ServiceReportView() {
   }, [navigate]);
 
   // 1) equipment metadata (userName, etc.)
-  useEffect(() => {
-    const fetchEquipmentMetadata = async () => {
-      if (!equipmentId) {
-        setLoading(false);
-        return;
-      }
-      try {
-        // NOTE: many projects use a legacy typo '/api/equiment' — keeping it.
-        const res = await axios.get(`${API_URL}/api/equiment/${equipmentId}`);
-        const eq = res.data?.equipment || {};
-        setUserName(eq.userName);
-        setEquipmentInfo({
-          capacity: eq.capacity || "—",
-          model: eq.modelSerial || "—",
-          rateLoad: eq.ratedLoad || "—",
-          equipmentName: eq.equipmentName || "—",
-        });
-      } catch (err) {
-        console.error("❌ Equipment fetch failed:", err);
-        toast.error("Failed to load equipment info for report");
-        setLoading(false);
-      }
-    };
-    fetchEquipmentMetadata();
-  }, [equipmentId]);
+  // useEffect(() => {
+  //   const fetchEquipmentMetadata = async () => {
+  //     if (!equipmentId) {
+  //       setLoading(false);
+  //       return;
+  //     }
+  //     try {
+  //       // NOTE: many projects use a legacy typo '/api/equiment' — keeping it.
+  //       const res = await axios.get(`${API_URL}/api/equiment/${equipmentId}`);
+  //       const eq = res.data?.equipment || {};
+  //       setUserName(eq.userName);
+  //       setEquipmentInfo({
+  //         capacity: eq.capacity || "—",
+  //         model: eq.modelSerial || "—",
+  //         rateLoad: eq.ratedLoad || "—",
+  //         equipmentName: eq.equipmentName || "—",
+  //       });
+  //     } catch (err) {
+  //       console.error("❌ Equipment fetch failed:", err);
+  //       toast.error("Failed to load equipment info for report");
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchEquipmentMetadata();
+  // }, [equipmentId]);
 
   // 2) company name from userName
   useEffect(() => {
@@ -131,40 +135,66 @@ export default function ServiceReportView() {
   }, [userName]);
 
   // 3) service report for current month
+  // useEffect(() => {
+  //   const fetchServiceReport = async () => {
+  //     if (!equipmentId || (userName === null && !loading)) return;
+  //     const now = new Date();
+  //     const y = now.getFullYear(),
+  //       m = now.getMonth() + 1;
+  //     try {
+  //       // In routes we exposed GET /api/equipment/:equipmentId?year=&month=
+  //       const res = await axios.get(
+  //         `${API_URL}/api/equipment/${equipmentId}?year=${y}&month=${m}`
+  //       );
+  //       const { success, reports } = res.data;
+  //       if (success && Array.isArray(reports) && reports.length > 0) {
+  //         setReport(reports[0]);
+  //       } else {
+  //         toast.info(
+  //           "No service report found for this equipment for the current month."
+  //         );
+  //         setReport(null);
+  //       }
+  //     } catch (err) {
+  //       console.error(
+  //         "Error fetching service report:",
+  //         err.response?.data || err.message
+  //       );
+  //       if (!(err.response && err.response.status === 404))
+  //         toast.error("Failed to load service report details.");
+  //       setReport(null);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchServiceReport();
+  // }, [equipmentId, userName, loading]);
+
   useEffect(() => {
-    const fetchServiceReport = async () => {
-      if (!equipmentId || (userName === null && !loading)) return;
-      const now = new Date();
-      const y = now.getFullYear(),
-        m = now.getMonth() + 1;
-      try {
-        // In routes we exposed GET /api/equipment/:equipmentId?year=&month=
-        const res = await axios.get(
-          `${API_URL}/api/equipment/${equipmentId}?year=${y}&month=${m}`
-        );
-        const { success, reports } = res.data;
-        if (success && Array.isArray(reports) && reports.length > 0) {
-          setReport(reports[0]);
-        } else {
-          toast.info(
-            "No service report found for this equipment for the current month."
-          );
-          setReport(null);
-        }
-      } catch (err) {
-        console.error(
-          "Error fetching service report:",
-          err.response?.data || err.message
-        );
-        if (!(err.response && err.response.status === 404))
-          toast.error("Failed to load service report details.");
-        setReport(null);
-      } finally {
-        setLoading(false);
+  const fetchServiceReport = async () => {
+    // if (!userName) return;
+    if (!decodedUserName) return;
+    try {
+      // const res = await axios.get(`${API_URL}/api/user/${userName}/month/${year}/${month}`);
+          const res = await axios.get(
+       `${API_URL}/api/user/${encodeURIComponent(decodedUserName)}/month/${year}/${month}`
+     );
+      const { success, reports } = res.data;
+      if (success && reports.length > 0) {
+        setReport(reports[0]);
+      } else {
+        toast.info("No service report found for this user and month.");
       }
-    };
-    fetchServiceReport();
-  }, [equipmentId, userName, loading]);
+    } catch (err) {
+      console.error("Error fetching service report:", err);
+      toast.error("Failed to load service report details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchServiceReport();
+// }, [userName, year, month]);
+}, [decodedUserName, year, month]);
 
   const downloadPDF = async () => {
     const imgs = Array.from(reportRef.current.querySelectorAll("img"));

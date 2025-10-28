@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom"; // Import useLocati
 import "./maindashboard.css";
 import { API_URL } from "../../utils/apiConfig";
 
+
 function Maindashboard() {
   const navigate = useNavigate();
   const location = useLocation(); // Get the current path

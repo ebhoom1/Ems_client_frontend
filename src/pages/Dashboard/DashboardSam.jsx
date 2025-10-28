@@ -5,19 +5,19 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { API_URL } from "../../utils/apiConfig";
-import wipro from '../../assests/images/wiprologonew.png'
+import wipro from "../../assests/images/wiprologonew.png";
 function DashboardSam() {
   const { userData, userType } = useSelector((state) => state.user);
   const validUser = userData?.validUserOne || {};
   // Assuming 'adminType' is the field that holds the username
   const userName = validUser?.adminType;
   const name = validUser?.userName;
-  console.log('username', name)
+  console.log("username", name);
 
   // Check if the userName is specific for the diesel dashboard
-  const isBBRole = name === 'BBUSER' || name === 'BBADMIN';
-const isSpecialUser = name === 'admin1_001' || name === 'CONTI';
-console.log('isSpecialUser',isSpecialUser);
+  const isBBRole = name === "BBUSER" || name === "BBADMIN";
+  const isSpecialUser = name === "admin1_001" || name === "CONTI";
+  console.log("isSpecialUser", isSpecialUser);
 
   // Derive the user role from the user data
   const userRole = validUser.isTechnician
@@ -56,41 +56,42 @@ console.log('isSpecialUser',isSpecialUser);
   const heading = userName || "EBHOOM";
 
   // Check if the user is an 'admin' and the userName is 'EMBASSY_ADMIN'
-  const isEmbassyAdmin = userType === 'admin' && name === 'EMBASSY_ADMIN';
+  const isEmbassyAdmin = userType === "admin" && name === "EMBASSY_ADMIN";
 
   return (
     <div className="dashboard-sam">
       <div className="navdash">
         <ul className="menu">
-        <div className="text-center">
-  {isSpecialUser ? (
-    <img
-      src={wipro}
-      alt="Wipro Water Logo"
-      style={{
-        maxWidth: "220px",
-        maxHeight: "190px",
-        marginBottom: "10px",
-        borderRadius: "8px",
-      }}
-    />
-  ) : logoUrl ? (
-    <img
-      src={logoUrl}
-      alt={`${userName} Logo`}
-      style={{
-        maxWidth: "120px",
-        maxHeight: "120px",
-        marginBottom: "10px",
-      }}
-    />
-  ) : (
-    <span style={{ color: "#fff", fontSize: "12px" }}>Loading logo...</span>
-  )}
-</div>
+          <div className="text-center">
+            {isSpecialUser ? (
+              <img
+                src={wipro}
+                alt="Wipro Water Logo"
+                style={{
+                  maxWidth: "220px",
+                  maxHeight: "190px",
+                  marginBottom: "10px",
+                  borderRadius: "8px",
+                }}
+              />
+            ) : logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={`${userName} Logo`}
+                style={{
+                  maxWidth: "120px",
+                  maxHeight: "120px",
+                  marginBottom: "10px",
+                }}
+              />
+            ) : (
+              <span style={{ color: "#fff", fontSize: "12px" }}>
+                Loading logo...
+              </span>
+            )}
+          </div>
 
-
-{/*  <div>
+          {/*  <div>
   <img src={wipro} alt="" width={'200px'} height={'50px'} className="ms-3" />
 </div>  */}
           {/* If user is BBUSER or BBADMIN, show only Fuel Dashboard */}
@@ -116,7 +117,8 @@ console.log('isSpecialUser',isSpecialUser);
               </li>
 
               {/* Show limited menu for technician or territorial manager */}
-              {userRole === "technician" || userRole === "territorialManager" ? (
+              {userRole === "technician" ||
+              userRole === "territorialManager" ? (
                 <>
                   <li className="list active text-center">
                     <a
@@ -212,20 +214,26 @@ console.log('isSpecialUser',isSpecialUser);
                           <span className="title">Notification</span>
                         </a>
                       </li>
-                     {isSpecialUser ? (
+                      {isSpecialUser ? (
                         <li className="list active text-center">
-                          <a href="/pandd" style={{ textDecoration: "none", color: "#ffffff" }}>
+                          <a
+                            href="/pandd"
+                            style={{ textDecoration: "none", color: "#ffffff" }}
+                          >
                             <span className="title">UPW</span>
                           </a>
                         </li>
                       ) : (
                         <li className="list active text-center">
-                          <a href="/chat" style={{ textDecoration: "none", color: "#ffffff" }}>
+                          <a
+                            href="/chat"
+                            style={{ textDecoration: "none", color: "#ffffff" }}
+                          >
                             <span className="title">Chat</span>
                           </a>
                         </li>
                       )}
-                      
+
                       <li className="list active text-center">
                         <a
                           href="/inventory"
@@ -287,23 +295,29 @@ console.log('isSpecialUser',isSpecialUser);
                           <span className="title">Download</span>
                         </a>
                       </li>
-                      <li className="list active text-center">
+                      {/* <li className="list active text-center">
                         <a
                           href="/autonerve"
                           style={{ textDecoration: "none", color: "#ffffff" }}
                         >
                           <span className="title">AutoNerve</span>
                         </a>
-                      </li>
+                      </li> */}
                       {isSpecialUser ? (
                         <li className="list active text-center">
-                          <a href="/pandd" style={{ textDecoration: "none", color: "#ffffff" }}>
+                          <a
+                            href="/pandd"
+                            style={{ textDecoration: "none", color: "#ffffff" }}
+                          >
                             <span className="title">UPW</span>
                           </a>
                         </li>
                       ) : (
                         <li className="list active text-center">
-                          <a href="/chat" style={{ textDecoration: "none", color: "#ffffff" }}>
+                          <a
+                            href="/chat"
+                            style={{ textDecoration: "none", color: "#ffffff" }}
+                          >
                             <span className="title">Chat</span>
                           </a>
                         </li>

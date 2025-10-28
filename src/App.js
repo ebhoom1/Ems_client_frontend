@@ -147,7 +147,7 @@ function App() {
     }
   }, [dispatch, navigate, location.pathname]);
 
-useEffect(() => {
+  useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
     const userType = localStorage.getItem("userType");
     console.log(userType);
@@ -164,53 +164,53 @@ useEffect(() => {
   }, [navigate, location.pathname]);
 
 
-// Add this to your existing App.js useEffect hooks
+  // Add this to your existing App.js useEffect hooks
 
-useEffect(() => {
-  // Register service worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(registration => {
-        console.log('Service Worker registered successfully:', registration);
-      })
-      .catch(error => {
-        console.log('Service Worker registration failed:', error);
-      });
-  }
-}, []);
-
-// Corrected code
-useEffect(() => {
-  // Only proceed if we have valid user data
-   console.log("Checking userData in useEffect:", userData);
-  if (userData?.validUserOne?.userName) {
-    if ('Notification' in window) {
-      window.Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          console.log('Notification permission granted.');
-          // Now we can safely subscribe the user
-          subscribeUserAndSave();
-        }
-      });
+  useEffect(() => {
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(registration => {
+          console.log('Service Worker registered successfully:', registration);
+        })
+        .catch(error => {
+          console.log('Service Worker registration failed:', error);
+        });
     }
-  }
-}, [userData]); // This dependency is correct
+  }, []);
 
-// Add this new function
-// Update your App.js subscribeUserAndSave function:
-
-const subscribeUserAndSave = async () => {
-  try {
-    const subscription = await subscribeUser();
-
-    if (subscription && userData?.validUserOne?.userName) {
-      await saveSubscriptionToBackend(subscription, userData.validUserOne.userName); // ✅ now sends username too
-      console.log("Subscription sent to backend ✅");
+  // Corrected code
+  useEffect(() => {
+    // Only proceed if we have valid user data
+    console.log("Checking userData in useEffect:", userData);
+    if (userData?.validUserOne?.userName) {
+      if ('Notification' in window) {
+        window.Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            console.log('Notification permission granted.');
+            // Now we can safely subscribe the user
+            subscribeUserAndSave();
+          }
+        });
+      }
     }
-  } catch (error) {
-    console.error("Error subscribing user:", error);
-  }
-};
+  }, [userData]); // This dependency is correct
+
+  // Add this new function
+  // Update your App.js subscribeUserAndSave function:
+
+  const subscribeUserAndSave = async () => {
+    try {
+      const subscription = await subscribeUser();
+
+      if (subscription && userData?.validUserOne?.userName) {
+        await saveSubscriptionToBackend(subscription, userData.validUserOne.userName); // ✅ now sends username too
+        console.log("Subscription sent to backend ✅");
+      }
+    } catch (error) {
+      console.error("Error subscribing user:", error);
+    }
+  };
 
   return (
     <div className="App">
@@ -218,14 +218,14 @@ const subscribeUserAndSave = async () => {
         <UserProvider>
           <NotificationProvider>
             <FaultAlertProvider>
-            <Routes>
-              <Route path="/" element={<LoginNew />} />
-              <Route path="/login" element={<LogTest />} />
-              <Route path="/reset-password" element={<Reset />} />
-              <Route path="/reset" element={<ResetEmail />} />
-              <Route path="/download-data" element={<Download />}></Route>
-              <Route path="/log" element={<Log />} />
-                   <Route path="/diesel" element={<DieselDashboard />} />
+              <Routes>
+                <Route path="/" element={<LoginNew />} />
+                <Route path="/login" element={<LogTest />} />
+                <Route path="/reset-password" element={<Reset />} />
+                <Route path="/reset" element={<ResetEmail />} />
+                <Route path="/download-data" element={<Download />}></Route>
+                <Route path="/log" element={<Log />} />
+                <Route path="/diesel" element={<DieselDashboard />} />
 
                 <Route path="/" element={<LogTest />} />
 
@@ -264,7 +264,7 @@ const subscribeUserAndSave = async () => {
                     <Route path="/notification" element={<Notification />} />
                     <Route path="/subscribe" element={<Subscibe />} />
                     <Route path="/live-emmision" element={<LiveEmmission />} />
-                    <Route path="/account" element={<Account />} /> 
+                    <Route path="/account" element={<Account />} />
                     <Route
                       path="/support-analyser"
                       element={<SupportAnalyser />}
@@ -364,18 +364,18 @@ const subscribeUserAndSave = async () => {
                       }
                     />
                     <Route
-                      path="/maintenance/service/:equipmentId"
+                      path="/maintenance/service/:userName"
                       element={<ServiceReportForm />}
-                    /> 
+                    />
                     <Route
                       path="/maintenance/engineer-visit/:user"
                       element={<EngineerVisitReportForm />}
                     />
-                     {/* <Route
+                    {/* <Route
                       path="/maintenance/safety/:equipmentId"
                       element={<SafetyReportForm />}
                     /> */}
-                     <Route
+                    <Route
                       path="/maintenance/safety/:user"
                       element={<SafetyReportForm />}
                     />
@@ -388,53 +388,53 @@ const subscribeUserAndSave = async () => {
                       element={<MechanicalReport />}
                     />
                     <Route
-                    
-                      path="/report/service/:equipmentId"
+
+                      path="/report/service/view/:userName/:year/:month"
                       element={<ServiceReport />}
                     />
                     <Route path="/report/engineer/view/:user/:year/:month" element={<EngineerVisitReportView />} />
                     <Route path="/report/safety/view/:user/:year/:month" element={<SafetyReportView />} />
 
-                  <Route
-                    path="/report/electrical/download/:userName/:year/:month"
-                    element={<MergedElectricalReport />}
-                  />
-                  <Route
-                    path="/mechanical-report/:userName/:year/:month"
-                    element={<MergedMechanicalReport />}
-                  />
-                  <Route path="/dailylog" element={<DailyLog />} />
-                  <Route
-                    path="/admin/report/:username"
-                    element={<AdminReport />}
-                  />
-                  <Route
-                    path="/edit-equipment/:id"
-                    element={<EditEquipment />}
-                  />
-                  <Route path="/summary" element={<Summary />} />
-                  <Route
-                    path="/summary/waterquality"
-                    element={<WaterQualitySummary />}
-                  />
-                  <Route
-                    path="/realtimedashboard"
-                    element={<RealTimeDashboard />}
-                  />
-                  <Route path="/dayreport" element={<DayReport />} />
-                  <Route
-                    path="/previous-quantity"
-                    element={<PreviousQuantity />}
-                  />
-                  <Route
-                    path="/previous-quality"
-                    element={<PreviousQuality />}
-                  />
-                  <Route
-                    path="/assign-technician"
-                    element={<AssignTechnician />}
-                  />
-                   <Route path="/diesel" element={<DieselDashboard />} />
+                    <Route
+                      path="/report/electrical/download/:userName/:year/:month"
+                      element={<MergedElectricalReport />}
+                    />
+                    <Route
+                      path="/mechanical-report/:userName/:year/:month"
+                      element={<MergedMechanicalReport />}
+                    />
+                    <Route path="/dailylog" element={<DailyLog />} />
+                    <Route
+                      path="/admin/report/:username"
+                      element={<AdminReport />}
+                    />
+                    <Route
+                      path="/edit-equipment/:id"
+                      element={<EditEquipment />}
+                    />
+                    <Route path="/summary" element={<Summary />} />
+                    <Route
+                      path="/summary/waterquality"
+                      element={<WaterQualitySummary />}
+                    />
+                    <Route
+                      path="/realtimedashboard"
+                      element={<RealTimeDashboard />}
+                    />
+                    <Route path="/dayreport" element={<DayReport />} />
+                    <Route
+                      path="/previous-quantity"
+                      element={<PreviousQuantity />}
+                    />
+                    <Route
+                      path="/previous-quality"
+                      element={<PreviousQuality />}
+                    />
+                    <Route
+                      path="/assign-technician"
+                      element={<AssignTechnician />}
+                    />
+                    <Route path="/diesel" element={<DieselDashboard />} />
 
                     <Route path="/autonerve" element={<AutonerveLayout />} />
                     <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
@@ -460,6 +460,34 @@ const subscribeUserAndSave = async () => {
                       path="/customisable-report"
                       element={<CustomisableReport />}
                     />
+                    <Route
+                      path="/maintenance/service/:userName"
+                      element={<ServiceReportForm />}
+                    />
+                    <Route
+
+                      path="/report/service/view/:userName/:year/:month"
+                      element={<ServiceReport />}
+                    />
+                    <Route path="/report/safety/view/:user/:year/:month" element={<SafetyReportView />} />
+                    <Route
+                      path="/maintenance/safety/:user"
+                      element={<SafetyReportForm />}
+                    />
+                    <Route
+                      path="/maintenance/engineer-visit/:user"
+                      element={<EngineerVisitReportForm />}
+                    />
+                    <Route path="/report/engineer/view/:user/:year/:month" element={<EngineerVisitReportView />} />
+                    <Route
+                      path="/report/electrical/download/:userName/:year/:month"
+                      element={<MergedElectricalReport />}
+                    />
+                    <Route
+                      path="/mechanical-report/:userName/:year/:month"
+                      element={<MergedMechanicalReport />}
+                    />
+
                     <Route path="/autonerve" element={<AutonerveLayout />} />
                     <Route path="/transactions" element={<Transcation />} />{" "}
                     {/* Assuming transaction-related routes */}
@@ -623,7 +651,7 @@ const subscribeUserAndSave = async () => {
                     <Route path="/dailylogs" element={<DailyLog />} />
                     <Route path="/geolocation" element={<Geolocation />} />
                     <Route path="/summary" element={<Summary />} />
-                                        <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
+                    <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
 
                   </Route>
                 )}

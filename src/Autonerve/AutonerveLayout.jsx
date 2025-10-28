@@ -26,6 +26,8 @@ function AutonerveLayout() {
   const [selectedStationName, setSelectedStationName] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
+const expoProductId = 41;
+
   // 🔹 Track the selected user from sessionStorage
   const [selectedUserId, setSelectedUserId] = useState(() => {
     try {
@@ -148,7 +150,7 @@ function AutonerveLayout() {
       // const effectiveUserName=selectedUserId || loggedIn
       // force the calls to use KIMS027 under the hood when required
       const effectiveUserName = isForcedProfile
-        ? "KIMS027"
+        ? "EXPO_USER"
         : selectedUserId || loggedIn;
       console.log("effectiveUserName:", effectiveUserName);
       if (!effectiveUserName) return;
@@ -166,7 +168,7 @@ function AutonerveLayout() {
             .filter(Boolean);
           setSavedStations(
             isForcedProfile
-              ? stations.filter((n) => n === "New" || n === "PDF")
+              ? stations.filter((n) => n === "STATION 1" || n === "PDF")
               : stations
           );
         } else {
@@ -185,6 +187,8 @@ function AutonerveLayout() {
     fetchStations();
   }, [userData, selectedUserId, isForcedProfile]);
 
+  
+
   const handleSelectStation = (stationName) => {
     setSelectedStationName(stationName);
     setIsEditMode(false);
@@ -200,7 +204,7 @@ function AutonerveLayout() {
     if (!isForcedProfile) return;
     if (selectedStationName) return;
 
-    setSelectedStationName("New");
+    setSelectedStationName("STATION 1");
     setIsEditMode(false);
     autoAppliedRef.current = true;
   }, [isForcedProfile, selectedStationName]);
@@ -275,11 +279,6 @@ function AutonerveLayout() {
                   </div>
                 ) : null}
               </div>
-
-              {/* RIGHT: Wipro logo (200 x 60) */}
-              <div className="forced-right">
-                <img src={wipro} alt="Wipro" className="forced-logo-lg" />
-              </div>
             </div>
           ) : (
             /* Non-forced users: keep your existing layout */
@@ -300,15 +299,15 @@ function AutonerveLayout() {
                 {isEditMode ? "View Mode" : "Edit Mode"}
               </button>
               {isEditMode && (
-                  <button
-                    onClick={handleCreateNew}
-                    className="new-station-button"
-                  >
-                    + New Station
-                  </button>
-                )}
+                <button
+                  onClick={handleCreateNew}
+                  className="new-station-button"
+                >
+                  + New Station
+                </button>
+              )}
 
-               <div className="forced-center">
+              <div className="forced-center">
                 {isEditMode ? (
                   <div className="forced-iconbar">
                     <Iconbar onFileDrop={handleFileDrop} />
@@ -348,7 +347,9 @@ function AutonerveLayout() {
           onStationDeleted={() => setSelectedStationName(null)}
           draggedFileRef={draggedFileRef}
           clearDraggedFile={clearDraggedFile}
-          ownerUserNameOverride={isForcedProfile ? "KIMS027" : undefined}
+          ownerUserNameOverride={isForcedProfile ? "EXPO_USER" : undefined}
+          expoProductId={isForcedProfile ? expoProductId : null}
+
         />
       </div>
 

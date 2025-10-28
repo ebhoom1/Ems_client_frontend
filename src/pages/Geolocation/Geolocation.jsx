@@ -79,11 +79,11 @@
 //         : validUser.isTerritorialManager
 //         ? "territorialManager"
 //         : "operator";
-  
+
 //       // Detailed validation of all required fields
 //       const fieldValidations = {
 //         username: {
-//           value:  operator.userName,          
+//           value:  operator.userName,
 //           valid: operator.userName && typeof operator.userName === 'string',
 //           message: 'Username is required and must be a string'
 //         },
@@ -118,16 +118,16 @@
 //           message: 'Longitude must be a valid number'
 //         }
 //       };
-  
+
 //       // Check for invalid fields
 //       const invalidFields = Object.entries(fieldValidations)
 //         .filter(([_, validation]) => !validation.valid)
 //         .map(([field, validation]) => `${field}: ${validation.message}`);
-  
+
 //       if (invalidFields.length > 0) {
 //         throw new Error(`Invalid fields detected:\n${invalidFields.join('\n')}`);
 //       }
-  
+
 //       // Construct payload
 //       const payload = {
 //         username: validUser.userName,
@@ -138,18 +138,18 @@
 //         longitude: coords.lng,
 //         userRole
 //       };
-  
+
 //       console.log('✅ Valid payload ready:', payload);
-  
+
 //       // Send to server
 //       const res = await fetch(`${API_URL}/api/attendance`, {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json" },
 //         body: JSON.stringify(payload),
 //       });
-  
+
 //       const responseData = await res.json().catch(() => ({}));
-  
+
 //       if (!res.ok) {
 //         console.error('Server responded with:', {
 //           status: res.status,
@@ -158,7 +158,7 @@
 //         });
 //         throw new Error(`Server error: ${responseData.message || 'Unknown error'}`);
 //       }
-  
+
 //       console.log("✅ Attendance marked successfully:", responseData);
 //       setModalOpen(false);
 //       navigate("/water", { state: { checkedIn: true } });
@@ -250,11 +250,10 @@ export default function Geolocation() {
   const watchId = useRef(null);
   const navigate = useNavigate();
   const videoRef = useRef(null);
-const canvasRef = useRef(null);
-const [photoCaptured, setPhotoCaptured] = useState(null); // base64 string
-const [uploadingPhoto, setUploadingPhoto] = useState(false);
-const [photoBlob, setPhotoBlob] = useState(null);
-
+  const canvasRef = useRef(null);
+  const [photoCaptured, setPhotoCaptured] = useState(null); // base64 string
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoBlob, setPhotoBlob] = useState(null);
 
   // ─── 2) SITE COORDINATES (FETCHED FROM DB) ────────────────────────────────────
   const [siteOptions, setSiteOptions] = useState([]);
@@ -299,9 +298,9 @@ const [photoBlob, setPhotoBlob] = useState(null);
     const handleSuccess = (position) => {
       // For testing, we’re hardcoding Korlam Hospital Kollam coordinates:
       //  const latitude = 8.864167;
-      // const longitude = 76.681111;    
+      // const longitude = 76.681111;
       // In production, uncomment the next two lines:
-     const { latitude, longitude } = position.coords;
+      const { latitude, longitude } = position.coords;
       setCoords({ lat: latitude, lng: longitude });
       setCoords({ lat: latitude, lng: longitude });
     };
@@ -363,7 +362,9 @@ const [photoBlob, setPhotoBlob] = useState(null);
         console.log("🗺️ Sites API returned:", data);
 
         if (!Array.isArray(data) || data.length === 0) {
-          console.warn("⚠️ API returned an empty array or non-array for sites.");
+          console.warn(
+            "⚠️ API returned an empty array or non-array for sites."
+          );
           setError("No site locations found for your account.");
           setSiteOptions([]);
           setFirstSiteLat(null);
@@ -429,20 +430,21 @@ const [photoBlob, setPhotoBlob] = useState(null);
       ) {
         siteLat = site.latitude;
         siteLng = site.longitude;
-      } else if (
-        typeof site.lat === "number" &&
-        typeof site.lng === "number"
-      ) {
+      } else if (typeof site.lat === "number" && typeof site.lng === "number") {
         siteLat = site.lat;
         siteLng = site.lng;
       } else {
-        console.warn(`Site ${site.companyName || site._id} has invalid coordinates.`);
+        console.warn(
+          `Site ${site.companyName || site._id} has invalid coordinates.`
+        );
         return false;
       }
 
       const dist = getDistanceMeters(siteLat, siteLng, coords.lat, coords.lng);
       console.log(
-        `📍 Distance from device to ${site.companyName || "site"}: ${dist.toFixed(2)} meters`
+        `📍 Distance from device to ${
+          site.companyName || "site"
+        }: ${dist.toFixed(2)} meters`
       );
       return dist <= 100;
     });
@@ -459,14 +461,23 @@ const [photoBlob, setPhotoBlob] = useState(null);
     console.log("↪️ Operator data (auth):", operator);
     console.log("↪️ Valid user data:", validUser);
     console.log("↪️ All site options:", siteOptions);
-  }, [coords, firstSiteLat, firstSiteLng, role, withinRadius, operator, validUser, siteOptions]);
+  }, [
+    coords,
+    firstSiteLat,
+    firstSiteLng,
+    role,
+    withinRadius,
+    operator,
+    validUser,
+    siteOptions,
+  ]);
 
   // ─── 9) HANDLE CHECK‐IN (MARK ATTENDANCE) ─────────────────────────────────────
- 
+
   // const handleMarkAttendance = async () => {
   //   try {
   //     if (!photoCaptured) throw new Error("Photo not captured.");
-  
+
   //     const payload = {
   //       username: validUser.userName,
   //       companyName: validUser.companyName || "N/A",
@@ -489,7 +500,7 @@ const [photoBlob, setPhotoBlob] = useState(null);
   //       const errorText = await res.text(); // Try reading plain text for error info
   //       throw new Error(errorText || "Attendance request failed");
   //     }
-      
+
   //     const result = await res.json(); // Only parse if res.ok is true
   // console.log("result attendance:",result);
   //     console.log("🎉 Attendance marked with base64 photo!");
@@ -506,11 +517,14 @@ const [photoBlob, setPhotoBlob] = useState(null);
   const handleMarkAttendance = async () => {
     try {
       if (!photoBlob) throw new Error("Photo not captured.");
-  
+
       const formData = new FormData();
       formData.append("username", validUser.userName);
       formData.append("companyName", validUser.companyName || "N/A");
-      formData.append("adminType", validUser.adminType || validUser.userType || "N/A");
+      formData.append(
+        "adminType",
+        validUser.adminType || validUser.userType || "N/A"
+      );
       formData.append("checkInTime", new Date().toISOString());
       formData.append("checkInMethod", "Location Verified");
       formData.append("latitude", coords.lat);
@@ -518,17 +532,17 @@ const [photoBlob, setPhotoBlob] = useState(null);
       formData.append("userRole", role);
       formData.append("isCheckedIn", JSON.stringify(true)); // 👈 ensures boolean survives FormData
       formData.append("photoBase64", photoBlob); // ✅ key should match backend's multer handler
-  console.log("attendance payload:",formData);
+      console.log("attendance payload:", formData);
       const res = await fetch(`${API_URL}/api/attendance`, {
         method: "POST",
         body: formData,
       });
-  
+
       if (!res.ok) {
         const errorText = await res.text();
         throw new Error(errorText || "Attendance request failed");
       }
-  
+
       const result = await res.json();
       console.log("🎉 Attendance marked with photo upload:", result);
       setModalOpen(false);
@@ -538,22 +552,20 @@ const [photoBlob, setPhotoBlob] = useState(null);
       alert(`Error: ${err.message}`);
     } finally {
       setUploadingPhoto(false);
-    } 
+    }
   };
-  
-  
 
   // const capturePhoto = () => {
   //   const video = videoRef.current;
   //   const canvas = canvasRef.current;
-  
+
   //   if (!video || !canvas) return;
-  
+
   //   const context = canvas.getContext("2d");
   //   canvas.width = video.videoWidth;
   //   canvas.height = video.videoHeight;
   //   context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  
+
   //   const dataURL = canvas.toDataURL("image/jpeg");
   //   setPhotoCaptured(dataURL);
   // };
@@ -561,14 +573,14 @@ const [photoBlob, setPhotoBlob] = useState(null);
   const capturePhoto = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-  
+
     if (!video || !canvas) return;
-  
+
     const context = canvas.getContext("2d");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  
+
     canvas.toBlob((blob) => {
       if (blob) {
         const file = new File([blob], `site_photo_${Date.now()}.jpg`, {
@@ -578,11 +590,11 @@ const [photoBlob, setPhotoBlob] = useState(null);
       }
     }, "image/jpeg");
   };
-  
 
   useEffect(() => {
     if (modalOpen && !photoCaptured) {
-      navigator.mediaDevices.getUserMedia({ video: true })
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
         .then((stream) => {
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
@@ -593,7 +605,7 @@ const [photoBlob, setPhotoBlob] = useState(null);
           setError("Please allow camera access to proceed.");
         });
     }
-  
+
     return () => {
       if (videoRef.current?.srcObject) {
         const tracks = videoRef.current.srcObject.getTracks();
@@ -601,7 +613,7 @@ const [photoBlob, setPhotoBlob] = useState(null);
       }
     };
   }, [modalOpen, photoCaptured]);
-  
+
   // ─── 10) RENDER UI ─────────────────────────────────────────────────────────────
   return (
     <div className="geo-container">
@@ -641,30 +653,29 @@ const [photoBlob, setPhotoBlob] = useState(null);
                   ⚠ Unable to capture your location. Please enable GPS.
                 </p>
               )
-            ) : (
-              withinRadius ? (
-                <>
-                  <p className="geo-success">
-                    ✅ You are within 100m of the site.
-                  </p>
-                  <button
-                    onClick={() => setModalOpen(true)}
-                    className="geo-button"
-                  >
-                    ✅ Proceed to Check-In
-                  </button>
-                </>
-              ) : (
-                <p className="geo-warning">
-                  ⚠ You are outside the 100m radius. Please move closer to the
-                  site to check in.
+            ) : withinRadius ? (
+              <>
+                <p className="geo-success">
+                  ✅ You are within 100m of the site.
                 </p>
-              )
+                <button
+                  onClick={() => setModalOpen(true)}
+                  className="geo-button"
+                >
+                  ✅ Proceed to Check-In
+                </button>
+              </>
+            ) : (
+              <p className="geo-warning">
+                ⚠ You are outside the 100m radius. Please move closer to the
+                site to check in.
+              </p>
             )}
 
             {firstSiteLat && firstSiteLng && (
               <p className="geo-site-info">
-                Nearest Site Location: {firstSiteLat.toFixed(6)}, {firstSiteLng.toFixed(6)}
+                Nearest Site Location: {firstSiteLat.toFixed(6)},{" "}
+                {firstSiteLng.toFixed(6)}
               </p>
             )}
           </div>
@@ -672,15 +683,15 @@ const [photoBlob, setPhotoBlob] = useState(null);
       </div>
 
       <Modal
-  isOpen={modalOpen}
-  onRequestClose={() => setModalOpen(false)}
-  className="geo-modal"
-  overlayClassName="geo-modal-overlay"
->
-  <h3>Location Verified</h3>
-  <p>Please capture a photo of the site before proceeding.</p>
+        isOpen={modalOpen}
+        onRequestClose={() => setModalOpen(false)}
+        className="geo-modal"
+        overlayClassName="geo-modal-overlay"
+      >
+        <h3>Location Verified</h3>
+        <p>Please capture a photo of the site before proceeding.</p>
 
-  {/* {!photoCaptured ? (
+        {/* {!photoCaptured ? (
     <>
       <video ref={videoRef} autoPlay playsInline width="100%" />
       <button onClick={capturePhoto} className="geo-button">📸 Capture Photo</button>
@@ -693,34 +704,33 @@ const [photoBlob, setPhotoBlob] = useState(null);
       </button>
     </>
   )} */}
-  {photoBlob ? (
-  <>
-    <img
-      src={URL.createObjectURL(photoBlob)}
-      alt="Captured"
-      style={{ width: "100%", margin: "10px 0" }}
-    />
-    <button onClick={handleMarkAttendance} className="geo-button">
-      ✅ Upload and Check-In
-    </button>
-  </>
-) : (
-  <>
-    <video ref={videoRef} autoPlay playsInline width="100%" />
-    <button onClick={capturePhoto} className="geo-button">📸 Capture Photo</button>
-  </>
-)}
+        {photoBlob ? (
+          <>
+            <img
+              src={URL.createObjectURL(photoBlob)}
+              alt="Captured"
+              style={{ width: "100%", margin: "10px 0" }}
+            />
+            <button onClick={handleMarkAttendance} className="geo-button">
+              ✅ Upload and Check-In
+            </button>
+          </>
+        ) : (
+          <>
+            <video ref={videoRef} autoPlay playsInline width="100%" />
+            <button onClick={capturePhoto} className="geo-button">
+              📸 Capture Photo
+            </button>
+          </>
+        )}
 
-
-<canvas ref={canvasRef} style={{ display: "none" }} />
-</Modal>
-</div>
+        <canvas ref={canvasRef} style={{ display: "none" }} />
+      </Modal>
+    </div>
   );
 }
 
-
-
- /*  const latitude = 8.864167;
+/*  const latitude = 8.864167;
       const longitude = 76.681111;  */
-      //13.060904, 77.515971
-      //8.864167, 76.681111 kims
+//13.060904, 77.515971
+//8.864167, 76.681111 kims
