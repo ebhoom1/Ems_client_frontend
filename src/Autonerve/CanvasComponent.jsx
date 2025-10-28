@@ -111,11 +111,13 @@ function CanvasComponent({
     return base;
   }, [userData, ownerUserNameOverride]);
 
+  
+
   // const getEffectiveProductId = useCallback(() => {
   //   const ui = userData?.validUserOne;
-  //   const isAdmin = String(ui?.userType || "").toLowerCase() === "admin";
+  //   const type = String(ui?.userType || "").toLowerCase();
 
-  //   if (isAdmin) {
+  //   if (type === "admin" || type === "operator") {
   //     try {
   //       const fromSession = sessionStorage.getItem("selectedProductId");
   //       return (fromSession && fromSession.trim()) || "";
@@ -123,24 +125,32 @@ function CanvasComponent({
   //       return "";
   //     }
   //   }
+
   //   return String(ui?.productID || "");
   // }, [userData]);
 
+  //for expo
   const getEffectiveProductId = useCallback(() => {
-    const ui = userData?.validUserOne;
-    const type = String(ui?.userType || "").toLowerCase();
+  // ✅ If EXPO_USER is forced, always use hard-coded 41
+  if (ownerUserNameOverride === "EXPO_USER") {
+    return String(expoProductId || 41);
+  }
 
-    if (type === "admin" || type === "operator") {
-      try {
-        const fromSession = sessionStorage.getItem("selectedProductId");
-        return (fromSession && fromSession.trim()) || "";
-      } catch {
-        return "";
-      }
+  const ui = userData?.validUserOne;
+  const type = String(ui?.userType || "").toLowerCase();
+
+  if (type === "admin" || type === "operator") {
+    try {
+      const fromSession = sessionStorage.getItem("selectedProductId");
+      if (fromSession && fromSession.trim()) return fromSession.trim();
+    } catch {
+      // ignore
     }
+  }
 
-    return String(ui?.productID || "");
-  }, [userData]);
+  return String(ui?.productID || "");
+}, [ownerUserNameOverride, expoProductId, userData]);
+
 
   const effectiveUserName = getOwnerUserName();
   const effectiveProductId = getEffectiveProductId();
