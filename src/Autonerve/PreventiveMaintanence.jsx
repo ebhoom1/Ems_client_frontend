@@ -229,7 +229,7 @@ const PreventiveMaintenance = () => {
             <div className="pm-header">
               <div className="pm-header-top">
                 <h1 className="pm-title">Predictive Maintenance</h1>
-                <img src={wipro} alt=""  width={'210px'} height={'70px'}/>
+                
               {/*   <div className="pm-user-info">
                   <span className="pm-user-name">{userData?.validUserOne?.fname || 'User'}</span>
                   <img

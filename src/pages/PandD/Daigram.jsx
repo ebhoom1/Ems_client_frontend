@@ -4,6 +4,7 @@ import HeaderSim from "../Header/HeaderSim";
 import wipro from "../../assests/images/wipro.png";
 import pdf from "../../assests/images/pdfofwipro.png";
 import "./Daigram.css";
+import { useNavigate } from "react-router-dom";
 
 // Updated data structure for better styling control (value + unit)
 const waterQualityData = [
@@ -41,6 +42,8 @@ const waterQualityData = [
 ];
 
 export default function Daigram() {
+
+  const navigate = useNavigate()
   return (
     <div className="container-fluid">
       <div className="row">
@@ -62,6 +65,14 @@ export default function Daigram() {
 
           {/* NEW: Water Quality Section with Fixed 3-Column Boxes */}
           <div className="water-quality-section">
+          <div className="d-flex align-items-center justify-content-end">
+             <button style={{backgroundColor:'#236a80' , color:'white'}}
+                  onClick={() => navigate("/preventive-maintanence")}
+                  className="header-button forced-btn p-2 "
+                >
+                  Predictive Maintenance
+                </button>
+          </div>
             <h4 className="text-center"><b>TREATED WATER QUALITY</b></h4>
             <div className="quality-grid-fixed">
               {waterQualityData.map((item, index) => (

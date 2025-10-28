@@ -223,12 +223,7 @@ const expoProductId = 41;
             <div className="forced-toolbar-1row">
               {/* LEFT: three buttons (same size) */}
               <div className="forced-left">
-                <button
-                  onClick={() => navigate("/preventive-maintanence")}
-                  className="header-button forced-btn"
-                >
-                  Predictive Maintenance
-                </button>
+               
 
                 <button
                   onClick={() => setIsEditMode(!isEditMode)}

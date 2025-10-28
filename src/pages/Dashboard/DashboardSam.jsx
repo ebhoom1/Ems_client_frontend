@@ -56,8 +56,8 @@ function DashboardSam() {
   const heading = userName || "EBHOOM";
 
   // Check if the user is an 'admin' and the userName is 'EMBASSY_ADMIN'
-  const isEmbassyAdmin = userType === "admin" && name === "EMBASSY_ADMIN";
-
+/*   const isEmbassyAdmin = userType === "admin" && name === "EMBASSY_ADMIN";
+ */
   return (
     <div className="dashboard-sam">
       <div className="navdash">
@@ -65,11 +65,11 @@ function DashboardSam() {
           <div className="text-center">
             {isSpecialUser ? (
               <img
-                src={wipro}
+                src={logoUrl}
                 alt="Wipro Water Logo"
                 style={{
-                  maxWidth: "220px",
-                  maxHeight: "190px",
+                  maxWidth: "200px",
+                  maxHeight: "150px",
                   marginBottom: "10px",
                   borderRadius: "8px",
                 }}
