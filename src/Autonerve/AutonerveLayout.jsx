@@ -213,6 +213,8 @@ function AutonerveLayout() {
             <div className="forced-toolbar-1row">
               {/* LEFT: three buttons (same size) */}
               <div className="forced-left">
+               
+
                 <button
                   onClick={() => setIsEditMode(!isEditMode)}
                   className={`toggle-button forced-btn ${
