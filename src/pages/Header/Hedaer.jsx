@@ -38,11 +38,15 @@ function Header() {
   );
   const [allFetchedUsers, setAllFetchedUsers] = useState([]);
 
+
   const { userData } = useSelector((state) => state.user);
 
-  const selectedUserId = sessionStorage.getItem("selectedUserId");
-  // 🔔 notify same-tab listeners to refetch
-window.dispatchEvent(new CustomEvent("selectedUserIdChanged"));
+//   const selectedUserId = sessionStorage.getItem("selectedUserId");
+//   // 🔔 notify same-tab listeners to refetch
+// window.dispatchEvent(new CustomEvent("selectedUserIdChanged"));
+
+const selectedUserId = sessionStorage.getItem("selectedUserId") || "";
+
 
   // Create an audio instance for the notification sound.
   const audioRef = useRef(new Audio(notificationSound));

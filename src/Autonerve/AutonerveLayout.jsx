@@ -21,12 +21,11 @@ function AutonerveLayout() {
     loggedInUserName.toLowerCase() === "admin1_001";
 
   const [savedStations, setSavedStations] = useState([]);
-  const autoAppliedRef = useRef(false);
 
   const [selectedStationName, setSelectedStationName] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
-const expoProductId = 41;
+  const expoProductId = 41;
 
   // 🔹 Track the selected user from sessionStorage
   const [selectedUserId, setSelectedUserId] = useState(() => {
@@ -37,32 +36,22 @@ const expoProductId = 41;
     }
   });
 
-  // Listen for Header’s custom event (fires in the same tab)
-  // useEffect(() => {
-  //   const handler = () => {
-  //     try {
-  //       const v = sessionStorage.getItem("selectedUserId") || null;
-  //       setSelectedUserId(v);
-  //     } catch {
-  //       setSelectedUserId(null);
-  //     }
-  //   };
-  //   window.addEventListener("selectedUserIdChanged", handler);
-  //   return () => window.removeEventListener("selectedUserIdChanged", handler);
-  // }, []);
   useEffect(() => {
-    if (isForcedProfile) return;
     const handler = () => {
       try {
         const v = sessionStorage.getItem("selectedUserId") || null;
+        console.log("🔄 Header change detected:", v);
         setSelectedUserId(v);
+        setSavedStations([]); // <-- reset station list
+        setSelectedStationName(null); // <-- clear selected station
       } catch {
         setSelectedUserId(null);
       }
     };
+
     window.addEventListener("selectedUserIdChanged", handler);
     return () => window.removeEventListener("selectedUserIdChanged", handler);
-  }, [isForcedProfile]);
+  }, []);
 
   const draggedFileRef = useRef(null);
   const handleFileDrop = (file) => {
@@ -147,11 +136,17 @@ const expoProductId = 41;
       const ui = userData?.validUserOne;
       const loggedIn = ui?.userName;
       console.log("selectedUserId**:", selectedUserId);
-      // const effectiveUserName=selectedUserId || loggedIn
-      // force the calls to use KIMS027 under the hood when required
-      const effectiveUserName = isForcedProfile
-        ? "EXPO_USER"
-        : selectedUserId || loggedIn;
+
+      // 👇 New effective username logic
+      let effectiveUserName = selectedUserId || loggedIn;
+
+      // 🔹 Special handling based on selectedUserId
+      if (selectedUserId === "CONTI") {
+        effectiveUserName = "EXPO_USER"; // Show EXPO_USER’s stations instead
+      } else if (selectedUserId === "WTCANX") {
+        effectiveUserName = "WTCANX"; // Use WTCANX’s own stations
+      }
+
       console.log("effectiveUserName:", effectiveUserName);
       if (!effectiveUserName) return;
 
@@ -166,11 +161,18 @@ const expoProductId = 41;
           const stations = result.data
             .map((s) => s.stationName)
             .filter(Boolean);
-          setSavedStations(
-            isForcedProfile
-              ? stations.filter((n) => n === "STATION 1" || n === "PDF")
-              : stations
-          );
+          let filteredStations = stations;
+
+          // 🔹 Apply filtering rules
+          if (selectedUserId === "CONTI") {
+            // Show EXPO_USER’s “STATION 1” only
+            filteredStations = stations.filter((n) => n === "STATION 1");
+          } else if (selectedUserId === "WTCANX") {
+            // Show WTCANX’s “WTC Station New” only
+            filteredStations = stations.filter((n) => n === "WTC Station New");
+          }
+
+          setSavedStations(filteredStations);
         } else {
           console.error(
             "Error fetching stations:",
@@ -187,8 +189,6 @@ const expoProductId = 41;
     fetchStations();
   }, [userData, selectedUserId, isForcedProfile]);
 
-  
-
   const handleSelectStation = (stationName) => {
     setSelectedStationName(stationName);
     setIsEditMode(false);
@@ -198,16 +198,6 @@ const expoProductId = 41;
     setSelectedStationName(null);
     setIsEditMode(true);
   };
-
-  useEffect(() => {
-    if (autoAppliedRef.current) return;
-    if (!isForcedProfile) return;
-    if (selectedStationName) return;
-
-    setSelectedStationName("STATION 1");
-    setIsEditMode(false);
-    autoAppliedRef.current = true;
-  }, [isForcedProfile, selectedStationName]);
 
   return (
     <ReactFlowProvider>
@@ -223,13 +213,6 @@ const expoProductId = 41;
             <div className="forced-toolbar-1row">
               {/* LEFT: three buttons (same size) */}
               <div className="forced-left">
-                <button
-                  onClick={() => navigate("/preventive-maintanence")}
-                  className="header-button forced-btn"
-                >
-                  Predictive Maintenance
-                </button>
-
                 <button
                   onClick={() => setIsEditMode(!isEditMode)}
                   className={`toggle-button forced-btn ${
@@ -338,7 +321,6 @@ const expoProductId = 41;
             </div>
           )}
         </div>
-
         <CanvasComponent
           selectedStationName={selectedStationName}
           onStationNameChange={setSelectedStationName}
@@ -347,9 +329,14 @@ const expoProductId = 41;
           onStationDeleted={() => setSelectedStationName(null)}
           draggedFileRef={draggedFileRef}
           clearDraggedFile={clearDraggedFile}
-          ownerUserNameOverride={isForcedProfile ? "EXPO_USER" : undefined}
-          expoProductId={isForcedProfile ? expoProductId : null}
-
+          ownerUserNameOverride={
+            selectedUserId === "CONTI"
+              ? "EXPO_USER"
+              : selectedUserId === "WTCANX"
+              ? "WTCANX"
+              : undefined
+          }
+          expoProductId={selectedUserId === "CONTI" ? expoProductId : null}
         />
       </div>
 

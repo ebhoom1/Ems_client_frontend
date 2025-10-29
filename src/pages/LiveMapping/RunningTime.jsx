@@ -1,13 +1,10 @@
-
-
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import moment from "moment";
-import { API_URL} from "../../utils/apiConfig";
+import { API_URL } from "../../utils/apiConfig";
 import { io } from "socket.io-client";
 
 const socket = io(API_URL);
@@ -19,34 +16,47 @@ function RunTime() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  
   useEffect(() => {
     const fetchRuntime = async () => {
       setLoading(true);
       try {
         const today = moment().format("YYYY-MM-DD");
-  
+
         // If admin, override userName from sessionStorage
-        const userName = actualUser.userType === "admin"
-          ? sessionStorage.getItem("selectedUserId")
-          : actualUser.userName;
-  
-        const productID = actualUser.productID;
-  
+        const userName =
+          actualUser.userType === "admin"
+            ? sessionStorage.getItem("selectedUserId")
+            : actualUser.userName;
+
+        // const productID = actualUser.productID;
+        const productID =
+          actualUser.userType === "admin"
+            ? sessionStorage.getItem("selectedProductId")
+            : actualUser.productID;
+
+console.log("✅ [DEBUG] actualUser:", actualUser);
+console.log("✅ [DEBUG] userType:", actualUser.userType);
+console.log("✅ [DEBUG] session selectedUserId:", sessionStorage.getItem("selectedUserId"));
+console.log("✅ [DEBUG] session selectedProductId:", sessionStorage.getItem("selectedProductId"));
+console.log("✅ [DEBUG] final userName:", userName);
+console.log("✅ [DEBUG] final productID:", productID);
+console.log("✅ [DEBUG] API URL:", `${API_URL}/api/runtime/${productID}/${userName}/${moment().format("YYYY-MM-DD")}`);
+
+
         if (!userName || !productID) return;
-  
+
         const response = await axios.get(
           `${API_URL}/api/runtime/${productID}/${userName}/${today}`
         );
-  
+
         const records = response.data.data.map((item, index) => ({
           id: index + 1,
           pumpId: item.pumpId,
           instrument: item.pumpName,
           run: item.runtime,
-          lastOnTime: item.lastOnTime || null
+          lastOnTime: item.lastOnTime || null,
         }));
-  
+
         setData(records);
       } catch (err) {
         console.error("Error fetching runtime:", err);
@@ -54,29 +64,34 @@ function RunTime() {
         setLoading(false);
       }
     };
-  
-    const userName = actualUser.userType === "admin"
-      ? sessionStorage.getItem("selectedUserId")
-      : actualUser.userName;
-  
+
+    const userName =
+      actualUser.userType === "admin"
+        ? sessionStorage.getItem("selectedUserId")
+        : actualUser.userName;
+
     const productID = actualUser.productID;
-  
+
+    console.log("runtimeusername:", userName);
+
     if (userName && productID) {
       fetchRuntime();
-  
+
       socket.emit("joinRoom", productID);
-  
+
       socket.on("pumpRuntimeUpdate", (update) => {
         setData((prev) => {
-          const existingIndex = prev.findIndex(p => p.pumpId === update.pumpId);
+          const existingIndex = prev.findIndex(
+            (p) => p.pumpId === update.pumpId
+          );
           const updatedRow = {
             id: existingIndex !== -1 ? prev[existingIndex].id : prev.length + 1,
             pumpId: update.pumpId,
             instrument: update.pumpName,
             run: update.runtime,
-            lastOnTime: update.lastOnTime || null
+            lastOnTime: update.lastOnTime || null,
           };
-  
+
           if (existingIndex !== -1) {
             const updated = [...prev];
             updated[existingIndex] = updatedRow;
@@ -86,20 +101,19 @@ function RunTime() {
           }
         });
       });
-  
+
       return () => {
         socket.off("pumpRuntimeUpdate");
         socket.disconnect();
       };
     }
   }, [actualUser]);
-  
 
   // ⏱ Ticking timer
   useEffect(() => {
     const interval = setInterval(() => {
-      setData(prev =>
-        prev.map(row => {
+      setData((prev) =>
+        prev.map((row) => {
           if (row.lastOnTime) {
             const start = moment(row.lastOnTime);
             const now = moment();
@@ -119,7 +133,7 @@ function RunTime() {
   }, []);
 
   return (
-    <div style={{ padding: "20px",marginTop:"30px" }}>
+    <div style={{ padding: "20px", marginTop: "30px" }}>
       <h3>Running Time</h3>
 
       <div

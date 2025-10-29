@@ -38,8 +38,8 @@ function CanvasComponent({
   ownerUserNameOverride, // new optional prop
   expoProductId,
 }) {
-  console.log("ownerUserNameOverride:",ownerUserNameOverride);
-  console.log(" expoProductId:",expoProductId);
+  console.log("ownerUserNameOverride:", ownerUserNameOverride);
+  console.log(" expoProductId:", expoProductId);
   const reactFlowWrapper = useRef(null);
   const canvasContainerRef = useRef(null);
 
@@ -111,8 +111,6 @@ function CanvasComponent({
     return base;
   }, [userData, ownerUserNameOverride]);
 
-  
-
   // const getEffectiveProductId = useCallback(() => {
   //   const ui = userData?.validUserOne;
   //   const type = String(ui?.userType || "").toLowerCase();
@@ -131,26 +129,25 @@ function CanvasComponent({
 
   //for expo
   const getEffectiveProductId = useCallback(() => {
-  // ✅ If EXPO_USER is forced, always use hard-coded 41
-  if (ownerUserNameOverride === "EXPO_USER") {
-    return String(expoProductId || 41);
-  }
-
-  const ui = userData?.validUserOne;
-  const type = String(ui?.userType || "").toLowerCase();
-
-  if (type === "admin" || type === "operator") {
-    try {
-      const fromSession = sessionStorage.getItem("selectedProductId");
-      if (fromSession && fromSession.trim()) return fromSession.trim();
-    } catch {
-      // ignore
+    // ✅ If EXPO_USER is forced, always use hard-coded 41
+    if (ownerUserNameOverride === "EXPO_USER") {
+      return String(expoProductId || 41);
     }
-  }
 
-  return String(ui?.productID || "");
-}, [ownerUserNameOverride, expoProductId, userData]);
+    const ui = userData?.validUserOne;
+    const type = String(ui?.userType || "").toLowerCase();
 
+    if (type === "admin" || type === "operator") {
+      try {
+        const fromSession = sessionStorage.getItem("selectedProductId");
+        if (fromSession && fromSession.trim()) return fromSession.trim();
+      } catch {
+        // ignore
+      }
+    }
+
+    return String(ui?.productID || "");
+  }, [ownerUserNameOverride, expoProductId, userData]);
 
   const effectiveUserName = getOwnerUserName();
   const effectiveProductId = getEffectiveProductId();
@@ -308,61 +305,149 @@ function CanvasComponent({
       }));
     };
 
+    // const handlePumpAck = (payload) => {
+    //   console.log("Processing pump acknowledgment:", payload);
+
+    //   const pumpMap = {};
+    //   const incomingProductId = String(
+    //     payload.productId || payload.product_id || ""
+    //   );
+
+    //   payload.pumps.forEach((p) => {
+    //     const key = `${incomingProductId}:${p.pumpId}`;
+    //     pumpMap[key] = p;
+    //   });
+
+    //   setPendingPumps((prev) => {
+    //     const copy = { ...prev };
+    //     payload.pumps.forEach((p) => {
+    //       const key = `${incomingProductId}:${p.pumpId}`;
+    //       copy[key] = false;
+    //     });
+    //     return copy;
+    //   });
+
+    //   setNodes((nds) =>
+    //     nds.map((node) => {
+    //       const key = `${String(node.data?.productId)}:${node.id}`;
+    //       const updatedPump = pumpMap[key];
+    //       // if (updatedPump) {
+    //       //   return {
+    //       //     ...node,
+    //       //     data: {
+    //       //       ...node.data,
+    //       //       realtimeValues: updatedPump,
+    //       //       isOn: updatedPump.status === 1 || updatedPump.status === "ON",
+    //       //       isPending: false,
+    //       //     },
+    //       //   };
+    //       // }
+    //       if (updatedPump) {
+    //         const newData = {
+    //           ...node.data,
+    //           realtimeValues: updatedPump,
+    //           isOn: updatedPump.status === 1 || updatedPump.status === "ON",
+    //           isPending: false,
+    //         };
+    //         if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
+    //           return { ...node, data: newData };
+    //         }
+    //       }
+
+    //       return node;
+    //     })
+    //   );
+
+    //   setRealtimePumpData((prev) => ({ ...prev, ...pumpMap }));
+    // };
+
     const handlePumpAck = (payload) => {
-      console.log("Processing pump acknowledgment:", payload);
+  console.log("Processing pump acknowledgment:", payload);
 
-      const pumpMap = {};
-      const incomingProductId = String(
-        payload.productId || payload.product_id || ""
-      );
+  const pumpMap = {};
+  const incomingProductId = String(
+    payload.productId || payload.product_id || ""
+  );
 
+  // ✅ 1. Update tank nodes with tank percentages
+  if (payload.tanks && typeof payload.tanks === "object") {
+    const {
+      equalization_percentage,
+      aeration_percentage,
+      sludge_percentage,
+    } = payload.tanks;
+
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.type === "tankNode" && String(node.data?.productId) === incomingProductId) {
+          const tankName = (node.data?.tankName || node.data?.name || "")
+            .toLowerCase();
+
+          let updatedPct = null;
+          if (tankName.includes("equal")) updatedPct = equalization_percentage;
+          else if (tankName.includes("aerat")) updatedPct = aeration_percentage;
+          else if (tankName.includes("sludge")) updatedPct = sludge_percentage;
+
+          if (updatedPct !== null && updatedPct !== undefined) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                percentage: updatedPct,
+                lastUpdated: new Date().toISOString(),
+              },
+            };
+          }
+        }
+        return node;
+      })
+    );
+  }
+
+  // ✅ 2. Normal pump acknowledgment handling
+  if (Array.isArray(payload.pumps)) {
+    payload.pumps.forEach((p) => {
+      const key = `${incomingProductId}:${p.pumpId}`;
+      pumpMap[key] = p;
+    });
+  }
+
+  // ✅ 3. Clear pending status for acknowledged pumps
+  setPendingPumps((prev) => {
+    const copy = { ...prev };
+    if (Array.isArray(payload.pumps)) {
       payload.pumps.forEach((p) => {
         const key = `${incomingProductId}:${p.pumpId}`;
-        pumpMap[key] = p;
+        copy[key] = false;
       });
+    }
+    return copy;
+  });
 
-      setPendingPumps((prev) => {
-        const copy = { ...prev };
-        payload.pumps.forEach((p) => {
-          const key = `${incomingProductId}:${p.pumpId}`;
-          copy[key] = false;
-        });
-        return copy;
-      });
+  // ✅ 4. Update pump nodes with their latest status
+  setNodes((nds) =>
+    nds.map((node) => {
+      const key = `${String(node.data?.productId)}:${node.id}`;
+      const updatedPump = pumpMap[key];
+      if (updatedPump) {
+        const newData = {
+          ...node.data,
+          realtimeValues: updatedPump,
+          isOn: updatedPump.status === 1 || updatedPump.status === "ON",
+          isPending: false,
+        };
+        if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
+          return { ...node, data: newData };
+        }
+      }
+      return node;
+    })
+  );
 
-      setNodes((nds) =>
-        nds.map((node) => {
-          const key = `${String(node.data?.productId)}:${node.id}`;
-          const updatedPump = pumpMap[key];
-          // if (updatedPump) {
-          //   return {
-          //     ...node,
-          //     data: {
-          //       ...node.data,
-          //       realtimeValues: updatedPump,
-          //       isOn: updatedPump.status === 1 || updatedPump.status === "ON",
-          //       isPending: false,
-          //     },
-          //   };
-          // }
-          if (updatedPump) {
-            const newData = {
-              ...node.data,
-              realtimeValues: updatedPump,
-              isOn: updatedPump.status === 1 || updatedPump.status === "ON",
-              isPending: false,
-            };
-            if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
-              return { ...node, data: newData };
-            }
-          }
+  // ✅ 5. Store latest pump data for reference
+  setRealtimePumpData((prev) => ({ ...prev, ...pumpMap }));
+};
 
-          return node;
-        })
-      );
-
-      setRealtimePumpData((prev) => ({ ...prev, ...pumpMap }));
-    };
 
     socket.current.on("connect", () => {
       console.log("Socket.IO connected:", socket.current.id);
@@ -507,13 +592,25 @@ function CanvasComponent({
         console.log("selected station:", result);
 
         if (response.ok) {
-          // const effectiveProductId = getEffectiveProductId();
           // let effectiveProductId = ownerUserNameOverride
-          //   ? "27"
+          //   ? expoProductId || ""
           //   : getEffectiveProductId();
-          let effectiveProductId = ownerUserNameOverride
-            ? expoProductId || ""
-            : getEffectiveProductId();
+
+          // ✅ Determine correct product ID for each case
+          let effectiveProductId;
+
+          if (ownerUserNameOverride === "EXPO_USER") {
+            // CONTI → uses EXPO_USER’s fixed ID (41)
+            effectiveProductId = expoProductId || "41";
+          } else if (ownerUserNameOverride === "WTCANX") {
+            // WTCANX → read from sessionStorage (already set by Header)
+            effectiveProductId =
+              sessionStorage.getItem("selectedProductId") || "";
+          } else {
+            // default → current user’s productID
+            effectiveProductId = getEffectiveProductId();
+          }
+
           console.log("EXPO_USER Product ID being used:", effectiveProductId);
 
           if (!effectiveProductId) {
