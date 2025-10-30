@@ -33,3 +33,4 @@ export const nextReportNumber = async ({ apiBase, site, isoDate, prefix }) => {
   } catch {}
   return localSeries({ site, isoDate, prefix });
 };
+

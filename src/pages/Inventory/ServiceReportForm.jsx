@@ -511,132 +511,143 @@ export default function ServiceReportForm({
   const removePhotoField = (i) =>
     setPhotos((p) => p.filter((_, idx) => idx !== i));
 
+  
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!technician) return toast.error("Submitter missing. Please log in.");
+  e.preventDefault();
+  console.log("clicked…");
+
+  try {
+    // ---- Resolve identities safely ----
+    const techName =
+      (technician && technician.name) ||
+      validUserOne?.fname ||
+      validUserOne?.name ||
+      "Technician";
+    const techEmail =
+      (technician && technician.email) ||
+      validUserOne?.email ||
+      "na@goodfoot.local";
+
+    const submitRole =
+      submitter?.role ||
+      (validUserOne?.isTechnician
+        ? "Technician"
+        : validUserOne?.isTerritorialManager
+        ? "TerritorialManager"
+        : "Technician");
+    const submitName =
+      submitter?.name ||
+      validUserOne?.fname ||
+      validUserOne?.name ||
+      techName;
+    const submitEmail = submitter?.email || validUserOne?.email || techEmail;
+    const submitId = submitter?.id || validUserOne?._id || "";
 
     const userNameToSubmit =
       equipmentcustomerUserName || customerNameInput || "";
-    if (!currentEquipmentId || !currentEquipmentName || !userNameToSubmit)
-      return toast.error("Equipment details or Customer Name missing.");
-    if (!detailsOfServiceDone)
-      return toast.error("Enter details of service done.");
-    if (!selectedClassificationCode)
-      return toast.error("Select a Classification Code.");
 
-    // NEW: Require hand-written signatures
-    if (!customerSig)
-      return toast.error("Please draw the customer's signature.");
-    if (!technicianSig)
-      return toast.error("Please draw the engineer/technician signature.");
-
+    // ---- Build FormData safely (no undefineds) ----
     const fd = new FormData();
-    fd.append("equipmentId", currentEquipmentId);
-    fd.append("equipmentName", currentEquipmentName);
-    fd.append("userName", userNameToSubmit);
 
-    // legacy technician fields
-    fd.append("technicianName", technician.name);
-    fd.append("technicianEmail", technician.email);
+    if (currentEquipmentId) fd.append("equipmentId", String(currentEquipmentId));
+    if (currentEquipmentName) fd.append("equipmentName", String(currentEquipmentName));
+    if (userNameToSubmit) fd.append("userName", String(userNameToSubmit));
 
-    // submitter
-    fd.append("submittedByRole", submitter.role);
-    fd.append("submittedByName", submitter.name);
-    fd.append("submittedByEmail", submitter.email);
-    if (submitter.id) fd.append("submittedById", submitter.id);
+    // Technician (always send resolved fallbacks)
+    fd.append("technicianName", String(techName));
+    fd.append("technicianEmail", String(techEmail));
 
-    // equipment details
+    // Submitter
+    fd.append("submittedByRole", String(submitRole));
+    fd.append("submittedByName", String(submitName));
+    fd.append("submittedByEmail", String(submitEmail));
+    if (submitId) fd.append("submittedById", String(submitId));
+
+    // Equipment details (optional)
     fd.append(
       "equipmentDetails",
       JSON.stringify({
-        name: equipmentDetailsName,
-        capacity: equipmentDetailsCapacity,
-        make: equipmentDetailsMake,
-        description: equipmentDescription,
+        name: equipmentDetailsName || "",
+        capacity: equipmentDetailsCapacity || "",
+        make: equipmentDetailsMake || "",
+        description: equipmentDescription || "",
       })
     );
 
-    fd.append("detailsOfServiceDone", detailsOfServiceDone);
-    fd.append("suggestionsFromEngineer", suggestionsFromEngineer);
-    fd.append("customerRemarks", customerRemarks);
-    fd.append("classificationCode", selectedClassificationCode);
+    // Text fields (optional)
+    if (detailsOfServiceDone) fd.append("detailsOfServiceDone", detailsOfServiceDone);
+    if (suggestionsFromEngineer) fd.append("suggestionsFromEngineer", suggestionsFromEngineer);
+    if (customerRemarks) fd.append("customerRemarks", customerRemarks);
+    if (selectedClassificationCode) fd.append("classificationCode", selectedClassificationCode);
 
-    //after signature
-    fd.append("customerSigName", customerSigName);
-    fd.append("customerSigDesignation", customerSigDesignation);
-    fd.append("technicianSigName", technicianSigName);
-    fd.append("technicianSigDesignation", technicianSigDesignation);
+    // Signature names/designations
+    if (customerSigName) fd.append("customerSigName", customerSigName);
+    if (customerSigDesignation) fd.append("customerSigDesignation", customerSigDesignation);
+    if (technicianSigName) fd.append("technicianSigName", technicianSigName);
+    if (technicianSigDesignation) fd.append("technicianSigDesignation", technicianSigDesignation);
 
-    // header (Area of Inspection → Plant Capacity)
-    fd.append("headerSite", headerSite);
-    fd.append("headerDate", headerDate);
-    fd.append(
-      "headerReportNo",
+    // Header
+    if (headerSite) fd.append("headerSite", headerSite);
+    if (headerDate) fd.append("headerDate", headerDate);
+    const reportNo =
       headerReportNo ||
-        (await nextReportNumber({
-          apiBase: API_URL,
-          site: headerSite,
-          isoDate: headerDate,
-        }))
-    );
-    fd.append("headerPlantCapacity", headerPlantCapacity);
-    fd.append("headerReference", headerReference);
-    fd.append("headerIncidentDate", headerIncidentDate);
-    fd.append("headerTypeOfService", headerTypeOfService);
-    fd.append("headerPreparedBy", headerPreparedBy);
+      (headerSite && headerDate
+        ? await nextReportNumber({ apiBase: API_URL, site: headerSite, isoDate: headerDate })
+        : "");
+    if (reportNo) fd.append("headerReportNo", reportNo);
 
-    // photos
-    photos.forEach((it) => it instanceof File && fd.append("photos", it));
+    if (headerPlantCapacity) fd.append("headerPlantCapacity", headerPlantCapacity);
+    if (headerReference) fd.append("headerReference", headerReference);
+    if (headerIncidentDate) fd.append("headerIncidentDate", headerIncidentDate);
+    if (headerTypeOfService) fd.append("headerTypeOfService", headerTypeOfService);
+    if (headerPreparedBy) fd.append("headerPreparedBy", headerPreparedBy);
+
+    // Photos
+    photos.forEach((it) => {
+      if (it instanceof File) fd.append("photos", it);
+    });
 
     // Issue + photos
-    fd.append("issueReported", issueReported || "");
-    issuePhotos.forEach(
-      (f) => f instanceof File && fd.append("issuePhotos", f)
-    );
+    if (issueReported) fd.append("issueReported", issueReported);
+    issuePhotos.forEach((f) => {
+      if (f instanceof File) fd.append("issuePhotos", f);
+    });
 
     // Before/After with captions
     beforeItems.forEach((it) => {
-      if (it.file instanceof File) fd.append("beforeImages", it.file);
-      fd.append("beforeCaptions[]", it.caption || "");
+      if (it?.file instanceof File) fd.append("beforeImages", it.file);
+      fd.append("beforeCaptions[]", it?.caption || "");
     });
     afterItems.forEach((it) => {
-      if (it.file instanceof File) fd.append("afterImages", it.file);
-      fd.append("afterCaptions[]", it.caption || "");
+      if (it?.file instanceof File) fd.append("afterImages", it.file);
+      fd.append("afterCaptions[]", it?.caption || "");
     });
 
     // SIGNATURE IMAGES (PNG blobs)
     const custSigBlob = dataURLToBlob(customerSig);
     const techSigBlob = dataURLToBlob(technicianSig);
+    if (custSigBlob) fd.append("customerSignatureImage", custSigBlob, "customer-signature.png");
+    if (techSigBlob) fd.append("technicianSignatureImage", techSigBlob, "technician-signature.png");
 
-    if (custSigBlob)
-      fd.append(
-        "customerSignatureImage",
-        custSigBlob,
-        "customer-signature.png"
-      );
-    if (techSigBlob)
-      fd.append(
-        "technicianSignatureImage",
-        techSigBlob,
-        "technician-signature.png"
-      );
+    // (Optional) debug what we are sending
+    // for (const [k, v] of fd.entries()) console.log("FD", k, v);
 
-    try {
-      const resp = await axios.post(`${API_URL}/api/add-servicereport`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      console.log("respose:", resp.data);
-      if (resp.data.success) {
-        toast.success("Service Report submitted successfully!");
-        navigate("/services?tab=equipmentList");
-      } else {
-        toast.error(resp.data.message || "Failed to submit report.");
-      }
-    } catch (err) {
-      console.error("submit error", err.response?.data || err.message);
-      toast.error("Server error submitting report. Please try again.");
+    // ---- DO NOT set Content-Type; let Axios set it with boundary ----
+    const resp = await axios.post(`${API_URL}/api/add-servicereport`, fd);
+
+    console.log("response:", resp.data);
+    if (resp.data.success) {
+      toast.success("Service Report submitted successfully!");
+      navigate("/services?tab=equipmentList");
+    } else {
+      toast.error(resp.data.message || "Failed to submit report.");
     }
-  };
+  } catch (err) {
+    console.error("submit error", err?.response?.data || err?.message);
+    toast.error(err?.response?.data?.message || "Server error submitting report. Please try again.");
+  }
+};
+
 
   const classificationCodes = [
     {
@@ -671,7 +682,12 @@ export default function ServiceReportForm({
             type="text"
             className="form-control"
             value={equipmentcustomerUserName}
-            readOnly
+            onChange={(e) => {
+              setequipmentcustomerUserName(e.target.value);
+              setCustomerNameInput(e.target.value); // keep fallback in sync
+            }}
+            placeholder="Enter customer username"
+            autoComplete="off"
           />
         </div>
         <div className="col-md-6 mb-3">
@@ -686,8 +702,8 @@ export default function ServiceReportForm({
               </div>
             ) : (
               <div className="text-primary">
-        {validUserOne?.email || "No email available"}
-      </div>
+                {validUserOne?.email || "No email available"}
+              </div>
             )}
           </div>
         </div>
@@ -837,7 +853,6 @@ export default function ServiceReportForm({
                   className="form-control"
                   value={equipmentDetailsName}
                   onChange={(e) => setEquipmentDetailsName(e.target.value)}
-                  required
                 />
               </div>
               <div className="col-md-6">

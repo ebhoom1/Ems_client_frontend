@@ -138,8 +138,6 @@ function PumpBlowerNode({
   updateValue("blue_phase_current", blue_phase_current);
 
   //manipulation section
-  // --- Simulate RPM only for productId 41
-  // --- Realistic smooth RPM simulation only for productId 41
  // --- Realistic RPM simulation only for productId 41
 useEffect(() => {
   let interval;
@@ -166,14 +164,9 @@ useEffect(() => {
         lastValuesRef.current.rpm = Math.max(1497, Math.min(1500, next));
       }
     }, 1000); // update every 1s
-  } else {
-    // When OFF, gradually wind down to 0
-    interval = setInterval(() => {
-      const current = lastValuesRef.current.rpm;
-      if (current > 0) {
-        lastValuesRef.current.rpm = Math.max(0, current - 50);
-      }
-    }, 500); // smoother stop
+   } else {
+    // Immediately stop RPM when turned OFF
+    lastValuesRef.current.rpm = 0;
   }
 
   return () => clearInterval(interval);
