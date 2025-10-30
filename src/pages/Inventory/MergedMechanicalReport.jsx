@@ -139,7 +139,7 @@ export default function MergedMechanicalReport() {
       </div>
 
       <div ref={reportRef} style={{ background: "#fff", padding: 10 }}>
-        {/* <div
+        <div
           className="d-flex align-items-center mb-2"
           style={{ background: "#236a80", color: "#fff", padding: "10px" }}
         >
@@ -166,27 +166,8 @@ export default function MergedMechanicalReport() {
             </div>
             <div style={{ fontSize: 14 }}>Phone: +91-9663044156</div>
           </div>
-        </div> */}
-        <div
-  className="d-flex align-items-center mb-2"
-  style={{ background: "#236a80", color: "#fff", padding: "10px" }}
->
-  <div
-    className="text-center flex-grow-1"
-    style={{ fontFamily: "Century Gothic, sans-serif" }}
-  >
-    <div style={{ fontSize: 20, fontWeight: "bold" }}>
-      <i style={{ fontFamily: '"Comic Sans MS", cursive', fontSize: 24 }}>
-        SampleCorp
-      </i>{" "}
-      Utilities and Management Pvt Ltd
-    </div>
-    <div style={{ fontSize: 14 }}>
-      XXX Sample Street, Sample Building, Sample City, Sample State, 000000
-    </div>
-    <div style={{ fontSize: 14 }}>Phone: +91-XXXXXXXXXX</div>
-  </div>
-</div>
+        </div>
+       
 
         <h6 className="text-center">
           Merged Report of {companyName && ` — ${companyName}`}&nbsp;— Reports

@@ -410,7 +410,7 @@ export default function Geolocation() {
     fetchAllSites();
   }, [validUser?._id, role]);
 
-  // ─── 7) CALCULATE 'withinRadius' ──────────────────────────────────────────────
+  // ─── 7) CALCULATE 'withinRadius' ─────────────
   useEffect(() => {
     if (
       coords.lat === null ||
