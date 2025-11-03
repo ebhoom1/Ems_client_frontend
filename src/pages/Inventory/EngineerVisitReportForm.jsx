@@ -6,6 +6,18 @@ import { toast } from "react-toastify";
 import { API_URL } from "../../utils/apiConfig";
 import "./inventory.css";
 
+const isObj = (v) => v && typeof v === "object";
+const deepEqual = (a, b) => {
+  if (a === b) return true;
+  if (isObj(a) && isObj(b)) {
+    const ak = Object.keys(a), bk = Object.keys(b);
+    if (ak.length !== bk.length) return false;
+    for (const k of ak) if (!deepEqual(a[k], b[k])) return false;
+    return true;
+  }
+  return false;
+};
+
 /* --- Helpers to generate Report No (FY + seq) --- */
 const fiscalYearRange = (iso) => {
   const d = new Date(iso);
@@ -152,6 +164,10 @@ export default function EngineerVisitReportForm({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+const editMode = location.state?.mode === "edit";
+const editReportId = location.state?.reportId || null;
+
+
   const { equipmentId: paramEquipmentId } = useParams();
   const { user } = useParams();
   const currentEquipmentId = equipmentId || paramEquipmentId;

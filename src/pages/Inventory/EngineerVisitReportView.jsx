@@ -91,6 +91,7 @@ export default function EngineerVisitReportView() {
         }}
       >
         {reports.map((report, idx) => (
+          
           <div
             key={report._id || idx}
             style={{
@@ -98,6 +99,18 @@ export default function EngineerVisitReportView() {
               pageBreakAfter: "always", // each report in new page in PDF
             }}
           >
+<div className="d-flex justify-content-end mb-2">
+  <button
+    className="btn btn-warning"
+    onClick={() =>
+      navigate(`/maintenance/engineer-visit/${report.customerName}`, {
+        state: { mode: "edit", reportId: report._id },
+      })
+    }
+  >
+    ✏️ Edit
+  </button>
+</div>
             {/* STATIC HEADER */}
             <div
               className="d-flex align-items-center mb-2"

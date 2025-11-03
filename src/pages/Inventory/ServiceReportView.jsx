@@ -11,8 +11,8 @@ import genexlogo from "../../assests/images/logonewgenex.png";
 export default function ServiceReportView() {
   // const { equipmentId } = useParams();
   // const { userName, year, month } = useParams();
-   const { userName, year, month } = useParams();
- const decodedUserName = decodeURIComponent(userName || "");
+  const { userName, year, month } = useParams();
+  const decodedUserName = decodeURIComponent(userName || "");
 
   const navigate = useNavigate();
   const reportRef = useRef();
@@ -33,8 +33,8 @@ export default function ServiceReportView() {
     background: "#f5f8fb",
     textAlign: "left",
     fontSize: 15,
-   color: "#101112ff",
-    fontWeight: "bold"
+    color: "#101112ff",
+    fontWeight: "bold",
   };
   const tdStyle = {
     // border: "1px solid #141414ff",
@@ -69,13 +69,13 @@ export default function ServiceReportView() {
   };
 
   const pageBreakStyle = {
-  // Standard CSS property for page break avoidance
-  breakInside: "avoid",
-  // CSS for older WebKit (Chrome, Safari) - recommended for html2pdf
-  WebkitColumnBreakInside: "avoid",
-  // CSS for older Firefox/IE/Edge
-  pageBreakInside: "avoid",
-};
+    // Standard CSS property for page break avoidance
+    breakInside: "avoid",
+    // CSS for older WebKit (Chrome, Safari) - recommended for html2pdf
+    WebkitColumnBreakInside: "avoid",
+    // CSS for older Firefox/IE/Edge
+    pageBreakInside: "avoid",
+  };
 
   // back button behavior
   useEffect(() => {
@@ -171,30 +171,32 @@ export default function ServiceReportView() {
   // }, [equipmentId, userName, loading]);
 
   useEffect(() => {
-  const fetchServiceReport = async () => {
-    // if (!userName) return;
-    if (!decodedUserName) return;
-    try {
-      // const res = await axios.get(`${API_URL}/api/user/${userName}/month/${year}/${month}`);
-          const res = await axios.get(
-       `${API_URL}/api/user/${encodeURIComponent(decodedUserName)}/month/${year}/${month}`
-     );
-      const { success, reports } = res.data;
-      if (success && reports.length > 0) {
-        setReport(reports[0]);
-      } else {
-        toast.info("No service report found for this user and month.");
+    const fetchServiceReport = async () => {
+      // if (!userName) return;
+      if (!decodedUserName) return;
+      try {
+        // const res = await axios.get(`${API_URL}/api/user/${userName}/month/${year}/${month}`);
+        const res = await axios.get(
+          `${API_URL}/api/user/${encodeURIComponent(
+            decodedUserName
+          )}/month/${year}/${month}`
+        );
+        const { success, reports } = res.data;
+        if (success && reports.length > 0) {
+          setReport(reports[0]);
+        } else {
+          toast.info("No service report found for this user and month.");
+        }
+      } catch (err) {
+        console.error("Error fetching service report:", err);
+        toast.error("Failed to load service report details.");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Error fetching service report:", err);
-      toast.error("Failed to load service report details.");
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchServiceReport();
-// }, [userName, year, month]);
-}, [decodedUserName, year, month]);
+    };
+    fetchServiceReport();
+    // }, [userName, year, month]);
+  }, [decodedUserName, year, month]);
 
   const downloadPDF = async () => {
     const imgs = Array.from(reportRef.current.querySelectorAll("img"));
@@ -285,7 +287,7 @@ export default function ServiceReportView() {
         borderCollapse: "collapse",
         marginBottom: 12,
         background: "#236a80",
-        ...pageBreakStyle
+        ...pageBreakStyle,
       }}
     >
       <tbody>
@@ -347,7 +349,7 @@ export default function ServiceReportView() {
       </tbody>
     </table>
   );
-
+ 
   return (
     <div className="container py-3">
       <div className="d-flex justify-content-between mb-3">
@@ -431,7 +433,7 @@ export default function ServiceReportView() {
         </div>
 
         {/* Classification Code */}
-        <div style={{ marginBottom: 12 ,...pageBreakStyle}}>
+        <div style={{ marginBottom: 12, ...pageBreakStyle }}>
           <h4 style={subSectionTitleStyle}>CLASSIFICATION CODE:</h4>
           <div
             style={{

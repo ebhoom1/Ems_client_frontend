@@ -304,6 +304,7 @@ export default function ServiceReportForm({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { userName } = useParams();
   const { equipmentId: paramEquipmentId } = useParams();
 
   const currentEquipmentId = equipmentId || paramEquipmentId;
@@ -336,8 +337,9 @@ export default function ServiceReportForm({
   const [equipmentDetailsName, setEquipmentDetailsName] = useState("");
   const [equipmentDetailsCapacity, setEquipmentDetailsCapacity] = useState("");
   const [equipmentDetailsMake, setEquipmentDetailsMake] = useState("");
-  const [equipmentcustomerUserName, setequipmentcustomerUserName] =
-    useState("");
+ const [equipmentcustomerUserName, setequipmentcustomerUserName] = useState(
+  userName || ""
+);
   const [equipmentDescription, setEquipmentDescription] = useState("");
   const [detailsOfServiceDone, setDetailsOfServiceDone] = useState("");
   const [suggestionsFromEngineer, setSuggestionsFromEngineer] = useState("");
@@ -669,6 +671,13 @@ export default function ServiceReportForm({
     { code: "C5", desc: "Minor service required and it is completed." },
   ];
 
+  useEffect(() => {
+  if (initialCustomerUserName) {
+    setequipmentcustomerUserName(initialCustomerUserName);
+    setCustomerNameInput(initialCustomerUserName);
+  }
+}, [initialCustomerUserName]);
+console.log("initialCustomerUserName",initialCustomerUserName)
   return (
     <div className="container py-4">
       <h3 className="mb-4">Service Report - {currentEquipmentName}</h3>
