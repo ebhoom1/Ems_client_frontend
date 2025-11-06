@@ -11,7 +11,7 @@ import Header from "../Header/Hedaer";
 import HeaderSim from "../Header/HeaderSim";
 
 function Edit() {
-   const { userId } = useParams();
+  const { userId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { selectedUser, loading, error } = useSelector(
@@ -20,8 +20,8 @@ function Edit() {
   const { users } = useSelector((state) => state.userLog);
   const [adminList, setAdminList] = useState([]);
   const [operatorList, setOperatorList] = useState([]);
-const [technicianList, setTechnicianList] = useState([]);
- const [assignedTechnicians, setAssignedTechnicians] = useState([]);
+  const [technicianList, setTechnicianList] = useState([]);
+  const [assignedTechnicians, setAssignedTechnicians] = useState([]);
   const [userData, setUserData] = useState({
     userName: "",
     companyName: "",
@@ -44,6 +44,7 @@ const [technicianList, setTechnicianList] = useState([]);
     operators: [],
     territorialManager: "",
     technicians: [],
+    engineerVisitNo: "",
   });
 
   const industryType = [
@@ -72,14 +73,12 @@ const [technicianList, setTechnicianList] = useState([]);
     { category: "Other" },
   ];
 
-  // Fetch user data when component mounts
   useEffect(() => {
     if (userId) {
       dispatch(fetchUserById(userId));
     }
   }, [dispatch, userId]);
 
-  // Set form data when selectedUser is updated
   useEffect(() => {
     if (selectedUser) {
       setUserData((prevData) => ({
@@ -93,29 +92,28 @@ const [technicianList, setTechnicianList] = useState([]);
             : selectedUser.additionalEmail
             ? [selectedUser.additionalEmail]
             : [""],
-             technicians: selectedUser.technicians || [],
+        technicians: selectedUser.technicians || [],
       }));
       setAssignedTechnicians(selectedUser.technicians || []);
     }
   }, [selectedUser]);
 
-  // Fetch territory managers and operators
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch territory managers
-        const territoryRes = await axios.get(`${API_URL}/api/get-territory-mangers`);
+        const territoryRes = await axios.get(
+          `${API_URL}/api/get-territory-mangers`
+        );
         setAdminList(territoryRes.data.admins);
-        
-        // Fetch all operators
+
         const operatorsRes = await axios.get(`${API_URL}/api/get-operators`);
         setOperatorList(operatorsRes.data.users || []);
 
-        //fetch technician 
         const techRes = await axios.get(`${API_URL}/api/getAll-technicians`);
-
-      const technicians = techRes.data.users.filter(user => user.isTechnician);
-setTechnicianList(technicians);
+        const technicians = techRes.data.users.filter(
+          (user) => user.isTechnician
+        );
+        setTechnicianList(technicians);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -132,53 +130,50 @@ setTechnicianList(technicians);
     }));
   };
 
-  // Handler for changes in additional emails
   const handleAdditionalEmailChange = (index, value) => {
     const newEmails = [...userData.additionalEmails];
     newEmails[index] = value;
     setUserData({ ...userData, additionalEmails: newEmails });
   };
 
-  // Add a new additional email field
   const handleAddAdditionalEmail = () => {
     setUserData({
       ...userData,
       additionalEmails: [...userData.additionalEmails, ""],
     });
   };
- // Assign technician to the user
- const handleAssignTechnician = (techId) => {
-  if (!userData.technicians.includes(techId)) {
-    setUserData(prev => ({
+
+  const handleAssignTechnician = (techId) => {
+    if (!userData.technicians.includes(techId)) {
+      setUserData((prev) => ({
+        ...prev,
+        technicians: [...prev.technicians, techId],
+      }));
+      setAssignedTechnicians((prev) => [...prev, techId]);
+    }
+  };
+
+  const handleRemoveTechnician = (techId) => {
+    setUserData((prev) => ({
       ...prev,
-      technicians: [...prev.technicians, techId]
+      technicians: prev.technicians.filter((id) => id !== techId),
     }));
-    setAssignedTechnicians(prev => [...prev, techId]);
-  }
-};
-// Remove technician from the user
-const handleRemoveTechnician = (techId) => {
-  setUserData(prev => ({
-    ...prev,
-    technicians: prev.technicians.filter(id => id !== techId)
-  }));
-  setAssignedTechnicians(prev => prev.filter(id => id !== techId));
-};
-  // Assign operator to the user
+    setAssignedTechnicians((prev) => prev.filter((id) => id !== techId));
+  };
+
   const handleAssignOperator = (operatorId) => {
     if (!userData.operators.includes(operatorId)) {
-      setUserData(prev => ({
+      setUserData((prev) => ({
         ...prev,
-        operators: [...prev.operators, operatorId]
+        operators: [...prev.operators, operatorId],
       }));
     }
   };
 
-  // Remove operator from the user
   const handleRemoveOperator = (operatorId) => {
-    setUserData(prev => ({
+    setUserData((prev) => ({
       ...prev,
-      operators: prev.operators.filter(id => id !== operatorId)
+      operators: prev.operators.filter((id) => id !== operatorId),
     }));
   };
 
@@ -212,12 +207,51 @@ const handleRemoveTechnician = (techId) => {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div style={{ color: "#2c3e50", padding: "20px" }}>Loading...</div>;
   }
 
   if (error) {
-    return <div>Error: {error.message}</div>;
+    return <div style={{ color: "#e74c3c", padding: "20px" }}>Error: {error.message}</div>;
   }
+
+  const formGroupStyle = {
+    marginBottom: "1.5rem",
+  };
+
+  const labelStyle = {
+    display: "block",
+    marginBottom: "0.5rem",
+    color: "#34495e",
+    fontWeight: "600",
+    fontSize: "0.95rem",
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "12px 15px",
+    borderRadius: "8px",
+    border: "2px dotted #3498db",
+    backgroundColor: "#ffffff",
+    color: "#2c3e50",
+    fontSize: "0.95rem",
+    transition: "all 0.3s ease",
+  };
+
+  const selectStyle = {
+    ...inputStyle,
+    cursor: "pointer",
+  };
+
+  const badgeStyle = {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "8px 12px",
+    borderRadius: "20px",
+    marginRight: "8px",
+    marginBottom: "8px",
+    fontSize: "0.9rem",
+    fontWeight: "500",
+  };
 
   return (
     <div className="container-fluid">
@@ -236,16 +270,23 @@ const handleRemoveTechnician = (techId) => {
             <div className="row" style={{ overflowX: "hidden" }}>
               <div className="col-12 col-md-12 grid-margin">
                 <div className="col-12 d-flex justify-content-between align-items-center m-3">
-                  <h1 className="text-center ">Edit User</h1>
+                  <h1 style={{ color: "#236a80", fontWeight: "700", fontSize: "2rem" }}>
+                    Edit User
+                  </h1>
                 </div>
 
-                <div className="card">
-                  <div className="card-body text-light">
-                    <form className="m-2 p-2" onSubmit={handleSaveUser}>
+                <div style={{
+                  border: "3px dotted #236a80",
+                  borderRadius: "15px",
+                  backgroundColor: "#f8f9fa",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                }}>
+                  <div style={{ padding: "2rem" }}>
+                    <form onSubmit={handleSaveUser}>
                       <div className="row">
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group text-light">
-                            <label htmlFor="userId" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="userId" style={labelStyle}>
                               User ID
                             </label>
                             <input
@@ -253,19 +294,14 @@ const handleRemoveTechnician = (techId) => {
                               name="userName"
                               value={userData.userName || ""}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="companyName" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="companyName" style={labelStyle}>
                               Company Name
                             </label>
                             <input
@@ -273,19 +309,14 @@ const handleRemoveTechnician = (techId) => {
                               name="companyName"
                               value={userData.companyName || ""}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="firstName" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="firstName" style={labelStyle}>
                               First Name
                             </label>
                             <input
@@ -293,19 +324,14 @@ const handleRemoveTechnician = (techId) => {
                               name="fname"
                               value={userData.fname || ""}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="email" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="email" style={labelStyle}>
                               Email
                             </label>
                             <input
@@ -314,23 +340,14 @@ const handleRemoveTechnician = (techId) => {
                               type="email"
                               value={userData.email || ""}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
 
-                        {/* Render additionalEmails as dynamic input fields */}
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label
-                              htmlFor="additionalEmails"
-                              className="form-label"
-                            >
+                          <div style={formGroupStyle}>
+                            <label htmlFor="additionalEmails" style={labelStyle}>
                               Additional Emails
                             </label>
                             {userData.additionalEmails.map((email, index) => (
@@ -352,20 +369,22 @@ const handleRemoveTechnician = (techId) => {
                                       e.target.value
                                     )
                                   }
-                                  className="form-control"
-                                  style={{
-                                    width: "100%",
-                                    padding: "15px",
-                                    borderRadius: "10px",
-                                  }}
+                                  style={inputStyle}
                                 />
-                                {index ===
-                                  userData.additionalEmails.length - 1 && (
+                                {index === userData.additionalEmails.length - 1 && (
                                   <button
-                                    style={{ color: "#236a80" }}
                                     type="button"
                                     onClick={handleAddAdditionalEmail}
-                                    className="btn btn-light ms-2"
+                                    style={{
+                                      marginLeft: "10px",
+                                      padding: "10px 20px",
+                                      borderRadius: "8px",
+                                      border: "2px dotted #236a80",
+                                      backgroundColor: "#236a80",
+                                      color: "white",
+                                      fontWeight: "bold",
+                                      cursor: "pointer",
+                                    }}
                                   >
                                     +
                                   </button>
@@ -376,8 +395,8 @@ const handleRemoveTechnician = (techId) => {
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="mobile" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="mobile" style={labelStyle}>
                               Mobile Number
                             </label>
                             <input
@@ -385,19 +404,14 @@ const handleRemoveTechnician = (techId) => {
                               name="mobileNumber"
                               value={userData.mobileNumber || ""}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="model" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="model" style={labelStyle}>
                               Model Name
                             </label>
                             <input
@@ -406,19 +420,14 @@ const handleRemoveTechnician = (techId) => {
                               value={userData.modelName || ""}
                               onChange={handleChange}
                               placeholder="Enter Model name"
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="productID" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="productID" style={labelStyle}>
                               Product ID
                             </label>
                             <input
@@ -428,77 +437,34 @@ const handleRemoveTechnician = (techId) => {
                               placeholder="Enter Product ID"
                               value={userData.productID || ""}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
 
-                        {/* Password fields */}
-                        {/*  <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="password" className="form-label">Password</label>
-                            <input
-                              id="password"
-                              type="password"
-                              placeholder="Enter Password"
-                              value={userData.password || ''}
-                              name="password"
-                              onChange={handleChange}
-                              className="form-control"
-                              style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
-                            />
-                          </div>
-                        </div> */}
-                        {/*  <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="cpassword" className="form-label">Confirm Password</label>
-                            <input
-                              id="cpassword"
-                              type="password"
-                              placeholder="Enter Password"
-                              value={userData.cpassword || ''}
-                              name="cpassword"
-                              onChange={handleChange}
-                              className="form-control"
-                              style={{ width: '100%', padding: '15px', borderRadius: '10px' }}
-                            />
-                          </div>
-                        </div> */}
-
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label
-                              htmlFor="subscriptionDate"
-                              className="form-label"
-                            >
+                          <div style={formGroupStyle}>
+                            <label htmlFor="subscriptionDate" style={labelStyle}>
                               Date of subscription
                             </label>
                             <input
                               id="subscriptionDate"
-                              className="form-control"
                               name="subscriptionDate"
-                              value={userData.subscriptionDate || ""}
+                              value={
+                                userData.subscriptionDate
+                                  ? userData.subscriptionDate.split("T")[0]
+                                  : ""
+                              }
                               onChange={handleChange}
                               type="date"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
+
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label
-                              htmlFor="subscriptionPlan"
-                              className="form-label text-light"
-                            >
+                          <div style={formGroupStyle}>
+                            <label htmlFor="subscriptionPlan" style={labelStyle}>
                               Subscription Plan
                             </label>
                             <select
@@ -506,29 +472,19 @@ const handleRemoveTechnician = (techId) => {
                               name="subscriptionPlan"
                               value={userData.subscriptionPlan || ""}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={selectStyle}
                             >
                               <option value="">Select Subscription Plan</option>
-                              <option value="Business Basic">
-                                Business Basic
-                              </option>
-                              <option value="Business Standard">
-                                Business Standard
-                              </option>
-                              <option value="Business Premioum">
-                                Business Premioum
-                              </option>
+                              <option value="Business Basic">Business Basic</option>
+                              <option value="Business Standard">Business Standard</option>
+                              <option value="Business Premioum">Business Premioum</option>
                             </select>
                           </div>
                         </div>
+
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="user" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="user" style={labelStyle}>
                               User Type
                             </label>
                             <select
@@ -536,12 +492,7 @@ const handleRemoveTechnician = (techId) => {
                               value={userData.userType || ""}
                               onChange={handleChange}
                               name="userType"
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={selectStyle}
                             >
                               <option value="select">Select</option>
                               <option value="admin">Admin</option>
@@ -551,8 +502,8 @@ const handleRemoveTechnician = (techId) => {
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="admin" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="admin" style={labelStyle}>
                               Admin Type
                             </label>
                             <select
@@ -560,12 +511,7 @@ const handleRemoveTechnician = (techId) => {
                               value={userData.adminType || ""}
                               onChange={handleChange}
                               name="adminType"
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={selectStyle}
                             >
                               <option value="select">Select</option>
                               <option value="KSPCB">KSPCB</option>
@@ -574,13 +520,9 @@ const handleRemoveTechnician = (techId) => {
                           </div>
                         </div>
 
-                        {/* Territorial Manager */}
-                     <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label
-                              htmlFor="territorialManager"
-                              className="form-label text-light"
-                            >
+                        <div className="col-lg-6 col-md-6 mb-4">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="territorialManager" style={labelStyle}>
                               Assign Territorial Manager
                             </label>
                             <select
@@ -588,16 +530,9 @@ const handleRemoveTechnician = (techId) => {
                               name="territorialManager"
                               value={userData.territorialManager}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={selectStyle}
                             >
-                              <option value="">
-                                Select Territorial Manager
-                              </option>
+                              <option value="">Select Territorial Manager</option>
                               {adminList.map((admin) => (
                                 <option key={admin._id} value={admin._id}>
                                   {admin.fname} ({admin.userName})
@@ -607,85 +542,82 @@ const handleRemoveTechnician = (techId) => {
                           </div>
                         </div>
 
-<div className="col-lg-6 col-md-6 mb-4">
-  <div className="form-group">
-    <label className="form-label text-light">
-      Assign Technician(s)
-    </label>
-    <div className="input-group mb-3">
-      <select
-        className="form-control"
-        onChange={(e) => {
-          if (e.target.value) {
-            handleAssignTechnician(e.target.value);
-          }
-        }}
-        style={{
-          padding: "15px",
-          borderRadius: "10px",
-        }}
-      >
-        <option value="">Select Technician</option>
-        {technicianList
-          .filter((tech) => !userData.technicians.includes(tech._id))
-          .map((tech) => (
-            <option key={tech._id} value={tech._id}>
-              {tech.fname} ({tech.userName})
-            </option>
-          ))}
-      </select>
-    </div>
+                        <div className="col-lg-6 col-md-6 mb-4">
+                          <div style={formGroupStyle}>
+                            <label style={labelStyle}>Assign Technician(s)</label>
+                            <div className="mb-3">
+                              <select
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    handleAssignTechnician(e.target.value);
+                                  }
+                                }}
+                                style={selectStyle}
+                              >
+                                <option value="">Select Technician</option>
+                                {technicianList
+                                  .filter((tech) => !userData.technicians.includes(tech._id))
+                                  .map((tech) => (
+                                    <option key={tech._id} value={tech._id}>
+                                      {tech.fname} ({tech.userName})
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
 
-    {/* Display assigned technicians */}
-    <div className="mt-2">
-      {assignedTechnicians.map((techId) => {
-        const tech = technicianList.find((t) => t._id === techId);
-        return tech ? (
-          <span
-            key={techId}
-            className="badge bg-success me-2 mb-2 p-2"
-          >
-            {tech.fname} ({tech.userName})
-            <button
-              type="button"
-              className="btn-close btn-close-white ms-2"
-              aria-label="Remove"
-              onClick={() => handleRemoveTechnician(techId)}
-              style={{
-                fontSize: "0.5rem",
-                padding: "0.25rem",
-              }}
-            ></button>
-          </span>
-        ) : null;
-      })}
-    </div>
-  </div>
-</div>
+                            <div className="mt-2">
+                              {assignedTechnicians.map((techId) => {
+                                const tech = technicianList.find((t) => t._id === techId);
+                                return tech ? (
+                                  <span
+                                    key={techId}
+                                    style={{
+                                      ...badgeStyle,
+                                      backgroundColor: "#27ae60",
+                                      color: "white",
+                                      border: "2px dotted #229954",
+                                    }}
+                                  >
+                                    {tech.fname} ({tech.userName})
+                                    <button
+                                      type="button"
+                                      aria-label="Remove"
+                                      onClick={() => handleRemoveTechnician(techId)}
+                                      style={{
+                                        marginLeft: "8px",
+                                        background: "none",
+                                        border: "none",
+                                        color: "white",
+                                        fontSize: "1.2rem",
+                                        cursor: "pointer",
+                                        fontWeight: "bold",
+                                      }}
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ) : null;
+                              })}
+                            </div>
+                          </div>
+                        </div>
 
-
-                      {userData.userType === "user" && (
+                        {userData.userType === "user" && (
                           <div className="col-12 mb-4">
-                            <div className="form-group">
-                              <label className="form-label text-light">
-                                Assign Operator(s)
-                              </label>
-                              <div className="input-group mb-3">
+                            <div style={formGroupStyle}>
+                              <label style={labelStyle}>Assign Operator(s)</label>
+                              <div className="mb-3">
                                 <select
-                                  className="form-control"
                                   onChange={(e) => {
                                     if (e.target.value) {
                                       handleAssignOperator(e.target.value);
                                     }
                                   }}
-                                  style={{
-                                    padding: "15px",
-                                    borderRadius: "10px",
-                                  }}
+                                  style={selectStyle}
                                 >
                                   <option value="">Select Operator</option>
                                   {operatorList
-                                    .filter(op => !userData.operators.includes(op._id))
+                                    .filter((op) => !userData.operators.includes(op._id))
                                     .map((op) => (
                                       <option key={op._id} value={op._id}>
                                         {op.fname} ({op.userName})
@@ -694,28 +626,36 @@ const handleRemoveTechnician = (techId) => {
                                 </select>
                               </div>
 
-                              {/* Display assigned operators */}
                               <div className="mt-2">
                                 {userData.operators.map((operatorId) => {
-                                  const operator = operatorList.find(
-                                    (op) => op._id === operatorId
-                                  );
+                                  const operator = operatorList.find((op) => op._id === operatorId);
                                   return operator ? (
                                     <span
                                       key={operatorId}
-                                      className="badge bg-primary me-2 mb-2 p-2"
+                                      style={{
+                                        ...badgeStyle,
+                                        backgroundColor: "#3498db",
+                                        color: "white",
+                                        border: "2px dotted #2980b9",
+                                      }}
                                     >
                                       {operator.fname} ({operator.userName})
                                       <button
                                         type="button"
-                                        className="btn-close btn-close-white ms-2"
                                         aria-label="Remove"
                                         onClick={() => handleRemoveOperator(operatorId)}
                                         style={{
-                                          fontSize: "0.5rem",
-                                          padding: "0.25rem",
+                                          marginLeft: "8px",
+                                          background: "none",
+                                          border: "none",
+                                          color: "white",
+                                          fontSize: "1.2rem",
+                                          cursor: "pointer",
+                                          fontWeight: "bold",
                                         }}
-                                      ></button>
+                                      >
+                                        ×
+                                      </button>
                                     </span>
                                   ) : null;
                                 })}
@@ -725,8 +665,8 @@ const handleRemoveTechnician = (techId) => {
                         )}
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="industry" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="industry" style={labelStyle}>
                               Select Industry
                             </label>
                             <select
@@ -734,12 +674,7 @@ const handleRemoveTechnician = (techId) => {
                               value={userData.industryType || ""}
                               onChange={handleChange}
                               name="industryType"
-                              className="form-control text-start"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={selectStyle}
                             >
                               <option value="">Select Industry</option>
                               {industryType.map((industry, index) => (
@@ -752,8 +687,8 @@ const handleRemoveTechnician = (techId) => {
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="dataInteval" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="dataInteval" style={labelStyle}>
                               Select Time Interval
                             </label>
                             <select
@@ -761,12 +696,7 @@ const handleRemoveTechnician = (techId) => {
                               value={userData.dataInteval || ""}
                               onChange={handleChange}
                               name="dataInteval"
-                              className="form-control text-start"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={selectStyle}
                             >
                               <option value="">Select</option>
                               <option value="15_sec">15 sec</option>
@@ -778,8 +708,8 @@ const handleRemoveTechnician = (techId) => {
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="district" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="district" style={labelStyle}>
                               District
                             </label>
                             <input
@@ -788,19 +718,14 @@ const handleRemoveTechnician = (techId) => {
                               value={userData.district || ""}
                               onChange={handleChange}
                               name="district"
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="state" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="state" style={labelStyle}>
                               State
                             </label>
                             <input
@@ -810,19 +735,14 @@ const handleRemoveTechnician = (techId) => {
                               placeholder="Enter State"
                               value={userData.state || ""}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="address" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="address" style={labelStyle}>
                               Address
                             </label>
                             <input
@@ -832,19 +752,14 @@ const handleRemoveTechnician = (techId) => {
                               placeholder="Enter Address"
                               value={userData.address || ""}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="latitude" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="latitude" style={labelStyle}>
                               Latitude
                             </label>
                             <input
@@ -854,19 +769,14 @@ const handleRemoveTechnician = (techId) => {
                               placeholder="Enter Latitude"
                               value={userData.latitude || ""}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
                             />
                           </div>
                         </div>
 
                         <div className="col-lg-6 col-md-6 mb-4">
-                          <div className="form-group">
-                            <label htmlFor="longitude" className="form-label">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="longitude" style={labelStyle}>
                               Longitude
                             </label>
                             <input
@@ -876,32 +786,65 @@ const handleRemoveTechnician = (techId) => {
                               placeholder="Enter Longitude"
                               value={userData.longitude || ""}
                               onChange={handleChange}
-                              className="form-control"
-                              style={{
-                                width: "100%",
-                                padding: "15px",
-                                borderRadius: "10px",
-                              }}
+                              style={inputStyle}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="col-lg-6 col-md-6 mb-4">
+                          <div style={formGroupStyle}>
+                            <label htmlFor="engineerVisitNo" style={labelStyle}>
+                              Engineer Visit No
+                            </label>
+                            <input
+                              id="engineerVisitNo"
+                              type="text"
+                              placeholder="Enter Engineer Visit Number"
+                              value={userData.engineerVisitNo || ""}
+                              onChange={handleChange}
+                              name="engineerVisitNo"
+                              style={inputStyle}
                             />
                           </div>
                         </div>
                       </div>
 
-                      <button
-                        type="submit"
-                        className="btn"
-                        style={{ backgroundColor: "#236a80", color: "white" }}
-                      >
-                        Update User
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-danger ms-1"
-                        onClick={handleCancel}
-                        style={{ color: "white" }}
-                      >
-                        Cancel
-                      </button>
+                      <div style={{ marginTop: "2rem" }}>
+                        <button
+                          type="submit"
+                          style={{
+                            padding: "12px 30px",
+                            borderRadius: "8px",
+                            border: "2px dotted #236a80",
+                            backgroundColor: "#236a80",
+                            color: "white",
+                            fontWeight: "600",
+                            fontSize: "1rem",
+                            cursor: "pointer",
+                            marginRight: "10px",
+                            transition: "all 0.3s ease",
+                          }}
+                        >
+                          Update User
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancel}
+                          style={{
+                            padding: "12px 30px",
+                            borderRadius: "8px",
+                            border: "2px dotted #e74c3c",
+                            backgroundColor: "#e74c3c",
+                            color: "white",
+                            fontWeight: "600",
+                            fontSize: "1rem",
+                            cursor: "pointer",
+                            transition: "all 0.3s ease",
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </form>
 
                     <ToastContainer />

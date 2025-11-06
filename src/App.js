@@ -115,6 +115,8 @@ import DieselDashboard from "./pages/GeneratorNew/DieselDashboard";
 import { API_URL } from "./utils/apiConfig";
 import PreventiveMaintanence from "./Autonerve/PreventiveMaintanence";
 import Daigram from "./pages/PandD/Daigram";
+import MonthlyPh from "./pages/MonthlyReport/MonthlyPh";
+import InletAndOutlet from "./pages/MonthlyReport/InletAndOutlet";
 function App() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -439,6 +441,9 @@ function App() {
                     <Route path="/autonerve" element={<AutonerveLayout />} />
                     <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
                     <Route path="/pandd" element={<Daigram />} />
+                                        <Route path="/monthly-report" element={<MonthlyPh />} />
+                    <Route path="/inlet-outlet" element={<InletAndOutlet />} />
+
 
 
                   </Route>
@@ -576,6 +581,7 @@ function App() {
                     />
                     <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
                     <Route path="/pandd" element={<Daigram />} />
+                    <Route path="/inlet-outlet" element={<InletAndOutlet />} />
 
                   </Route>
 
@@ -652,6 +658,8 @@ function App() {
                     <Route path="/geolocation" element={<Geolocation />} />
                     <Route path="/summary" element={<Summary />} />
                     <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
+                    <Route path="/monthly-report" element={<MonthlyPh />} />
+                    <Route path="/inlet-outlet" element={<InletAndOutlet />} />
 
                   </Route>
                 )}

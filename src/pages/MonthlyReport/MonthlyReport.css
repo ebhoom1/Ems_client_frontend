@@ -1,0 +1,32 @@
+/* Makes disabled inputs look clean, like text */
+.table input.form-control[disabled] {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: not-allowed;
+  padding-left: 0.75rem; /* Align with enabled inputs */
+  padding-right: 0.75rem;
+}
+
+/* Style for operator inputs */
+.table input.form-control {
+  border: 1px solid #ced4da;
+  padding: 0.375rem 0.75rem;
+}
+
+/* Remove arrows from number inputs for a cleaner look */
+.table input[type="number"]::-webkit-inner-spin-button,
+.table input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.table input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Ensure charts are responsive */
+.chart-container {
+  position: relative;
+  width: 100%;
+}

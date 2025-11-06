@@ -884,7 +884,7 @@ console.log("formData:",payload);
            <div className="row mt-4">
   <div className="col-12">
     <div className="d-flex align-items-center">
-      <h1 className="flex-grow-1 text-center m-0">Control and Monitor</h1>
+      <h1 className="flex-grow-1 text-center m-0 mb-2">Control and Monitor</h1>
      {/*  {(userData?.validUserOne?.userName === "admin1_001" ||
         userData?.validUserOne?.userName === "CONTI") && (
         <img src={wipro} alt="Logo" width={'200px'} height={'60px'} />
@@ -893,9 +893,9 @@ console.log("formData:",payload);
   </div>
 </div>
           </div>
-          <div className="row justify-content-center">
+          <div className="row justify-content-center" style={{borderRadius:'10px'}}>
             <div className="col-12">
-              <div className="card shadow-sm">
+              <div className=" shadow-sm" >
                 <div className="card-body">
                   <h4 className="card-title text-center"></h4>
                   <KeralaMap

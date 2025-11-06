@@ -1,0 +1,262 @@
+/* --- Main Layout --- */
+.main-content-row {
+  margin-top: 70px;
+  padding: 0 15px;
+}
+
+/* --- Card Styles --- */
+.header-style {
+  background: linear-gradient(135deg, #236a80 0%, #236a80 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header-title {
+  font-weight: bold;
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.header-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.95;
+}
+
+.card-style {
+  border: 3px dotted #3498db;
+  border-radius: 15px;
+  background-color: #ffffff;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Prompt Style --- */
+.prompt-style {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  color: #236a80;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  border: 3px dotted #236a80;
+}
+
+.prompt-icon {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  color: #236a80;
+}
+
+.prompt-title {
+  font-weight: 600;
+  color: #236a80;
+}
+
+.prompt-text {
+  font-size: 1.1rem;
+  color: #34495e;
+  max-width: 400px;
+}
+
+/* --- Table Styles --- */
+.table-container {
+  height: 600px;
+  overflow: auto; 
+  border: 3px dotted #236a80;
+  border-radius: 10px;
+  padding: 10px;
+  background-color: #f8f9fa;
+}
+
+.report-table {
+  margin-bottom: 0;
+  min-width: 1000px; 
+  table-layout: fixed; 
+}
+
+.report-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(135deg, #236a80 0%, #3498db 100%);
+  color: white;
+}
+
+.table-header-style {
+  padding: 15px 10px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  border: 2px dotted rgba(255, 255, 255, 0.3);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.table-subheader-style {
+  padding: 10px 5px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  border: 2px dotted rgba(255, 255, 255, 0.3);
+  text-align: center;
+  vertical-align: middle;
+  width: 12.5%; /* 100% / 8 data columns */
+}
+
+.table-row-style {
+  background-color: #ffffff;
+}
+.table-row-style:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.table-cell-style {
+  padding: 12px 10px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  text-align: center;
+  vertical-align: middle;
+  width: 12.5%; 
+}
+
+.table-cell-style:first-child { /* The Date column */
+  width: auto; 
+}
+
+.table-cell-input-style {
+  padding: 8px 10px;
+  vertical-align: middle;
+  width: 12.5%;
+}
+
+/* --- NEW: Table Footer Style --- */
+.report-table tfoot {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background-color: #236a80;
+  color: white;
+  font-weight: bold;
+}
+
+.table-footer-style td {
+  padding: 12px 10px;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+/* --- Input Styles --- */
+.input-style {
+  border: 2px dotted #3498db;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.comment-input-style {
+  border: 2px dotted #3498db;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.read-only-style {
+  border: 2px dotted #aaa;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  width: 100%;
+  background-color: #f4f4f4;
+  color: #333;
+  font-weight: bold;
+}
+
+.date-picker-style {
+  border: 2px dotted #3498db;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  background-color: white;
+  min-width: 140px;
+}
+
+/* --- Button Styles --- */
+.button-style, .button-style-pdf, .button-style-csv {
+  padding: 12px 30px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 5px 5px;
+}
+
+.button-style:hover, .button-style-pdf:hover, .button-style-csv:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+.button-style {
+  border: 2px dotted #236a80;
+  background-color: #236a80;
+}
+
+.button-style-pdf {
+  border: 2px dotted #e74c3c;
+  background-color: #e74c3c;
+}
+
+.button-style-csv {
+  border: 2px dotted #27ae60;
+  background-color: #27ae60;
+}
+
+/* Disabled state */
+.button-style:disabled, 
+.button-style-pdf:disabled, 
+.button-style-csv:disabled {
+  background-color: #aaa;
+  border-color: #aaa;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- NEW: Graph Container Styles --- */
+.graph-container-wrapper {
+  border: 3px dotted #3498db;
+  border-radius: 12px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  height: 550px;
+  overflow-y: auto;
+}
+
+.graph-container {
+  height: 240px; 
+  position: relative;
+  margin-bottom: 25px;
+  padding: 15px;
+  background-color: white;
+  border-radius: 10px;
+  border: 2px dotted #3498db;
+}
+
+.graph-container:last-child {
+  margin-bottom: 0;
+}
