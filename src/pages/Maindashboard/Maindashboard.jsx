@@ -17,7 +17,7 @@ function Maindashboard() {
   const storedUserId = sessionStorage.getItem("selectedUserId"); // For admin, use selected user ID
   const userName =
     userType === "admin" ? storedUserId : userData?.validUserOne?.userName; // Adjusted userName
-
+console.log("userType:",userType);
   // Fetch station types with values
   useEffect(() => {
     // Only fetch if not super_admin, as super_admin doesn't rely on specific station types for visibility
@@ -135,7 +135,7 @@ function Maindashboard() {
             </Navbar>
           )}
 
-          {userType !== "user" && (
+          {(userType !== "user" && userType !== "operator") && (
             <div className="flex-md-row mt-3 button-section bg-light">
               <div className="d-flex flex-md-row justify-content-around align-items-center">
                 <Dropdown className="m-2 buttonbg rounded">

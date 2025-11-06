@@ -46,6 +46,8 @@ const nextReportNumber = async ({ apiBase, site, isoDate }) => {
   return `${siteCode(site)}/VR/${fiscalYearRange(isoDate)}/001`;
 };
 
+
+
 /* --- Signature Modal --- */
 /* --- Signature Modal --- */
 function SignatureModal({ show, onClose, onSave }) {
@@ -156,6 +158,7 @@ function SignatureModal({ show, onClose, onSave }) {
 }
 
 
+
 /* --- Main Component --- */
 export default function EngineerVisitReportForm({
   equipmentId,
@@ -164,6 +167,8 @@ export default function EngineerVisitReportForm({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const selectedSite = location.state?.selectedSite || "";
+
 const editMode = location.state?.mode === "edit";
 const editReportId = location.state?.reportId || null;
 
@@ -183,7 +188,7 @@ const editReportId = location.state?.reportId || null;
   const [customerName, setCustomerName] = useState(user || "");
   const [plantCapacity, setPlantCapacity] = useState("");
   const [technology, setTechnology] = useState("");
-  const [site, setSite] = useState("");
+const [site, setSite] = useState(selectedSite || "");
 
   // Parameters
   const [parameters, setParameters] = useState({
@@ -253,6 +258,22 @@ const editReportId = location.state?.reportId || null;
     };
     loadEq();
   }, [currentEquipmentId]);
+
+    // 🔹 Auto-generate Reference No. once site and date are available
+  useEffect(() => {
+  (async () => {
+    if (!site) return; // wait until site data is loaded
+    const generated = await nextReportNumber({
+      apiBase: API_URL,
+      site,
+      isoDate: date,
+      prefix: "VR", // Visit Report prefix
+    });
+    setReferenceNo(generated);
+  })();
+}, [site, date]);
+
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -332,12 +353,30 @@ const editReportId = location.state?.reportId || null;
           <div className="card-body row g-2">
             <div className="col-md-4">
               <label className="form-label">Reference No.</label>
-              <input
-                className="form-control"
-                value={referenceNo}
-                onChange={(e) => setReferenceNo(e.target.value)}
-                placeholder="e.g., GUMPL/VR/001/24-25"
-              />
+             <div className="d-flex gap-2">
+  <input
+    className="form-control"
+    value={referenceNo}
+    readOnly
+    placeholder="AUTO"
+  />
+  <button
+    type="button"
+    className="btn btn-outline-primary"
+    onClick={async () => {
+      const newRefNo = await nextReportNumber({
+        apiBase: API_URL,
+        site,
+        isoDate: date,
+        prefix: "VR",
+      });
+      setReferenceNo(newRefNo);
+    }}
+  >
+    Generate
+  </button>
+</div>
+
             </div>
             <div className="col-md-4">
               <label className="form-label">Date</label>

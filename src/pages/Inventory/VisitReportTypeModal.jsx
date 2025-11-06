@@ -57,8 +57,10 @@ const user=type.userType==="user";
 
     if (actionType === "add") {
       if (reportKind === "engineer") {
-        navigate(`/maintenance/engineer-visit/${selectedCustomer}`);
-      } else if (reportKind === "safety") {
+    navigate(`/maintenance/engineer-visit/${selectedCustomer}`, {
+      state: { selectedSite: selectedCustomer },
+    });
+  }else if (reportKind === "safety") {
         navigate(
           `/maintenance/safety/${selectedCustomer}?checklist=${checklistType}`
         );

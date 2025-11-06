@@ -126,13 +126,13 @@ export default function ReportTypeModal({ equipmentId, equipmentName, onClose })
           >
             Electrical Report
           </button>
-          <button
+          {/* <button
             className="btn w-100 mb-2"
             style={{ backgroundColor: "#ffc107", color: "#000" }}
             onClick={() => pick("service")}
           >
             Service Report
-          </button>
+          </button> */}
          
           <button
             className="btn btn-link text-danger"

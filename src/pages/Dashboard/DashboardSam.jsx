@@ -13,6 +13,7 @@ function DashboardSam() {
   const { userData, userType } = useSelector((state) => state.user);
   const validUser = userData?.validUserOne || {};
   const navigate = useNavigate(); // Hook for navigation
+  console.log("userType:",userType)
 
   // --- State for the Modal ---
   const [showReportModal, setShowReportModal] = useState(false);
@@ -80,50 +81,50 @@ function DashboardSam() {
 
   // --- Style Objects for Modal ---
   const modalHeaderStyle = {
-    backgroundColor: '#236a80',
-    color: 'white',
-    borderBottom: 'none',
-    padding: '1rem 1.5rem',
+    backgroundColor: "#236a80",
+    color: "white",
+    borderBottom: "none",
+    padding: "1rem 1.5rem",
   };
 
   const modalTitleStyle = {
-    fontSize: '1.1rem', // Smaller font
-    fontWeight: '600',
+    fontSize: "1.1rem", // Smaller font
+    fontWeight: "600",
   };
 
   const modalBodyStyle = {
-    padding: '1.5rem 2rem 2rem 2rem', // More padding
+    padding: "1.5rem 2rem 2rem 2rem", // More padding
   };
 
   const buttonStylePrimary = {
-    backgroundColor: '#236a80',
-    border: '1px solid #236a80',
-    fontSize: '0.9rem', // Smaller font
-    width: '100%',
-    padding: '12px',
-    fontWeight: '600',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-    transition: 'all 0.3s ease',
+    backgroundColor: "#236a80",
+    border: "1px solid #236a80",
+    fontSize: "0.9rem", // Smaller font
+    width: "100%",
+    padding: "12px",
+    fontWeight: "600",
+    borderRadius: "8px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+    transition: "all 0.3s ease",
   };
 
   const buttonStyleSecondary = {
-    backgroundColor: '#ffffff',
-    border: '2px solid #236a80',
-    color: '#236a80',
-    fontSize: '0.9rem', // Smaller font
-    width: '100%',
-    padding: '12px',
-    fontWeight: '600',
-    borderRadius: '8px',
-    transition: 'all 0.3s ease',
+    backgroundColor: "#ffffff",
+    border: "2px solid #236a80",
+    color: "#236a80",
+    fontSize: "0.9rem", // Smaller font
+    width: "100%",
+    padding: "12px",
+    fontWeight: "600",
+    borderRadius: "8px",
+    transition: "all 0.3s ease",
   };
 
   const footerCloseButton = {
-    fontSize: '0.9rem',
-    color: '#555',
-    border: 'none',
-    backgroundColor: '#f0f0f0',
+    fontSize: "0.9rem",
+    color: "#555",
+    border: "none",
+    backgroundColor: "#f0f0f0",
   };
 
   return (
@@ -481,35 +482,46 @@ function DashboardSam() {
             <Button
               style={
                 isPrimaryHovered
-                  ? { ...buttonStylePrimary, opacity: 0.85, transform: 'scale(1.02)' }
+                  ? {
+                      ...buttonStylePrimary,
+                      opacity: 0.85,
+                      transform: "scale(1.02)",
+                    }
                   : buttonStylePrimary
               }
               onMouseEnter={() => setIsPrimaryHovered(true)}
               onMouseLeave={() => setIsPrimaryHovered(false)}
               onClick={() => handleModalClick("/monthly-report")}
             >
-              Add PH & MLSS Reading
+              {userType === "admin"
+                ? "View PH & MLSS Reading"
+                : "Add PH & MLSS Reading"}
             </Button>
             <Button
               style={
                 isSecondaryHovered
-                  ? { ...buttonStyleSecondary, backgroundColor: '#f8f9fa', transform: 'scale(1.02)' }
+                  ? {
+                      ...buttonStyleSecondary,
+                      backgroundColor: "#f8f9fa",
+                      transform: "scale(1.02)",
+                    }
                   : buttonStyleSecondary
               }
               onMouseEnter={() => setIsSecondaryHovered(true)}
               onMouseLeave={() => setIsSecondaryHovered(false)}
               onClick={() => handleModalClick("/inlet-outlet")}
             >
-              Add Inlet & Outlet Reading
+              {userType === "admin"
+                ? "View Inlet & Outlet Reading"
+                : "Add Inlet & Outlet Reading"}
             </Button>
           </div>
         </Modal.Body>
-        
-        <Modal.Footer style={{ borderTop: 'none', padding: '0 1.5rem 1rem 1.5rem' }}>
-          <Button 
-            style={footerCloseButton} 
-            onClick={handleCloseReportModal}
-          >
+
+        <Modal.Footer
+          style={{ borderTop: "none", padding: "0 1.5rem 1rem 1.5rem" }}
+        >
+          <Button style={footerCloseButton} onClick={handleCloseReportModal}>
             Close
           </Button>
         </Modal.Footer>

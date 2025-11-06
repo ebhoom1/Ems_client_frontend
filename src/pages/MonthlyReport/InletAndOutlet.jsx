@@ -738,7 +738,7 @@ const InletAndOutlet = () => {
                           {loading ? "Saving..." : "💾 Save Report"}
                         </button>
                         
-                        {(isOperator || isAdmin) && ( 
+                        {( isAdmin) && ( 
                           <>
                             <button
                               className="button-style-pdf"

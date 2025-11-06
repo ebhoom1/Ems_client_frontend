@@ -1,6 +1,3 @@
-
-
-
 // src/pages/Inventory/EngineerVisitReportView.jsx
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
@@ -24,7 +21,7 @@ export default function EngineerVisitReportView() {
         const { data } = await axios.get(
           `${API_URL}/api/engineerreport/user/${user}/${year}/${month}`
         );
-        console.log("reports:",data);
+        console.log("reports:", data);
         if (data.success && data.reports?.length) {
           setReports(data.reports);
         } else {
@@ -41,7 +38,7 @@ export default function EngineerVisitReportView() {
   // 🔹 Download PDF
   const downloadPDF = () => {
     const opt = {
-      margin: [30, 10, 30, 10],//top,left,bottom,right
+      margin: [30, 10, 30, 10], //top,left,bottom,right
       filename: `Engineer_Visit_Reports_${user}_${month}-${year}.pdf`,
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
@@ -58,7 +55,6 @@ export default function EngineerVisitReportView() {
     padding: 6,
     fontSize: 16,
     color: "#101112ff",
-    
   };
   const th = {
     ...td,
@@ -91,7 +87,6 @@ export default function EngineerVisitReportView() {
         }}
       >
         {reports.map((report, idx) => (
-          
           <div
             key={report._id || idx}
             style={{
@@ -99,18 +94,21 @@ export default function EngineerVisitReportView() {
               pageBreakAfter: "always", // each report in new page in PDF
             }}
           >
-<div className="d-flex justify-content-end mb-2">
-  <button
-    className="btn btn-warning"
-    onClick={() =>
-      navigate(`/maintenance/engineer-visit/${report.customerName}`, {
-        state: { mode: "edit", reportId: report._id },
-      })
-    }
-  >
-    ✏️ Edit
-  </button>
-</div>
+            <div className="d-flex justify-content-end mb-2">
+              <button
+                className="btn btn-warning"
+                onClick={() =>
+                  navigate(
+                    `/maintenance/engineer-visit/${report.customerName}`,
+                    {
+                      state: { mode: "edit", reportId: report._id },
+                    }
+                  )
+                }
+              >
+                ✏️ Edit
+              </button>
+            </div>
             {/* STATIC HEADER */}
             <div
               className="d-flex align-items-center mb-2"
@@ -124,32 +122,55 @@ export default function EngineerVisitReportView() {
               />
               <div
                 className="text-center flex-grow-1"
-                style={{ fontFamily: "Century Gothic, sans-serif", lineHeight: 1.5 }}
+                style={{
+                  fontFamily: "Century Gothic, sans-serif",
+                  lineHeight: 1.5,
+                }}
               >
-                <div style={{ fontSize: 20, fontWeight: "bold", marginBottom: 4 }}>
-                  <i style={{ fontFamily: '"Comic Sans MS", cursive', fontSize: 24 }}>
+                <div
+                  style={{ fontSize: 20, fontWeight: "bold", marginBottom: 4 }}
+                >
+                  <i
+                    style={{
+                      fontFamily: '"Comic Sans MS", cursive',
+                      fontSize: 24,
+                    }}
+                  >
                     Genex
                   </i>{" "}
                   Utility Management Pvt Ltd
                 </div>
                 <div style={{ fontSize: 14 }}>
-                  Sujatha Arcade, Second Floor, #32 Lake View Defence Colony, Shettihalli, Post, Jalahalli West, Bengaluru, Karnataka 560015
+                  Sujatha Arcade, Second Floor, #32 Lake View Defence Colony,
+                  Shettihalli, Post, Jalahalli West, Bengaluru, Karnataka 560015
                 </div>
                 <div style={{ fontSize: 14 }}>Phone: 9663044156</div>
-                <div style={{ fontSize: 14 }}>E-mail: services@genexutility.com</div>
-                <div style={{ fontSize: 14 }}>Website: www.genexutility.com</div>
+                <div style={{ fontSize: 14 }}>
+                  E-mail: services@genexutility.com
+                </div>
+                <div style={{ fontSize: 14 }}>
+                  Website: www.genexutility.com
+                </div>
               </div>
             </div>
 
             {/* Report Info */}
-            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 12 }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginBottom: 12,
+              }}
+            >
               <tbody>
                 <tr>
                   <th style={th}>Ref No:</th>
                   <td style={td}>{report.referenceNo || "—"}</td>
                   <th style={th}>Date:</th>
                   <td style={td}>
-                    {report.date ? new Date(report.date).toLocaleDateString("en-GB") : "—"}
+                    {report.date
+                      ? new Date(report.date).toLocaleDateString("en-GB")
+                      : "—"}
                   </td>
                 </tr>
                 <tr>
@@ -192,56 +213,165 @@ export default function EngineerVisitReportView() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td style={td}>1</td><td style={td}>pH (Raw)</td><td style={td}>{report.parameters?.phRaw || "—"}</td></tr>
-                  <tr><td style={td}>2</td><td style={td}>pH (Treated)</td><td style={td}>{report.parameters?.phTreated || "—"}</td></tr>
-                  <tr><td style={td}>3</td><td style={td}>MLSS</td><td style={td}>{report.parameters?.mlss || "—"}</td></tr>
-                  <tr><td style={td}>4</td><td style={td}>FRC</td><td style={td}>{report.parameters?.frc || "—"}</td></tr>
-                  <tr><td style={td}>5</td><td style={td}>TDS</td><td style={td}>{report.parameters?.tds || "—"}</td></tr>
-                  <tr><td style={td}>6</td><td style={td}>Hardness</td><td style={td}>{report.parameters?.hardness || "—"}</td></tr>
+                  <tr>
+                    <td style={td}>1</td>
+                    <td style={td}>pH (Raw)</td>
+                    <td style={td}>{report.parameters?.phRaw || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>2</td>
+                    <td style={td}>pH (Treated)</td>
+                    <td style={td}>{report.parameters?.phTreated || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>3</td>
+                    <td style={td}>MLSS</td>
+                    <td style={td}>{report.parameters?.mlss || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>4</td>
+                    <td style={td}>FRC</td>
+                    <td style={td}>{report.parameters?.frc || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>5</td>
+                    <td style={td}>TDS</td>
+                    <td style={td}>{report.parameters?.tds || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>6</td>
+                    <td style={td}>Hardness</td>
+                    <td style={td}>{report.parameters?.hardness || "—"}</td>
+                  </tr>
                 </tbody>
               </table>
 
               <table style={{ flex: 1, borderCollapse: "collapse" }}>
                 <thead>
-                  <tr><th style={th} colSpan={2}>Plant Details</th></tr>
+                  <tr>
+                    <th style={th} colSpan={2}>
+                      Plant Details
+                    </th>
+                  </tr>
                 </thead>
                 <tbody>
-                  <tr><td style={td}>Capacity</td><td style={td}>{report.plantCapacity || "—"}</td></tr>
-                  <tr><td style={td}>Technology</td><td style={td}>{report.technology || "—"}</td></tr>
-                  <tr><td style={td}>Sodium Hypo</td><td style={td}>{report.consumables?.sodiumHypo || "—"}</td></tr>
-                  <tr><td style={td}>Blower Oil</td><td style={td}>{report.consumables?.blowerOil || "—"}</td></tr>
-                  <tr><td style={td}>Pump Oil</td><td style={td}>{report.consumables?.pumpOil || "—"}</td></tr>
-                  <tr><td style={td}>PPE Stock</td><td style={td}>{report.consumables?.ppeStock || "—"}</td></tr>
-                  <tr><td style={td}>Cotton Waste</td><td style={td}>{report.consumables?.cottonWaste || "—"}</td></tr>
-                  <tr><td style={td}>Grease</td><td style={td}>{report.consumables?.grease || "—"}</td></tr>
-                  <tr><td style={td}>Antiscalant</td><td style={td}>{report.consumables?.antiscalant || "—"}</td></tr>
-                  <tr><td style={td}>Salt</td><td style={td}>{report.consumables?.salt || "—"}</td></tr>
+                  <tr>
+                    <td style={td}>Capacity</td>
+                    <td style={td}>{report.plantCapacity || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>Technology</td>
+                    <td style={td}>{report.technology || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>Sodium Hypo</td>
+                    <td style={td}>{report.consumables?.sodiumHypo || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>Blower Oil</td>
+                    <td style={td}>{report.consumables?.blowerOil || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>Pump Oil</td>
+                    <td style={td}>{report.consumables?.pumpOil || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>PPE Stock</td>
+                    <td style={td}>{report.consumables?.ppeStock || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>Cotton Waste</td>
+                    <td style={td}>{report.consumables?.cottonWaste || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>Grease</td>
+                    <td style={td}>{report.consumables?.grease || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>Antiscalant</td>
+                    <td style={td}>{report.consumables?.antiscalant || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>Salt</td>
+                    <td style={td}>{report.consumables?.salt || "—"}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
 
             {/* Key Points */}
-            <strong style={{fontSize:"18px"}}>Key Points Checked (Yes/No)</strong>
-            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 12 }}>
+            <strong style={{ fontSize: "18px" }}>
+              Key Points Checked (Yes/No)
+            </strong>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginBottom: 12,
+              }}
+            >
               <tbody>
-                <tr><td style={td}>Log Book Entry</td><td style={td}>{report.keyPoints?.logBookEntry ? "Yes" : "No"}</td></tr>
-                <tr><td style={td}>History Cards</td><td style={td}>{report.keyPoints?.historyCards ? "Yes" : "No"}</td></tr>
-                <tr><td style={td}>Grooming</td><td style={td}>{report.keyPoints?.grooming ? "Yes" : "No"}</td></tr>
-                <tr><td style={td}>Housekeeping</td><td style={td}>{report.keyPoints?.housekeeping ? "Yes" : "No"}</td></tr>
-                <tr><td style={td}>Training Conducted</td><td style={td}>{report.keyPoints?.training ? "Yes" : "No"}</td></tr>
-                <tr><td style={td}>Checklist Updated</td><td style={td}>{report.keyPoints?.checklist ? "Yes" : "No"}</td></tr>
-                <tr><td style={td}>Notice Board Update</td><td style={td}>{report.keyPoints?.noticeBoard ? "Yes" : "No"}</td></tr>
+                <tr>
+                  <td style={td}>Log Book Entry</td>
+                  <td style={td}>
+                    {report.keyPoints?.logBookEntry ? "Yes" : "No"}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={td}>History Cards</td>
+                  <td style={td}>
+                    {report.keyPoints?.historyCards ? "Yes" : "No"}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={td}>Grooming</td>
+                  <td style={td}>
+                    {report.keyPoints?.grooming ? "Yes" : "No"}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={td}>Housekeeping</td>
+                  <td style={td}>
+                    {report.keyPoints?.housekeeping ? "Yes" : "No"}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={td}>Training Conducted</td>
+                  <td style={td}>
+                    {report.keyPoints?.training ? "Yes" : "No"}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={td}>Checklist Updated</td>
+                  <td style={td}>
+                    {report.keyPoints?.checklist ? "Yes" : "No"}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={td}>Notice Board Update</td>
+                  <td style={td}>
+                    {report.keyPoints?.noticeBoard ? "Yes" : "No"}
+                  </td>
+                </tr>
               </tbody>
             </table>
 
             {/* Details */}
             <div style={{ marginBottom: 12 }}>
-              <strong style={{fontSize:"18px"}}>Details of Visit Done:</strong>
+              <strong style={{ fontSize: "18px" }}>
+                Details of Visit Done:
+              </strong>
               <p>{report.visitDetails || "—"}</p>
             </div>
 
             {/* Remarks & Signatures */}
-            <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 12 }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginTop: 12,
+              }}
+            >
               <tbody>
                 <tr>
                   <th style={th}>Customer Remarks</th>
@@ -254,14 +384,24 @@ export default function EngineerVisitReportView() {
                 <tr>
                   <td style={{ ...td, textAlign: "center" }}>
                     {report.customerSignatureImage && (
-                      <img  crossOrigin="anonymous" src={report.customerSignatureImage} alt="Customer Signature" style={{ maxHeight: 60 }} />
+                      <img
+                        crossOrigin="anonymous"
+                        src={report.customerSignatureImage}
+                        alt="Customer Signature"
+                        style={{ maxHeight: 60 }}
+                      />
                     )}
                     <div>{report.customerSigName || "Customer Name"}</div>
                     <div>{report.customerSigDesignation || "Designation"}</div>
                   </td>
                   <td style={{ ...td, textAlign: "center" }}>
                     {report.engineerSignatureImage && (
-                      <img  crossOrigin="anonymous" src={report.engineerSignatureImage} alt="Engineer Signature" style={{ maxHeight: 60 }} />
+                      <img
+                        crossOrigin="anonymous"
+                        src={report.engineerSignatureImage}
+                        alt="Engineer Signature"
+                        style={{ maxHeight: 60 }}
+                      />
                     )}
                     <div>{report.engineerSigName || "Engineer Name"}</div>
                     <div>{report.engineerSigDesignation || "Designation"}</div>
