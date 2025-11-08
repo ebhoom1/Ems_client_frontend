@@ -362,92 +362,115 @@ function CanvasComponent({
     // };
 
     const handlePumpAck = (payload) => {
-  console.log("Processing pump acknowledgment:", payload);
+      console.log("Processing pump acknowledgment:", payload);
 
-  const pumpMap = {};
-  const incomingProductId = String(
-    payload.productId || payload.product_id || ""
-  );
+      const pumpMap = {};
+      const incomingProductId = String(
+        payload.productId || payload.product_id || ""
+      );
 
-  // ✅ 1. Update tank nodes with tank percentages
-  if (payload.tanks && typeof payload.tanks === "object") {
-    const {
-      equalization_percentage,
-      aeration_percentage,
-      sludge_percentage,
-    } = payload.tanks;
+      // ✅ 1. Update tank nodes with tank percentages
+      // ✅ 1. Update tank nodes with tank percentages (only if changed)
+if (payload.tanks && typeof payload.tanks === "object") {
+  const {
+    equalization_percentage,
+    aeration_percentage,
+    sludge_percentage,
+    decant_percentage,
+    treated_water_percentage,
+  } = payload.tanks;
 
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.type === "tankNode" && String(node.data?.productId) === incomingProductId) {
-          const tankName = (node.data?.tankName || node.data?.name || "")
-            .toLowerCase();
-
-          let updatedPct = null;
-          if (tankName.includes("equal")) updatedPct = equalization_percentage;
-          else if (tankName.includes("aerat")) updatedPct = aeration_percentage;
-          else if (tankName.includes("sludge")) updatedPct = sludge_percentage;
-
-          if (updatedPct !== null && updatedPct !== undefined) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                percentage: updatedPct,
-                lastUpdated: new Date().toISOString(),
-              },
-            };
-          }
-        }
-        return node;
-      })
-    );
-  }
-
-  // ✅ 2. Normal pump acknowledgment handling
-  if (Array.isArray(payload.pumps)) {
-    payload.pumps.forEach((p) => {
-      const key = `${incomingProductId}:${p.pumpId}`;
-      pumpMap[key] = p;
-    });
-  }
-
-  // ✅ 3. Clear pending status for acknowledged pumps
-  setPendingPumps((prev) => {
-    const copy = { ...prev };
-    if (Array.isArray(payload.pumps)) {
-      payload.pumps.forEach((p) => {
-        const key = `${incomingProductId}:${p.pumpId}`;
-        copy[key] = false;
-      });
-    }
-    return copy;
-  });
-
-  // ✅ 4. Update pump nodes with their latest status
   setNodes((nds) =>
     nds.map((node) => {
-      const key = `${String(node.data?.productId)}:${node.id}`;
-      const updatedPump = pumpMap[key];
-      if (updatedPump) {
-        const newData = {
-          ...node.data,
-          realtimeValues: updatedPump,
-          isOn: updatedPump.status === 1 || updatedPump.status === "ON",
-          isPending: false,
-        };
-        if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
-          return { ...node, data: newData };
-        }
+      if (node.type !== "tankNode") return node;
+      if (String(node.data?.productId) !== incomingProductId) return node;
+
+      const tankName = (node.data?.tankName || node.data?.name || "")
+        .toLowerCase();
+
+      // pick the incoming value for this tank
+      let incoming = undefined;
+      if (tankName.includes("equal")) incoming = equalization_percentage;
+      else if (tankName.includes("aerat")) incoming = aeration_percentage;
+      else if (tankName.includes("sludge")) incoming = sludge_percentage;
+      else if (tankName.includes("decant")) incoming = decant_percentage;
+      else if (tankName.includes("treated")) incoming = treated_water_percentage;
+
+      // only accept real numbers in [0, 100]
+      if (
+        typeof incoming !== "number" ||
+        Number.isNaN(incoming) ||
+        incoming < 0 ||
+        incoming > 100
+      ) {
+        return node; // ignore bad/missing data; keep prior value
       }
-      return node;
+
+      // optional: normalize to 2 decimals to avoid micro-jitter
+      const nextPct = Math.round(incoming * 100) / 100;
+      const prevPct = typeof node.data?.percentage === "number"
+        ? Math.round(node.data.percentage * 100) / 100
+        : undefined;
+
+      // update only if the value actually changed
+      if (prevPct === nextPct) return node;
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          percentage: nextPct,
+          lastUpdated: new Date().toISOString(),
+        },
+      };
     })
   );
+}
 
-  // ✅ 5. Store latest pump data for reference
-  setRealtimePumpData((prev) => ({ ...prev, ...pumpMap }));
-};
 
+      // ✅ 2. Normal pump acknowledgment handling
+      if (Array.isArray(payload.pumps)) {
+        payload.pumps.forEach((p) => {
+          const key = `${incomingProductId}:${p.pumpId}`;
+          pumpMap[key] = p;
+        });
+      }
+
+      // ✅ 3. Clear pending status for acknowledged pumps
+      setPendingPumps((prev) => {
+        const copy = { ...prev };
+        if (Array.isArray(payload.pumps)) {
+          payload.pumps.forEach((p) => {
+            const key = `${incomingProductId}:${p.pumpId}`;
+            copy[key] = false;
+          });
+        }
+        return copy;
+      });
+
+      // ✅ 4. Update pump nodes with their latest status
+      setNodes((nds) =>
+        nds.map((node) => {
+          const key = `${String(node.data?.productId)}:${node.id}`;
+          const updatedPump = pumpMap[key];
+          if (updatedPump) {
+            const newData = {
+              ...node.data,
+              realtimeValues: updatedPump,
+              isOn: updatedPump.status === 1 || updatedPump.status === "ON",
+              isPending: false,
+            };
+            if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
+              return { ...node, data: newData };
+            }
+          }
+          return node;
+        })
+      );
+
+      // ✅ 5. Store latest pump data for reference
+      setRealtimePumpData((prev) => ({ ...prev, ...pumpMap }));
+    };
 
     socket.current.on("connect", () => {
       console.log("Socket.IO connected:", socket.current.id);
