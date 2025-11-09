@@ -578,33 +578,45 @@ const InletAndOutlet = () => {
                   <div className="card-style">
                     <div className="row">
                       {/* Data Table */}
+                     {/* Data Table */}
                       <div className={isAdmin ? "col-lg-6" : "col-12"}> {/* SPLIT SCREEN FOR ADMIN */}
-                        <div className="table-container">
-                          <table className="table table-hover report-table">
+                        
+                        {/* 1. Renamed this class */}
+                        <div className="inlet-outlet-table-wrapper"> 
+                          
+                          {/* 2. Renamed this class */}
+                          <table className="table table-hover report-table-scoped">
                             <thead>
                               <tr>
-                                <th rowSpan="2" className="table-header-style">DATE</th>
-                                <th colSpan="4" className="table-header-style">INLET FLOW METER (KL)</th>
-                                <th colSpan="4" className="table-header-style">OUTLET FLOW METER (KL)</th>
+                                {/* 3. Renamed this class */}
+                                <th rowSpan="2" className="table-header-scoped">DATE</th>
+                                <th colSpan="4" className="table-header-scoped">INLET FLOW METER (KL)</th>
+                                <th colSpan="4" className="table-header-scoped">OUTLET FLOW METER (KL)</th>
                               </tr>
                               <tr>
-                                <th className="table-subheader-style">INITIAL</th>
-                                <th className="table-subheader-style">FINAL</th>
-                                <th className="table-subheader-style">TOTAL</th>
-                                <th className="table-subheader-style">COMMENT</th>
-                                <th className="table-subheader-style">INITIAL</th>
-                                <th className="table-subheader-style">FINAL</th>
-                                <th className="table-subheader-style">TOTAL</th>
-                                <th className="table-subheader-style">COMMENT</th>
+                                {/* 4. Renamed this class */}
+                                <th className="table-subheader-scoped">INITIAL</th>
+                                <th className="table-subheader-scoped">FINAL</th>
+                                <th className="table-subheader-scoped">TOTAL</th>
+                                <th className="table-subheader-scoped">COMMENT</th>
+                                <th className="table-subheader-scoped">INITIAL</th>
+                                <th className="table-subheader-scoped">FINAL</th>
+                                <th className="table-subheader-scoped">TOTAL</th>
+                                <th className="table-subheader-scoped">COMMENT</th>
                               </tr>
                             </thead>
                             <tbody>
                               {processedReadings.tableData.map((reading, index) => (
-                                  <tr key={index} className="table-row-style">
-                                    <td className="table-cell-style">{formatDate(reading.date, month, year)}</td>
+                                  
+                                  /* 5. Renamed this class */
+                                  <tr key={index} className="table-row-scoped">
+                                    
+                                    {/* 6. Renamed this class */}
+                                    <td className="table-cell-scoped">{formatDate(reading.date, month, year)}</td>
                                     
                                     {/* Inlet */}
-                                    <td className="table-cell-input-style">
+                                    {/* 7. Renamed this class (and 3 others like it) */}
+                                    <td className="table-cell-input-scoped">
                                       <input
                                         type="number"
                                         className="form-control form-control-sm input-style"
@@ -613,7 +625,7 @@ const InletAndOutlet = () => {
                                         disabled={loading}
                                       />
                                     </td>
-                                    <td className="table-cell-input-style">
+                                    <td className="table-cell-input-scoped">
                                       <input
                                         type="number"
                                         className="form-control form-control-sm input-style"
@@ -622,10 +634,11 @@ const InletAndOutlet = () => {
                                         disabled={loading}
                                       />
                                     </td>
-                                    <td className="table-cell-style">
+                                    {/* 8. Renamed this class (and 1 other like it) */}
+                                    <td className="table-cell-scoped">
                                       <input type="number" value={reading.inletTotal} className="read-only-style" disabled />
                                     </td>
-                                    <td className="table-cell-input-style">
+                                    <td className="table-cell-input-scoped">
                                       <input
                                         type="text"
                                         className="form-control form-control-sm comment-input-style"
@@ -636,7 +649,7 @@ const InletAndOutlet = () => {
                                     </td>
 
                                     {/* Outlet */}
-                                    <td className="table-cell-input-style">
+                                    <td className="table-cell-input-scoped">
                                       <input
                                         type="number"
                                         className="form-control form-control-sm input-style"
@@ -645,7 +658,7 @@ const InletAndOutlet = () => {
                                         disabled={loading}
                                       />
                                     </td>
-                                    <td className="table-cell-input-style">
+                                    <td className="table-cell-input-scoped">
                                       <input
                                         type="number"
                                         className="form-control form-control-sm input-style"
@@ -654,10 +667,10 @@ const InletAndOutlet = () => {
                                         disabled={loading}
                                       />
                                     </td>
-                                    <td className="table-cell-style">
+                                    <td className="table-cell-scoped">
                                       <input type="number" value={reading.outletTotal} className="read-only-style" disabled />
                                     </td>
-                                    <td className="table-cell-input-style">
+                                    <td className="table-cell-input-scoped">
                                       <input
                                         type="text"
                                         className="form-control form-control-sm comment-input-style"
@@ -672,7 +685,8 @@ const InletAndOutlet = () => {
                             </tbody>
                             {/* --- NEW: TABLE FOOTER FOR TOTALS --- */}
                             <tfoot>
-                              <tr className="table-footer-style">
+                              {/* 9. Renamed this class */}
+                              <tr className="table-footer-scoped">
                                 <td>TOTAL (KL)</td>
                                 <td colSpan="2"></td> {/* Skip Initial, Final */}
                                 <td>{processedReadings.totalInlet}</td>
