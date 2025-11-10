@@ -509,7 +509,7 @@ const InletAndOutlet = () => {
   };
 
 
-  return (
+return (
     <div className="container-fluid">
       <div className="row">
         <div className="col-lg-3 d-none d-lg-block">
@@ -519,16 +519,22 @@ const InletAndOutlet = () => {
         <div className="col-lg-9 col-12">
           <Header />
           
-          <div className="row main-content-row"> 
+          {/* 1. RENAMED: main-content-row -> inlet-outlet-report__main-content */}
+          <div className="row inlet-outlet-report__main-content"> 
             <div className="col-12">
               
               {!targetUser.userName ? (
                 // --- A. SHOW PROMPT TO SELECT USER ---
-                <div className="card-style">
-                  <div className="prompt-style">
-                    <i className="fas fa-hand-pointer prompt-icon"></i>
-                    <h3 className="prompt-title">Please Select a User</h3>
-                    <p className="prompt-text">
+                // 2. RENAMED: card-style -> inlet-outlet-report__card
+                <div className="inlet-outlet-report__card">
+                  {/* 3. RENAMED: prompt-style -> inlet-outlet-report__prompt */}
+                  <div className="inlet-outlet-report__prompt">
+                    {/* 4. RENAMED: prompt-icon -> inlet-outlet-report__prompt-icon */}
+                    <i className="fas fa-hand-pointer inlet-outlet-report__prompt-icon"></i>
+                    {/* 5. RENAMED: prompt-title -> inlet-outlet-report__prompt-title */}
+                    <h3 className="inlet-outlet-report__prompt-title">Please Select a User</h3>
+                    {/* 6. RENAMED: prompt-text -> inlet-outlet-report__prompt-text */}
+                    <p className="inlet-outlet-report__prompt-text">
                       Use the dropdown in the header to select a user to view or add their monthly report.
                     </p>
                   </div>
@@ -539,13 +545,16 @@ const InletAndOutlet = () => {
                 // --- B. SHOW THE FULL REPORT INTERFACE ---
                 <> 
                   {/* Header Card */}
-                  <div className="header-style">
+                  {/* 7. RENAMED: header-style -> inlet-outlet-report__header-card */}
+                  <div className="inlet-outlet-report__header-card">
                     <div className="d-flex flex-wrap justify-content-between align-items-center">
                       <div>
-                        <h3 className="header-title">
+                        {/* 8. RENAMED: header-title -> inlet-outlet-report__header-title */}
+                        <h3 className="inlet-outlet-report__header-title">
                           INLET & OUTLET FLOW READINGS
                         </h3>
-                        <div className="header-subtitle">
+                        {/* 9. RENAMED: header-subtitle -> inlet-outlet-report__header-subtitle */}
+                        <div className="inlet-outlet-report__header-subtitle">
                           <strong>SITE:</strong> {targetUser.siteName || "N/A"}
                           <strong className='ms-2'>({targetUser.userName || "No User Selected"})</strong>
                           <span className="mx-3">|</span>
@@ -555,7 +564,8 @@ const InletAndOutlet = () => {
                       
                       <div className="d-flex align-items-center mt-3 mt-md-0">
                         <select
-                          className="form-select me-2 date-picker-style"
+                          // 10. RENAMED: date-picker-style -> inlet-outlet-report__date-picker
+                          className="form-select me-2 inlet-outlet-report__date-picker"
                           value={month}
                           onChange={(e) => setMonth(Number(e.target.value))}
                         >
@@ -565,7 +575,8 @@ const InletAndOutlet = () => {
                         </select>
                         <input
                           type="number"
-                          className="form-control date-picker-style"
+                          // 11. RENAMED: date-picker-style -> inlet-outlet-report__date-picker
+                          className="form-control inlet-outlet-report__date-picker"
                           value={year}
                           onChange={(e) => setYear(Number(e.target.value))}
                           style={{ width: "110px" }}
@@ -575,164 +586,147 @@ const InletAndOutlet = () => {
                   </div>
 
                   {/* Main Content */}
-                  <div className="card-style">
+                  {/* 12. RENAMED: card-style -> inlet-outlet-report__card */}
+                  <div className="inlet-outlet-report__card">
                     <div className="row">
                       {/* Data Table */}
-                     {/* Data Table */}
-                      <div className={isAdmin ? "col-lg-6" : "col-12"}> {/* SPLIT SCREEN FOR ADMIN */}
+                       <div className={isAdmin ? "col-lg-6" : "col-12"}>
                         
-                        {/* 1. Renamed this class */}
-                        <div className="inlet-outlet-table-wrapper"> 
-                          
-                          {/* 2. Renamed this class */}
-                          <table className="table table-hover report-table-scoped">
+                        {/* (These table classes are already correct from my last answer) */}
+                        <div className="inlet-outlet-report__wrapper"> 
+                          <table className="table table-hover inlet-outlet-report__table">
                             <thead>
                               <tr>
-                                {/* 3. Renamed this class */}
-                                <th rowSpan="2" className="table-header-scoped">DATE</th>
-                                <th colSpan="4" className="table-header-scoped">INLET FLOW METER (KL)</th>
-                                <th colSpan="4" className="table-header-scoped">OUTLET FLOW METER (KL)</th>
+                                <th rowSpan="2" className="inlet-outlet-report__header">DATE</th>
+                                <th colSpan="4" className="inlet-outlet-report__header">INLET FLOW METER (KL)</th>
+                                <th colSpan="4" className="inlet-outlet-report__header">OUTLET FLOW METER (KL)</th>
                               </tr>
                               <tr>
-                                {/* 4. Renamed this class */}
-                                <th className="table-subheader-scoped">INITIAL</th>
-                                <th className="table-subheader-scoped">FINAL</th>
-                                <th className="table-subheader-scoped">TOTAL</th>
-                                <th className="table-subheader-scoped">COMMENT</th>
-                                <th className="table-subheader-scoped">INITIAL</th>
-                                <th className="table-subheader-scoped">FINAL</th>
-                                <th className="table-subheader-scoped">TOTAL</th>
-                                <th className="table-subheader-scoped">COMMENT</th>
+                                <th className="inlet-outlet-report__subheader">INITIAL</th>
+                                <th className="inlet-outlet-report__subheader">FINAL</th>
+                                <th className="inlet-outlet-report__subheader">TOTAL</th>
+                                <th className="inlet-outlet-report__subheader">COMMENT</th>
+                                <th className="inlet-outlet-report__subheader">INITIAL</th>
+                                <th className="inlet-outlet-report__subheader">FINAL</th>
+                                <th className="inlet-outlet-report__subheader">TOTAL</th>
+                                <th className="inlet-outlet-report__subheader">COMMENT</th>
                               </tr>
                             </thead>
                             <tbody>
                               {processedReadings.tableData.map((reading, index) => (
+                                <tr key={index} className="inlet-outlet-report__row">
+                                  <td className="inlet-outlet-report__cell">{formatDate(reading.date, month, year)}</td>
                                   
-                                  /* 5. Renamed this class */
-                                  <tr key={index} className="table-row-scoped">
-                                    
-                                    {/* 6. Renamed this class */}
-                                    <td className="table-cell-scoped">{formatDate(reading.date, month, year)}</td>
-                                    
-                                    {/* Inlet */}
-                                    {/* 7. Renamed this class (and 3 others like it) */}
-                                    <td className="table-cell-input-scoped">
-                                      <input
-                                        type="number"
-                                        className="form-control form-control-sm input-style"
-                                        value={reading.inletInitial} 
-                                        onChange={(e) => handleInputChange(index, "inletInitial", e.target.value)} 
-                                        disabled={loading}
-                                      />
-                                    </td>
-                                    <td className="table-cell-input-scoped">
-                                      <input
-                                        type="number"
-                                        className="form-control form-control-sm input-style"
-                                        value={reading.inletFinal}
-                                        onChange={(e) => handleInputChange(index, "inletFinal", e.target.value)}
-                                        disabled={loading}
-                                      />
-                                    </td>
-                                    {/* 8. Renamed this class (and 1 other like it) */}
-                                    <td className="table-cell-scoped">
-                                      <input type="number" value={reading.inletTotal} className="read-only-style" disabled />
-                                    </td>
-                                    <td className="table-cell-input-scoped">
-                                      <input
-                                        type="text"
-                                        className="form-control form-control-sm comment-input-style"
-                                        value={reading.inletComment}
-                                        onChange={(e) => handleInputChange(index, "inletComment", e.target.value)}
-                                        disabled={loading}
-                                      />
-                                    </td>
+                                  {/* Inlet */}
+                                  <td className="inlet-outlet-report__cell--input">
+                                    <input
+                                      type="number"
+                                      // 13. RENAMED: input-style -> inlet-outlet-report__input
+                                      className="form-control form-control-sm inlet-outlet-report__input"
+                                      value={reading.inletInitial} 
+                                      onChange={(e) => handleInputChange(index, "inletInitial", e.target.value)} 
+                                      disabled={loading}
+                                    />
+                                  </td>
+                                  <td className="inlet-outlet-report__cell--input">
+                                    <input
+                                      type="number"
+                                      // 14. RENAMED: input-style -> inlet-outlet-report__input
+                                      className="form-control form-control-sm inlet-outlet-report__input"
+                                      value={reading.inletFinal}
+                                      onChange={(e) => handleInputChange(index, "inletFinal", e.target.value)}
+                                      disabled={loading}
+                                    />
+                                  </td>
+                                  <td className="inlet-outlet-report__cell">
+                                    {/* 15. RENAMED: read-only-style -> inlet-outlet-report__input--readonly */}
+                                    <input type="number" value={reading.inletTotal} className="inlet-outlet-report__input--readonly" disabled />
+                                  </td>
+                                  <td className="inlet-outlet-report__cell--input">
+                                    <input
+                                      type="text"
+                                      // 16. RENAMED: comment-input-style -> inlet-outlet-report__input--comment
+                                      className="form-control form-control-sm inlet-outlet-report__input--comment"
+                                      value={reading.inletComment}
+                                      onChange={(e) => handleInputChange(index, "inletComment", e.target.value)}
+                                      disabled={loading}
+                                    />
+                                  </td>
 
-                                    {/* Outlet */}
-                                    <td className="table-cell-input-scoped">
-                                      <input
-                                        type="number"
-                                        className="form-control form-control-sm input-style"
-                                        value={reading.outletInitial}
-                                        onChange={(e) => handleInputChange(index, "outletInitial", e.target.value)}
-                                        disabled={loading}
-                                      />
-                                    </td>
-                                    <td className="table-cell-input-scoped">
-                                      <input
-                                        type="number"
-                                        className="form-control form-control-sm input-style"
-                                        value={reading.outletFinal}
-                                        onChange={(e) => handleInputChange(index, "outletFinal", e.target.value)}
-                                        disabled={loading}
-                                      />
-                                    </td>
-                                    <td className="table-cell-scoped">
-                                      <input type="number" value={reading.outletTotal} className="read-only-style" disabled />
-                                    </td>
-                                    <td className="table-cell-input-scoped">
-                                      <input
-                                        type="text"
-                                        className="form-control form-control-sm comment-input-style"
-                                        value={reading.outletComment}
-                                        onChange={(e) => handleInputChange(index, "outletComment", e.target.value)}
-                                        disabled={loading}
-                                      />
-                                    </td>
-                                  </tr>
+                                  {/* Outlet */}
+                                  <td className="inlet-outlet-report__cell--input">
+                                    <input
+                                      type="number"
+                                      className="form-control form-control-sm inlet-outlet-report__input"
+                                      value={reading.outletInitial}
+                                      onChange={(e) => handleInputChange(index, "outletInitial", e.target.value)}
+                                      disabled={loading}
+                                    />
+                                  </td>
+                                  <td className="inlet-outlet-report__cell--input">
+                                    <input
+                                      type="number"
+                                      className="form-control form-control-sm inlet-outlet-report__input"
+                                      value={reading.outletFinal}
+                                      onChange={(e) => handleInputChange(index, "outletFinal", e.target.value)}
+                                      disabled={loading}
+                                    />
+                                  </td>
+                                  <td className="inlet-outlet-report__cell">
+                                    <input type="number" value={reading.outletTotal} className="inlet-outlet-report__input--readonly" disabled />
+                                  </td>
+                                  <td className="inlet-outlet-report__cell--input">
+                                    <input
+                                      type="text"
+                                      className="form-control form-control-sm inlet-outlet-report__input--comment"
+                                      value={reading.outletComment}
+                                      onChange={(e) => handleInputChange(index, "outletComment", e.target.value)}
+                                      disabled={loading}
+                                    />
+                                  </td>
+                                </tr>
                                 )
                               )}
                             </tbody>
-                            {/* --- NEW: TABLE FOOTER FOR TOTALS --- */}
                             <tfoot>
-                              {/* 9. Renamed this class */}
-                              <tr className="table-footer-scoped">
+                              {/* (This footer class is already correct) */}
+                              <tr className="inlet-outlet-report__footer-row">
                                 <td>TOTAL (KL)</td>
-                                <td colSpan="2"></td> {/* Skip Initial, Final */}
+                                <td colSpan="2"></td>
                                 <td>{processedReadings.totalInlet}</td>
-                                <td></td> {/* Skip Comment */}
-                                <td colSpan="2"></td> {/* Skip Initial, Final */}
+                                <td></td>
+                                <td colSpan="2"></td>
                                 <td>{processedReadings.totalOutlet}</td>
-                                <td></td> {/* Skip Comment */}
+                                <td></td>
                               </tr>
                             </tfoot>
                           </table>
                         </div>
                       </div>
 
-                      {/* --- NEW: GRAPHS (Admin Only) --- */}
+                      {/* --- GRAPHS (Admin Only) --- */}
                       {isAdmin && (
                         <div className="col-lg-6">
-                          <div className="graph-container-wrapper">
+                          {/* 17. RENAMED: graph-container-wrapper -> inlet-outlet-report__graph-wrapper */}
+                          <div className="inlet-outlet-report__graph-wrapper">
                             {/* Inlet Chart Container */}
                             <div 
-                              ref={inletChartRef} // Add ref here
-                              className="graph-container">
+                              ref={inletChartRef}
+                              // 18. RENAMED: graph-container -> inlet-outlet-report__graph-container
+                              className="inlet-outlet-report__graph-container">
                               <Line 
-                                options={{
-                                  ...chartOptions, 
-                                  plugins: {
-                                    ...chartOptions.plugins, 
-                                    title: { ...chartOptions.plugins.title, text: "Inlet Total (KL) Over Time" }
-                                  }
-                                }} 
+                                options={{...chartOptions, plugins: {...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: "Inlet Total (KL) Over Time" }}}} 
                                 data={inletFlowData} 
                               />
                             </div>
                             {/* Outlet Chart Container */}
                             <div 
-                              ref={outletChartRef} // Add ref here
-                              className="graph-container"
-                              style={{ border: '2px dotted #e74c3c' }} // Red border for outlet
+                              ref={outletChartRef}
+                              className="inlet-outlet-report__graph-container"
+                              style={{ border: '2px dotted #e74c3c' }}
                             >
                               <Line 
-                                options={{
-                                  ...chartOptions, 
-                                  plugins: {
-                                    ...chartOptions.plugins, 
-                                    title: { ...chartOptions.plugins.title, text: "Outlet Total (KL) Over Time" }
-                                  }
-                                }} 
+                                options={{...chartOptions, plugins: {...chartOptions.plugins, title: { ...chartOptions.plugins.title, text: "Outlet Total (KL) Over Time" }}}} 
                                 data={outletFlowData} 
                               />
                             </div>
@@ -745,7 +739,8 @@ const InletAndOutlet = () => {
                     {(isOperator || isAdmin) && (
                       <div className="text-center mt-4">
                         <button
-                          className="button-style"
+                          // 19. RENAMED: button-style -> inlet-outlet-report__button
+                          className="inlet-outlet-report__button"
                           onClick={handleSave}
                           disabled={loading || !targetUser.userId}
                         >
@@ -755,7 +750,8 @@ const InletAndOutlet = () => {
                         {( isAdmin) && ( 
                           <>
                             <button
-                              className="button-style-pdf"
+                              // 20. RENAMED: base + modifier classes
+                              className="inlet-outlet-report__button inlet-outlet-report__button--pdf"
                               onClick={handleDownloadPDF}
                               disabled={loading || !targetUser.userId}
                             >
@@ -763,7 +759,8 @@ const InletAndOutlet = () => {
                             </button>
 
                             <button
-                              className="button-style-csv"
+                              // 21. RENAMED: base + modifier classes
+                              className="inlet-outlet-report__button inlet-outlet-report__button--csv"
                               onClick={handleDownloadCSV}
                               disabled={loading || !targetUser.userId}
                             >
@@ -776,8 +773,6 @@ const InletAndOutlet = () => {
                   </div>
                 </> 
               )} 
-              {/* End of conditional rendering */}
-
             </div>
           </div>
         </div> 

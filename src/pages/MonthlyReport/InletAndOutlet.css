@@ -1,5 +1,72 @@
-/* --- Table Styles --- */
-.inlet-outlet-table-wrapper { /* Was .table-container */
+/* --- Main Layout --- */
+.inlet-outlet-report__main-content {
+  margin-top: 70px;
+  padding: 0 15px;
+}
+
+/* --- Card Styles --- */
+.inlet-outlet-report__header-card {
+  background: linear-gradient(135deg, #236a80 0%, #236a80 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.inlet-outlet-report__header-title {
+  font-weight: bold;
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.inlet-outlet-report__header-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.95;
+}
+
+.inlet-outlet-report__card {
+  border: 3px dotted #3498db;
+  border-radius: 15px;
+  background-color: #ffffff;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Prompt Style --- */
+.inlet-outlet-report__prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  color: #236a80;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  border: 3px dotted #236a80;
+}
+
+.inlet-outlet-report__prompt-icon {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  color: #236a80;
+}
+
+.inlet-outlet-report__prompt-title {
+  font-weight: 600;
+  color: #236a80;
+}
+
+.inlet-outlet-report__prompt-text {
+  font-size: 1.1rem;
+  color: #34495e;
+  max-width: 400px;
+}
+
+/* --- Table Styles (using classes from your JSX) --- */
+.inlet-outlet-report__wrapper {
   height: 600px;
   overflow: auto; 
   border-radius: 10px;
@@ -7,13 +74,13 @@
   background-color: #f8f9fa;
 }
 
-.inlet-outlet-table-wrapper .report-table-scoped { /* Was .report-table */
+.inlet-outlet-report__table {
   margin-bottom: 0;
   min-width: 1000px; 
   table-layout: fixed; 
 }
 
-.inlet-outlet-table-wrapper .report-table-scoped thead {
+.inlet-outlet-report__table thead {
   position: sticky;
   top: 0;
   z-index: 10;
@@ -21,7 +88,7 @@
   color: white;
 }
 
-.inlet-outlet-table-wrapper .table-header-scoped { /* Was .table-header-style */
+.inlet-outlet-report__header {
   padding: 15px 10px;
   font-weight: bold;
   font-size: 0.95rem;
@@ -30,24 +97,24 @@
   vertical-align: middle;
 }
 
-.inlet-outlet-table-wrapper .table-subheader-scoped { /* Was .table-subheader-style */
+.inlet-outlet-report__subheader {
   padding: 10px 5px;
   font-weight: bold;
   font-size: 0.9rem;
   border: 2px dotted rgba(255, 255, 255, 0.3);
   text-align: center;
   vertical-align: middle;
-  width: 12.5%; /* 100% / 8 data columns */
+  width: 12.5%;
 }
 
-.inlet-outlet-table-wrapper .table-row-scoped { /* Was .table-row-style */
+.inlet-outlet-report__row {
   background-color: #ffffff;
 }
-.inlet-outlet-table-wrapper .table-row-scoped:nth-child(even) {
+.inlet-outlet-report__row:nth-child(even) {
   background-color: #f8f9fa;
 }
 
-.inlet-outlet-table-wrapper .table-cell-scoped { /* Was .table-cell-style */
+.inlet-outlet-report__cell {
   padding: 12px 10px;
   font-weight: 600;
   color: #2c3e50;
@@ -57,18 +124,18 @@
   width: 12.5%; 
 }
 
-.inlet-outlet-table-wrapper .table-cell-scoped:first-child { /* The Date column */
+.inlet-outlet-report__cell:first-child {
   width: auto; 
 }
 
-.inlet-outlet-table-wrapper .table-cell-input-scoped { /* Was .table-cell-input-style */
+.inlet-outlet-report__cell--input {
   padding: 8px 10px;
   vertical-align: middle;
   width: 12.5%;
 }
 
-/* --- NEW: Table Footer Style --- */
-.inlet-outlet-table-wrapper .report-table-scoped tfoot {
+/* --- Table Footer Style --- */
+.inlet-outlet-report__table tfoot {
   position: sticky;
   bottom: 0;
   z-index: 10;
@@ -77,8 +144,116 @@
   font-weight: bold;
 }
 
-.inlet-outlet-table-wrapper .table-footer-scoped td { /* Was .table-footer-style td */
+.inlet-outlet-report__footer-row td {
   padding: 12px 10px;
   font-size: 1.1rem;
   text-align: center;
+}
+
+/* --- Input Styles --- */
+.inlet-outlet-report__input {
+  border: 2px dotted #3498db;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.inlet-outlet-report__input--comment {
+  border: 2px dotted #3498db;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.inlet-outlet-report__input--readonly {
+  border: 2px dotted #aaa;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  width: 100%;
+  background-color: #f4f4f4;
+  color: #333;
+  font-weight: bold;
+}
+
+.inlet-outlet-report__date-picker {
+  border: 2px dotted #3498db;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  background-color: white;
+  min-width: 140px;
+}
+
+/* --- Button Styles --- */
+.inlet-outlet-report__button {
+  padding: 12px 30px;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 5px 5px;
+  /* Default (blue) style */
+  border: 2px dotted #236a80;
+  background-color: #236a80;
+}
+
+.inlet-outlet-report__button:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+/* Modifier for PDF button (red) */
+.inlet-outlet-report__button--pdf {
+  border: 2px dotted #e74c3c;
+  background-color: #e74c3c;
+}
+
+/* Modifier for CSV button (green) */
+.inlet-outlet-report__button--csv {
+  border: 2px dotted #27ae60;
+  background-color: #27ae60;
+}
+
+/* Disabled state for all buttons */
+.inlet-outlet-report__button:disabled {
+  background-color: #aaa;
+  border-color: #aaa;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --- Graph Container Styles --- */
+.inlet-outlet-report__graph-wrapper {
+  border: 3px dotted #3498db;
+  border-radius: 12px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  height: 550px;
+  overflow-y: auto;
+}
+
+.inlet-outlet-report__graph-container {
+  height: 240px; 
+  position: relative;
+  margin-bottom: 25px;
+  padding: 15px;
+  background-color: white;
+  border-radius: 10px;
+  border: 2px dotted #3498db;
+}
+
+.inlet-outlet-report__graph-container:last-child {
+  margin-bottom: 0;
 }
