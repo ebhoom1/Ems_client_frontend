@@ -433,12 +433,12 @@ const selectedUserId = sessionStorage.getItem("selectedUserId") || "";
                   setIsDropdownOpenNotification(!isDropdownOpenNotification)
                 }
               >
-                <i className="fa-regular fa-bell fa-1x"></i>
+                {/* <i className="fa-regular fa-bell fa-1x"></i>
                 {notifications.length > 0 && (
                   <span className="notification-badge">
                     {notifications.length}
                   </span>
-                )}
+                )} */}
               </Nav.Link>
               {isDropdownOpenNotification && (
                 <div className="dropdown-container-notification">

@@ -225,15 +225,15 @@ function DashboardSam() {
                       </a>
                     </li>
                     {/* --- MODIFIED LINK --- */}
-                    <li className="list active text-center">
+                    {/* <li className="list active text-center">
                       <a
-                        href="#"
-                        onClick={handleShowReportModal}
+                        href="/monthly-report"
+                        // onClick={handleShowReportModal}
                         style={{ textDecoration: "none", color: "#ffffff" }}
                       >
                         <span className="title">Monthly Report</span>
                       </a>
-                    </li>
+                    </li> */}
                     <li className="list active text-center">
                       <a
                         href="/autonerve"
@@ -293,8 +293,8 @@ function DashboardSam() {
                         {/* --- MODIFIED LINK --- */}
                         <li className="list active text-center">
                           <a
-                            href="#"
-                            onClick={handleShowReportModal}
+                            href="/monthly-report"
+                           
                             style={{ textDecoration: "none", color: "#ffffff" }}
                           >
                             <span className="title">Monthly Report</span>
@@ -390,8 +390,7 @@ function DashboardSam() {
                         {/* --- MODIFIED LINK --- */}
                         <li className="list active text-center">
                           <a
-                            href="#"
-                            onClick={handleShowReportModal}
+                            href="/monthly-report"
                             style={{ textDecoration: "none", color: "#ffffff" }}
                           >
                             <span className="title">Monthly Report</span>
@@ -467,65 +466,7 @@ function DashboardSam() {
       </div>
 
       {/* --- STYLED MODAL COMPONENT --- */}
-      <Modal
-        show={showReportModal}
-        onHide={handleCloseReportModal}
-        centered
-        dialogClassName="modal-90w"
-      >
-        <Modal.Header style={modalHeaderStyle} closeButton>
-          <Modal.Title style={modalTitleStyle}>Select Report Type</Modal.Title>
-        </Modal.Header>
-
-        <Modal.Body style={modalBodyStyle}>
-          <div className="d-grid gap-3">
-            <Button
-              style={
-                isPrimaryHovered
-                  ? {
-                      ...buttonStylePrimary,
-                      opacity: 0.85,
-                      transform: "scale(1.02)",
-                    }
-                  : buttonStylePrimary
-              }
-              onMouseEnter={() => setIsPrimaryHovered(true)}
-              onMouseLeave={() => setIsPrimaryHovered(false)}
-              onClick={() => handleModalClick("/monthly-report")}
-            >
-              {userType === "admin"
-                ? "View PH & MLSS Reading"
-                : "Add PH & MLSS Reading"}
-            </Button>
-            <Button
-              style={
-                isSecondaryHovered
-                  ? {
-                      ...buttonStyleSecondary,
-                      backgroundColor: "#f8f9fa",
-                      transform: "scale(1.02)",
-                    }
-                  : buttonStyleSecondary
-              }
-              onMouseEnter={() => setIsSecondaryHovered(true)}
-              onMouseLeave={() => setIsSecondaryHovered(false)}
-              onClick={() => handleModalClick("/inlet-outlet")}
-            >
-              {userType === "admin"
-                ? "View Inlet & Outlet Reading"
-                : "Add Inlet & Outlet Reading"}
-            </Button>
-          </div>
-        </Modal.Body>
-
-        <Modal.Footer
-          style={{ borderTop: "none", padding: "0 1.5rem 1rem 1.5rem" }}
-        >
-          <Button style={footerCloseButton} onClick={handleCloseReportModal}>
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
+    
     </>
   );
 }
