@@ -117,6 +117,7 @@ import PreventiveMaintanence from "./Autonerve/PreventiveMaintanence";
 import Daigram from "./pages/PandD/Daigram";
 import MonthlyPh from "./pages/MonthlyReport/MonthlyPh";
 import InletAndOutlet from "./pages/MonthlyReport/InletAndOutlet";
+import MonthlyMaintenanceReport from "./pages/MonthlyReport/MonthlyMaintenanceReport";
 function App() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -441,8 +442,9 @@ function App() {
                     <Route path="/autonerve" element={<AutonerveLayout />} />
                     <Route path="/preventive-maintanence" element={<PreventiveMaintanence />} />
                     <Route path="/pandd" element={<Daigram />} />
-                                        <Route path="/monthly-report" element={<MonthlyPh />} />
+                     <Route path="/monthly-report" element={<MonthlyPh />} />
                     <Route path="/inlet-outlet" element={<InletAndOutlet />} />
+                    <Route path="/monthly-maintenance" element={<MonthlyMaintenanceReport />} />
 
 
 

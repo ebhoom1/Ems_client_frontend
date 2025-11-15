@@ -13,7 +13,7 @@ function DashboardSam() {
   const { userData, userType } = useSelector((state) => state.user);
   const validUser = userData?.validUserOne || {};
   const navigate = useNavigate(); // Hook for navigation
-  console.log("userType:",userType)
+  console.log("userType:", userType);
 
   // --- State for the Modal ---
   const [showReportModal, setShowReportModal] = useState(false);
@@ -216,14 +216,14 @@ function DashboardSam() {
                 {/* Show menu for operator */}
                 {userRole === "operator" ? (
                   <>
-                    <li className="list active text-center">
+                    {/* <li className="list active text-center">
                       <a
                         href="/view-notification"
                         style={{ textDecoration: "none", color: "#ffffff" }}
                       >
                         <span className="title">Notification</span>
                       </a>
-                    </li>
+                    </li> */}
                     {/* --- MODIFIED LINK --- */}
                     {/* <li className="list active text-center">
                       <a
@@ -293,8 +293,7 @@ function DashboardSam() {
                         {/* --- MODIFIED LINK --- */}
                         <li className="list active text-center">
                           <a
-                            href="/monthly-report"
-                           
+                            onClick={handleShowReportModal}
                             style={{ textDecoration: "none", color: "#ffffff" }}
                           >
                             <span className="title">Monthly Report</span>
@@ -466,7 +465,72 @@ function DashboardSam() {
       </div>
 
       {/* --- STYLED MODAL COMPONENT --- */}
-    
+      <Modal
+        show={showReportModal}
+        onHide={handleCloseReportModal}
+        centered
+        backdrop="static"
+        keyboard
+      >
+        <Modal.Header style={modalHeaderStyle} closeButton>
+          <Modal.Title style={modalTitleStyle}>Select Report Type</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body style={modalBodyStyle}>
+          <div className="d-grid gap-3">
+            <Button
+              style={{
+                ...buttonStylePrimary,
+                transform: isPrimaryHovered ? "translateY(-1px)" : "none",
+                boxShadow: isPrimaryHovered
+                  ? "0 6px 16px rgba(0, 0, 0, 0.15)"
+                  : buttonStylePrimary.boxShadow,
+              }}
+              onMouseEnter={() => setIsPrimaryHovered(true)}
+              onMouseLeave={() => setIsPrimaryHovered(false)}
+              onClick={() => handleModalClick("/monthly-report")}
+            >
+              View pH &amp; MLSS Reading
+            </Button>
+
+            <Button
+              variant="light"
+              style={{
+                ...buttonStyleSecondary,
+                backgroundColor: isSecondaryHovered ? "#f7fbfd" : "#ffffff",
+                boxShadow: isSecondaryHovered
+                  ? "0 4px 12px rgba(35, 106, 128, 0.15)"
+                  : "none",
+              }}
+              onMouseEnter={() => setIsSecondaryHovered(true)}
+              onMouseLeave={() => setIsSecondaryHovered(false)}
+              onClick={() => handleModalClick("/inlet-outlet")}
+            >
+              View Inlet &amp; Outlet Reading
+            </Button> <Button
+              variant="light"
+              style={{
+                ...buttonStyleSecondary,
+                backgroundColor: isSecondaryHovered ? "#f7fbfd" : "#ffffff",
+                boxShadow: isSecondaryHovered
+                  ? "0 4px 12px rgba(35, 106, 128, 0.15)"
+                  : "none",
+              }}
+              onMouseEnter={() => setIsSecondaryHovered(true)}
+              onMouseLeave={() => setIsSecondaryHovered(false)}
+              onClick={() => handleModalClick("/monthly-maintenance")}
+            >
+              View Monthly  Maintenance Activities
+            </Button>
+          </div>
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button style={footerCloseButton} onClick={handleCloseReportModal}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 }

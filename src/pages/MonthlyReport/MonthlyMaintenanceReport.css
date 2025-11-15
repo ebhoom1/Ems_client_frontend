@@ -1,0 +1,206 @@
+/* Wrapper */
+.mmr-wrapper {
+  background: #f4f7fb;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #c8d7ea;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+/* Header */
+.mmr-header {
+  background: #236a80;
+  color: #ffffff;
+  padding: 16px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mmr-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.mmr-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.mmr-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mmr-month-label {
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mmr-month-input {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: none;
+  outline: none;
+  font-size: 13px;
+}
+
+/* Save button */
+.mmr-save-btn {
+  background: #ffffff;
+  color: #236a80;
+  border: 1px solid #ffffff;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mmr-save-btn:hover:not(:disabled) {
+  background: #e0edf8;
+}
+
+.mmr-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading */
+.mmr-loading {
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Table */
+.mmr-table-container {
+  margin-top: 12px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #d3e1f1;
+  overflow: hidden;
+}
+
+.mmr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.mmr-table thead {
+  background: #236a80;
+  color: #ffffff;
+}
+
+.mmr-table th,
+.mmr-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e0e7f2;
+  vertical-align: top;
+}
+
+.mmr-table th:first-child,
+.mmr-table td:first-child {
+  width: 110px;
+}
+
+.mmr-table th:nth-child(2),
+.mmr-table td:nth-child(2) {
+  width: 260px;
+}
+
+/* Date cell */
+.mmr-date-cell {
+  font-weight: 600;
+  color: #236a80;
+  white-space: nowrap;
+}
+
+/* Photos cell */
+.mmr-photo-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mmr-photo-preview-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mmr-photo-thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #cbd8eb;
+}
+
+/* Upload button (file input hidden) */
+.mmr-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px dashed #236a80;
+  color: #236a80;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #f7fbff;
+  transition: background 0.15s ease;
+}
+
+.mmr-upload-btn:hover {
+  background: #e6f0fa;
+}
+
+.mmr-upload-btn input[type="file"] {
+  display: none;
+}
+
+/* Comment cell */
+.mmr-comment-cell {
+  min-width: 220px;
+}
+
+.mmr-comment-input {
+  width: 100%;
+  min-height: 60px;
+  border-radius: 4px;
+  border: 1px solid #cbd8eb;
+  padding: 6px 8px;
+  font-size: 12px;
+  resize: vertical;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mmr-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mmr-table th,
+  .mmr-table td {
+    font-size: 12px;
+  }
+
+  .mmr-table th:nth-child(2),
+  .mmr-table td:nth-child(2) {
+    width: 200px;
+  }
+}

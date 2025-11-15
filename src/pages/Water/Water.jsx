@@ -707,128 +707,128 @@ const Water = () => {
     }
   };
   const isOperator = userData?.validUserOne?.isOperator === true;
- return (
-  <div>
-    {/**overlay-block click-new */}
-    {isOperator && !isCheckedIn && (
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          backgroundColor: "rgba(255, 255, 255, 0.3)",
-          zIndex: 10, // Below the buttons but above everything else
-          backdropFilter: "blur(2px)",
-        }}
-      />
-    )}
-    {/* Show loader while loading */}
-    {loading ? (
-      <div className="loader-container">
-        <div className="dot-spinner">
-          <div className="dot-spinner__dot"></div>
-          <div className="dot-spinner__dot"></div>
-          <div className="dot-spinner__dot"></div>
-          <div className="dot-spinner__dot"></div>
-          <div className="dot-spinner__dot"></div>
-          <div className="dot-spinner__dot"></div>
-          <div className="dot-spinner__dot"></div>
-          <div className="dot-spinner__dot"></div>
+  return (
+    <div>
+      {/**overlay-block click-new */}
+      {isOperator && !isCheckedIn && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(255, 255, 255, 0.3)",
+            zIndex: 10, // Below the buttons but above everything else
+            backdropFilter: "blur(2px)",
+          }}
+        />
+      )}
+      {/* Show loader while loading */}
+      {loading ? (
+        <div className="loader-container">
+          <div className="dot-spinner">
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+            <div className="dot-spinner__dot"></div>
+          </div>
         </div>
-      </div>
-    ) : (
-      <div>
-        <div className="container-fluid">
-          <div className="row">
-            <div className="col-lg-3 d-none d-lg-block ">
-              <DashboardSam />
-            </div>
+      ) : (
+        <div>
+          <div className="container-fluid">
+            <div className="row">
+              <div className="col-lg-3 d-none d-lg-block ">
+                <DashboardSam />
+              </div>
 
-            <div className="col-lg-9 col-12 ">
-              <div className="row1 ">
-                <div className="col-12  ">
-                  <div className="headermain" style={{ zIndex: "10001" }}>
-                    <Hedaer />
+              <div className="col-lg-9 col-12 ">
+                <div className="row1 ">
+                  <div className="col-12  ">
+                    <div className="headermain" style={{ zIndex: "10001" }}>
+                      <Hedaer />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="container-fluid">
-          <div className="row">
-            <div className="col-lg-3 d-none d-lg-block"></div>
+          <div className="container-fluid">
+            <div className="row">
+              <div className="col-lg-3 d-none d-lg-block"></div>
 
-            <div className="col-lg-9 col-12">
-              <div className="row">
-                <div className="col-12"></div>
-              </div>
-              <div className="maindashboard mt-5">
-                <Maindashboard />
-              </div>
+              <div className="col-lg-9 col-12">
+                <div className="row">
+                  <div className="col-12"></div>
+                </div>
+                <div className="maindashboard mt-5">
+                  <Maindashboard />
+                </div>
 
-              {/* operator checkout button - MOVED OUTSIDE MAIN CONDITIONAL */}
-              {isSpecialUser && (
-                <div
-                  className="d-flex justify-content-end align-items-center px-3 gap-2"
-                  style={{
-                    position: "relative",
-                    zIndex: !isCheckedIn ? 20 : "auto",
-                    marginTop: '20px', 
-                  }}
-                >
-                  <button
-                    onClick={() => {
-                      if (!isCheckedIn) {
-                        navigate("/geolocation");
-                      } else {
-                        alert(
-                          "✅ You are already Checked‐In. Please Check‐Out first."
-                        );
-                      }
+                {/* operator checkout button - MOVED OUTSIDE MAIN CONDITIONAL */}
+                {isSpecialUser && (
+                  <div
+                    className="d-flex justify-content-end align-items-center px-3 gap-2"
+                    style={{
+                      position: "relative",
+                      zIndex: !isCheckedIn ? 20 : "auto",
+                      marginTop: "20px",
                     }}
-                    className="btn btn-success mb-3"
-                    disabled={isCheckedIn} // Disable once checked in
                   >
-                    ✅ Check‐In
-                  </button>
-                  <button
-                    onClick={handleCheckOut}
-                    className="btn btn-danger mb-3"
-                  >
-                    🔁 Check‐Out
-                  </button>
-                  <button
-                    onClick={handleSignOut}
-                    className="btn btn-warning mb-3"
-                  >
-                    ➡️ Logout
-                  </button>
-                </div>
-              )}
+                    <button
+                      onClick={() => {
+                        if (!isCheckedIn) {
+                          navigate("/geolocation");
+                        } else {
+                          alert(
+                            "✅ You are already Checked‐In. Please Check‐Out first."
+                          );
+                        }
+                      }}
+                      className="btn btn-success mb-3"
+                      disabled={isCheckedIn} // Disable once checked in
+                    >
+                      ✅ Check‐In
+                    </button>
+                    <button
+                      onClick={handleCheckOut}
+                      className="btn btn-danger mb-3"
+                    >
+                      🔁 Check‐Out
+                    </button>
+                    <button
+                      onClick={handleSignOut}
+                      className="btn btn-warning mb-3"
+                    >
+                      ➡️ Logout
+                    </button>
+                  </div>
+                )}
 
-              {/* When operator → show MonthlyReport instead of below sections */}
-              {isOperator ? (
-                <div className="mt-4">
-                  <MonthlyPh />
-                </div>
-              ) : (
-                <div className="container-fluid water">
-                  <div className="row">
-                    <div className="col-lg-12 col-12 mt-2">
-                      <div className="d-flex align-items-center mt-5">
-                        {/* The heading grows to fill the space, and its text is centered within it */}
-                        {!isOperator && (
-                          <h5 className="flex-grow-1 text-center m-0">
-                            <b>EFFLUENT DASHBOARD</b>
-                          </h5>
-                        )}
+                {/* When operator → show MonthlyReport instead of below sections */}
+                {isOperator ? (
+                  <div className="mt-4">
+                    <MonthlyPh />
+                  </div>
+                ) : (
+                  <div className="container-fluid water">
+                    <div className="row">
+                      <div className="col-lg-12 col-12 mt-2">
+                        <div className="d-flex align-items-center mt-5">
+                          {/* The heading grows to fill the space, and its text is centered within it */}
+                          {!isOperator && (
+                            <h5 className="flex-grow-1 text-center m-0">
+                              <b>EFFLUENT DASHBOARD</b>
+                            </h5>
+                          )}
 
-                        {/* The logo will be pushed to the end, shown only for specific users */}
-                        {/*  {(userData?.validUserOne?.userName === "admin1_001" ||
+                          {/* The logo will be pushed to the end, shown only for specific users */}
+                          {/*  {(userData?.validUserOne?.userName === "admin1_001" ||
                           userData?.validUserOne?.userName === "CONTI" ||
                           selectedUserIdFromRedux === "CONTI" ||
                           currentUserName === "CONTI") && (
@@ -839,479 +839,491 @@ const Water = () => {
                             height={"60px"}
                           />
                         )} */}
-                      </div>
-
-                      {/* Check if effluentStacks are empty */}
-                      {effluentStacks.length === 0 && !isOperator && (
-                        <div className="text-center mt-3">
-                          <h5 className="text-danger">
-                            <b>
-                              No data available for Effluent/Sewage . Please
-                              Check Stack Emission Dashboard .
-                            </b>
-                          </h5>
                         </div>
-                      )}
-                      <div className="d-flex justify-content-between">
-                        {/* <ul className="quick-links ml-auto ">
+
+                        {/* Check if effluentStacks are empty */}
+                        {effluentStacks.length === 0 && !isOperator && (
+                          <div className="text-center mt-3">
+                            <h5 className="text-danger">
+                              <b>
+                                No data available for Effluent/Sewage . Please
+                                Check Stack Emission Dashboard .
+                              </b>
+                            </h5>
+                          </div>
+                        )}
+                        <div className="d-flex justify-content-between">
+                          {/* <ul className="quick-links ml-auto ">
                           <button className="btn  mb-2 mt-2 " style={{backgroundColor:'#236a80' , color:'white'}} onClick={() => setShowHistoryModal(true)}>
                             Daily History
                           </button>
                         </ul> */}
 
-                        {/* stac */}
-                      </div>
-                      <div className="d-flex justify-content-between">
-                        {userData?.validUserOne &&
-                          userData.validUserOne.userType === "user" && (
-                            <ul className="quick-links ml-auto">
-                              <button
-                                type="submit"
-                                onClick={handleOpenCalibrationPopup}
-                                className="btn  mb-2 mt-2"
-                                style={{
-                                  backgroundColor: "#236a80",
-                                  color: "white",
-                                }}
-                              >
-                                {" "}
-                                Calibration{" "}
-                              </button>
-                            </ul>
-                          )}
-                        <ul className="quick-links ml-auto">
+                          {/* stac */}
+                        </div>
+                        <div className="d-flex justify-content-between">
                           {userData?.validUserOne &&
                             userData.validUserOne.userType === "user" && (
-                              <h5>
-                                Data Interval:{" "}
-                                <span className="span-class">
-                                  {userData.validUserOne.dataInteval}
-                                </span>
-                              </h5>
+                              <ul className="quick-links ml-auto">
+                                <button
+                                  type="submit"
+                                  onClick={handleOpenCalibrationPopup}
+                                  className="btn  mb-2 mt-2"
+                                  style={{
+                                    backgroundColor: "#236a80",
+                                    color: "white",
+                                  }}
+                                >
+                                  {" "}
+                                  Calibration{" "}
+                                </button>
+                              </ul>
                             )}
-                        </ul>
-                      </div>
-                      <div>
-                        <div className="row align-items-center">
-                          <div className="col-md-4">
-                            <ul style={{ listStyleType: "none" }}>
-                              <li>
-                                {effluentStacks.length > 0 ? (
-                                  <div className="stack-dropdown">
-                                    <div className="styled-select-wrapper">
-                                      <select
-                                        id="stackSelect"
-                                        className="form-select styled-select"
-                                        value={selectedStack}
-                                        onChange={handleStackChange}
-                                      >
-                                        <option value="all">All Stacks</option>
-
-                                        {/* START: ADD THIS NEW OPTION */}
-                                        <option value="WTP">WTP</option>
-                                        {/* END: ADD THIS NEW OPTION */}
-
-                                        {effluentStacks.map(
-                                          (stackName, index) => (
-                                            <option
-                                              key={index}
-                                              value={stackName || "Unknown"}
-                                            >
-                                              {stackName || "Unknown Station"}
-                                            </option>
-                                          )
-                                        )}
-                                      </select>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  !isOperator && (
-                                    <h5 className="text-center">
-                                      No stations available
-                                    </h5>
-                                  )
-                                )}
-                              </li>
-                            </ul>
-                          </div>
+                          <ul className="quick-links ml-auto">
+                            {userData?.validUserOne &&
+                              userData.validUserOne.userType === "user" && (
+                                <h5>
+                                  Data Interval:{" "}
+                                  <span className="span-class">
+                                    {userData.validUserOne.dataInteval}
+                                  </span>
+                                </h5>
+                              )}
+                          </ul>
                         </div>
-                      </div>
-                      {loading && (
-                        <div className="spinner-container">
-                          <Oval
-                            height={40}
-                            width={40}
-                            color="#236A80"
-                            ariaLabel="Fetching details"
-                            secondaryColor="#e0e0e0"
-                            strokeWidth={2}
-                            strokeWidthSecondary={2}
-                          />
-                        </div>
-                      )}
+                        <div>
+                          <div className="row align-items-center">
+                            <div className="col-md-4">
+                              <ul style={{ listStyleType: "none" }}>
+                                <li>
+                                  {effluentStacks.length > 0 ? (
+                                    <div className="stack-dropdown">
+                                      <div className="styled-select-wrapper">
+                                        <select
+                                          id="stackSelect"
+                                          className="form-select styled-select"
+                                          value={selectedStack}
+                                          onChange={handleStackChange}
+                                        >
+                                          <option value="all">
+                                            All Stacks
+                                          </option>
 
-                      <div className="col-12  justify-content-center align-items-center">
-                        <div className=" justify-content-center"></div>
+                                          {/* START: ADD THIS NEW OPTION */}
+                                          <option value="WTP">WTP</option>
+                                          {/* END: ADD THIS NEW OPTION */}
 
-                        <div className="color-indicators">
-                          <div className="d-flex justify-content-center mt-2"></div>
-                        </div>
-                      </div>
-                      <div className="row mb-5">
-                        <div
-                          className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
-                          style={{
-                            height: "65vh",
-                            overflowY: "scroll",
-                            borderRadius: "15px",
-                          }}
-                        >
-                          {/* --- START: Conditional Rendering Logic --- */}
-
-                          {selectedStack === "WTP" ? (
-                            // If 'WTP' is selected, display its static cards
-                            <div className="col-12 mb-4">
-                              <div className="stack-box">
-                                <h4 className="text-center mt-3">WTP </h4>
-                                <div className="row mt-4">
-                                  {wtpParameters.map((item, index) => (
-                                    <div
-                                      className="col-12 col-md-4 grid-margin"
-                                      key={index}
-                                    >
-                                      <div
-                                        className="card mb-3"
-                                        style={{
-                                          border: "none",
-                                          // Replicating your original card style
-                                        }}
-                                      >
-                                        <div className="card-body">
-                                          <h5 className="text-light">
-                                            {item.parameter}
-                                          </h5>
-                                          <p className="text-light">
-                                            <strong
-                                              style={{
-                                                color: "#fff",
-                                                fontSize: "24px",
-                                              }}
-                                            >
-                                              {item.value}
-                                            </strong>{" "}
-                                            {item.unit}
-                                          </p>
-                                        </div>
+                                          {effluentStacks.map(
+                                            (stackName, index) => (
+                                              <option
+                                                key={index}
+                                                value={stackName || "Unknown"}
+                                              >
+                                                {stackName || "Unknown Station"}
+                                              </option>
+                                            )
+                                          )}
+                                        </select>
                                       </div>
                                     </div>
-                                  ))}
+                                  ) : (
+                                    !isOperator && (
+                                      <h5 className="text-center">
+                                        No stations available
+                                      </h5>
+                                    )
+                                  )}
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                        {loading && (
+                          <div className="spinner-container">
+                            <Oval
+                              height={40}
+                              width={40}
+                              color="#236A80"
+                              ariaLabel="Fetching details"
+                              secondaryColor="#e0e0e0"
+                              strokeWidth={2}
+                              strokeWidthSecondary={2}
+                            />
+                          </div>
+                        )}
+
+                        <div className="col-12  justify-content-center align-items-center">
+                          <div className=" justify-content-center"></div>
+
+                          <div className="color-indicators">
+                            <div className="d-flex justify-content-center mt-2"></div>
+                          </div>
+                        </div>
+                        <div className="row mb-5">
+                          <div
+                            className="col-md-12 col-lg-12 col-sm-12 border overflow-auto bg-light shadow mb-3"
+                            style={{
+                              height: "65vh",
+                              overflowY: "scroll",
+                              borderRadius: "15px",
+                            }}
+                          >
+                            {/* --- START: Conditional Rendering Logic --- */}
+
+                            {selectedStack === "WTP" ? (
+                              // If 'WTP' is selected, display its static cards
+                              <div className="col-12 mb-4">
+                                <div className="stack-box">
+                                  <h4 className="text-center mt-3">WTP </h4>
+                                  <div className="row mt-4">
+                                    {wtpParameters.map((item, index) => (
+                                      <div
+                                        className="col-12 col-md-4 grid-margin"
+                                        key={index}
+                                      >
+                                        <div
+                                          className="card mb-3"
+                                          style={{
+                                            border: "none",
+                                            // Replicating your original card style
+                                          }}
+                                        >
+                                          <div className="card-body">
+                                            <h5 className="text-light">
+                                              {item.parameter}
+                                            </h5>
+                                            <p className="text-light">
+                                              <strong
+                                                style={{
+                                                  color: "#fff",
+                                                  fontSize: "24px",
+                                                }}
+                                              >
+                                                {item.value}
+                                              </strong>{" "}
+                                              {item.unit}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ) : (
-                            // ELSE, use the original logic for real-time data (STP, etc.)
-                            <>
-                              {!loading &&
-                              Object.values(realTimeData).length > 0 ? (
-                                Object.values(realTimeData).map(
-                                  (stack, stackIndex) => (
-                                    <div
-                                      key={stackIndex}
-                                      className="col-12 mb-4"
-                                    >
-                                      <div className="stack-box">
-                                        {stack.stackName === "STP" && (
-                                          <h4 className="text-center">
-                                            {stack.stackName}{" "}
-                                            <img
-                                              src={effluent}
-                                              alt="energy image"
-                                              width="100px"
-                                            />
-                                          </h4>
-                                        )}
-                                        <div className="row">
-                                          {waterParameters.map(
-                                            (item, index) => {
-                                              // 1) Grab the raw value from the stack data
-                                              let value = stack[item.name];
-
-                                              // Your existing override logic
-                                              if (
-                                                currentUserName === "EGLH" &&
-                                                item.name === "ph" &&
-                                                value === 0
-                                              ) {
-                                                value = dynamicPhValue;
-                                              }
-                                              if (
-                                                currentUserName === "EGL2" &&
-                                                egl2SimulatedData &&
-                                                egl2SimulatedData[
-                                                  item.name
-                                                ] !== undefined
-                                              ) {
-                                                value =
-                                                  egl2SimulatedData[item.name];
-                                              }
-                                              if (isEGL5 && value === 0) {
-                                                if (item.name === "BOD")
-                                                  value = 6.78;
-                                                if (item.name === "COD")
-                                                  value = 25.89;
-                                              }
-
-                                              // Skip rendering the card if the value is missing
-                                              if (
-                                                value === undefined ||
-                                                value === null ||
-                                                value === "N/A"
-                                              ) {
-                                                return null;
-                                              }
-
-                                              return (
-                                                <div
-                                                  className="col-12 col-md-4 grid-margin"
-                                                  key={index}
-                                                  onClick={() =>
-                                                    handleCardClick(
-                                                      { title: item.name },
-                                                      stack.stackName
-                                                    )
-                                                  }
-                                                >
-                                                  <div
-                                                    className="card mb-3"
-                                                    style={{
-                                                      border: "none",
-                                                      cursor: "pointer",
-                                                      // Replicating your original card style
-                                                    }}
-                                                  >
-                                                    <div className="card-body">
-                                                      <h5 className="text-light">
-                                                        {item.parameter}
-                                                      </h5>
-                                                      <p className="text-light">
-                                                        <strong
-                                                          style={{
-                                                            color: "#fff",
-                                                            fontSize: "24px",
-                                                          }}
-                                                        >
-                                                          {parseFloat(
-                                                            value
-                                                          ).toFixed(2)}
-                                                        </strong>{" "}
-                                                        {item.value}
-                                                      </p>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              );
-                                            }
+                            ) : (
+                              // ELSE, use the original logic for real-time data (STP, etc.)
+                              <>
+                                {!loading &&
+                                Object.values(realTimeData).length > 0 ? (
+                                  Object.values(realTimeData).map(
+                                    (stack, stackIndex) => (
+                                      <div
+                                        key={stackIndex}
+                                        className="col-12 mb-4"
+                                      >
+                                        <div className="stack-box">
+                                          {stack.stackName === "STP" && (
+                                            <h4 className="text-center">
+                                              {stack.stackName}{" "}
+                                              <img
+                                                src={effluent}
+                                                alt="energy image"
+                                                width="100px"
+                                              />
+                                            </h4>
                                           )}
-                                        </div>
-
-                                        {/* Your second, potentially redundant row logic is preserved here */}
-                                        <div className="row">
-                                          {(() => {
-                                            const allStacks = (
-                                              Array.isArray(realTimeData)
-                                                ? realTimeData
-                                                : Object.values(realTimeData)
-                                            ).flatMap(
-                                              (entry) => entry.stackData || []
-                                            );
-
-                                            const stpStack = allStacks.find(
-                                              (s) => s?.stackName === "STP"
-                                            );
-                                            if (!stpStack) return null;
-
-                                            return waterParameters.map(
+                                          <div className="row">
+                                            {waterParameters.map(
                                               (item, index) => {
-                                                const value = stpStack[item.name];
-                                                const displayValue =
-                                                  value !== undefined &&
-                                                  value !== null &&
-                                                  value !== "N/A"
-                                                    ? parseFloat(value).toFixed(2)
-                                                    : "";
-                                                // This section will only render cards if a stack is named 'STP'
-                                                // To avoid empty space, we only render if there's a value
-                                                if (!displayValue) return null;
+                                                // 1) Grab the raw value from the stack data
+                                                let value = stack[item.name];
+
+                                                // Your existing override logic
+                                                if (
+                                                  currentUserName === "EGLH" &&
+                                                  item.name === "ph" &&
+                                                  value === 0
+                                                ) {
+                                                  value = dynamicPhValue;
+                                                }
+                                                if (
+                                                  currentUserName === "EGL2" &&
+                                                  egl2SimulatedData &&
+                                                  egl2SimulatedData[
+                                                    item.name
+                                                  ] !== undefined
+                                                ) {
+                                                  value =
+                                                    egl2SimulatedData[
+                                                      item.name
+                                                    ];
+                                                }
+                                                if (isEGL5 && value === 0) {
+                                                  if (item.name === "BOD")
+                                                    value = 6.78;
+                                                  if (item.name === "COD")
+                                                    value = 25.89;
+                                                }
+
+                                                // Skip rendering the card if the value is missing
+                                                if (
+                                                  value === undefined ||
+                                                  value === null ||
+                                                  value === "N/A"
+                                                ) {
+                                                  return null;
+                                                }
 
                                                 return (
                                                   <div
-                                                    key={`${item.name}-extra`}
-                                                    className="col-6 col-md-4 col-lg-2 mb-3"
+                                                    className="col-12 col-md-4 grid-margin"
+                                                    key={index}
+                                                    onClick={() =>
+                                                      handleCardClick(
+                                                        { title: item.name },
+                                                        stack.stackName
+                                                      )
+                                                    }
                                                   >
                                                     <div
-                                                      className="card h-100 text-center text-white"
+                                                      className="card mb-3"
                                                       style={{
-                                                        borderRadius: "12px",
-                                                        minHeight: "100px",
-                                                        display: "flex",
-                                                        justifyContent: "center",
-                                                        alignItems: "center",
+                                                        border: "none",
+                                                        cursor: "pointer",
+                                                        // Replicating your original card style
                                                       }}
                                                     >
-                                                      <div>
-                                                        <h6
-                                                          style={{
-                                                            marginBottom: "6px",
-                                                            fontSize: "16px",
-                                                          }}
-                                                        >
+                                                      <div className="card-body">
+                                                        <h5 className="text-light">
                                                           {item.parameter}
-                                                        </h6>
-                                                        <p
-                                                          style={{
-                                                            fontSize: "20px",
-                                                            margin: 0,
-                                                          }}
-                                                        >
-                                                          <strong>
-                                                            {displayValue || "--"}
-                                                          </strong>{" "}
-                                                          <span
+                                                        </h5>
+                                                        <p className="text-light">
+                                                          <strong
                                                             style={{
-                                                              fontSize: "14px",
+                                                              color: "#fff",
+                                                              fontSize: "24px",
                                                             }}
                                                           >
-                                                            {item.value}
-                                                          </span>
+                                                            {parseFloat(
+                                                              value
+                                                            ).toFixed(2)}
+                                                          </strong>{" "}
+                                                          {item.value}
                                                         </p>
                                                       </div>
                                                     </div>
                                                   </div>
                                                 );
                                               }
-                                            );
-                                          })()}
+                                            )}
+                                          </div>
+
+                                          {/* Your second, potentially redundant row logic is preserved here */}
+                                          <div className="row">
+                                            {(() => {
+                                              const allStacks = (
+                                                Array.isArray(realTimeData)
+                                                  ? realTimeData
+                                                  : Object.values(realTimeData)
+                                              ).flatMap(
+                                                (entry) => entry.stackData || []
+                                              );
+
+                                              const stpStack = allStacks.find(
+                                                (s) => s?.stackName === "STP"
+                                              );
+                                              if (!stpStack) return null;
+
+                                              return waterParameters.map(
+                                                (item, index) => {
+                                                  const value =
+                                                    stpStack[item.name];
+                                                  const displayValue =
+                                                    value !== undefined &&
+                                                    value !== null &&
+                                                    value !== "N/A"
+                                                      ? parseFloat(
+                                                          value
+                                                        ).toFixed(2)
+                                                      : "";
+                                                  // This section will only render cards if a stack is named 'STP'
+                                                  // To avoid empty space, we only render if there's a value
+                                                  if (!displayValue)
+                                                    return null;
+
+                                                  return (
+                                                    <div
+                                                      key={`${item.name}-extra`}
+                                                      className="col-6 col-md-4 col-lg-2 mb-3"
+                                                    >
+                                                      <div
+                                                        className="card h-100 text-center text-white"
+                                                        style={{
+                                                          borderRadius: "12px",
+                                                          minHeight: "100px",
+                                                          display: "flex",
+                                                          justifyContent:
+                                                            "center",
+                                                          alignItems: "center",
+                                                        }}
+                                                      >
+                                                        <div>
+                                                          <h6
+                                                            style={{
+                                                              marginBottom:
+                                                                "6px",
+                                                              fontSize: "16px",
+                                                            }}
+                                                          >
+                                                            {item.parameter}
+                                                          </h6>
+                                                          <p
+                                                            style={{
+                                                              fontSize: "20px",
+                                                              margin: 0,
+                                                            }}
+                                                          >
+                                                            <strong>
+                                                              {displayValue ||
+                                                                "--"}
+                                                            </strong>{" "}
+                                                            <span
+                                                              style={{
+                                                                fontSize:
+                                                                  "14px",
+                                                              }}
+                                                            >
+                                                              {item.value}
+                                                            </span>
+                                                          </p>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                }
+                                              );
+                                            })()}
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
+                                    )
                                   )
-                                )
-                              ) : (
-                                <div className="col-12">
-                                  {/* 4. Waiting for real-time data message (Hidden for operator) */}
-                                  {!isOperator && (
-                                    <h5 className="text-center mt-5">
-                                      Waiting for real-time data...
-                                    </h5>
-                                  )}
-                                </div>
-                              )}
-                            </>
-                          )}
-                          {/* --- END: Conditional Rendering Logic --- */}
-                        </div>
+                                ) : (
+                                  <div className="col-12">
+                                    {/* 4. Waiting for real-time data message (Hidden for operator) */}
+                                    {!isOperator && (
+                                      <h5 className="text-center mt-5">
+                                        Waiting for real-time data...
+                                      </h5>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            {/* --- END: Conditional Rendering Logic --- */}
+                          </div>
 
-                        <div
-                          className="col-md-12 col-lg-12 col-sm-12 mb-2 graphdiv border bg-light shadow"
-                          style={{
-                            height: "70vh",
-                            borderRadius: "15px",
-                            position: "relative",
-                          }}
-                          ref={graphRef}
-                        >
-                          {selectedCard ? (
-                            <WaterGraphPopup
-                              parameter={selectedCard.title}
-                              userName={selectedCard.userName}
-                              stackName={selectedCard.stackName}
-                            />
-                          ) : (
-                            <h5 className="text-center mt-5">
-                              Select a parameter to view its graph
-                            </h5>
-                          )}
+                          <div
+                            className="col-md-12 col-lg-12 col-sm-12 mb-2 graphdiv border bg-light shadow"
+                            style={{
+                              height: "70vh",
+                              borderRadius: "15px",
+                              position: "relative",
+                            }}
+                            ref={graphRef}
+                          >
+                            {selectedCard ? (
+                              <WaterGraphPopup
+                                parameter={selectedCard.title}
+                                userName={selectedCard.userName}
+                                stackName={selectedCard.stackName}
+                              />
+                            ) : (
+                              <h5 className="text-center mt-5">
+                                Select a parameter to view its graph
+                              </h5>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      {showCalibrationPopup && (
-                        <CalibrationPopup
-                          userName={userData?.validUserOne?.userName}
-                          onClose={handleCloseCalibrationPopup}
+                        {showCalibrationPopup && (
+                          <CalibrationPopup
+                            userName={userData?.validUserOne?.userName}
+                            onClose={handleCloseCalibrationPopup}
+                          />
+                        )}
+
+                        <DailyHistoryModal
+                          isOpen={showHistoryModal}
+                          onRequestClose={() => setShowHistoryModal(false)}
                         />
-                      )}
-
-                      <DailyHistoryModal
-                        isOpen={showHistoryModal}
-                        onRequestClose={() => setShowHistoryModal(false)}
-                      />
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <CalibrationExceeded />
-                  </div>
-                  <footer className="footer">
-                    <div className="container-fluid clearfix">
-                      <span className="text-muted d-block text-center text-sm-left d-sm-inline-block"></span>
-                      <span className="float-none float-sm-right d-block mt-1 mt-sm-0 text-center">
-                        {" "}
-                        Ebhoom Control and Monitor System <br />©{" "}
-                        <a href="" target="_blank">
-                          Ebhoom Solutions LLP
-                        </a>{" "}
-                        2023
-                      </span>
+                    <div>
+                      <CalibrationExceeded />
                     </div>
-                  </footer>
-                </div>
-              )}
-              {/* === END: CONDITIONAL DASHBOARD CONTENT === */}
+                    <footer className="footer">
+                      <div className="container-fluid clearfix">
+                        <span className="text-muted d-block text-center text-sm-left d-sm-inline-block"></span>
+                        <span className="float-none float-sm-right d-block mt-1 mt-sm-0 text-center">
+                          {" "}
+                          Ebhoom Control and Monitor System <br />©{" "}
+                          <a href="" target="_blank">
+                            Ebhoom Solutions LLP
+                          </a>{" "}
+                          2023
+                        </span>
+                      </div>
+                    </footer>
+                  </div>
+                )}
+                {/* === END: CONDITIONAL DASHBOARD CONTENT === */}
+              </div>
             </div>
+            <DailyHistoryModal
+              isOpen={showHistoryModal}
+              onRequestClose={() => setShowHistoryModal(false)}
+              fetchData={fetchHistoryData}
+              downloadData={downloadHistoryData}
+            />
           </div>
-          <DailyHistoryModal
-            isOpen={showHistoryModal}
-            onRequestClose={() => setShowHistoryModal(false)}
-            fetchData={fetchHistoryData}
-            downloadData={downloadHistoryData}
-          />
         </div>
-      </div>
-    )}
-    <Modal
-      isOpen={checkoutModalOpen}
-      onRequestClose={() => setCheckoutModalOpen(false)}
-      className="geo-modal"
-      overlayClassName="geo-modal-overlay"
-    >
-      <h3 className="text-center">
-        {userData?.validUserOne?.isOperator === true
-          ? "Operator Checkout"
-          : /* : userData?.validUserOne?.isTechnician === true
+      )}
+      <Modal
+        isOpen={checkoutModalOpen}
+        onRequestClose={() => setCheckoutModalOpen(false)}
+        className="geo-modal"
+        overlayClassName="geo-modal-overlay"
+      >
+        <h3 className="text-center">
+          {userData?.validUserOne?.isOperator === true
+            ? "Operator Checkout"
+            : /* : userData?.validUserOne?.isTechnician === true
             ? "Technician Checkout"
             : userData?.validUserOne?.isTerritorialManager === true
             ? "Territorial Manager Checkout" */
-            "User Checkout"}
-      </h3>
+              "User Checkout"}
+        </h3>
 
-      <p className="text-center mt-3">Are you sure you want to check out?</p>
+        <p className="text-center mt-3">Are you sure you want to check out?</p>
 
-      <div className="d-flex justify-content-center gap-3 mt-4">
-        <button
-          onClick={confirmCheckOut}
-          className="btn btn-danger"
-          disabled={checkoutLoading}
-        >
-          {checkoutLoading ? "Processing..." : "✅ Yes, Check-Out"}
-        </button>
-        <button
-          onClick={() => setCheckoutModalOpen(false)}
-          className="btn btn-secondary"
-        >
-          ❌ Cancel
-        </button>
-      </div>
-    </Modal>
-  </div>
-);
+        <div className="d-flex justify-content-center gap-3 mt-4">
+          <button
+            onClick={confirmCheckOut}
+            className="btn btn-danger"
+            disabled={checkoutLoading}
+          >
+            {checkoutLoading ? "Processing..." : "✅ Yes, Check-Out"}
+          </button>
+          <button
+            onClick={() => setCheckoutModalOpen(false)}
+            className="btn btn-secondary"
+          >
+            ❌ Cancel
+          </button>
+        </div>
+      </Modal>
+    </div>
+  );
 };
 
 export default Water;

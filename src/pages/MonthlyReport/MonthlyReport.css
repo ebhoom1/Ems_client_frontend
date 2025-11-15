@@ -119,3 +119,47 @@
 .photo-preview[src] + .photo-placeholder {
   display: none;
 }
+/* ===== MonthlyPh layout shell ===== */
+.monthly-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;   /* sidebar | main */
+  grid-template-rows: auto 1fr;       /* header | content */
+  min-height: 100vh;
+  background: #f5f8fa;
+}
+
+.monthly-shell.operator {
+  grid-template-columns: 1fr;         /* no sidebar for operator */
+}
+
+.monthly-sidebar {
+  grid-column: 1;
+  grid-row: 1 / span 2;               /* fill from header to content */
+  background: #236a80;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+}
+
+.monthly-header {
+  grid-column: 2;
+  grid-row: 1;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin: 12px 16px;                  /* white card look as in screenshot */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.monthly-content {
+  grid-column: 2;
+  grid-row: 2;
+  padding: 16px;
+  padding-top: 0;                     /* header already has margin */
+}
+
+
