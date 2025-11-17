@@ -273,9 +273,9 @@ const MonthlyMaintenanceReport = () => {
         const dayNum = parseInt(dayStr, 10);
 
         const res = await axios.post(
-          `${API_URL}/api/monthly-maintenance/upload/${targetUser.userId}/${year}/${
-            month + 1
-          }/${dayNum}`,
+          `${API_URL}/api/monthly-maintenance/upload/${
+            targetUser.userId
+          }/${year}/${month + 1}/${dayNum}`,
           formData,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
@@ -345,298 +345,465 @@ const MonthlyMaintenanceReport = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${targetUser.siteName}_${month + 1}-${year}_Maintenance_Report.csv`;
+    a.download = `${targetUser.siteName}_${
+      month + 1
+    }-${year}_Maintenance_Report.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
 
     toast.success("CSV downloaded successfully!");
   };
 
-  // --- Download PDF (show S3 URLs in table) ---
-//   const handleDownloadPDF = async () => {
-//     if (!targetUser.userId) {
-//       toast.error("Select a user/site first.");
-//       return;
-//     }
+  // const handleDownloadPDF = async () => {
+  //   if (!targetUser.userId) {
+  //     toast.error("Select a user/site first.");
+  //     return;
+  //   }
 
-//     const rows = buildExportRows();
-//     if (!rows.length) {
-//       toast.info("No data to export for this month.");
-//       return;
-//     }
+  //   const rows = buildExportRows(); // uses the helper we already defined
+  //   if (!rows.length) {
+  //     toast.info("No data to export for this month.");
+  //     return;
+  //   }
 
-//     try {
-//       toast.info("Generating PDF...");
+  //   try {
+  //     toast.info("Generating PDF...");
 
-//       const doc = new jsPDF();
+  //     const doc = new jsPDF();
+  //     const pageWidth = doc.internal.pageSize.getWidth();
 
-//       const logoImg = new Image();
-//       logoImg.src = genexlogo;
-//       await new Promise((resolve) => {
-//         logoImg.onload = resolve;
-//         logoImg.onerror = resolve;
-//       });
+  //     // --- Header with logo & title ---
+  //     const logoImg = new Image();
+  //     logoImg.src = genexlogo;
+  //     await new Promise((resolve) => {
+  //       logoImg.onload = resolve;
+  //       logoImg.onerror = resolve;
+  //     });
 
-//       const pageWidth = doc.internal.pageSize.getWidth();
-//       doc.setFillColor("#236a80");
-//       doc.rect(0, 0, pageWidth, 35, "F");
-//       doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
+  //     doc.setFillColor("#236a80");
+  //     doc.rect(0, 0, pageWidth, 35, "F");
+  //     doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
 
-//       doc.setFont("helvetica", "bold");
-//       doc.setTextColor("#FFFFFF");
-//       doc.setFontSize(14);
-//       doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2 + 10, 12, {
-//         align: "center",
-//       });
-//       doc.setFont("helvetica", "normal");
-//       doc.setFontSize(8);
-//       doc.text(
-//         "Monthly Maintenance Activities Report",
-//         pageWidth / 2 + 10,
-//         20,
-//         { align: "center" }
-//       );
+  //     doc.setFont("helvetica", "bold");
+  //     doc.setTextColor("#FFFFFF");
+  //     doc.setFontSize(14);
+  //     doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2 + 10, 12, {
+  //       align: "center",
+  //     });
+  //     doc.setFont("helvetica", "normal");
+  //     doc.setFontSize(8);
+  //     doc.text(
+  //       "Monthly Maintenance Activities Report",
+  //       pageWidth / 2 + 10,
+  //       20,
+  //       { align: "center" }
+  //     );
 
-//       const monthNames = [
-//         "January",
-//         "February",
-//         "March",
-//         "April",
-//         "May",
-//         "June",
-//         "July",
-//         "August",
-//         "September",
-//         "October",
-//         "November",
-//         "December",
-//       ];
+  //     const monthNames = [
+  //       "January",
+  //       "February",
+  //       "March",
+  //       "April",
+  //       "May",
+  //       "June",
+  //       "July",
+  //       "August",
+  //       "September",
+  //       "October",
+  //       "November",
+  //       "December",
+  //     ];
 
-//       doc.setTextColor("#000000");
-//       doc.setFontSize(11);
-//       doc.setFont("helvetica", "bold");
-//       doc.text(
-//         `Site: ${targetUser.siteName} (${targetUser.userName})`,
-//         15,
-//         45
-//       );
-//       doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
+  //     doc.setTextColor("#000000");
+  //     doc.setFontSize(11);
+  //     doc.setFont("helvetica", "bold");
+  //     doc.text(
+  //       `Site: ${targetUser.siteName} (${targetUser.userName})`,
+  //       15,
+  //       45
+  //     );
+  //     doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
 
-//       const tableBody = rows.map(({ dateStr, photos, comment }) => [
-//         dateStr,
-//         photos.join("\n"), // URLs as multi-line text in the cell
-//         comment || "",
-//       ]);
+  //     // --- Build 1 row PER PHOTO (for the table) ---
+  //     // Each row: { dateStr, comment, photoUrl, _image: HTMLImageElement|null }
+  //     const rowsWithPhotos = [];
 
-//       doc.autoTable({
-//         startY: 60,
-//         head: [["Date", "Photo URLs", "Comment"]],
-//         body: tableBody,
-//         theme: "grid",
-//         headStyles: { fillColor: "#236a80" },
-//         styles: { fontSize: 7, cellPadding: 2 },
-//         columnStyles: {
-//           1: { cellWidth: 80 }, // Photos column a bit wider
-//         },
-//       });
+  //     rows.forEach(({ dateStr, comment, photos }) => {
+  //       if (photos.length === 0) {
+  //         // comment only, no photos
+  //         rowsWithPhotos.push({
+  //           dateStr,
+  //           comment,
+  //           photoUrl: null,
+  //           _image: null,
+  //         });
+  //       } else {
+  //         photos.forEach((url, idx) => {
+  //           rowsWithPhotos.push({
+  //             dateStr,
+  //             comment: idx === 0 ? comment : "", // comment only on first photo row
+  //             photoUrl: url,
+  //             _image: null,
+  //           });
+  //         });
+  //       }
+  //     });
 
-//       doc.save(
-//         `${targetUser.siteName}_${monthNames[month]}_${year}_Maintenance_Report.pdf`
-//       );
+  //     // --- Pre-load all images so we can draw them in the cells ---
+  //     const photoRows = rowsWithPhotos.filter((r) => r.photoUrl);
 
-//       toast.success("PDF generated successfully!");
-//     } catch (err) {
-//       console.error("PDF generation failed:", err);
-//       toast.error("Failed to generate PDF.");
-//     }
-//   };
-// 👇 REPLACE your existing handleDownloadPDF with this version
-const handleDownloadPDF = async () => {
-  if (!targetUser.userId) {
-    toast.error("Select a user/site first.");
-    return;
-  }
+  //     await Promise.all(
+  //       photoRows.map(
+  //         (row) =>
+  //           new Promise((resolve) => {
+  //             const img = new Image();
+  //             img.crossOrigin = "Anonymous";
+  //             img.src = row.photoUrl;
 
-  const rows = buildExportRows(); // uses the helper we already defined
-  if (!rows.length) {
-    toast.info("No data to export for this month.");
-    return;
-  }
+  //             img.onload = () => {
+  //               row._image = img;
+  //               resolve();
+  //             };
+  //             img.onerror = () => {
+  //               row._image = null; // fall back to empty cell
+  //               resolve();
+  //             };
+  //           })
+  //       )
+  //     );
 
-  try {
-    toast.info("Generating PDF...");
+  //     // --- Build table body for autoTable ---
+  //     const tableBody = rowsWithPhotos.map((r) => ({
+  //       date: r.dateStr,
+  //       photo: "", // actual image drawn in didDrawCell
+  //       comment: r.comment || "",
+  //       _image: r._image, // custom field we use in didDrawCell
+  //     }));
 
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+  //     // --- Draw table with Date | Photos | Comment ---
+  //     doc.autoTable({
+  //       startY: 60,
+  //       columns: [
+  //         { header: "Date", dataKey: "date" },
+  //         { header: "Photos", dataKey: "photo" },
+  //         { header: "Comment", dataKey: "comment" },
+  //       ],
+  //       body: tableBody,
+  //       theme: "grid",
+  //       headStyles: { fillColor: "#236a80" },
+  //       styles: {
+  //         fontSize: 8,
+  //         cellPadding: 3,
+  //         minCellHeight: 22, // give some height for thumbnail
+  //       },
+  //       columnStyles: {
+  //         date: { cellWidth: 25 },
+  //         photo: { cellWidth: 35 },
+  //         comment: { cellWidth: pageWidth - 25 - 35 - 20 }, // rest of the width
+  //       },
+  //       didDrawCell: (data) => {
+  //         // Draw image in "Photos" column cells
+  //         if (data.section === "body" && data.column.dataKey === "photo") {
+  //           const row = data.row.raw;
+  //           const img = row._image;
+  //           if (!img) return;
 
-    // --- Header with logo & title ---
-    const logoImg = new Image();
-    logoImg.src = genexlogo;
-    await new Promise((resolve) => {
-      logoImg.onload = resolve;
-      logoImg.onerror = resolve;
-    });
+  //           const cellWidth = data.cell.width;
+  //           const cellHeight = data.cell.height;
 
-    doc.setFillColor("#236a80");
-    doc.rect(0, 0, pageWidth, 35, "F");
-    doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
+  //           // keep aspect ratio, fit in cell
+  //           const aspect = img.width && img.height ? img.width / img.height : 1;
+  //           let drawH = cellHeight - 4; // small padding
+  //           let drawW = drawH * aspect;
 
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor("#FFFFFF");
-    doc.setFontSize(14);
-    doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2 + 10, 12, {
-      align: "center",
-    });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.text(
-      "Monthly Maintenance Activities Report",
-      pageWidth / 2 + 10,
-      20,
-      { align: "center" }
-    );
+  //           if (drawW > cellWidth - 4) {
+  //             drawW = cellWidth - 4;
+  //             drawH = drawW / aspect;
+  //           }
 
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
+  //           const x = data.cell.x + (cellWidth - drawW) / 2;
+  //           const y = data.cell.y + (cellHeight - drawH) / 2;
 
-    doc.setTextColor("#000000");
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text(
-      `Site: ${targetUser.siteName} (${targetUser.userName})`,
-      15,
-      45
-    );
-    doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
+  //           doc.addImage(img, "PNG", x, y, drawW, drawH);
+  //         }
+  //       },
+  //     });
 
-    // --- Build 1 row PER PHOTO (for the table) ---
-    // Each row: { dateStr, comment, photoUrl, _image: HTMLImageElement|null }
-    const rowsWithPhotos = [];
+  //     doc.save(
+  //       `${targetUser.siteName}_${monthNames[month]}_${year}_Maintenance_Report.pdf`
+  //     );
 
-    rows.forEach(({ dateStr, comment, photos }) => {
-      if (photos.length === 0) {
-        // comment only, no photos
-        rowsWithPhotos.push({
-          dateStr,
-          comment,
-          photoUrl: null,
-          _image: null,
-        });
-      } else {
-        photos.forEach((url, idx) => {
-          rowsWithPhotos.push({
-            dateStr,
-            comment: idx === 0 ? comment : "", // comment only on first photo row
-            photoUrl: url,
-            _image: null,
-          });
-        });
-      }
-    });
+  //     toast.success("PDF generated successfully!");
+  //   } catch (err) {
+  //     console.error("PDF generation failed:", err);
+  //     toast.error("Failed to generate PDF.");
+  //   }
+  // };
+  const handleDownloadPDF = async () => {
+    if (!targetUser.userId) {
+      toast.error("Select a user/site first.");
+      return;
+    }
 
-    // --- Pre-load all images so we can draw them in the cells ---
-    const photoRows = rowsWithPhotos.filter((r) => r.photoUrl);
+    const rows = buildExportRows();
+    if (!rows.length) {
+      toast.info("No data to export for this month.");
+      return;
+    }
 
-    await Promise.all(
-      photoRows.map(
-        (row) =>
-          new Promise((resolve) => {
+    try {
+      toast.info("Generating PDF...");
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      // --- Header with logo, address, phone & title ---
+      const logoImg = new Image();
+      logoImg.src = genexlogo;
+      await new Promise((resolve) => {
+        logoImg.onload = resolve;
+        logoImg.onerror = resolve;
+      });
+
+      doc.setFillColor("#236a80");
+      doc.rect(0, 0, pageWidth, 40, "F");
+      doc.addImage(logoImg, "PNG", 15, 7, 22, 22);
+
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor("#FFFFFF");
+      doc.setFontSize(14);
+      doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2 + 10, 12, {
+        align: "center",
+      });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      const addressLines = doc.splitTextToSize(
+        "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony, Shettihalli, Post, Jalahalli West, Bengaluru, Karnataka 560015",
+        pageWidth - 60
+      );
+      doc.text(addressLines, pageWidth / 2 + 10, 18, { align: "center" });
+      doc.text("Phone: +91-9663044156", pageWidth / 2 + 10, 26, {
+        align: "center",
+      });
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(
+        "Monthly Maintenance Activities Report",
+        pageWidth / 2 + 10,
+        34,
+        { align: "center" }
+      );
+
+      const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+
+      doc.setTextColor("#000000");
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 52);
+      doc.text(`Month: ${monthNames[month]} ${year}`, 15, 59);
+
+      // --- Build table rows: one per date ---
+      const tableRows = rows.map((r) => ({
+        date: r.dateStr,
+        comment: r.comment || "",
+        photoUrls: r.photos || [],
+        photoImages: [],
+      }));
+
+      // Preload images
+      const imagePromises = [];
+      tableRows.forEach((row) => {
+        row.photoUrls.forEach((url) => {
+          const p = new Promise((resolve) => {
             const img = new Image();
             img.crossOrigin = "Anonymous";
-            img.src = row.photoUrl;
-
+            img.src = url;
             img.onload = () => {
-              row._image = img;
+              row.photoImages.push(img);
               resolve();
             };
             img.onerror = () => {
-              row._image = null; // fall back to empty cell
               resolve();
             };
-          })
-      )
-    );
+          });
+          imagePromises.push(p);
+        });
+      });
+      await Promise.all(imagePromises);
 
-    // --- Build table body for autoTable ---
-    const tableBody = rowsWithPhotos.map((r) => ({
-      date: r.dateStr,
-      photo: "", // actual image drawn in didDrawCell
-      comment: r.comment || "",
-      _image: r._image, // custom field we use in didDrawCell
-    }));
+      const body = tableRows.map((r) => ({
+        date: r.date,
+        photos: "",
+        comment: r.comment,
+        photoImages: r.photoImages,
+      }));
 
-    // --- Draw table with Date | Photos | Comment ---
-    doc.autoTable({
-      startY: 60,
-      columns: [
-        { header: "Date", dataKey: "date" },
-        { header: "Photos", dataKey: "photo" },
-        { header: "Comment", dataKey: "comment" },
-      ],
-      body: tableBody,
-      theme: "grid",
-      headStyles: { fillColor: "#236a80" },
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-        minCellHeight: 22, // give some height for thumbnail
-      },
-      columnStyles: {
-        date: { cellWidth: 25 },
-        photo: { cellWidth: 35 },
-        comment: { cellWidth: pageWidth - 25 - 35 - 20 }, // rest of the width
-      },
-      didDrawCell: (data) => {
-        // Draw image in "Photos" column cells
-        if (data.section === "body" && data.column.dataKey === "photo") {
-          const row = data.row.raw;
-          const img = row._image;
-          if (!img) return;
+      doc.autoTable({
+        startY: 65,
+        columns: [
+          { header: "Date", dataKey: "date" },
+          { header: "Photos", dataKey: "photos" },
+          { header: "Comment", dataKey: "comment" },
+        ],
+        body,
+        theme: "grid",
+        headStyles: {
+          fillColor: "#236a80",
+          textColor: "#ffffff",
+          fontStyle: "bold",
+          fontSize: 9,
+          minCellHeight: 16, // similar to Treated Water header
+          lineColor: [120, 120, 120],
+          lineWidth: 0.3,
+        },
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+          minCellHeight: 50, // 🔹 same row height style as Treated Water
+          lineColor: [120, 120, 120],
+          lineWidth: 0.2,
+        },
+        columnStyles: {
+          date: { cellWidth: 30 },
+          photos: { cellWidth: 80 }, // wide photos column
+          comment: { cellWidth: pageWidth - 30 - 80 - 20 }, // remaining for comment
+        },
+        didDrawCell: (data) => {
+          // 🔹 Same image layout logic as Treated Water PDF
+          if (data.section === "body" && data.column.dataKey === "photos") {
+            const row = data.row.raw;
+            const images = row.photoImages || [];
+            if (!images.length) return;
 
-          const cellWidth = data.cell.width;
-          const cellHeight = data.cell.height;
+            const cellWidth = data.cell.width;
+            const cellHeight = data.cell.height;
 
-          // keep aspect ratio, fit in cell
-          const aspect = img.width && img.height ? img.width / img.height : 1;
-          let drawH = cellHeight - 4; // small padding
-          let drawW = drawH * aspect;
+            const padding = 2;
+            const gap = 3;
+            const count = images.length;
 
-          if (drawW > cellWidth - 4) {
-            drawW = cellWidth - 4;
-            drawH = drawW / aspect;
+            const availWidth = cellWidth - padding * 2;
+            const maxHeight = cellHeight - padding * 2;
+
+            const slotWidth =
+              count > 0 ? (availWidth - gap * (count - 1)) / count : availWidth;
+
+            images.forEach((img, index) => {
+              const aspect =
+                img.width && img.height ? img.width / img.height : 1;
+
+              let drawW = slotWidth;
+              let drawH = drawW / aspect;
+
+              if (drawH > maxHeight) {
+                drawH = maxHeight;
+                drawW = drawH * aspect;
+              }
+
+              const xSlotStart =
+                data.cell.x + padding + index * (slotWidth + gap);
+              const ySlotStart = data.cell.y + padding;
+
+              const x = xSlotStart + (slotWidth - drawW) / 2;
+              const y = ySlotStart + (maxHeight - drawH) / 2;
+
+              doc.addImage(img, "PNG", x, y, drawW, drawH);
+            });
           }
+        },
+      });
 
-          const x = data.cell.x + (cellWidth - drawW) / 2;
-          const y = data.cell.y + (cellHeight - drawH) / 2;
+      doc.save(
+        `${targetUser.siteName}_${monthNames[month]}_${year}_Maintenance_Report.pdf`
+      );
+      toast.success("PDF generated successfully!");
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF.");
+    }
+  };
 
-          doc.addImage(img, "PNG", x, y, drawW, drawH);
+  const handleDeletePhoto = async (dayStr, photoIndex, url) => {
+    if (!targetUser.userId) {
+      toast.error("Select a user/site first.");
+      return;
+    }
+
+    // 1️⃣ Local preview (blob:) – not yet saved to backend
+    if (url.startsWith("blob:")) {
+      // Remove from entriesByDay
+      setEntriesByDay((prev) => {
+        const entry = prev[dayStr] || { comment: "", photos: [] };
+        const newPhotos = (entry.photos || []).filter(
+          (_p, i) => i !== photoIndex
+        );
+        return {
+          ...prev,
+          [dayStr]: { ...entry, photos: newPhotos },
+        };
+      });
+
+      // Remove corresponding File from pendingFilesByDay
+      setPendingFilesByDay((prev) => {
+        const files = prev[dayStr] || [];
+        if (!files.length) return prev;
+        const newFiles = files.filter((_f, i) => i !== photoIndex);
+        return {
+          ...prev,
+          [dayStr]: newFiles,
+        };
+      });
+
+      return;
+    }
+
+    // 2️⃣ Already-uploaded S3 URL – delete via API
+    const confirmed = window.confirm("Delete this photo?");
+    if (!confirmed) return;
+
+    try {
+      const dayNum = parseInt(dayStr, 10);
+
+      const res = await axios.delete(
+        `${API_URL}/api/monthly-maintenance/photo/${
+          targetUser.userId
+        }/${year}/${month + 1}/${dayNum}`,
+        {
+          data: { photoUrl: url },
         }
-      },
-    });
+      );
 
-    doc.save(
-      `${targetUser.siteName}_${monthNames[month]}_${year}_Maintenance_Report.pdf`
-    );
+      const updatedEntry = res.data.entry;
 
-    toast.success("PDF generated successfully!");
-  } catch (err) {
-    console.error("PDF generation failed:", err);
-    toast.error("Failed to generate PDF.");
-  }
-};
+      setEntriesByDay((prev) => ({
+        ...prev,
+        [dayStr]: {
+          comment: prev[dayStr]?.comment || updatedEntry?.comment || "",
+          photos: updatedEntry?.photos || [],
+        },
+      }));
 
+      toast.success("Photo deleted");
+    } catch (err) {
+      console.error("Failed to delete photo:", err);
+      toast.error("Failed to delete photo");
+    }
+  };
 
   // --- Month/year select ---
   const monthNames = [
@@ -672,7 +839,6 @@ const handleDownloadPDF = async () => {
     boxShadow: "0 6px 12px rgba(0, 0, 0, 0.1)",
     padding: "1.5rem",
     marginBottom: "1.5rem",
-    
   };
 
   const inputStyle = {
@@ -877,8 +1043,7 @@ const handleDownloadPDF = async () => {
                                   padding: "15px 10px",
                                   fontWeight: "bold",
                                   fontSize: "0.95rem",
-                                  border:
-                                    "2px dotted rgba(255, 255, 255, 0.3)",
+                                  border: "2px dotted rgba(255, 255, 255, 0.3)",
                                   minWidth: "120px",
                                 }}
                               >
@@ -889,8 +1054,7 @@ const handleDownloadPDF = async () => {
                                   padding: "15px 10px",
                                   fontWeight: "bold",
                                   fontSize: "0.95rem",
-                                  border:
-                                    "2px dotted rgba(255, 255, 255, 0.3)",
+                                  border: "2px dotted rgba(255, 255, 255, 0.3)",
                                   minWidth: "260px",
                                 }}
                               >
@@ -901,8 +1065,7 @@ const handleDownloadPDF = async () => {
                                   padding: "15px 10px",
                                   fontWeight: "bold",
                                   fontSize: "0.95rem",
-                                  border:
-                                    "2px dotted rgba(255, 255, 255, 0.3)",
+                                  border: "2px dotted rgba(255, 255, 255, 0.3)",
                                   minWidth: "220px",
                                 }}
                               >
@@ -950,34 +1113,76 @@ const handleDownloadPDF = async () => {
                                         style={{
                                           display: "flex",
                                           flexWrap: "wrap",
-                                          gap: "4px",
+                                          gap: "6px",
                                         }}
                                       >
                                         {(entry.photos || []).map(
                                           (url, idx) => (
-                                            <img
+                                            <div
                                               key={idx}
-                                              src={url}
-                                              alt={`Day ${dayStr} photo ${
-                                                idx + 1
-                                              }`}
-                                              onClick={() =>
-                                                handlePhotoPreview(
-                                                  url,
-                                                  dayStr,
-                                                  idx
-                                                )
-                                              }
                                               style={{
-                                                width: "60px",
-                                                height: "60px",
-                                                objectFit: "cover",
-                                                borderRadius: "4px",
-                                                border:
-                                                  "1px solid #cbd8eb",
-                                                cursor: "pointer",
+                                                position: "relative",
+                                                display: "inline-block",
                                               }}
-                                            />
+                                            >
+                                              <img
+                                                src={url}
+                                                alt={`Day ${dayStr} photo ${
+                                                  idx + 1
+                                                }`}
+                                                onClick={() =>
+                                                  handlePhotoPreview(
+                                                    url,
+                                                    dayStr,
+                                                    idx
+                                                  )
+                                                }
+                                                style={{
+                                                  width: "60px",
+                                                  height: "60px",
+                                                  objectFit: "cover",
+                                                  borderRadius: "4px",
+                                                  border: "1px solid #cbd8eb",
+                                                  cursor: "pointer",
+                                                }}
+                                              />
+
+                                              {(isOperator || isAdmin) && (
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation(); // don't open preview
+                                                    handleDeletePhoto(
+                                                      dayStr,
+                                                      idx,
+                                                      url
+                                                    );
+                                                  }}
+                                                  style={{
+                                                    position: "absolute",
+                                                    top: "-6px",
+                                                    right: "-6px",
+                                                    backgroundColor: "#e74c3c",
+                                                    color: "#fff",
+                                                    border: "none",
+                                                    borderRadius: "50%",
+                                                    width: "18px",
+                                                    height: "18px",
+                                                    fontSize: "11px",
+                                                    lineHeight: "18px",
+                                                    padding: 0,
+                                                    cursor: "pointer",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    boxShadow:
+                                                      "0 0 4px rgba(0,0,0,0.3)",
+                                                  }}
+                                                >
+                                                  ×
+                                                </button>
+                                              )}
+                                            </div>
                                           )
                                         )}
                                       </div>
@@ -990,8 +1195,7 @@ const handleDownloadPDF = async () => {
                                             justifyContent: "center",
                                             padding: "5px 10px",
                                             borderRadius: "5px",
-                                            border:
-                                              "1px dashed #236a80",
+                                            border: "1px dashed #236a80",
                                             color: "#236a80",
                                             fontSize: "12px",
                                             fontWeight: 500,
@@ -1053,9 +1257,7 @@ const handleDownloadPDF = async () => {
                           <button
                             style={buttonStyle}
                             onClick={handleSaveCommentsAndPhotos}
-                            disabled={
-                              saving || loading || !targetUser.userId
-                            }
+                            disabled={saving || loading || !targetUser.userId}
                             onMouseOver={(e) =>
                               (e.target.style.transform = "translateY(-2px)")
                             }

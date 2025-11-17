@@ -118,6 +118,8 @@ import Daigram from "./pages/PandD/Daigram";
 import MonthlyPh from "./pages/MonthlyReport/MonthlyPh";
 import InletAndOutlet from "./pages/MonthlyReport/InletAndOutlet";
 import MonthlyMaintenanceReport from "./pages/MonthlyReport/MonthlyMaintenanceReport";
+import TreatedWaterClarityReport from "./pages/MonthlyReport/TreatedWaterClarityReport";
+import EquipmentStatusReport from "./pages/MonthlyReport/EquipmentStatusReport";
 function App() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -445,6 +447,8 @@ function App() {
                      <Route path="/monthly-report" element={<MonthlyPh />} />
                     <Route path="/inlet-outlet" element={<InletAndOutlet />} />
                     <Route path="/monthly-maintenance" element={<MonthlyMaintenanceReport />} />
+                    <Route path="/monthly-treatedwaterclarity" element={<TreatedWaterClarityReport />} />
+                    <Route path="/monthly-equipmentstatus" element={<EquipmentStatusReport />} />
 
 
 

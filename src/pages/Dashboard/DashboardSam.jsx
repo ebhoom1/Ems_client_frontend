@@ -507,7 +507,8 @@ function DashboardSam() {
               onClick={() => handleModalClick("/inlet-outlet")}
             >
               View Inlet &amp; Outlet Reading
-            </Button> <Button
+            </Button> 
+            <Button
               variant="light"
               style={{
                 ...buttonStyleSecondary,
@@ -521,6 +522,35 @@ function DashboardSam() {
               onClick={() => handleModalClick("/monthly-maintenance")}
             >
               View Monthly  Maintenance Activities
+            </Button>
+             <Button
+              variant="light"
+              style={{
+                ...buttonStyleSecondary,
+                backgroundColor: isSecondaryHovered ? "#f7fbfd" : "#ffffff",
+                boxShadow: isSecondaryHovered
+                  ? "0 4px 12px rgba(35, 106, 128, 0.15)"
+                  : "none",
+              }}
+              onMouseEnter={() => setIsSecondaryHovered(true)}
+              onMouseLeave={() => setIsSecondaryHovered(false)}
+              onClick={() => handleModalClick("/monthly-treatedwaterclarity")}
+            >
+              View Treated Water Clarity
+            </Button><Button
+              variant="light"
+              style={{
+                ...buttonStyleSecondary,
+                backgroundColor: isSecondaryHovered ? "#f7fbfd" : "#ffffff",
+                boxShadow: isSecondaryHovered
+                  ? "0 4px 12px rgba(35, 106, 128, 0.15)"
+                  : "none",
+              }}
+              onMouseEnter={() => setIsSecondaryHovered(true)}
+              onMouseLeave={() => setIsSecondaryHovered(false)}
+              onClick={() => handleModalClick("/monthly-equipmentstatus")}
+            >
+              View Equipments Status
             </Button>
           </div>
         </Modal.Body>
