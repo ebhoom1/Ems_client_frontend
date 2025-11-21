@@ -9,6 +9,8 @@ import RunTime from "../pages/LiveMapping/RunningTime";
 import { API_URL } from "../utils/apiConfig";
 import wipro from "../assests/images/wipro.png";
 import { useNavigate } from "react-router-dom";
+import { subscribeUser, saveSubscriptionToBackend } from "../utils/pushNotifications";
+
 
 function AutonerveLayout() {
   const navigate = useNavigate();
@@ -198,6 +200,23 @@ function AutonerveLayout() {
     setSelectedStationName(null);
     setIsEditMode(true);
   };
+
+    useEffect(() => {
+    const ui = userData?.validUserOne;
+    const userName = ui?.userName;
+
+    if (!userName) return;
+
+    (async () => {
+      try {
+        const subscription = await subscribeUser();
+        await saveSubscriptionToBackend(subscription, userName);
+      } catch (err) {
+        console.error("Push subscription setup failed:", err);
+      }
+    })();
+  }, [userData]);
+
 
   return (
     <ReactFlowProvider>
