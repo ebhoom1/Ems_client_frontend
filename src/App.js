@@ -129,6 +129,7 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const { userData, loading, userType } = useSelector((state) => state.user);
+  const backendUrl = API_URL || "http://localhost:5555";
   const publicRoutes = ["/download-data", "/reset-password", "/reset"];
 
   const isSpecialUser =
@@ -221,17 +222,17 @@ function App() {
     }
   };
 
-useEffect(() => {
-  const productId = userData?.validUserOne?.productID;
-  if (!productId) return;
+  useEffect(() => {
+    const productId = userData?.validUserOne?.productID;
+    if (!productId) return;
 
-  const socket = getSocket(); // or initSocket(token) depending on your setup
-  console.log("[App] socket initialised", socket);
+    const socket = getSocket(backendUrl); // pass backendUrl so getSocket connects to the correct backend
+    console.log("[App] socket initialised", socket);
 
-  // join product room so you receive tankAlert for that product
-  socket.emit("joinRoom", { product_id: String(productId) });
-  console.log("[App] joinRoom sent for product", productId);
-}, [userData]);
+    // join product room so you receive tankAlert for that product
+    socket.emit("joinRoom", { product_id: String(productId) });
+    console.log("[App] joinRoom sent for product", productId);
+  }, [userData]);
 
   return (
     <div className="App">

@@ -11,8 +11,7 @@ const bandTextMap = {
 
 export default function TankAlertBanner() {
   const { visible, alert, closeAlert } = useTankAlert();
-    console.log("TankAlertBanner render → visible:", visible, "alert:", alert);
-
+  console.log("TankAlertBanner render → visible:", visible, "alert:", alert);
 
   if (!visible || !alert) return null;
 
@@ -23,8 +22,7 @@ export default function TankAlertBanner() {
       ? `${percentage.toFixed(1)}%`
       : `${percentage}%`;
 
-  const isCritical =
-    band === "critical_low" || band === "critical_high_95";
+  const isCritical = band === "critical_low" || band === "critical_high_95";
 
   const badgeBg = isCritical ? "#b91c1c" : "#f97316";
   const borderColor = isCritical ? "#fecaca" : "#fed7aa";
@@ -33,8 +31,8 @@ export default function TankAlertBanner() {
     <div
       style={{
         position: "fixed",
-        top: 16,                 // 🔼 move to top
-        left: "50%",             // 🔼 center horizontally
+        top: 16, // 🔼 move to top
+        left: "50%", // 🔼 center horizontally
         transform: "translateX(-50%)",
         maxWidth: 420,
         width: "90%",
