@@ -64,6 +64,8 @@
 
 
 // service-worker.js
+// service-worker.js
+
 self.addEventListener("push", (event) => {
   console.log("[Service Worker] Push Received.");
 
@@ -96,16 +98,51 @@ self.addEventListener("push", (event) => {
 
   const title = payload.title || "Fault alert";
   const body = payload.body || "A new event has occurred.";
-  const url = payload.url || (self.location.origin + "/");
+  const url = payload.url || self.location.origin + "/"; // ✅ keep URL from backend or fallback
 
   const options = {
     body,
     icon: "/icons/company-logo.png",
     requireInteraction: true,
-    actions: [{ action: "view_dashboard", title: "View Dashboard" }],
-    data: { url },
+    actions: [
+      { action: "view_dashboard", title: "View Dashboard" },
+    ],
+    data: {
+      url, // ✅ store URL here so we can use it on click
+    },
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
 });
+
+// 🔔 Handle notification clicks and open the correct URL
+self.addEventListener("notificationclick", (event) => {
+  console.log("[Service Worker] Notification click:", event);
+
+  event.notification.close();
+
+  // URL that we stored in `data` above
+  const targetUrl =
+    (event.notification.data && event.notification.data.url) ||
+    self.location.origin + "/";
+
+  // Optional: handle action button separately if you want
+  // const action = event.action; // e.g. "view_dashboard"
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      // If a tab with this URL is already open, focus it
+      for (const client of clientList) {
+        if (client.url.startsWith(targetUrl) && "focus" in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise, open a new tab
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
 

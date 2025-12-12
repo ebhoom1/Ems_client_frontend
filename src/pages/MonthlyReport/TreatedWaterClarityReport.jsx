@@ -13,6 +13,8 @@ import withReactContent from "sweetalert2-react-content";
 import "sweetalert2/dist/sweetalert2.min.css";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import genexlogo from "../../assests/images/logonewgenex.png";
 
 const MySwal = withReactContent(Swal);
@@ -157,67 +159,66 @@ const TreatedWaterClarityReport = () => {
     }
 
     const handleDeletePhoto = async (dayStr, photoIndex, url) => {
-  if (!targetUser.userId) {
-    toast.error("Select a user/site first.");
-    return;
-  }
-
-  // 1) If it's a local preview (not yet saved), just remove it locally
-  if (url.startsWith("blob:")) {
-    setEntriesByDay((prev) => {
-      const entry = prev[dayStr] || { photos: [] };
-      const newPhotos = entry.photos.filter((p, i) => i !== photoIndex);
-      return {
-        ...prev,
-        [dayStr]: { photos: newPhotos },
-      };
-    });
-
-    setPendingFilesByDay((prev) => {
-      const files = prev[dayStr] || [];
-      if (!files.length) return prev;
-      const newFiles = files.filter((f, i) => i !== photoIndex);
-      return {
-        ...prev,
-        [dayStr]: newFiles,
-      };
-    });
-
-    return;
-  }
-
-  // 2) Confirm & delete from backend for S3 URLs
-  const confirmDelete = window.confirm("Delete this photo?");
-  if (!confirmDelete) return;
-
-  try {
-    const dayNum = parseInt(dayStr, 10);
-
-    const res = await axios.delete(
-      `${API_URL}/api/treated-water-clarity/photo/${targetUser.userId}/${year}/${
-        month + 1
-      }/${dayNum}`,
-      {
-        data: { photoUrl: url },
+      if (!targetUser.userId) {
+        toast.error("Select a user/site first.");
+        return;
       }
-    );
 
-    const updatedEntry = res.data.entry;
+      // 1) If it's a local preview (not yet saved), just remove it locally
+      if (url.startsWith("blob:")) {
+        setEntriesByDay((prev) => {
+          const entry = prev[dayStr] || { photos: [] };
+          const newPhotos = entry.photos.filter((p, i) => i !== photoIndex);
+          return {
+            ...prev,
+            [dayStr]: { photos: newPhotos },
+          };
+        });
 
-    setEntriesByDay((prev) => ({
-      ...prev,
-      [dayStr]: {
-        photos: updatedEntry?.photos || [],
-      },
-    }));
+        setPendingFilesByDay((prev) => {
+          const files = prev[dayStr] || [];
+          if (!files.length) return prev;
+          const newFiles = files.filter((f, i) => i !== photoIndex);
+          return {
+            ...prev,
+            [dayStr]: newFiles,
+          };
+        });
 
-    toast.success("Photo deleted");
-  } catch (err) {
-    console.error("Failed to delete photo:", err);
-    toast.error("Failed to delete photo");
-  }
-};
+        return;
+      }
 
+      // 2) Confirm & delete from backend for S3 URLs
+      const confirmDelete = window.confirm("Delete this photo?");
+      if (!confirmDelete) return;
+
+      try {
+        const dayNum = parseInt(dayStr, 10);
+
+        const res = await axios.delete(
+          `${API_URL}/api/treated-water-clarity/photo/${
+            targetUser.userId
+          }/${year}/${month + 1}/${dayNum}`,
+          {
+            data: { photoUrl: url },
+          }
+        );
+
+        const updatedEntry = res.data.entry;
+
+        setEntriesByDay((prev) => ({
+          ...prev,
+          [dayStr]: {
+            photos: updatedEntry?.photos || [],
+          },
+        }));
+
+        toast.success("Photo deleted");
+      } catch (err) {
+        console.error("Failed to delete photo:", err);
+        toast.error("Failed to delete photo");
+      }
+    };
 
     const filesArray = Array.from(fileList);
     const previewUrls = filesArray.map((file) => URL.createObjectURL(file));
@@ -338,317 +339,337 @@ const TreatedWaterClarityReport = () => {
       };
     });
 
-  const handleDownloadCSV = () => {
+const handleDownloadXLSX = async () => {
+  if (!targetUser.userId) {
+    toast.error("Select a user/site first.");
+    return;
+  }
+
+  const rows = buildExportRows();
+
+  const hasAny = rows.some(r => (r.photos || []).length > 0);
+  if (!hasAny) {
+    toast.info("No photos in this month.");
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Clarity Report");
+
+  sheet.columns = [
+    { header: "Date", key: "date", width: 15 },
+    { header: "Photos", key: "photos", width: 50 },
+  ];
+
+  let rowNumber = 2; // Start after header row
+
+  for (const row of rows) {
+    const excelRow = sheet.getRow(rowNumber);
+    excelRow.getCell(1).value = row.dateStr;
+
+    let col = 2; // Start placing images from column B
+
+    for (const url of row.photos) {
+      try {
+        const blob = await fetch(url).then(r => r.blob());
+        const buffer = await blob.arrayBuffer();
+
+        const imageId = workbook.addImage({
+          buffer: buffer,
+          extension: "jpeg", // or "png" depending on your file
+        });
+
+        sheet.addImage(imageId, {
+          tl: { col: col - 1, row: rowNumber - 1 },
+          ext: { width: 150, height: 150 },
+        });
+
+        col++;
+      } catch (err) {
+        console.error("Image load failed:", url, err);
+      }
+    }
+
+    sheet.getRow(rowNumber).height = 120; // Increase row height
+    rowNumber++;
+  }
+
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    saveAs(
+      new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+      `${targetUser.siteName}_${month + 1}-${year}_TreatedWaterClarity.xlsx`
+    );
+  });
+
+  toast.success("XLSX downloaded with images!");
+};
+
+
+  const handleDownloadPDF = async () => {
     if (!targetUser.userId) {
       toast.error("Select a user/site first.");
       return;
     }
 
-    const rows = buildExportRows();
-    const hasAny = rows.some((r) => r.photos.length > 0);
-    if (!hasAny) {
+    // Build rows and keep ONLY days that have photos
+    const allRows = buildExportRows(); // [{ dateStr, photos: [...] }]
+    const rows = allRows.filter((r) => (r.photos || []).length > 0);
+    if (!rows.length) {
       toast.info("No photos to export for this month.");
       return;
     }
 
-    let csv = "Date,Photo URLs\n";
-    rows.forEach(({ dateStr, photos }) => {
-      const urlsJoined = (photos || []).join(" | ");
-      csv += `"${dateStr}","${urlsJoined}"\n`;
-    });
+    try {
+      toast.info("Generating PDF...");
 
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${targetUser.siteName}_${
-      month + 1
-    }-${year}_TreatedWaterClarity.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
 
-    toast.success("CSV downloaded successfully!");
+      // --- Header with logo & title ---
+      const logoImg = new Image();
+      logoImg.src = genexlogo;
+      await new Promise((resolve) => {
+        logoImg.onload = resolve;
+        logoImg.onerror = resolve;
+      });
+
+      // Top blue bar
+      doc.setFillColor("#236a80");
+      doc.rect(0, 0, pageWidth, 35, "F");
+      doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
+
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor("#FFFFFF");
+      doc.setFontSize(14);
+      doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2 + 10, 12, {
+        align: "center",
+      });
+
+      // 🔹 Wrapped address in two lines & moved slightly down
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text(
+        "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony,",
+        110,
+        18,
+        { align: "center" }
+      );
+      doc.text(
+        "Shettihalli Post, Jalahalli West, Bengaluru, Karnataka 560015",
+        110,
+        22,
+        { align: "center" }
+      );
+      doc.text("Phone: +91-9663044156", 110, 26, { align: "center" });
+
+      doc.setFontSize(9);
+      doc.text("Treated Water Clarity Report", pageWidth / 2 + 10, 31, {
+        align: "center",
+      });
+
+      const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+
+      doc.setTextColor("#000000");
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
+      doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
+
+      // --- Prepare one row per DATE, with all images in that row ---
+      const rowsWithImages = rows.map((r) => ({
+        dateStr: r.dateStr,
+        photoUrls: r.photos || [],
+        _images: [],
+      }));
+
+      // Pre-load all images
+      await Promise.all(
+        rowsWithImages.flatMap((row) =>
+          row.photoUrls.map(
+            (url) =>
+              new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.src = url;
+
+                img.onload = () => {
+                  row._images.push(img);
+                  resolve();
+                };
+                img.onerror = () => {
+                  resolve();
+                };
+              })
+          )
+        )
+      );
+
+      const tableBody = rowsWithImages.map((r) => ({
+        date: r.dateStr,
+        photos: "",
+        _images: r._images,
+      }));
+
+      doc.autoTable({
+        startY: 60,
+        columns: [
+          { header: "Date", dataKey: "date" },
+          { header: "Photos", dataKey: "photos" },
+        ],
+        body: tableBody,
+        theme: "grid",
+
+        // 🔹 Smaller header row + clear white grid line between Date / Photos
+        headStyles: {
+          fillColor: "#236a80",
+          minCellHeight: 16, // header height reduced
+          lineWidth: 0.3,
+          lineColor: [120, 120, 120], // white vertical separator
+        },
+
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+          minCellHeight: 100, // big body rows for large photos
+          lineWidth: 0.1,
+          lineColor: [120, 120, 120],
+        },
+
+        columnStyles: {
+          date: { cellWidth: 30 },
+          photos: { cellWidth: pageWidth - 30 - 20 },
+        },
+
+        didDrawCell: (data) => {
+          // Draw all photos horizontally in Photos cell
+          if (data.section === "body" && data.column.dataKey === "photos") {
+            const row = data.row.raw;
+            const images = row._images || [];
+            if (!images.length) return;
+
+            const cellWidth = data.cell.width;
+            const cellHeight = data.cell.height;
+
+            const padding = 2;
+            const gap = 3;
+            const count = images.length;
+
+            const availWidth = cellWidth - padding * 2;
+            const maxHeight = cellHeight - padding * 2;
+
+            const slotWidth =
+              count > 0 ? (availWidth - gap * (count - 1)) / count : availWidth;
+
+            images.forEach((img, index) => {
+              const aspect =
+                img.width && img.height ? img.width / img.height : 1;
+
+              let drawW = slotWidth;
+              let drawH = drawW / aspect;
+
+              if (drawH > maxHeight) {
+                drawH = maxHeight;
+                drawW = drawH * aspect;
+              }
+
+              const xSlotStart =
+                data.cell.x + padding + index * (slotWidth + gap);
+              const ySlotStart = data.cell.y + padding;
+
+              const x = xSlotStart + (slotWidth - drawW) / 2;
+              const y = ySlotStart + (maxHeight - drawH) / 2;
+
+              doc.addImage(img, "PNG", x, y, drawW, drawH);
+            });
+          }
+        },
+      });
+
+      doc.save(
+        `${targetUser.siteName}_${monthNames[month]}_${year}_TreatedWaterClarity.pdf`
+      );
+
+      toast.success("PDF generated successfully!");
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF.");
+    }
   };
 
-  const handleDownloadPDF = async () => {
-  if (!targetUser.userId) {
-    toast.error("Select a user/site first.");
-    return;
-  }
-
-  // Build rows and keep ONLY days that have photos
-  const allRows = buildExportRows(); // [{ dateStr, photos: [...] }]
-  const rows = allRows.filter((r) => (r.photos || []).length > 0);
-  if (!rows.length) {
-    toast.info("No photos to export for this month.");
-    return;
-  }
-
-  try {
-    toast.info("Generating PDF...");
-
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    // --- Header with logo & title ---
-    const logoImg = new Image();
-    logoImg.src = genexlogo;
-    await new Promise((resolve) => {
-      logoImg.onload = resolve;
-      logoImg.onerror = resolve;
-    });
-
-    // Top blue bar
-    doc.setFillColor("#236a80");
-    doc.rect(0, 0, pageWidth, 35, "F");
-    doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
-
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor("#FFFFFF");
-    doc.setFontSize(14);
-    doc.text(
-      "Genex Utility Management Pvt Ltd",
-      pageWidth / 2 + 10,
-      12,
-      { align: "center" }
-    );
-
-    // 🔹 Wrapped address in two lines & moved slightly down
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.text(
-      "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony,",
-      110,
-      18,
-      { align: "center" }
-    );
-    doc.text(
-      "Shettihalli Post, Jalahalli West, Bengaluru, Karnataka 560015",
-      110,
-      22,
-      { align: "center" }
-    );
-    doc.text("Phone: +91-9663044156", 110, 26, { align: "center" });
-
-    doc.setFontSize(9);
-    doc.text(
-      "Treated Water Clarity Report",
-      pageWidth / 2 + 10,
-      31,
-      { align: "center" }
-    );
-
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-
-    doc.setTextColor("#000000");
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text(
-      `Site: ${targetUser.siteName} (${targetUser.userName})`,
-      15,
-      45
-    );
-    doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
-
-    // --- Prepare one row per DATE, with all images in that row ---
-    const rowsWithImages = rows.map((r) => ({
-      dateStr: r.dateStr,
-      photoUrls: r.photos || [],
-      _images: [],
-    }));
-
-    // Pre-load all images
-    await Promise.all(
-      rowsWithImages.flatMap((row) =>
-        row.photoUrls.map(
-          (url) =>
-            new Promise((resolve) => {
-              const img = new Image();
-              img.crossOrigin = "Anonymous";
-              img.src = url;
-
-              img.onload = () => {
-                row._images.push(img);
-                resolve();
-              };
-              img.onerror = () => {
-                resolve();
-              };
-            })
-        )
-      )
-    );
-
-    const tableBody = rowsWithImages.map((r) => ({
-      date: r.dateStr,
-      photos: "",
-      _images: r._images,
-    }));
-
-    doc.autoTable({
-      startY: 60,
-      columns: [
-        { header: "Date", dataKey: "date" },
-        { header: "Photos", dataKey: "photos" },
-      ],
-      body: tableBody,
-      theme: "grid",
-
-      // 🔹 Smaller header row + clear white grid line between Date / Photos
-      headStyles: {
-        fillColor: "#236a80",
-        minCellHeight: 16,         // header height reduced
-        lineWidth: 0.3,
-         lineColor: [120, 120, 120],// white vertical separator
-      },
-
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-        minCellHeight: 50,         // big body rows for large photos
-        lineWidth: 0.1,
-         lineColor: [120, 120, 120],
-      },
-
-      columnStyles: {
-        date: { cellWidth: 30 },
-        photos: { cellWidth: pageWidth - 30 - 20 },
-      },
-
-      didDrawCell: (data) => {
-        // Draw all photos horizontally in Photos cell
-        if (data.section === "body" && data.column.dataKey === "photos") {
-          const row = data.row.raw;
-          const images = row._images || [];
-          if (!images.length) return;
-
-          const cellWidth = data.cell.width;
-          const cellHeight = data.cell.height;
-
-          const padding = 2;
-          const gap = 3;
-          const count = images.length;
-
-          const availWidth = cellWidth - padding * 2;
-          const maxHeight = cellHeight - padding * 2;
-
-          const slotWidth =
-            count > 0
-              ? (availWidth - gap * (count - 1)) / count
-              : availWidth;
-
-          images.forEach((img, index) => {
-            const aspect =
-              img.width && img.height ? img.width / img.height : 1;
-
-            let drawW = slotWidth;
-            let drawH = drawW / aspect;
-
-            if (drawH > maxHeight) {
-              drawH = maxHeight;
-              drawW = drawH * aspect;
-            }
-
-            const xSlotStart =
-              data.cell.x + padding + index * (slotWidth + gap);
-            const ySlotStart = data.cell.y + padding;
-
-            const x = xSlotStart + (slotWidth - drawW) / 2;
-            const y = ySlotStart + (maxHeight - drawH) / 2;
-
-            doc.addImage(img, "PNG", x, y, drawW, drawH);
-          });
-        }
-      },
-    });
-
-    doc.save(
-      `${targetUser.siteName}_${monthNames[month]}_${year}_TreatedWaterClarity.pdf`
-    );
-
-    toast.success("PDF generated successfully!");
-  } catch (err) {
-    console.error("PDF generation failed:", err);
-    toast.error("Failed to generate PDF.");
-  }
-};
-
   const handleDeletePhoto = async (dayStr, photoIndex, url) => {
-  if (!targetUser.userId) {
-    toast.error("Select a user/site first.");
-    return;
-  }
+    if (!targetUser.userId) {
+      toast.error("Select a user/site first.");
+      return;
+    }
 
-  // 1) If it's a local preview (not yet saved), just remove it locally
-  if (url.startsWith("blob:")) {
-    setEntriesByDay((prev) => {
-      const entry = prev[dayStr] || { photos: [] };
-      const newPhotos = entry.photos.filter((p, i) => i !== photoIndex);
-      return {
+    // 1) If it's a local preview (not yet saved), just remove it locally
+    if (url.startsWith("blob:")) {
+      setEntriesByDay((prev) => {
+        const entry = prev[dayStr] || { photos: [] };
+        const newPhotos = entry.photos.filter((p, i) => i !== photoIndex);
+        return {
+          ...prev,
+          [dayStr]: { photos: newPhotos },
+        };
+      });
+
+      setPendingFilesByDay((prev) => {
+        const files = prev[dayStr] || [];
+        if (!files.length) return prev;
+        const newFiles = files.filter((f, i) => i !== photoIndex);
+        return {
+          ...prev,
+          [dayStr]: newFiles,
+        };
+      });
+
+      return;
+    }
+
+    // 2) Confirm & delete from backend for S3 URLs
+    const confirmDelete = window.confirm("Delete this photo?");
+    if (!confirmDelete) return;
+
+    try {
+      const dayNum = parseInt(dayStr, 10);
+
+      const res = await axios.delete(
+        `${API_URL}/api/treated-water-clarity/photo/${
+          targetUser.userId
+        }/${year}/${month + 1}/${dayNum}`,
+        {
+          data: { photoUrl: url },
+        }
+      );
+
+      const updatedEntry = res.data.entry;
+
+      setEntriesByDay((prev) => ({
         ...prev,
-        [dayStr]: { photos: newPhotos },
-      };
-    });
+        [dayStr]: {
+          photos: updatedEntry?.photos || [],
+        },
+      }));
 
-    setPendingFilesByDay((prev) => {
-      const files = prev[dayStr] || [];
-      if (!files.length) return prev;
-      const newFiles = files.filter((f, i) => i !== photoIndex);
-      return {
-        ...prev,
-        [dayStr]: newFiles,
-      };
-    });
-
-    return;
-  }
-
-  // 2) Confirm & delete from backend for S3 URLs
-  const confirmDelete = window.confirm("Delete this photo?");
-  if (!confirmDelete) return;
-
-  try {
-    const dayNum = parseInt(dayStr, 10);
-
-    const res = await axios.delete(
-      `${API_URL}/api/treated-water-clarity/photo/${targetUser.userId}/${year}/${
-        month + 1
-      }/${dayNum}`,
-      {
-        data: { photoUrl: url },
-      }
-    );
-
-    const updatedEntry = res.data.entry;
-
-    setEntriesByDay((prev) => ({
-      ...prev,
-      [dayStr]: {
-        photos: updatedEntry?.photos || [],
-      },
-    }));
-
-    toast.success("Photo deleted");
-  } catch (err) {
-    console.error("Failed to delete photo:", err);
-    toast.error("Failed to delete photo");
-  }
-};
+      toast.success("Photo deleted");
+    } catch (err) {
+      console.error("Failed to delete photo:", err);
+      toast.error("Failed to delete photo");
+    }
+  };
 
   // --- UI styles ---
   const monthNames = [
@@ -974,66 +995,79 @@ const TreatedWaterClarityReport = () => {
                                       }}
                                     >
                                       {/* Thumbnails */}
-                                     <div
-  style={{
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "6px",
-  }}
->
-  {(entry.photos || []).map((url, idx) => (
-    <div
-      key={idx}
-      style={{ position: "relative", display: "inline-block" }}
-    >
-      <img
-        src={url}
-        alt={`Day ${dayStr} photo ${idx + 1}`}
-        style={{
-          width: "60px",
-          height: "60px",
-          objectFit: "cover",
-          borderRadius: "4px",
-          border: "1px solid #cbd8eb",
-          cursor: "pointer",
-        }}
-        onClick={() => setViewPhotoUrl(url)}
-      />
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          flexWrap: "wrap",
+                                          gap: "6px",
+                                        }}
+                                      >
+                                        {(entry.photos || []).map(
+                                          (url, idx) => (
+                                            <div
+                                              key={idx}
+                                              style={{
+                                                position: "relative",
+                                                display: "inline-block",
+                                              }}
+                                            >
+                                              <img
+                                                src={url}
+                                                alt={`Day ${dayStr} photo ${
+                                                  idx + 1
+                                                }`}
+                                                style={{
+                                                  width: "60px",
+                                                  height: "60px",
+                                                  objectFit: "cover",
+                                                  borderRadius: "4px",
+                                                  border: "1px solid #cbd8eb",
+                                                  cursor: "pointer",
+                                                }}
+                                                onClick={() =>
+                                                  setViewPhotoUrl(url)
+                                                }
+                                              />
 
-      {(isOperator || isAdmin) && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation(); // don't open preview
-            handleDeletePhoto(dayStr, idx, url);
-          }}
-          style={{
-            position: "absolute",
-            top: "-6px",
-            right: "-6px",
-            backgroundColor: "#e74c3c",
-            color: "#fff",
-            border: "none",
-            borderRadius: "50%",
-            width: "18px",
-            height: "18px",
-            fontSize: "11px",
-            lineHeight: "18px",
-            padding: 0,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 0 4px rgba(0,0,0,0.3)",
-          }}
-        >
-          ×
-        </button>
-      )}
-    </div>
-  ))}
-</div>
-
+                                              {(isOperator || isAdmin) && (
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation(); // don't open preview
+                                                    handleDeletePhoto(
+                                                      dayStr,
+                                                      idx,
+                                                      url
+                                                    );
+                                                  }}
+                                                  style={{
+                                                    position: "absolute",
+                                                    top: "-6px",
+                                                    right: "-6px",
+                                                    backgroundColor: "#e74c3c",
+                                                    color: "#fff",
+                                                    border: "none",
+                                                    borderRadius: "50%",
+                                                    width: "18px",
+                                                    height: "18px",
+                                                    fontSize: "11px",
+                                                    lineHeight: "18px",
+                                                    padding: 0,
+                                                    cursor: "pointer",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    boxShadow:
+                                                      "0 0 4px rgba(0,0,0,0.3)",
+                                                  }}
+                                                >
+                                                  ×
+                                                </button>
+                                              )}
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
 
                                       {(isOperator || isAdmin) && (
                                         <label
@@ -1118,7 +1152,7 @@ const TreatedWaterClarityReport = () => {
 
                           <button
                             style={downloadCsvButtonStyle}
-                            onClick={handleDownloadCSV}
+                            onClick={handleDownloadXLSX}
                             disabled={loading || !targetUser.userId}
                             onMouseOver={(e) =>
                               (e.target.style.transform = "translateY(-2px)")
@@ -1127,7 +1161,7 @@ const TreatedWaterClarityReport = () => {
                               (e.target.style.transform = "translateY(0)")
                             }
                           >
-                            📊 Download CSV
+                            📊 Download XLSX
                           </button>
                         </div>
                       )}

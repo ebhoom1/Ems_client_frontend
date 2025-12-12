@@ -18,6 +18,15 @@ import genexlogo from "../../assests/images/logonewgenex.png";
 const MySwal = withReactContent(Swal);
 
 // --- Helpers ---
+
+// Ensure all photos are in { url, type } format
+const normalizePhotos = (photos = []) =>
+  (photos || []).map((p) =>
+    typeof p === "string"
+      ? { url: p, type: "MPM" } // default old data
+      : { url: p.url, type: p.type || "MPM" }
+  );
+
 const getDaysInMonth = (year, monthIndex) => {
   const date = new Date(year, monthIndex, 1);
   const days = [];
@@ -52,9 +61,9 @@ const MonthlyMaintenanceReport = () => {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth()); // 0–11
 
-  // entriesByDay[dayStr] = { comment: string, photos: [string URL] }
+  // entriesByDay[dayStr] = { comment: string, photos: [{url, type}] }
   const [entriesByDay, setEntriesByDay] = useState({});
-  // pendingFilesByDay[dayStr] = [File, File, ...]
+  // pendingFilesByDay[dayStr] = [ { url, type, _file } ]
   const [pendingFilesByDay, setPendingFilesByDay] = useState({});
 
   const [loading, setLoading] = useState(false);
@@ -98,7 +107,7 @@ const MonthlyMaintenanceReport = () => {
     setPendingFilesByDay({});
   }, [year, month]);
 
-  // --- Fetch existing maintenance report ---
+  // --- Fetch existing maintenance report from backend ---
   useEffect(() => {
     if (!targetUser.userId) return;
 
@@ -107,6 +116,7 @@ const MonthlyMaintenanceReport = () => {
       setLoading(true);
 
       try {
+        // GET /api/monthly-maintenance/:userId/:year/:month
         const { data } = await axios.get(
           `${API_URL}/api/monthly-maintenance/${targetUser.userId}/${year}/${
             month + 1
@@ -119,9 +129,10 @@ const MonthlyMaintenanceReport = () => {
           const entry = data?.entries?.find((e) => e.date === dNum);
           map[dayStr] = {
             comment: entry?.comment || "",
-            photos: entry?.photos || [],
+            photos: normalizePhotos(entry?.photos || []),
           };
         });
+
         setEntriesByDay(map);
         setPendingFilesByDay({});
       } catch (err) {
@@ -155,8 +166,8 @@ const MonthlyMaintenanceReport = () => {
     }));
   };
 
-  // Multiple photos per date, preview immediately (upload on final Save)
-  const handlePhotoSelect = (dayStr, fileList) => {
+  // --- File selection: multiple photos per date, preview immediately ---
+  const handlePhotoSelect = (dayStr, fileList, photoType) => {
     if (!fileList || !fileList.length) return;
     if (!targetUser.userId) {
       toast.error("Select a user/site first.");
@@ -165,29 +176,42 @@ const MonthlyMaintenanceReport = () => {
 
     const filesArray = Array.from(fileList);
 
-    const previewUrls = filesArray.map((file) => URL.createObjectURL(file));
+    // Create preview objects with type + file
+    const previewEntries = filesArray.map((file) => {
+      const url = URL.createObjectURL(file);
+      return {
+        url,
+        type: photoType, // "MPM" or "EPM"
+        _file: file,
+      };
+    });
 
+    // Add previews to current entries (only url + type)
     setEntriesByDay((prev) => {
       const existing = prev[dayStr] || { comment: "", photos: [] };
       return {
         ...prev,
         [dayStr]: {
-          ...existing,
-          photos: [...(existing.photos || []), ...previewUrls],
+          comment: existing.comment || "",
+          photos: [
+            ...(existing.photos || []),
+            ...previewEntries.map((p) => ({ url: p.url, type: p.type })),
+          ],
         },
       };
     });
 
+    // Store Files for upload on Save, with mapping by url+type
     setPendingFilesByDay((prev) => {
       const existing = prev[dayStr] || [];
       return {
         ...prev,
-        [dayStr]: [...existing, ...filesArray],
+        [dayStr]: [...existing, ...previewEntries],
       };
     });
   };
 
-  // Preview photo in SweetAlert
+  // Preview photo (SweetAlert)
   const handlePhotoPreview = (url, dayStr, idx) => {
     MySwal.fire({
       title: `Photo - ${formatDate(dayStr, month, year)}`,
@@ -200,28 +224,29 @@ const MonthlyMaintenanceReport = () => {
     });
   };
 
-  // Helper: build export rows (only real S3 URLs, skip blob: previews & empty days)
+  // Helper: build export rows (non-empty days, skip blob: previews)
   const buildExportRows = () =>
     Object.entries(entriesByDay)
       .map(([dayStr, entry]) => {
         const comment = entry.comment?.trim() || "";
-        const photos = (entry.photos || []).filter(
-          (u) => u && !u.startsWith("blob:")
+        const allPhotos = normalizePhotos(entry.photos || []);
+        const realPhotos = allPhotos.filter(
+          (p) => p.url && !p.url.startsWith("blob:")
         );
         const hasComment = comment !== "";
-        const hasPhotos = photos.length > 0;
+        const hasPhotos = realPhotos.length > 0;
         if (!hasComment && !hasPhotos) return null;
 
         return {
           dayStr,
           dateStr: formatDate(dayStr, month, year),
           comment,
-          photos,
+          photos: realPhotos, // [{url,type}]
         };
       })
       .filter(Boolean);
 
-  // ✅ Save only non-empty days (comment OR photos)
+  // ✅ Save comments + upload photos (MPM/EPM)
   const handleSaveCommentsAndPhotos = async () => {
     if (!targetUser.userId) {
       toast.error("Cannot save. User data is incomplete.");
@@ -240,14 +265,17 @@ const MonthlyMaintenanceReport = () => {
     });
 
     try {
-      const pendingDays = Object.entries(pendingFilesByDay).filter(
-        ([, files]) => files && files.length > 0
-      );
+      const exportRows = buildExportRows();
 
-      const entriesToSave = buildExportRows().map((row) => ({
+      const entriesToSave = exportRows.map((row) => ({
         date: parseInt(row.dayStr, 10),
         comment: row.comment,
       }));
+
+      const pendingDays = Object.entries(pendingFilesByDay).filter(
+        ([, fileEntries]) =>
+          Array.isArray(fileEntries) && fileEntries.length > 0
+      );
 
       if (entriesToSave.length === 0 && pendingDays.length === 0) {
         MySwal.close();
@@ -266,29 +294,39 @@ const MonthlyMaintenanceReport = () => {
         });
       }
 
-      // 2) Upload photos day-wise
-      for (const [dayStr, files] of pendingDays) {
-        const formData = new FormData();
-        files.forEach((file) => formData.append("photos", file));
+      // 2) Upload photos day-wise, grouped by MPM/EPM
+      for (const [dayStr, fileEntries] of pendingDays) {
         const dayNum = parseInt(dayStr, 10);
 
-        const res = await axios.post(
-          `${API_URL}/api/monthly-maintenance/upload/${
-            targetUser.userId
-          }/${year}/${month + 1}/${dayNum}`,
-          formData,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
+        for (const type of ["MPM", "EPM"]) {
+          const ofType = fileEntries.filter((fe) => fe.type === type);
+          if (!ofType.length) continue;
 
-        const updatedEntry = res.data.entry;
+          const formData = new FormData();
+          ofType.forEach((fe) => formData.append("photos", fe._file));
+          formData.append("userName", targetUser.userName || "");
+          formData.append("siteName", targetUser.siteName || "");
+          formData.append("photoType", type);
 
-        setEntriesByDay((prev) => ({
-          ...prev,
-          [dayStr]: {
-            comment: prev[dayStr]?.comment || updatedEntry.comment || "",
-            photos: updatedEntry.photos || [],
-          },
-        }));
+          const res = await axios.post(
+            `${API_URL}/api/monthly-maintenance/upload/${
+              targetUser.userId
+            }/${year}/${month + 1}/${dayNum}`,
+            formData,
+            { headers: { "Content-Type": "multipart/form-data" } }
+          );
+
+          const updatedEntry = res.data.entry;
+
+          // Replace photos with normalized S3 URLs, keep existing comment
+          setEntriesByDay((prev) => ({
+            ...prev,
+            [dayStr]: {
+              comment: prev[dayStr]?.comment || updatedEntry?.comment || "",
+              photos: normalizePhotos(updatedEntry?.photos || []),
+            },
+          }));
+        }
       }
 
       setPendingFilesByDay({});
@@ -318,7 +356,7 @@ const MonthlyMaintenanceReport = () => {
     }
   };
 
-  // --- Download CSV (show S3 URLs) ---
+  // --- Download CSV (S3 URLs only) ---
   const handleDownloadCSV = () => {
     if (!targetUser.userId) {
       toast.error("Select a user/site first.");
@@ -333,7 +371,7 @@ const MonthlyMaintenanceReport = () => {
 
     let csv = "Date,Photo URLs,Comment\n";
     rows.forEach(({ dateStr, photos, comment }) => {
-      const photoStr = photos.join(" | ");
+      const photoStr = (photos || []).map((p) => p.url).join(" | ");
       const safePhotos = `"${photoStr.replace(/"/g, '""')}"`;
       const safeComment = `"${(comment || "").replace(/"/g, '""')}"`;
       csv += `${dateStr},${safePhotos},${safeComment}\n`;
@@ -354,191 +392,8 @@ const MonthlyMaintenanceReport = () => {
     toast.success("CSV downloaded successfully!");
   };
 
-  // const handleDownloadPDF = async () => {
-  //   if (!targetUser.userId) {
-  //     toast.error("Select a user/site first.");
-  //     return;
-  //   }
-
-  //   const rows = buildExportRows(); // uses the helper we already defined
-  //   if (!rows.length) {
-  //     toast.info("No data to export for this month.");
-  //     return;
-  //   }
-
-  //   try {
-  //     toast.info("Generating PDF...");
-
-  //     const doc = new jsPDF();
-  //     const pageWidth = doc.internal.pageSize.getWidth();
-
-  //     // --- Header with logo & title ---
-  //     const logoImg = new Image();
-  //     logoImg.src = genexlogo;
-  //     await new Promise((resolve) => {
-  //       logoImg.onload = resolve;
-  //       logoImg.onerror = resolve;
-  //     });
-
-  //     doc.setFillColor("#236a80");
-  //     doc.rect(0, 0, pageWidth, 35, "F");
-  //     doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
-
-  //     doc.setFont("helvetica", "bold");
-  //     doc.setTextColor("#FFFFFF");
-  //     doc.setFontSize(14);
-  //     doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2 + 10, 12, {
-  //       align: "center",
-  //     });
-  //     doc.setFont("helvetica", "normal");
-  //     doc.setFontSize(8);
-  //     doc.text(
-  //       "Monthly Maintenance Activities Report",
-  //       pageWidth / 2 + 10,
-  //       20,
-  //       { align: "center" }
-  //     );
-
-  //     const monthNames = [
-  //       "January",
-  //       "February",
-  //       "March",
-  //       "April",
-  //       "May",
-  //       "June",
-  //       "July",
-  //       "August",
-  //       "September",
-  //       "October",
-  //       "November",
-  //       "December",
-  //     ];
-
-  //     doc.setTextColor("#000000");
-  //     doc.setFontSize(11);
-  //     doc.setFont("helvetica", "bold");
-  //     doc.text(
-  //       `Site: ${targetUser.siteName} (${targetUser.userName})`,
-  //       15,
-  //       45
-  //     );
-  //     doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
-
-  //     // --- Build 1 row PER PHOTO (for the table) ---
-  //     // Each row: { dateStr, comment, photoUrl, _image: HTMLImageElement|null }
-  //     const rowsWithPhotos = [];
-
-  //     rows.forEach(({ dateStr, comment, photos }) => {
-  //       if (photos.length === 0) {
-  //         // comment only, no photos
-  //         rowsWithPhotos.push({
-  //           dateStr,
-  //           comment,
-  //           photoUrl: null,
-  //           _image: null,
-  //         });
-  //       } else {
-  //         photos.forEach((url, idx) => {
-  //           rowsWithPhotos.push({
-  //             dateStr,
-  //             comment: idx === 0 ? comment : "", // comment only on first photo row
-  //             photoUrl: url,
-  //             _image: null,
-  //           });
-  //         });
-  //       }
-  //     });
-
-  //     // --- Pre-load all images so we can draw them in the cells ---
-  //     const photoRows = rowsWithPhotos.filter((r) => r.photoUrl);
-
-  //     await Promise.all(
-  //       photoRows.map(
-  //         (row) =>
-  //           new Promise((resolve) => {
-  //             const img = new Image();
-  //             img.crossOrigin = "Anonymous";
-  //             img.src = row.photoUrl;
-
-  //             img.onload = () => {
-  //               row._image = img;
-  //               resolve();
-  //             };
-  //             img.onerror = () => {
-  //               row._image = null; // fall back to empty cell
-  //               resolve();
-  //             };
-  //           })
-  //       )
-  //     );
-
-  //     // --- Build table body for autoTable ---
-  //     const tableBody = rowsWithPhotos.map((r) => ({
-  //       date: r.dateStr,
-  //       photo: "", // actual image drawn in didDrawCell
-  //       comment: r.comment || "",
-  //       _image: r._image, // custom field we use in didDrawCell
-  //     }));
-
-  //     // --- Draw table with Date | Photos | Comment ---
-  //     doc.autoTable({
-  //       startY: 60,
-  //       columns: [
-  //         { header: "Date", dataKey: "date" },
-  //         { header: "Photos", dataKey: "photo" },
-  //         { header: "Comment", dataKey: "comment" },
-  //       ],
-  //       body: tableBody,
-  //       theme: "grid",
-  //       headStyles: { fillColor: "#236a80" },
-  //       styles: {
-  //         fontSize: 8,
-  //         cellPadding: 3,
-  //         minCellHeight: 22, // give some height for thumbnail
-  //       },
-  //       columnStyles: {
-  //         date: { cellWidth: 25 },
-  //         photo: { cellWidth: 35 },
-  //         comment: { cellWidth: pageWidth - 25 - 35 - 20 }, // rest of the width
-  //       },
-  //       didDrawCell: (data) => {
-  //         // Draw image in "Photos" column cells
-  //         if (data.section === "body" && data.column.dataKey === "photo") {
-  //           const row = data.row.raw;
-  //           const img = row._image;
-  //           if (!img) return;
-
-  //           const cellWidth = data.cell.width;
-  //           const cellHeight = data.cell.height;
-
-  //           // keep aspect ratio, fit in cell
-  //           const aspect = img.width && img.height ? img.width / img.height : 1;
-  //           let drawH = cellHeight - 4; // small padding
-  //           let drawW = drawH * aspect;
-
-  //           if (drawW > cellWidth - 4) {
-  //             drawW = cellWidth - 4;
-  //             drawH = drawW / aspect;
-  //           }
-
-  //           const x = data.cell.x + (cellWidth - drawW) / 2;
-  //           const y = data.cell.y + (cellHeight - drawH) / 2;
-
-  //           doc.addImage(img, "PNG", x, y, drawW, drawH);
-  //         }
-  //       },
-  //     });
-
-  //     doc.save(
-  //       `${targetUser.siteName}_${monthNames[month]}_${year}_Maintenance_Report.pdf`
-  //     );
-
-  //     toast.success("PDF generated successfully!");
-  //   } catch (err) {
-  //     console.error("PDF generation failed:", err);
-  //     toast.error("Failed to generate PDF.");
-  //   }
-  // };
+  
+  // --- Download PDF with photos & comments (TABULAR VERSION) ---
   const handleDownloadPDF = async () => {
     if (!targetUser.userId) {
       toast.error("Select a user/site first.");
@@ -557,7 +412,7 @@ const MonthlyMaintenanceReport = () => {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
 
-      // --- Header with logo, address, phone & title ---
+      // --- Header ---
       const logoImg = new Image();
       logoImg.src = genexlogo;
       await new Promise((resolve) => {
@@ -617,33 +472,32 @@ const MonthlyMaintenanceReport = () => {
       doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 52);
       doc.text(`Month: ${monthNames[month]} ${year}`, 15, 59);
 
-      // --- Build table rows: one per date ---
+      // --- Build table rows with type preserved ---
       const tableRows = rows.map((r) => ({
         date: r.dateStr,
         comment: r.comment || "",
-        photoUrls: r.photos || [],
+        photoUrls: r.photos.map((p) => ({ url: p.url, type: p.type || "MPM" })),
         photoImages: [],
       }));
 
-      // Preload images
+      // --- Preload images ---
       const imagePromises = [];
       tableRows.forEach((row) => {
-        row.photoUrls.forEach((url) => {
-          const p = new Promise((resolve) => {
+        row.photoUrls.forEach((p) => {
+          const prom = new Promise((resolve) => {
             const img = new Image();
             img.crossOrigin = "Anonymous";
-            img.src = url;
+            img.src = p.url;
             img.onload = () => {
-              row.photoImages.push(img);
+              row.photoImages.push({ img, type: p.type });
               resolve();
             };
-            img.onerror = () => {
-              resolve();
-            };
+            img.onerror = () => resolve();
           });
-          imagePromises.push(p);
+          imagePromises.push(prom);
         });
       });
+
       await Promise.all(imagePromises);
 
       const body = tableRows.map((r) => ({
@@ -653,6 +507,7 @@ const MonthlyMaintenanceReport = () => {
         photoImages: r.photoImages,
       }));
 
+      // --- AutoTable ---
       doc.autoTable({
         startY: 65,
         columns: [
@@ -667,65 +522,160 @@ const MonthlyMaintenanceReport = () => {
           textColor: "#ffffff",
           fontStyle: "bold",
           fontSize: 9,
-          minCellHeight: 16, // similar to Treated Water header
+          minCellHeight: 16,
           lineColor: [120, 120, 120],
           lineWidth: 0.3,
         },
         styles: {
           fontSize: 8,
           cellPadding: 3,
-          minCellHeight: 50, // 🔹 same row height style as Treated Water
+          minCellHeight: 100, // leave room for images + labels
           lineColor: [120, 120, 120],
           lineWidth: 0.2,
         },
         columnStyles: {
-          date: { cellWidth: 30 },
-          photos: { cellWidth: 80 }, // wide photos column
-          comment: { cellWidth: pageWidth - 30 - 80 - 20 }, // remaining for comment
+          date: { cellWidth: 26 },
+          photos: { cellWidth: 140 },
+          comment: { cellWidth: pageWidth - 26 - 140 - 20 },
         },
+
+        // --- Draw images + MPM/EPM tags ---
+        // didDrawCell: (data) => {
+        //   if (data.section !== "body" || data.column.dataKey !== "photos")
+        //     return;
+
+        //   const row = data.row.raw;
+        //   const images = row.photoImages || [];
+        //   if (!images.length) return;
+
+        //   const cellWidth = data.cell.width;
+        //   const cellHeight = data.cell.height;
+        //   const padding = 2;
+        //   const gap = 4;
+        //   const count = images.length;
+
+        //   const availWidth = cellWidth - padding * 2;
+        //   const maxHeight = cellHeight - padding * 2 - 10; // leave space for label
+
+        //   const slotWidth =
+        //     count > 0 ? (availWidth - gap * (count - 1)) / count : availWidth;
+
+        //   images.forEach((obj, index) => {
+        //     const img = obj.img;
+        //     const type = obj.type;
+
+        //     const aspect = img.width && img.height ? img.width / img.height : 1;
+
+        //     let drawW = slotWidth;
+        //     let drawH = drawW / aspect;
+
+        //     if (drawH > maxHeight) {
+        //       drawH = maxHeight;
+        //       drawW = drawH * aspect;
+        //     }
+
+        //     const xSlotStart =
+        //       data.cell.x + padding + index * (slotWidth + gap);
+        //     const ySlotStart = data.cell.y + padding;
+
+        //     const x = xSlotStart + (slotWidth - drawW) / 2;
+        //     const y = ySlotStart + 2;
+
+        //     // 🖼 Draw image
+        //     doc.addImage(img, "PNG", x, y, drawW, drawH);
+
+        //     // --- Label box below image ---
+        //     const label = type || "MPM";
+        //     const labelWidth = doc.getTextWidth(label) + 6;
+        //     const labelX = x + (drawW - labelWidth) / 2;
+        //     const labelY = y + drawH + 6;
+
+        //     if (label === "MPM") doc.setFillColor(35, 106, 128); // blue
+        //     else doc.setFillColor(231, 76, 60); // red
+
+        //     doc.rect(labelX, labelY - 4, labelWidth, 6, "F");
+
+        //     doc.setFontSize(7);
+        //     doc.setTextColor("#ffffff");
+        //     doc.text(label, labelX + 3, labelY);
+        //   });
+        // },
         didDrawCell: (data) => {
-          // 🔹 Same image layout logic as Treated Water PDF
-          if (data.section === "body" && data.column.dataKey === "photos") {
-            const row = data.row.raw;
-            const images = row.photoImages || [];
-            if (!images.length) return;
+  if (data.section !== "body" || data.column.dataKey !== "photos") return;
 
-            const cellWidth = data.cell.width;
-            const cellHeight = data.cell.height;
+  const row = data.row.raw;
+  const images = row.photoImages || [];
+  if (!images.length) return;
 
-            const padding = 2;
-            const gap = 3;
-            const count = images.length;
+  const cellX = data.cell.x;
+  const cellY = data.cell.y;
+  const cellWidth = data.cell.width;
+  const cellHeight = data.cell.height;
 
-            const availWidth = cellWidth - padding * 2;
-            const maxHeight = cellHeight - padding * 2;
+  const padding = 2;
+  const gap = 4;
 
-            const slotWidth =
-              count > 0 ? (availWidth - gap * (count - 1)) / count : availWidth;
+  const imagesPerRow = 2; // 🔥 EXACT REQUIREMENT
+  const totalRows = Math.ceil(images.length / imagesPerRow);
 
-            images.forEach((img, index) => {
-              const aspect =
-                img.width && img.height ? img.width / img.height : 1;
+  const availWidth = cellWidth - padding * 2;
+  const availHeight = cellHeight - padding * 2;
 
-              let drawW = slotWidth;
-              let drawH = drawW / aspect;
+  // Slot width per image (same logic you already had, but per-row)
+  const slotWidth = (availWidth - gap) / 2;
+  const slotHeight = availHeight / totalRows;
 
-              if (drawH > maxHeight) {
-                drawH = maxHeight;
-                drawW = drawH * aspect;
-              }
+  images.forEach((obj, index) => {
+    const img = obj.img;
+    const type = obj.type;
 
-              const xSlotStart =
-                data.cell.x + padding + index * (slotWidth + gap);
-              const ySlotStart = data.cell.y + padding;
+    const rowIndex = Math.floor(index / imagesPerRow);
+    const colIndex = index % imagesPerRow;
 
-              const x = xSlotStart + (slotWidth - drawW) / 2;
-              const y = ySlotStart + (maxHeight - drawH) / 2;
+    const aspect =
+      img.width && img.height ? img.width / img.height : 1;
 
-              doc.addImage(img, "PNG", x, y, drawW, drawH);
-            });
-          }
-        },
+    // ✔ USE YOUR ORIGINAL IMAGE SIZE LOGIC
+    let drawW = slotWidth;
+    let drawH = drawW / aspect;
+
+    if (drawH > slotHeight - 12) { // 12px reserved for label
+      drawH = slotHeight - 12;
+      drawW = drawH * aspect;
+    }
+
+    const x =
+      cellX +
+      padding +
+      colIndex * (slotWidth + gap) +
+      (slotWidth - drawW) / 2;
+
+    const y =
+      cellY +
+      padding +
+      rowIndex * slotHeight +
+      (slotHeight - drawH - 10) / 2; // vertically center, leave room for label
+
+    // 🖼 Draw image
+    doc.addImage(img, "PNG", x, y, drawW, drawH);
+
+    // --- Label (unchanged size unless you ask) ---
+    const label = type || "MPM";
+    const labelWidth = doc.getTextWidth(label) + 6;
+    const labelX = x + (drawW - labelWidth) / 2;
+    const labelY = y + drawH + 6;
+
+    if (label === "MPM") doc.setFillColor(35, 106, 128);
+    else doc.setFillColor(231, 76, 60);
+
+    doc.rect(labelX, labelY - 4, labelWidth, 6, "F");
+
+    doc.setFontSize(7);
+    doc.setTextColor("#ffffff");
+    doc.text(label, labelX + 3, labelY);
+  });
+},
+
       });
 
       doc.save(
@@ -758,14 +708,14 @@ const MonthlyMaintenanceReport = () => {
         };
       });
 
-      // Remove corresponding File from pendingFilesByDay
+      // Remove corresponding File from pendingFilesByDay (match by url)
       setPendingFilesByDay((prev) => {
-        const files = prev[dayStr] || [];
-        if (!files.length) return prev;
-        const newFiles = files.filter((_f, i) => i !== photoIndex);
+        const entries = prev[dayStr] || [];
+        if (!entries.length) return prev;
+        const newEntries = entries.filter((fe) => fe.url !== url);
         return {
           ...prev,
-          [dayStr]: newFiles,
+          [dayStr]: newEntries,
         };
       });
 
@@ -794,7 +744,7 @@ const MonthlyMaintenanceReport = () => {
         ...prev,
         [dayStr]: {
           comment: prev[dayStr]?.comment || updatedEntry?.comment || "",
-          photos: updatedEntry?.photos || [],
+          photos: normalizePhotos(updatedEntry?.photos || []),
         },
       }));
 
@@ -1079,6 +1029,17 @@ const MonthlyMaintenanceReport = () => {
                                 comment: "",
                                 photos: [],
                               };
+                              const photos = normalizePhotos(
+                                entry.photos || []
+                              );
+
+                              const mpmCount = photos.filter(
+                                (p) => p.type === "MPM"
+                              ).length;
+                              const epmCount = photos.filter(
+                                (p) => p.type === "EPM"
+                              ).length;
+
                               return (
                                 <tr
                                   key={dayStr}
@@ -1109,6 +1070,41 @@ const MonthlyMaintenanceReport = () => {
                                         gap: "6px",
                                       }}
                                     >
+                                      {/* Counts */}
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          gap: "8px",
+                                          marginBottom: "4px",
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            fontSize: "11px",
+                                            padding: "2px 8px",
+                                            borderRadius: "999px",
+                                            backgroundColor: "#e8f4ff",
+                                            color: "#236a80",
+                                            border: "1px solid #bcd7f5",
+                                          }}
+                                        >
+                                          MPM: {mpmCount}
+                                        </span>
+                                        <span
+                                          style={{
+                                            fontSize: "11px",
+                                            padding: "2px 8px",
+                                            borderRadius: "999px",
+                                            backgroundColor: "#fef1f0",
+                                            color: "#e74c3c",
+                                            border: "1px solid #f7c3bd",
+                                          }}
+                                        >
+                                          EPM: {epmCount}
+                                        </span>
+                                      </div>
+
+                                      {/* Thumbnails */}
                                       <div
                                         style={{
                                           display: "flex",
@@ -1116,8 +1112,17 @@ const MonthlyMaintenanceReport = () => {
                                           gap: "6px",
                                         }}
                                       >
-                                        {(entry.photos || []).map(
-                                          (url, idx) => (
+                                        {photos.map((photo, idx) => {
+                                          const url =
+                                            typeof photo === "string"
+                                              ? photo
+                                              : photo.url;
+                                          const type =
+                                            typeof photo === "string"
+                                              ? "MPM"
+                                              : photo.type || "MPM";
+
+                                          return (
                                             <div
                                               key={idx}
                                               style={{
@@ -1129,7 +1134,7 @@ const MonthlyMaintenanceReport = () => {
                                                 src={url}
                                                 alt={`Day ${dayStr} photo ${
                                                   idx + 1
-                                                }`}
+                                                } (${type})`}
                                                 onClick={() =>
                                                   handlePhotoPreview(
                                                     url,
@@ -1142,16 +1147,39 @@ const MonthlyMaintenanceReport = () => {
                                                   height: "60px",
                                                   objectFit: "cover",
                                                   borderRadius: "4px",
-                                                  border: "1px solid #cbd8eb",
+                                                  border:
+                                                    "2px solid " +
+                                                    (type === "MPM"
+                                                      ? "#236a80"
+                                                      : "#e74c3c"),
                                                   cursor: "pointer",
                                                 }}
                                               />
+
+                                              {/* type tag */}
+                                              <span
+                                                style={{
+                                                  position: "absolute",
+                                                  bottom: "-2px",
+                                                  left: "0",
+                                                  fontSize: "9px",
+                                                  padding: "1px 4px",
+                                                  borderRadius: "0 4px 0 0",
+                                                  backgroundColor:
+                                                    type === "MPM"
+                                                      ? "#236a80"
+                                                      : "#e74c3c",
+                                                  color: "#fff",
+                                                }}
+                                              >
+                                                {type}
+                                              </span>
 
                                               {(isOperator || isAdmin) && (
                                                 <button
                                                   type="button"
                                                   onClick={(e) => {
-                                                    e.stopPropagation(); // don't open preview
+                                                    e.stopPropagation();
                                                     handleDeletePhoto(
                                                       dayStr,
                                                       idx,
@@ -1183,43 +1211,88 @@ const MonthlyMaintenanceReport = () => {
                                                 </button>
                                               )}
                                             </div>
-                                          )
-                                        )}
+                                          );
+                                        })}
                                       </div>
 
                                       {(isOperator || isAdmin) && (
-                                        <label
+                                        <div
                                           style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            padding: "5px 10px",
-                                            borderRadius: "5px",
-                                            border: "1px dashed #236a80",
-                                            color: "#236a80",
-                                            fontSize: "12px",
-                                            fontWeight: 500,
-                                            cursor: "pointer",
-                                            background: "#f7fbff",
+                                            display: "flex",
+                                            gap: "6px",
+                                            marginTop: "4px",
                                           }}
                                         >
-                                          + Add Photos
-                                          <input
-                                            type="file"
-                                            accept="image/*"
-                                            capture="environment"
-                                            multiple
-                                            onChange={(e) => {
-                                              handlePhotoSelect(
-                                                dayStr,
-                                                e.target.files
-                                              );
-                                              e.target.value = "";
+                                          {/* Add MPM */}
+                                          <label
+                                            style={{
+                                              display: "inline-flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              padding: "5px 10px",
+                                              borderRadius: "5px",
+                                              border: "1px dashed #236a80",
+                                              color: "#236a80",
+                                              fontSize: "12px",
+                                              fontWeight: 500,
+                                              cursor: "pointer",
+                                              background: "#f7fbff",
                                             }}
-                                            style={{ display: "none" }}
-                                            disabled={loading || saving}
-                                          />
-                                        </label>
+                                          >
+                                            + Add MPM Photos
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              capture="environment"
+                                              multiple
+                                              onChange={(e) => {
+                                                handlePhotoSelect(
+                                                  dayStr,
+                                                  e.target.files,
+                                                  "MPM"
+                                                );
+                                                e.target.value = "";
+                                              }}
+                                              style={{ display: "none" }}
+                                              disabled={loading || saving}
+                                            />
+                                          </label>
+
+                                          {/* Add EPM */}
+                                          <label
+                                            style={{
+                                              display: "inline-flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              padding: "5px 10px",
+                                              borderRadius: "5px",
+                                              border: "1px dashed #e74c3c",
+                                              color: "#e74c3c",
+                                              fontSize: "12px",
+                                              fontWeight: 500,
+                                              cursor: "pointer",
+                                              background: "#fff7f6",
+                                            }}
+                                          >
+                                            + Add EPM Photos
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              capture="environment"
+                                              multiple
+                                              onChange={(e) => {
+                                                handlePhotoSelect(
+                                                  dayStr,
+                                                  e.target.files,
+                                                  "EPM"
+                                                );
+                                                e.target.value = "";
+                                              }}
+                                              style={{ display: "none" }}
+                                              disabled={loading || saving}
+                                            />
+                                          </label>
+                                        </div>
                                       )}
                                     </div>
                                   </td>
