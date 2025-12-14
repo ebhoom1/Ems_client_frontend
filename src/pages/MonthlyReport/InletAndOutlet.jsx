@@ -540,6 +540,10 @@ const InletAndOutlet = () => {
     ...buttonStyle,
     backgroundColor: "#e74c3c",
     borderColor: "#e74c3c",
+  };  const saveButtonStyle = {
+    ...buttonStyle,
+    backgroundColor: "#3c94e7ff",
+    borderColor: "#3c94e7ff",
   };
 
   const downloadCsvButtonStyle = {
@@ -943,7 +947,7 @@ const InletAndOutlet = () => {
 
                       <div className="text-center mt-4">
                         <button
-                          className="btn btn-primary"
+                        style={saveButtonStyle}
                           onClick={handleSave}
                           disabled={loading}
                         >
