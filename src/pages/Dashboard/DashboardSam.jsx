@@ -14,10 +14,17 @@ function DashboardSam() {
   const validUser = userData?.validUserOne || {};
   const navigate = useNavigate(); // Hook for navigation
   console.log("userType:", userType);
+  const [reportCategory, setReportCategory] = useState(null); 
+
 
   // --- State for the Modal ---
   const [showReportModal, setShowReportModal] = useState(false);
-  const handleCloseReportModal = () => setShowReportModal(false);
+  // const handleCloseReportModal = () => setShowReportModal(false);
+  const handleCloseReportModal = () => {
+  setShowReportModal(false);
+  setReportCategory(null);
+};
+
   const handleShowReportModal = (e) => {
     e.preventDefault(); // Prevent the <a> tag's default behavior
     setShowReportModal(true);
@@ -476,84 +483,117 @@ function DashboardSam() {
           <Modal.Title style={modalTitleStyle}>Select Report Type</Modal.Title>
         </Modal.Header>
 
-        <Modal.Body style={modalBodyStyle}>
-          <div className="d-grid gap-3">
-            <Button
-              style={{
-                ...buttonStylePrimary,
-                transform: isPrimaryHovered ? "translateY(-1px)" : "none",
-                boxShadow: isPrimaryHovered
-                  ? "0 6px 16px rgba(0, 0, 0, 0.15)"
-                  : buttonStylePrimary.boxShadow,
-              }}
-              onMouseEnter={() => setIsPrimaryHovered(true)}
-              onMouseLeave={() => setIsPrimaryHovered(false)}
-              onClick={() => handleModalClick("/monthly-report")}
-            >
-              View pH &amp; MLSS Reading
-            </Button>
+       <Modal.Body style={modalBodyStyle}>
+  {/* STEP 1: CATEGORY SELECTION */}
+  {!reportCategory && (
+    <div className="d-grid gap-3">
+      <Button
+        style={buttonStylePrimary}
+        onClick={() => setReportCategory("general")}
+      >
+        General Report
+      </Button>
 
-            <Button
-              variant="light"
-              style={{
-                ...buttonStyleSecondary,
-                backgroundColor: isSecondaryHovered ? "#f7fbfd" : "#ffffff",
-                boxShadow: isSecondaryHovered
-                  ? "0 4px 12px rgba(35, 106, 128, 0.15)"
-                  : "none",
-              }}
-              onMouseEnter={() => setIsSecondaryHovered(true)}
-              onMouseLeave={() => setIsSecondaryHovered(false)}
-              onClick={() => handleModalClick("/inlet-outlet")}
-            >
-              View Inlet &amp; Outlet Reading
-            </Button> 
-            <Button
-              variant="light"
-              style={{
-                ...buttonStyleSecondary,
-                backgroundColor: isSecondaryHovered ? "#f7fbfd" : "#ffffff",
-                boxShadow: isSecondaryHovered
-                  ? "0 4px 12px rgba(35, 106, 128, 0.15)"
-                  : "none",
-              }}
-              onMouseEnter={() => setIsSecondaryHovered(true)}
-              onMouseLeave={() => setIsSecondaryHovered(false)}
-              onClick={() => handleModalClick("/monthly-maintenance")}
-            >
-              View Monthly  Maintenance Activities
-            </Button>
-             <Button
-              variant="light"
-              style={{
-                ...buttonStyleSecondary,
-                backgroundColor: isSecondaryHovered ? "#f7fbfd" : "#ffffff",
-                boxShadow: isSecondaryHovered
-                  ? "0 4px 12px rgba(35, 106, 128, 0.15)"
-                  : "none",
-              }}
-              onMouseEnter={() => setIsSecondaryHovered(true)}
-              onMouseLeave={() => setIsSecondaryHovered(false)}
-              onClick={() => handleModalClick("/monthly-treatedwaterclarity")}
-            >
-              View Treated Water Clarity
-            </Button><Button
-              variant="light"
-              style={{
-                ...buttonStyleSecondary,
-                backgroundColor: isSecondaryHovered ? "#f7fbfd" : "#ffffff",
-                boxShadow: isSecondaryHovered
-                  ? "0 4px 12px rgba(35, 106, 128, 0.15)"
-                  : "none",
-              }}
-              onMouseEnter={() => setIsSecondaryHovered(true)}
-              onMouseLeave={() => setIsSecondaryHovered(false)}
-              onClick={() => handleModalClick("/monthly-equipmentstatus")}
-            >
-              View Equipments Status
-            </Button>
-          </div>
-        </Modal.Body>
+      <Button
+        style={buttonStyleSecondary}
+        onClick={() => setReportCategory("additional")}
+      >
+        Additional Report
+      </Button>
+    </div>
+  )}
+
+  {/* STEP 2: GENERAL REPORT BUTTONS */}
+  {reportCategory === "general" && (
+    <div className="d-grid gap-3">
+      <Button
+        style={buttonStylePrimary}
+        onClick={() => handleModalClick("/monthly-report")}
+      >
+        View pH &amp; MLSS Reading
+      </Button>
+
+      <Button
+        style={buttonStyleSecondary}
+        onClick={() => handleModalClick("/inlet-outlet")}
+      >
+        View Inlet &amp; Outlet Reading
+      </Button>
+
+      <Button
+        style={buttonStyleSecondary}
+        onClick={() => handleModalClick("/monthly-maintenance")}
+      >
+        View Monthly Maintenance Activities
+      </Button>
+
+      <Button
+        style={buttonStyleSecondary}
+        onClick={() => handleModalClick("/monthly-treatedwaterclarity")}
+      >
+        View Treated Water Clarity
+      </Button>
+
+      <Button
+        style={buttonStyleSecondary}
+        onClick={() => handleModalClick("/monthly-equipmentstatus")}
+      >
+        View Equipments Status
+      </Button>
+
+      <Button
+        variant="link"
+        onClick={() => setReportCategory(null)}
+        style={{ textDecoration: "none" }}
+      >
+        ← Back
+      </Button>
+    </div>
+  )}
+
+ {/* STEP 3: ADDITIONAL REPORT LIST */}
+{reportCategory === "additional" && (
+  <div className="d-grid gap-3">
+    <Button
+      style={buttonStylePrimary}
+      onClick={() => handleModalClick("/chemical-details")}
+    >
+      Chemical Details
+    </Button>
+
+    <Button
+      style={buttonStyleSecondary}
+      onClick={() => handleModalClick("/power-consumption")}
+    >
+      Power Consumption
+    </Button>
+
+    <Button
+      style={buttonStyleSecondary}
+      onClick={() => handleModalClick("/water-balance")}
+    >
+      Water Balance
+    </Button>
+
+    <Button
+      style={buttonStyleSecondary}
+      onClick={() => handleModalClick("/weekly-performance")}
+    >
+      Weekly Performance
+    </Button>
+
+    <Button
+      variant="link"
+      onClick={() => setReportCategory(null)}
+      style={{ textDecoration: "none" }}
+    >
+      ← Back
+    </Button>
+  </div>
+)}
+
+</Modal.Body>
+
 
         <Modal.Footer>
           <Button style={footerCloseButton} onClick={handleCloseReportModal}>

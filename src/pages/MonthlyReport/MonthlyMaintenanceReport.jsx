@@ -14,6 +14,7 @@ import "sweetalert2/dist/sweetalert2.min.css";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import genexlogo from "../../assests/images/logonewgenex.png";
+import imageCompression from "browser-image-compression";
 
 const MySwal = withReactContent(Swal);
 
@@ -166,24 +167,29 @@ const MonthlyMaintenanceReport = () => {
     }));
   };
 
+  const compressImage = async (file) => {
+    const options = {
+      maxSizeMB: 1.5, // ✅ target size
+      maxWidthOrHeight: 1920, // keeps good quality
+      useWebWorker: true,
+    };
+    return await imageCompression(file, options);
+  };
+
   // --- File selection: multiple photos per date, preview immediately ---
-  const handlePhotoSelect = (dayStr, fileList, photoType) => {
-    if (!fileList || !fileList.length) return;
-    if (!targetUser.userId) {
-      toast.error("Select a user/site first.");
-      return;
+  const handlePhotoSelect = async (dayStr, fileList, photoType) => {
+    if (!fileList?.length) return;
+
+    const compressedFiles = [];
+
+    for (const file of Array.from(fileList)) {
+      const compressed = await compressImage(file);
+      compressedFiles.push(compressed);
     }
 
-    const filesArray = Array.from(fileList);
-
-    // Create preview objects with type + file
-    const previewEntries = filesArray.map((file) => {
+    const previewEntries = compressedFiles.map((file) => {
       const url = URL.createObjectURL(file);
-      return {
-        url,
-        type: photoType, // "MPM" or "EPM"
-        _file: file,
-      };
+      return { url, type: photoType, _file: file };
     });
 
     // Add previews to current entries (only url + type)
@@ -315,7 +321,7 @@ const MonthlyMaintenanceReport = () => {
             formData,
             { headers: { "Content-Type": "multipart/form-data" } }
           );
-
+          console.log("upload response:", res.data.message);
           const updatedEntry = res.data.entry;
 
           // Replace photos with normalized S3 URLs, keep existing comment
@@ -341,7 +347,7 @@ const MonthlyMaintenanceReport = () => {
 
       toast.success("Maintenance report (comments + photos) saved");
     } catch (err) {
-      console.error("Failed to save report:", err);
+      console.error("Failed to save report:", err.message);
 
       MySwal.fire({
         icon: "error",
@@ -731,187 +737,186 @@ const MonthlyMaintenanceReport = () => {
   //   }
   // };
 
- const handleDownloadPDF = async () => {
-  if (!targetUser.userId) {
-    toast.error("Select a user/site first.");
-    return;
-  }
-
-  const rows = buildExportRows();
-  if (!rows.length) {
-    toast.info("No data to export for this month.");
-    return;
-  }
-
-  try {
-    toast.info("Generating PDF...");
-
-    const doc = new jsPDF("p", "mm", "a4");
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    let cursorY = 15;
-
-    /* ================= HEADER ================= */
-    const logoImg = new Image();
-    logoImg.src = genexlogo;
-
-    await new Promise((r) => {
-      logoImg.onload = r;
-      logoImg.onerror = r;
-    });
-
-    doc.setFillColor("#236a80");
-    doc.rect(0, 0, pageWidth, 40, "F");
-    doc.addImage(logoImg, "PNG", 15, 7, 22, 22);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.setTextColor("#fff");
-    doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2, 14, {
-      align: "center",
-    });
-
-    doc.setFontSize(10);
-    doc.text("Monthly Maintenance Activities Report", pageWidth / 2, 26, {
-      align: "center",
-    });
-
-    cursorY = 45;
-
-    doc.setTextColor("#000");
-    doc.setFontSize(11);
-    doc.text(
-      `Site: ${targetUser.siteName} (${targetUser.userName})`,
-      15,
-      cursorY
-    );
-    cursorY += 6;
-    doc.text(`Month: ${monthNames[month]} ${year}`, 15, cursorY);
-    cursorY += 10;
-
-    /* ================= TABLE (COMMENTS ONLY) ================= */
-    doc.autoTable({
-      startY: cursorY,
-      theme: "grid",
-      head: [["Date", "Comment"]],
-      body: rows.map((r) => [r.dateStr, r.comment || "-"]),
-      headStyles: {
-        fillColor: "#236a80",
-        textColor: "#fff",
-        fontStyle: "bold",
-      },
-      styles: {
-        fontSize: 9,
-        cellPadding: 4,
-      },
-      columnStyles: {
-        0: { cellWidth: 30 },
-        1: { cellWidth: pageWidth - 60 },
-      },
-    });
-
-    cursorY = doc.lastAutoTable.finalY + 10;
-
-    /* ================= PHOTO ANNEXURE ================= */
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.text("Photo Annexure", 15, cursorY);
-    cursorY += 8;
-
-    const IMAGE_W = 40;
-    const IMAGE_H = 30;
-    const GAP = 6;
-
-    for (const row of rows) {
-      const mpm = row.photos.filter((p) => p.type === "MPM");
-      const epm = row.photos.filter((p) => p.type === "EPM");
-
-      if (!mpm.length && !epm.length) continue;
-
-      if (cursorY + 25 > pageHeight) {
-        doc.addPage();
-        cursorY = 20;
-      }
-
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text(`Date: ${row.dateStr}`, 15, cursorY);
-      cursorY += 6;
-
-      const renderBlock = async (title, images, color) => {
-        if (!images.length) return;
-
-        doc.setFontSize(9);
-        doc.setTextColor(...color);
-        doc.text(title, 15, cursorY);
-        cursorY += 4;
-
-        let x = 15;
-        let y = cursorY;
-
-        for (const p of images) {
-          // 🚫 Skip WEBP (jsPDF unsafe)
-          if (p.url.toLowerCase().endsWith(".webp")) {
-            console.warn("Skipping WEBP image:", p.url);
-            continue;
-          }
-
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.src = p.url;
-
-          let loaded = false;
-
-          await new Promise((resolve) => {
-            img.onload = () => {
-              loaded = true;
-              resolve();
-            };
-            img.onerror = () => resolve();
-          });
-
-          // 🚫 Skip inaccessible / private images
-          if (!loaded) {
-            console.warn("Skipping inaccessible image:", p.url);
-            continue;
-          }
-
-          if (x + IMAGE_W > pageWidth - 15) {
-            x = 15;
-            y += IMAGE_H + GAP;
-          }
-
-          if (y + IMAGE_H > pageHeight - 15) {
-            doc.addPage();
-            x = 15;
-            y = 20;
-          }
-
-          doc.addImage(img, "JPEG", x, y, IMAGE_W, IMAGE_H);
-          x += IMAGE_W + GAP;
-        }
-
-        cursorY = y + IMAGE_H + 8;
-        doc.setTextColor("#000");
-      };
-
-      await renderBlock("MPM Photos", mpm, [35, 106, 128]);
-      await renderBlock("EPM Photos", epm, [231, 76, 60]);
-
-      cursorY += 4;
+  const handleDownloadPDF = async () => {
+    if (!targetUser.userId) {
+      toast.error("Select a user/site first.");
+      return;
     }
 
-    doc.save(
-      `${targetUser.siteName}_${monthNames[month]}_${year}_Maintenance_Report.pdf`
-    );
+    const rows = buildExportRows();
+    if (!rows.length) {
+      toast.info("No data to export for this month.");
+      return;
+    }
 
-    toast.success("PDF generated successfully!");
-  } catch (err) {
-    console.error("PDF generation failed:", err);
-    toast.error("Failed to generate PDF");
-  }
-};
+    try {
+      toast.info("Generating PDF...");
 
+      const doc = new jsPDF("p", "mm", "a4");
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let cursorY = 15;
+
+      /* ================= HEADER ================= */
+      const logoImg = new Image();
+      logoImg.src = genexlogo;
+
+      await new Promise((r) => {
+        logoImg.onload = r;
+        logoImg.onerror = r;
+      });
+
+      doc.setFillColor("#236a80");
+      doc.rect(0, 0, pageWidth, 40, "F");
+      doc.addImage(logoImg, "PNG", 15, 7, 22, 22);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor("#fff");
+      doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2, 14, {
+        align: "center",
+      });
+
+      doc.setFontSize(10);
+      doc.text("Monthly Maintenance Activities Report", pageWidth / 2, 26, {
+        align: "center",
+      });
+
+      cursorY = 45;
+
+      doc.setTextColor("#000");
+      doc.setFontSize(11);
+      doc.text(
+        `Site: ${targetUser.siteName} (${targetUser.userName})`,
+        15,
+        cursorY
+      );
+      cursorY += 6;
+      doc.text(`Month: ${monthNames[month]} ${year}`, 15, cursorY);
+      cursorY += 10;
+
+      /* ================= TABLE (COMMENTS ONLY) ================= */
+      doc.autoTable({
+        startY: cursorY,
+        theme: "grid",
+        head: [["Date", "Comment"]],
+        body: rows.map((r) => [r.dateStr, r.comment || "-"]),
+        headStyles: {
+          fillColor: "#236a80",
+          textColor: "#fff",
+          fontStyle: "bold",
+        },
+        styles: {
+          fontSize: 9,
+          cellPadding: 4,
+        },
+        columnStyles: {
+          0: { cellWidth: 30 },
+          1: { cellWidth: pageWidth - 60 },
+        },
+      });
+
+      cursorY = doc.lastAutoTable.finalY + 10;
+
+      /* ================= PHOTO ANNEXURE ================= */
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("Photo Annexure", 15, cursorY);
+      cursorY += 8;
+
+      const IMAGE_W = 56;
+      const IMAGE_H = 50;
+      const GAP = 6;
+
+      for (const row of rows) {
+        const mpm = row.photos.filter((p) => p.type === "MPM");
+        const epm = row.photos.filter((p) => p.type === "EPM");
+
+        if (!mpm.length && !epm.length) continue;
+
+        if (cursorY + 25 > pageHeight) {
+          doc.addPage();
+          cursorY = 20;
+        }
+
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Date: ${row.dateStr}`, 15, cursorY);
+        cursorY += 6;
+
+        const renderBlock = async (title, images, color) => {
+          if (!images.length) return;
+
+          doc.setFontSize(9);
+          doc.setTextColor(...color);
+          doc.text(title, 15, cursorY);
+          cursorY += 4;
+
+          let x = 15;
+          let y = cursorY;
+
+          for (const p of images) {
+            // 🚫 Skip WEBP (jsPDF unsafe)
+            if (p.url.toLowerCase().endsWith(".webp")) {
+              console.warn("Skipping WEBP image:", p.url);
+              continue;
+            }
+
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = p.url;
+
+            let loaded = false;
+
+            await new Promise((resolve) => {
+              img.onload = () => {
+                loaded = true;
+                resolve();
+              };
+              img.onerror = () => resolve();
+            });
+
+            // 🚫 Skip inaccessible / private images
+            if (!loaded) {
+              console.warn("Skipping inaccessible image:", p.url);
+              continue;
+            }
+
+            if (x + IMAGE_W > pageWidth - 15) {
+              x = 15;
+              y += IMAGE_H + GAP;
+            }
+
+            if (y + IMAGE_H > pageHeight - 15) {
+              doc.addPage();
+              x = 15;
+              y = 20;
+            }
+
+            doc.addImage(img, "JPEG", x, y, IMAGE_W, IMAGE_H);
+            x += IMAGE_W + GAP;
+          }
+
+          cursorY = y + IMAGE_H + 8;
+          doc.setTextColor("#000");
+        };
+
+        await renderBlock("MPM Photos", mpm, [35, 106, 128]);
+        await renderBlock("EPM Photos", epm, [231, 76, 60]);
+
+        cursorY += 4;
+      }
+
+      doc.save(
+        `${targetUser.siteName}_${monthNames[month]}_${year}_Maintenance_Report.pdf`
+      );
+
+      toast.success("PDF generated successfully!");
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF");
+    }
+  };
 
   const handleDeletePhoto = async (dayStr, photoIndex, url) => {
     if (!targetUser.userId) {

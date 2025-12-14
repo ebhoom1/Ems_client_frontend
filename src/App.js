@@ -122,6 +122,7 @@ import InletAndOutlet from "./pages/MonthlyReport/InletAndOutlet";
 import MonthlyMaintenanceReport from "./pages/MonthlyReport/MonthlyMaintenanceReport";
 import TreatedWaterClarityReport from "./pages/MonthlyReport/TreatedWaterClarityReport";
 import EquipmentStatusReport from "./pages/MonthlyReport/EquipmentStatusReport";
+import ChemicalDetails from "./pages/MonthlyReport/ChemicalDetails";
 import { getSocket } from "./Autonerve/socketService";
 
 function App() {
@@ -468,6 +469,7 @@ function App() {
                       <Route path="/monthly-maintenance" element={<MonthlyMaintenanceReport />} />
                       <Route path="/monthly-treatedwaterclarity" element={<TreatedWaterClarityReport />} />
                       <Route path="/monthly-equipmentstatus" element={<EquipmentStatusReport />} />
+{/* <Route path="/chemical-details" element={<ChemicalDetails />} /> */}
 
 
 
