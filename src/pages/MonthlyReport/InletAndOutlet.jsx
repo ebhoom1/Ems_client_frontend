@@ -80,6 +80,8 @@ const InletAndOutlet = () => {
     ["admin", "super_admin"].includes(currentUser?.userType) ||
     currentUser?.adminType === "EBHOOM";
 
+  const DEFAULT_FLOW_METERS = ["Inlet", "Outlet"];
+
   useEffect(() => {
     if (isAdmin || isOperator) dispatch(fetchUsers());
   }, [dispatch, isAdmin, isOperator]);
@@ -360,46 +362,45 @@ const InletAndOutlet = () => {
       const tableHead = [
         [
           "Date",
-          "Inlet-Initial",
-          "Inlet-Final",
-          "Inlet-Total",
-          "Inlet-Comment",
-          "Outlet-Initial",
-          "Outlet-Final",
-          "Outlet-Total",
-          "Outlet-Comment",
+          ...flowMeters.flatMap((fm) => [
+            `${fm}-Initial`,
+            `${fm}-Final`,
+            `${fm}-Total`,
+            `${fm}-Comment`,
+          ]),
         ],
       ];
 
-      const tableBody = processedReadings.tableData.map((r) => [
-        formatDate(r.date, month, year),
-        r.inletInitial || "N/A",
-        r.inletFinal || "N/A",
-        r.inletTotal,
-        r.inletComment || "N/A",
-        r.outletInitial || "N/A",
-        r.outletFinal || "N/A",
-        r.outletTotal,
-        r.outletComment || "N/A",
-      ]);
+      const tableBody = processedReadings.tableData.map((r) => {
+        const row = [formatDate(r.date, month, year)];
 
-      tableBody.push([
-        { content: "TOTALS", styles: { fontStyle: "bold", halign: "right" } },
-        "",
-        "",
-        {
-          content: processedReadings.totalInlet,
-          styles: { fontStyle: "bold" },
-        },
-        "",
-        "",
-        "",
-        {
-          content: processedReadings.totalOutlet,
-          styles: { fontStyle: "bold" },
-        },
-        "",
-      ]);
+        flowMeters.forEach((fm) => {
+          const key = fm.toLowerCase().replace(/ /g, "_");
+
+          row.push(
+            r[key + "_initial"] ?? "N/A",
+            r[key + "_final"] ?? "N/A",
+            r[key + "_total"] ?? "0.00",
+            r[key + "_comment"] ?? "N/A"
+          );
+        });
+
+        return row;
+      });
+
+      const totalRow = ["TOTAL"];
+
+      flowMeters.forEach((fm) => {
+        const key = fm.toLowerCase().replace(/ /g, "_");
+
+        const total = processedReadings.tableData
+          .reduce((sum, r) => sum + (parseFloat(r[key + "_total"]) || 0), 0)
+          .toFixed(2);
+
+        totalRow.push("", "", total, "");
+      });
+
+      tableBody.push(totalRow);
 
       doc.autoTable({
         startY: 60,
@@ -456,8 +457,8 @@ const InletAndOutlet = () => {
       const dateStr = formatDate(r.date, month, year);
       const inletComment = `"${r.inletComment || ""}"`;
       const outletComment = `"${r.outletComment || ""}"`;
-      csv += `${dateStr},${r.inletInitial || ""},${r.inletFinal || ""},${
-        r.inletTotal
+      csv += `${dateStr},${r.inlet_initial || ""},${r.inlet_final || ""},${
+        r.inlet_total
       },${inletComment},${r.outletInitial || ""},${r.outletFinal || ""},${
         r.outletTotal
       },${outletComment}\n`;
@@ -473,6 +474,63 @@ const InletAndOutlet = () => {
     window.URL.revokeObjectURL(url);
     setLoading(false);
     toast.success("CSV downloaded successfully!");
+  };
+
+  const handleDeleteFlowMeter = (meterName) => {
+    // 🔒 Hard protection
+    if (DEFAULT_FLOW_METERS.includes(meterName)) {
+      toast.error("Inlet and Outlet flow meters cannot be deleted");
+      return;
+    }
+
+    MySwal.fire({
+      title: "Delete Flow Meter?",
+      html: `<b>${meterName}</b> will be removed from table, charts and reports.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e74c3c",
+      cancelButtonColor: "#236a80",
+      confirmButtonText: "Yes, delete",
+    }).then(async (result) => {
+      if (!result.isConfirmed) return;
+
+      // 1️⃣ Remove meter from list
+      const updatedMeters = flowMeters.filter((fm) => fm !== meterName);
+      setFlowMeters(updatedMeters);
+
+      // 2️⃣ Remove meter data from readings
+      setReadings((prev) =>
+        prev.map((r) => {
+          const key = meterName.toLowerCase().replace(/ /g, "_");
+          const updated = { ...r };
+
+          delete updated[key + "_initial"];
+          delete updated[key + "_final"];
+          delete updated[key + "_total"];
+          delete updated[key + "_comment"];
+
+          return updated;
+        })
+      );
+
+      // 3️⃣ Persist immediately to backend
+      try {
+        await axios.post(`${API_URL}/api/flow-report`, {
+          userId: targetUser.userId,
+          userName: targetUser.userName,
+          siteName: targetUser.siteName,
+          year,
+          month,
+          readings,
+          flowMeters: updatedMeters,
+        });
+
+        toast.success(`Flow meter "${meterName}" deleted`);
+      } catch (err) {
+        toast.error("Failed to update server");
+        console.error(err);
+      }
+    });
   };
 
   const monthNames = [
@@ -540,7 +598,8 @@ const InletAndOutlet = () => {
     ...buttonStyle,
     backgroundColor: "#e74c3c",
     borderColor: "#e74c3c",
-  };  const saveButtonStyle = {
+  };
+  const saveButtonStyle = {
     ...buttonStyle,
     backgroundColor: "#3c94e7ff",
     borderColor: "#3c94e7ff",
@@ -632,6 +691,55 @@ const InletAndOutlet = () => {
       },
     };
   });
+
+  const totalByMeter = useMemo(() => {
+    const totals = {};
+
+    flowMeters.forEach((fm) => {
+      const key = fm.toLowerCase().replace(/ /g, "_");
+      totals[key] = processedReadings.tableData
+        .reduce((sum, r) => sum + (parseFloat(r[key + "_total"]) || 0), 0)
+        .toFixed(2);
+    });
+
+    return totals;
+  }, [processedReadings, flowMeters]);
+
+  const handleEnterNavigation = (
+    e,
+    rowIndex,
+    meterIndex,
+    fieldType // "initial" | "final" | "comment"
+  ) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+
+    const fields = ["initial", "final", "total", "comment"];
+    const fieldPos = fields.indexOf(fieldType);
+
+    let nextRow = rowIndex + 1;
+    let nextMeter = meterIndex;
+    let nextField = fieldType;
+
+    // If next row exists → same column, next row
+    if (nextRow < readings.length) {
+      // do nothing, valid
+    } else {
+      // move to next column (meter/field)
+      nextRow = 0;
+
+      if (fieldPos < fields.length - 1) {
+        nextField = fields[fieldPos + 1];
+      } else {
+        nextField = "initial";
+        nextMeter = meterIndex + 1;
+      }
+    }
+
+    const nextId = `cell-${nextRow}-${nextMeter}-${nextField}`;
+    const el = document.getElementById(nextId);
+    if (el) el.focus();
+  };
 
   return (
     <>
@@ -794,8 +902,30 @@ const InletAndOutlet = () => {
                                 <tr>
                                   <th>DATE</th>
                                   {flowMeters.map((fm) => (
-                                    <th key={fm} colSpan="4">
+                                    <th
+                                      key={fm}
+                                      colSpan="4"
+                                      style={{ position: "relative" }}
+                                    >
                                       {fm.toUpperCase()} (KL)
+                                      {/* 🗑️ Delete (Admin + Non-default only) */}
+                                      {isAdmin &&
+                                        !DEFAULT_FLOW_METERS.includes(fm) && (
+                                          <span
+                                            title="Delete flow meter"
+                                            onClick={() =>
+                                              handleDeleteFlowMeter(fm)
+                                            }
+                                            style={{
+                                              marginLeft: "8px",
+                                              cursor: "pointer",
+                                              color: "#ffdada",
+                                              fontWeight: "bold",
+                                            }}
+                                          >
+                                            🗑️
+                                          </span>
+                                        )}
                                     </th>
                                   ))}
                                 </tr>
@@ -818,7 +948,7 @@ const InletAndOutlet = () => {
                                     <tr key={rowIndex}>
                                       <td>{formatDate(r.date, month, year)}</td>
 
-                                      {flowMeters.map((fm) => {
+                                      {flowMeters.map((fm, meterIndex) => {
                                         const key = fm
                                           .toLowerCase()
                                           .replace(/ /g, "_");
@@ -831,6 +961,7 @@ const InletAndOutlet = () => {
                                           <React.Fragment key={key}>
                                             <td>
                                               <input
+                                                id={`cell-${rowIndex}-${meterIndex}-initial`}
                                                 type="number"
                                                 value={r[init]}
                                                 onChange={(e) =>
@@ -840,10 +971,19 @@ const InletAndOutlet = () => {
                                                     e.target.value
                                                   )
                                                 }
+                                                onKeyDown={(e) =>
+                                                  handleEnterNavigation(
+                                                    e,
+                                                    rowIndex,
+                                                    meterIndex,
+                                                    "initial"
+                                                  )
+                                                }
                                               />
                                             </td>
                                             <td>
                                               <input
+                                                id={`cell-${rowIndex}-${meterIndex}-final`}
                                                 type="number"
                                                 value={r[final]}
                                                 onChange={(e) =>
@@ -851,6 +991,14 @@ const InletAndOutlet = () => {
                                                     rowIndex,
                                                     final,
                                                     e.target.value
+                                                  )
+                                                }
+                                                onKeyDown={(e) =>
+                                                  handleEnterNavigation(
+                                                    e,
+                                                    rowIndex,
+                                                    meterIndex,
+                                                    "final"
                                                   )
                                                 }
                                               />
@@ -864,6 +1012,7 @@ const InletAndOutlet = () => {
                                             </td>
                                             <td>
                                               <input
+                                                id={`cell-${rowIndex}-${meterIndex}-comment`}
                                                 type="text"
                                                 value={r[comment]}
                                                 onChange={(e) =>
@@ -871,6 +1020,14 @@ const InletAndOutlet = () => {
                                                     rowIndex,
                                                     comment,
                                                     e.target.value
+                                                  )
+                                                }
+                                                onKeyDown={(e) =>
+                                                  handleEnterNavigation(
+                                                    e,
+                                                    rowIndex,
+                                                    meterIndex,
+                                                    "comment"
                                                   )
                                                 }
                                               />
@@ -947,7 +1104,7 @@ const InletAndOutlet = () => {
 
                       <div className="text-center mt-4">
                         <button
-                        style={saveButtonStyle}
+                          style={saveButtonStyle}
                           onClick={handleSave}
                           disabled={loading}
                         >

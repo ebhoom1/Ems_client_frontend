@@ -469,7 +469,7 @@ function App() {
                       <Route path="/monthly-maintenance" element={<MonthlyMaintenanceReport />} />
                       <Route path="/monthly-treatedwaterclarity" element={<TreatedWaterClarityReport />} />
                       <Route path="/monthly-equipmentstatus" element={<EquipmentStatusReport />} />
-{/* <Route path="/chemical-details" element={<ChemicalDetails />} /> */}
+<Route path="/chemical-details" element={<ChemicalDetails />} />
 
 
 
