@@ -123,7 +123,9 @@ import MonthlyMaintenanceReport from "./pages/MonthlyReport/MonthlyMaintenanceRe
 import TreatedWaterClarityReport from "./pages/MonthlyReport/TreatedWaterClarityReport";
 import EquipmentStatusReport from "./pages/MonthlyReport/EquipmentStatusReport";
 import ChemicalDetails from "./pages/MonthlyReport/ChemicalDetails";
+import CriticalSpareAvailability from "./pages/MonthlyReport/CriticalSpareAvailability";
 import { getSocket } from "./Autonerve/socketService";
+
 
 function App() {
   const dispatch = useDispatch();
@@ -469,7 +471,8 @@ function App() {
                       <Route path="/monthly-maintenance" element={<MonthlyMaintenanceReport />} />
                       <Route path="/monthly-treatedwaterclarity" element={<TreatedWaterClarityReport />} />
                       <Route path="/monthly-equipmentstatus" element={<EquipmentStatusReport />} />
-<Route path="/chemical-details" element={<ChemicalDetails />} />
+                      <Route path="/chemical-details" element={<ChemicalDetails />} />
+                      <Route path="/critical-spare-availability" element={<CriticalSpareAvailability />} />
 
 
 

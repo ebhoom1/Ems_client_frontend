@@ -427,7 +427,7 @@ const InletAndOutlet = () => {
           }
 
           doc.setFontSize(14);
-          doc.text(`${dynamicChartData[i].meter} Flow (KL) Over Time`, 15, y);
+          doc.text(`${dynamicChartData[i].meter} Flow  Over Time`, 15, y);
 
           const canvas = await html2canvas(chartRef, { scale: 2 });
           const img = canvas.toDataURL("image/png");
@@ -630,7 +630,7 @@ const InletAndOutlet = () => {
     ),
     datasets: [
       {
-        label: "Inlet Total (KL)",
+        label: "Inlet Total",
         data: processedReadings.tableData.map((r) => r.inletTotal),
         borderColor: "#236a80",
         borderWidth: 3,
@@ -645,7 +645,7 @@ const InletAndOutlet = () => {
     ),
     datasets: [
       {
-        label: "Outlet Total (KL)",
+        label: "Outlet Total",
         data: processedReadings.tableData.map((r) => r.outletTotal),
         borderColor: "#e74c3c",
         borderWidth: 3,
@@ -679,7 +679,7 @@ const InletAndOutlet = () => {
         ),
         datasets: [
           {
-            label: `${fm} Total (KL)`,
+            label: `${fm} Total `,
             data: processedReadings.tableData.map(
               (r) => parseFloat(r[key + "_total"]) || 0
             ),
@@ -907,7 +907,7 @@ const InletAndOutlet = () => {
                                       colSpan="4"
                                       style={{ position: "relative" }}
                                     >
-                                      {fm.toUpperCase()} (KL)
+                                      {fm.toUpperCase()}
                                       {/* 🗑️ Delete (Admin + Non-default only) */}
                                       {isAdmin &&
                                         !DEFAULT_FLOW_METERS.includes(fm) && (
@@ -1042,7 +1042,7 @@ const InletAndOutlet = () => {
 
                               <tfoot>
                                 <tr>
-                                  <td>TOTAL (KL)</td>
+                                  <td>TOTAL</td>
                                   {flowMeters.map((fm) => {
                                     const key = fm
                                       .toLowerCase()
@@ -1089,7 +1089,7 @@ const InletAndOutlet = () => {
                                       legend: { position: "top" },
                                       title: {
                                         display: true,
-                                        text: `${chartObj.meter} Total (KL) Over Time`,
+                                        text: `${chartObj.meter} Total  Over Time`,
                                         font: { size: 16, weight: "bold" },
                                         color: "#236a80",
                                       },

@@ -577,9 +577,9 @@ function DashboardSam() {
 
     <Button
       style={buttonStyleSecondary}
-      onClick={() => handleModalClick("/weekly-performance")}
+      onClick={() => handleModalClick("/critical-spare-availability")}
     >
-      Weekly Performance
+      Critical Spare Availability
     </Button>
 
     <Button

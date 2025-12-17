@@ -339,71 +339,72 @@ const TreatedWaterClarityReport = () => {
       };
     });
 
-const handleDownloadXLSX = async () => {
-  if (!targetUser.userId) {
-    toast.error("Select a user/site first.");
-    return;
-  }
-
-  const rows = buildExportRows();
-
-  const hasAny = rows.some(r => (r.photos || []).length > 0);
-  if (!hasAny) {
-    toast.info("No photos in this month.");
-    return;
-  }
-
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("Clarity Report");
-
-  sheet.columns = [
-    { header: "Date", key: "date", width: 15 },
-    { header: "Photos", key: "photos", width: 50 },
-  ];
-
-  let rowNumber = 2; // Start after header row
-
-  for (const row of rows) {
-    const excelRow = sheet.getRow(rowNumber);
-    excelRow.getCell(1).value = row.dateStr;
-
-    let col = 2; // Start placing images from column B
-
-    for (const url of row.photos) {
-      try {
-        const blob = await fetch(url).then(r => r.blob());
-        const buffer = await blob.arrayBuffer();
-
-        const imageId = workbook.addImage({
-          buffer: buffer,
-          extension: "jpeg", // or "png" depending on your file
-        });
-
-        sheet.addImage(imageId, {
-          tl: { col: col - 1, row: rowNumber - 1 },
-          ext: { width: 150, height: 150 },
-        });
-
-        col++;
-      } catch (err) {
-        console.error("Image load failed:", url, err);
-      }
+  const handleDownloadXLSX = async () => {
+    if (!targetUser.userId) {
+      toast.error("Select a user/site first.");
+      return;
     }
 
-    sheet.getRow(rowNumber).height = 120; // Increase row height
-    rowNumber++;
-  }
+    const rows = buildExportRows();
 
-  workbook.xlsx.writeBuffer().then((buffer) => {
-    saveAs(
-      new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
-      `${targetUser.siteName}_${month + 1}-${year}_TreatedWaterClarity.xlsx`
-    );
-  });
+    const hasAny = rows.some((r) => (r.photos || []).length > 0);
+    if (!hasAny) {
+      toast.info("No photos in this month.");
+      return;
+    }
 
-  toast.success("XLSX downloaded with images!");
-};
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Clarity Report");
 
+    sheet.columns = [
+      { header: "Date", key: "date", width: 15 },
+      { header: "Photos", key: "photos", width: 50 },
+    ];
+
+    let rowNumber = 2; // Start after header row
+
+    for (const row of rows) {
+      const excelRow = sheet.getRow(rowNumber);
+      excelRow.getCell(1).value = row.dateStr;
+
+      let col = 2; // Start placing images from column B
+
+      for (const url of row.photos) {
+        try {
+          const blob = await fetch(url).then((r) => r.blob());
+          const buffer = await blob.arrayBuffer();
+
+          const imageId = workbook.addImage({
+            buffer: buffer,
+            extension: "jpeg", // or "png" depending on your file
+          });
+
+          sheet.addImage(imageId, {
+            tl: { col: col - 1, row: rowNumber - 1 },
+            ext: { width: 150, height: 150 },
+          });
+
+          col++;
+        } catch (err) {
+          console.error("Image load failed:", url, err);
+        }
+      }
+
+      sheet.getRow(rowNumber).height = 120; // Increase row height
+      rowNumber++;
+    }
+
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      saveAs(
+        new Blob([buffer], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        `${targetUser.siteName}_${month + 1}-${year}_TreatedWaterClarity.xlsx`
+      );
+    });
+
+    toast.success("XLSX downloaded with images!");
+  };
 
   const handleDownloadPDF = async () => {
     if (!targetUser.userId) {
@@ -574,25 +575,16 @@ const handleDownloadXLSX = async () => {
               count > 0 ? (availWidth - gap * (count - 1)) / count : availWidth;
 
             images.forEach((img, index) => {
-              const aspect =
-                img.width && img.height ? img.width / img.height : 1;
-
-              let drawW = slotWidth;
-              let drawH = drawW / aspect;
-
-              if (drawH > maxHeight) {
-                drawH = maxHeight;
-                drawW = drawH * aspect;
-              }
+              const size = Math.min(slotWidth, maxHeight); // 🔹 SAME width & height
 
               const xSlotStart =
                 data.cell.x + padding + index * (slotWidth + gap);
               const ySlotStart = data.cell.y + padding;
 
-              const x = xSlotStart + (slotWidth - drawW) / 2;
-              const y = ySlotStart + (maxHeight - drawH) / 2;
+              const x = xSlotStart + (slotWidth - size) / 2;
+              const y = ySlotStart + (maxHeight - size) / 2;
 
-              doc.addImage(img, "PNG", x, y, drawW, drawH);
+              doc.addImage(img, "PNG", x, y, size, size);
             });
           }
         },

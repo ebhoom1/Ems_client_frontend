@@ -240,41 +240,44 @@ const MonthlyPh = () => {
     }
   }, [report, year, month]);
 
+  // const handleInputChange = (index, paramKey, value) => {
+  //   const updated = [...readings];
+  //   updated[index].values[paramKey] = value;
+  //   setReadings(updated);
+  // };
   const handleInputChange = (index, paramKey, value) => {
-    const updated = [...readings];
-    updated[index].values[paramKey] = value;
-    setReadings(updated);
-  };
+  setReadings((prev) => {
+    const updated = [...prev];
+
+    if (paramKey === "comment") {
+      updated[index].comment = value;
+    } else {
+      updated[index].values[paramKey] = value;
+    }
+
+    return updated;
+  });
+};
+
 
   // 🔹 ENTER key handler – move to next row
   const handleFieldKeyDown = (e, rowIndex, paramKey) => {
-    if (e.key !== "Enter") return;
-    e.preventDefault();
+  if (e.key !== "Enter") return;
+  e.preventDefault();
 
-    const paramIndex = parameters.findIndex((p) => p.key === paramKey);
+  const nextRow = rowIndex + 1;
+  if (nextRow >= readings.length) return;
 
-    // 1️⃣ Inside parameters → move RIGHT
-    if (paramIndex !== -1 && paramIndex < parameters.length - 1) {
-      const nextKey = parameters[paramIndex + 1].key;
-      document.getElementById(`cell-${rowIndex}-${nextKey}`)?.focus();
-      return;
-    }
+  // 🔽 SAME COLUMN, NEXT ROW
+  if (paramKey === "comment") {
+    document.getElementById(`comment-${nextRow}`)?.focus();
+  } else {
+    document
+      .getElementById(`cell-${nextRow}-${paramKey}`)
+      ?.focus();
+  }
+};
 
-    // 2️⃣ Last parameter → move to COMMENT
-    if (paramIndex === parameters.length - 1) {
-      document.getElementById(`comment-${rowIndex}`)?.focus();
-      return;
-    }
-
-    // 3️⃣ From COMMENT → move DOWN (next row, first parameter)
-    if (paramKey === "comment") {
-      const nextRow = rowIndex + 1;
-      if (nextRow < readings.length) {
-        const firstKey = parameters[0].key;
-        document.getElementById(`cell-${nextRow}-${firstKey}`)?.focus();
-      }
-    }
-  };
 
   const handleSave = async () => {
     if (!targetUser.userId || !targetUser.userName) {
