@@ -69,6 +69,7 @@ const InletAndOutlet = () => {
 
   const inletChartRef = useRef(null);
   const outletChartRef = useRef(null);
+  const chartRefs = useRef({});
 
   const { userData } = useSelector((state) => state.user);
   const selectedUserId = useSelector((state) => state.selectedUser.userId);
@@ -303,149 +304,338 @@ const InletAndOutlet = () => {
     setLoading(false);
   };
 
+  // const handleDownloadPDF = async () => {
+  //   setLoading(true);
+  //   toast.info("Generating PDF...");
+
+  //   try {
+  //     const doc = new jsPDF();
+  //     const logoImg = new Image();
+  //     logoImg.src = genexlogo;
+
+  //     await new Promise((resolve) => {
+  //       logoImg.onload = resolve;
+  //       logoImg.onerror = resolve;
+  //     });
+
+  //     // header
+  //     doc.setFillColor("#236a80");
+  //     doc.rect(0, 0, doc.internal.pageSize.getWidth(), 35, "F");
+  //     doc.addImage(logoImg, "PNG", 10, 5, 25, 25);
+  //     doc.setFont("helvetica", "bold");
+  //     doc.setTextColor("#FFFFFF");
+  //     doc.setFontSize(14);
+  //     doc.text("Genex Utility Management Pvt Ltd", 110, 12, {
+  //       align: "center",
+  //     });
+  //     doc.setFont("helvetica", "normal");
+  //     doc.setFontSize(8);
+  //     doc.text(
+  //       "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony, Shettihalli, Post, Jalahalli West, Bengaluru, Karnataka 560015",
+  //       110,
+  //       20,
+  //       { align: "center" }
+  //     );
+  //     doc.text("Phone: +91-9663044156", 110, 25, { align: "center" });
+
+  //     // title
+  //     const monthNames = [
+  //       "January",
+  //       "February",
+  //       "March",
+  //       "April",
+  //       "May",
+  //       "June",
+  //       "July",
+  //       "August",
+  //       "September",
+  //       "October",
+  //       "November",
+  //       "December",
+  //     ];
+  //     doc.setTextColor("#000000");
+  //     doc.setFontSize(12);
+  //     doc.setFont("helvetica", "bold");
+  //     doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
+  //     doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
+
+  //     // table
+  //     const tableHead = [
+  //       [
+  //         "Date",
+  //         ...flowMeters.flatMap((fm) => [
+  //           `${fm}-Initial`,
+  //           `${fm}-Final`,
+  //           `${fm}-Total`,
+  //           `${fm}-Comment`,
+  //         ]),
+  //       ],
+  //     ];
+
+  //     const tableBody = processedReadings.tableData.map((r) => {
+  //       const row = [formatDate(r.date, month, year)];
+
+  //       flowMeters.forEach((fm) => {
+  //         const key = fm.toLowerCase().replace(/ /g, "_");
+
+  //         row.push(
+  //           r[key + "_initial"] ?? "N/A",
+  //           r[key + "_final"] ?? "N/A",
+  //           r[key + "_total"] ?? "0.00",
+  //           r[key + "_comment"] ?? "N/A"
+  //         );
+  //       });
+
+  //       return row;
+  //     });
+
+  //     const totalRow = ["TOTAL"];
+
+  //     flowMeters.forEach((fm) => {
+  //       const key = fm.toLowerCase().replace(/ /g, "_");
+
+  //       const total = processedReadings.tableData
+  //         .reduce((sum, r) => sum + (parseFloat(r[key + "_total"]) || 0), 0)
+  //         .toFixed(2);
+
+  //       totalRow.push("", "", total, "");
+  //     });
+
+  //     tableBody.push(totalRow);
+
+  //     doc.autoTable({
+  //       startY: 60,
+  //       head: tableHead,
+  //       body: tableBody,
+  //       theme: "grid",
+  //       headStyles: { fillColor: "#236a80" },
+  //       styles: { fontSize: 7 },
+  //     });
+
+  //     // charts for admin
+  //     // ===== Dynamic charts for PDF =====
+  //     if (isAdmin) {
+  //       let y = doc.autoTable.previous.finalY + 15;
+
+  //       for (let i = 0; i < dynamicChartData.length; i++) {
+  //         const chartRef = document.querySelectorAll("canvas")[i];
+
+  //         if (!chartRef) continue;
+
+  //         if (y + 100 > doc.internal.pageSize.getHeight() - 10) {
+  //           doc.addPage();
+  //           y = 15;
+  //         }
+
+  //         doc.setFontSize(14);
+  //         doc.text(`${dynamicChartData[i].meter} Flow  Over Time`, 15, y);
+
+  //         const canvas = await html2canvas(chartRef, { scale: 2 });
+  //         const img = canvas.toDataURL("image/png");
+
+  //         doc.addImage(img, "PNG", 15, y + 10, 180, 90);
+
+  //         y += 120;
+  //       }
+  //     }
+
+  //     doc.save(
+  //       `${targetUser.siteName}_${monthNames[month]}_${year}_Flow_Report.pdf`
+  //     );
+  //     toast.success("PDF generated successfully!");
+  //   } catch (e) {
+  //     console.error(e);
+  //     toast.error("Failed to generate PDF.");
+  //   }
+  //   setLoading(false);
+  // };
+  const chunkArray = (arr, size) => {
+    const chunks = [];
+    for (let i = 0; i < arr.length; i += size) {
+      chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+  };
   const handleDownloadPDF = async () => {
     setLoading(true);
     toast.info("Generating PDF...");
 
     try {
-      const doc = new jsPDF();
+      const doc = new jsPDF("landscape", "mm", "a4");
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      /* ---------- LOGO ---------- */
       const logoImg = new Image();
       logoImg.src = genexlogo;
+      await new Promise((r) => (logoImg.onload = r));
 
-      await new Promise((resolve) => {
-        logoImg.onload = resolve;
-        logoImg.onerror = resolve;
-      });
+      /* ---------- HEADER ---------- */
+      const drawHeader = () => {
+        doc.setFillColor("#236a80");
+        doc.rect(0, 0, pageWidth, 28, "F");
+        doc.addImage(logoImg, "PNG", 10, 4, 22, 22);
 
-      // header
-      doc.setFillColor("#236a80");
-      doc.rect(0, 0, doc.internal.pageSize.getWidth(), 35, "F");
-      doc.addImage(logoImg, "PNG", 10, 5, 25, 25);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor("#FFFFFF");
-      doc.setFontSize(14);
-      doc.text("Genex Utility Management Pvt Ltd", 110, 12, {
-        align: "center",
-      });
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.text(
-        "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony, Shettihalli, Post, Jalahalli West, Bengaluru, Karnataka 560015",
-        110,
-        20,
-        { align: "center" }
-      );
-      doc.text("Phone: +91-9663044156", 110, 25, { align: "center" });
-
-      // title
-      const monthNames = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-      ];
-      doc.setTextColor("#000000");
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
-      doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
-
-      // table
-      const tableHead = [
-        [
-          "Date",
-          ...flowMeters.flatMap((fm) => [
-            `${fm}-Initial`,
-            `${fm}-Final`,
-            `${fm}-Total`,
-            `${fm}-Comment`,
-          ]),
-        ],
-      ];
-
-      const tableBody = processedReadings.tableData.map((r) => {
-        const row = [formatDate(r.date, month, year)];
-
-        flowMeters.forEach((fm) => {
-          const key = fm.toLowerCase().replace(/ /g, "_");
-
-          row.push(
-            r[key + "_initial"] ?? "N/A",
-            r[key + "_final"] ?? "N/A",
-            r[key + "_total"] ?? "0.00",
-            r[key + "_comment"] ?? "N/A"
-          );
+        doc.setTextColor("#fff");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2, 12, {
+          align: "center",
         });
 
-        return row;
-      });
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.text(
+          "Sujatha Arcade, Second Floor, Jalahalli West, Bengaluru – 560015 | Ph: +91-9663044156",
+          pageWidth / 2,
+          20,
+          { align: "center" }
+        );
+      };
 
-      const totalRow = ["TOTAL"];
+      /* ---------- TITLE ---------- */
+      const drawTitle = () => {
+        const months = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        doc.setTextColor("#000");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(
+          `Site: ${targetUser.siteName} (${targetUser.userName})`,
+          14,
+          38
+        );
+        doc.text(`Month: ${months[month]} ${year}`, 14, 45);
+      };
 
-      flowMeters.forEach((fm) => {
-        const key = fm.toLowerCase().replace(/ /g, "_");
+      /* =====================================================
+       PART 1: TABLE PAGES (COLUMN-CHUNKED)
+    ===================================================== */
 
-        const total = processedReadings.tableData
-          .reduce((sum, r) => sum + (parseFloat(r[key + "_total"]) || 0), 0)
-          .toFixed(2);
+      const METERS_PER_PAGE = 2; // adjust if needed
+      const meterChunks = chunkArray(flowMeters, METERS_PER_PAGE);
 
-        totalRow.push("", "", total, "");
-      });
+      for (let i = 0; i < meterChunks.length; i++) {
+        if (i > 0) doc.addPage();
 
-      tableBody.push(totalRow);
+        drawHeader();
+        drawTitle();
 
-      doc.autoTable({
-        startY: 60,
-        head: tableHead,
-        body: tableBody,
-        theme: "grid",
-        headStyles: { fillColor: "#236a80" },
-        styles: { fontSize: 7 },
-      });
+        const meters = meterChunks[i];
 
-      // charts for admin
-      // ===== Dynamic charts for PDF =====
-      if (isAdmin) {
-        let y = doc.autoTable.previous.finalY + 15;
+        const head = [
+          [
+            "Date",
+            ...meters.flatMap((fm) => [
+              `${fm} Initial`,
+              `${fm} Final`,
+              `${fm} Total`,
+              `${fm} Comment`,
+            ]),
+          ],
+        ];
 
-        for (let i = 0; i < dynamicChartData.length; i++) {
-          const chartRef = document.querySelectorAll("canvas")[i];
+        const body = processedReadings.tableData.map((r) => {
+          const row = [formatDate(r.date, month, year)];
+          meters.forEach((fm) => {
+            const key = fm.toLowerCase().replace(/ /g, "_");
+            row.push(
+              r[key + "_initial"] ?? "",
+              r[key + "_final"] ?? "",
+              r[key + "_total"] ?? "0.00",
+              r[key + "_comment"] ?? ""
+            );
+          });
+          return row;
+        });
 
-          if (!chartRef) continue;
+        const totalRow = ["TOTAL"];
+        meters.forEach((fm) => {
+          const key = fm.toLowerCase().replace(/ /g, "_");
+          const total = processedReadings.tableData
+            .reduce((s, r) => s + (parseFloat(r[key + "_total"]) || 0), 0)
+            .toFixed(2);
+          totalRow.push("", "", total, "");
+        });
+        body.push(totalRow);
 
-          if (y + 100 > doc.internal.pageSize.getHeight() - 10) {
-            doc.addPage();
-            y = 15;
-          }
-
-          doc.setFontSize(14);
-          doc.text(`${dynamicChartData[i].meter} Flow  Over Time`, 15, y);
-
-          const canvas = await html2canvas(chartRef, { scale: 2 });
-          const img = canvas.toDataURL("image/png");
-
-          doc.addImage(img, "PNG", 15, y + 10, 180, 90);
-
-          y += 120;
-        }
+        doc.autoTable({
+          startY: 55,
+          head,
+          body,
+          theme: "grid",
+          styles: {
+            fontSize: 8,
+            cellPadding: 2,
+            halign: "center",
+            valign: "middle",
+          },
+          headStyles: {
+            fillColor: "#236a80",
+            textColor: "#fff",
+          },
+          didParseCell: (data) => {
+            if (data.row.index === body.length - 1) {
+              data.cell.styles.fontStyle = "bold";
+            }
+          },
+        });
       }
 
-      doc.save(
-        `${targetUser.siteName}_${monthNames[month]}_${year}_Flow_Report.pdf`
-      );
+      /* =====================================================
+       PART 2: GRAPH PAGES (ALL GRAPHS AT END)
+    ===================================================== */
+
+      doc.addPage();
+      drawHeader();
+
+      doc.setTextColor("#000");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("Flow Trend Graphs", pageWidth / 2, 40, { align: "center" });
+
+      let y = 55;
+
+      for (const fm of flowMeters) {
+        const canvas = chartRefs.current[fm];
+        if (!canvas) continue;
+
+        if (y + 80 > pageHeight - 10) {
+          doc.addPage();
+          drawHeader();
+          y = 35;
+        }
+
+        doc.setFontSize(11);
+        doc.text(`${fm} – Monthly Flow Trend`, 14, y);
+
+        const imgCanvas = await html2canvas(canvas, { scale: 2 });
+        const img = imgCanvas.toDataURL("image/png");
+
+        doc.addImage(img, "PNG", 14, y + 6, pageWidth - 28, 60);
+        y += 75;
+      }
+
+      doc.save(`${targetUser.siteName}_${month + 1}_${year}_Flow_Report.pdf`);
+
       toast.success("PDF generated successfully!");
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to generate PDF.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate PDF");
     }
+
     setLoading(false);
   };
 
@@ -1081,6 +1271,12 @@ const InletAndOutlet = () => {
                                 }}
                               >
                                 <Line
+                                  ref={(el) => {
+                                    if (el?.canvas) {
+                                      chartRefs.current[chartObj.meter] =
+                                        el.canvas;
+                                    }
+                                  }}
                                   data={chartObj.data}
                                   options={{
                                     responsive: true,
@@ -1089,7 +1285,7 @@ const InletAndOutlet = () => {
                                       legend: { position: "top" },
                                       title: {
                                         display: true,
-                                        text: `${chartObj.meter} Total  Over Time`,
+                                        text: `${chartObj.meter} Total Over Time`,
                                         font: { size: 16, weight: "bold" },
                                         color: "#236a80",
                                       },
