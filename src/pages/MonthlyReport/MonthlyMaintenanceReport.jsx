@@ -304,7 +304,7 @@ const MonthlyMaintenanceReport = () => {
       for (const [dayStr, fileEntries] of pendingDays) {
         const dayNum = parseInt(dayStr, 10);
 
-        for (const type of ["MPM", "EPM"]) {
+        for (const type of ["MPM", "EPM", "GENERAL"]) {
           const ofType = fileEntries.filter((fe) => fe.type === type);
           if (!ofType.length) continue;
 
@@ -795,29 +795,6 @@ const MonthlyMaintenanceReport = () => {
       doc.text(`Month: ${monthNames[month]} ${year}`, 15, cursorY);
       cursorY += 10;
 
-      /* ================= TABLE (COMMENTS ONLY) ================= */
-      doc.autoTable({
-        startY: cursorY,
-        theme: "grid",
-        head: [["Date", "Comment"]],
-        body: rows.map((r) => [r.dateStr, r.comment || "-"]),
-        headStyles: {
-          fillColor: "#236a80",
-          textColor: "#fff",
-          fontStyle: "bold",
-        },
-        styles: {
-          fontSize: 9,
-          cellPadding: 4,
-        },
-        columnStyles: {
-          0: { cellWidth: 30 },
-          1: { cellWidth: pageWidth - 60 },
-        },
-      });
-
-      cursorY = doc.lastAutoTable.finalY + 10;
-
       /* ================= PHOTO ANNEXURE ================= */
       doc.setFontSize(13);
       doc.setFont("helvetica", "bold");
@@ -831,6 +808,8 @@ const MonthlyMaintenanceReport = () => {
       for (const row of rows) {
         const mpm = row.photos.filter((p) => p.type === "MPM");
         const epm = row.photos.filter((p) => p.type === "EPM");
+        const general = row.photos.filter((p) => p.type === "GENERAL");
+
 
         if (!mpm.length && !epm.length) continue;
 
@@ -839,10 +818,29 @@ const MonthlyMaintenanceReport = () => {
           cursorY = 20;
         }
 
+        // Date
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
+        doc.setTextColor("#000");
         doc.text(`Date: ${row.dateStr}`, 15, cursorY);
         cursorY += 6;
+
+        // Comment (wrapped)
+        if (row.comment) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+
+          const wrappedComment = doc.splitTextToSize(
+            row.comment,
+            pageWidth - 30
+          );
+
+          doc.text("Comment:", 15, cursorY);
+          cursorY += 5;
+
+          doc.text(wrappedComment, 20, cursorY);
+          cursorY += wrappedComment.length * 5 + 4;
+        }
 
         const renderBlock = async (title, images, color) => {
           if (!images.length) return;
@@ -903,6 +901,8 @@ const MonthlyMaintenanceReport = () => {
 
         await renderBlock("MPM Photos", mpm, [35, 106, 128]);
         await renderBlock("EPM Photos", epm, [231, 76, 60]);
+        await renderBlock("GENERAL Photos", general, [44, 62, 80]);
+
 
         cursorY += 4;
       }
@@ -1269,6 +1269,8 @@ const MonthlyMaintenanceReport = () => {
                               const epmCount = photos.filter(
                                 (p) => p.type === "EPM"
                               ).length;
+                              const generalCount = photos.filter((p) => p.type === "GENERAL").length;
+
 
                               return (
                                 <tr
@@ -1397,8 +1399,10 @@ const MonthlyMaintenanceReport = () => {
                                                   borderRadius: "0 4px 0 0",
                                                   backgroundColor:
                                                     type === "MPM"
-                                                      ? "#236a80"
-                                                      : "#e74c3c",
+    ? "#236a80"
+    : type === "EPM"
+    ? "#e74c3c"
+    : "#2c3e50",
                                                   color: "#fff",
                                                 }}
                                               >
@@ -1522,6 +1526,37 @@ const MonthlyMaintenanceReport = () => {
                                               disabled={loading || saving}
                                             />
                                           </label>
+                                          {/* Add GENERAL */}
+<label
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "5px 10px",
+    borderRadius: "5px",
+    border: "1px dashed #2c3e50",
+    color: "#2c3e50",
+    fontSize: "12px",
+    fontWeight: 500,
+    cursor: "pointer",
+    background: "#f4f6f8",
+  }}
+>
+  + Add General Photos
+  <input
+    type="file"
+    accept="image/*"
+    capture="environment"
+    multiple
+    onChange={(e) => {
+      handlePhotoSelect(dayStr, e.target.files, "GENERAL");
+      e.target.value = "";
+    }}
+    style={{ display: "none" }}
+    disabled={loading || saving}
+  />
+</label>
+
                                         </div>
                                       )}
                                     </div>

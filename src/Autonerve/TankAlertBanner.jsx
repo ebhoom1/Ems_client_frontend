@@ -4,8 +4,6 @@ import { useTankAlert } from "../provider/TankAlertProvider";
 
 const bandTextMap = {
   critical_low: "Tank is critically low (< 5%). Immediate action required.",
-  low_25: "Tank dropped around 25%. Please plan refilling.",
-  high_85: "Tank is above 85%. Tank is almost full.",
   critical_high_95: "Tank is at / above 95%. Overflow risk!",
 };
 

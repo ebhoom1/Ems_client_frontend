@@ -560,6 +560,12 @@ function DashboardSam() {
     >
       Chemical Details
     </Button>
+    <Button
+      style={buttonStyleSecondary}
+      onClick={() => handleModalClick("/chemical-consumption")}
+    >
+      Chemical Consumption
+    </Button>
 
     <Button
       style={buttonStyleSecondary}
