@@ -811,7 +811,9 @@ const MonthlyMaintenanceReport = () => {
         const general = row.photos.filter((p) => p.type === "GENERAL");
 
 
-        if (!mpm.length && !epm.length) continue;
+        // if (!mpm.length && !epm.length) continue;
+        if (!mpm.length && !epm.length && !general.length) continue;
+
 
         if (cursorY + 25 > pageHeight) {
           doc.addPage();
