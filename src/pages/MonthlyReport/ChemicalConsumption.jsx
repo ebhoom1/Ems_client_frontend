@@ -154,84 +154,102 @@ const ChemicalConsumption = () => {
   };
 
   const handleDownloadPDF = () => {
-  if (!targetUser) {
-    Swal.fire("Select Site", "Please select site", "warning");
-    return;
-  }
+    if (!targetUser) {
+      Swal.fire("Select Site", "Please select site", "warning");
+      return;
+    }
 
-  const doc = new jsPDF("p", "mm", "a4");
+    const doc = new jsPDF("p", "mm", "a4");
 
-  /* ===== HEADER ===== */
-  doc.setFillColor(35, 106, 128); // THEME
-  doc.rect(0, 0, 210, 30, "F");
+    /* ===== HEADER ===== */
+    doc.setFillColor(35, 106, 128); // THEME
+    doc.rect(0, 0, 210, 30, "F");
 
-  // ✅ GENEX LOGO (LEFT SIDE)
-  doc.addImage(
-    genexlogo,
-    "PNG",
-    12,   // X position
-    6,    // Y position
-    18,   // WIDTH (increase to make bigger)
-    18    // HEIGHT (increase to make bigger)
-  );
+    // ✅ GENEX LOGO (LEFT SIDE)
+    doc.addImage(
+      genexlogo,
+      "PNG",
+      12, // X position
+      6, // Y position
+      18, // WIDTH (increase to make bigger)
+      18 // HEIGHT (increase to make bigger)
+    );
 
-  // ✅ TITLE
-  doc.setTextColor("#fff");
-  doc.setFontSize(14);
-  doc.text("CHEMICAL CONSUMPTION REPORT", 105, 18, { align: "center" });
+    // ✅ TITLE
+    doc.setTextColor("#fff");
+    doc.setFontSize(14);
+    doc.text("CHEMICAL CONSUMPTION REPORT", 105, 18, { align: "center" });
 
-  // ✅ SUB HEADER
-  doc.setFontSize(10);
-  doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 14, 26);
-  doc.text(`Month: ${monthNames[month]} ${year}`, 160, 26);
+    // ✅ SUB HEADER
+    doc.setFontSize(10);
+    doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 14, 26);
+    doc.text(`Month: ${monthNames[month]} ${year}`, 160, 26);
 
-  /* ===== TABLE ===== */
-  const head = [
-    [
-      { content: "SL.NO", rowSpan: 3 },
-      { content: "DATE", rowSpan: 3 },
-      { content: "Chemical Consumption", colSpan: 7, styles: { halign: "center" } },
-    ],
-    ["NaOCl", "PE", "PAC", "NaOH", "NaCl", "Biosol", "HCL / CITRIC"],
-    ["Kg", "gm", "gm", "Kg", "Kg", "gm", "Kg"],
-  ];
+    /* ===== TABLE ===== */
+    const head = [
+      [
+        { content: "SL.NO", rowSpan: 3 },
+        { content: "DATE", rowSpan: 3 },
+        {
+          content: "Chemical Consumption",
+          colSpan: 7,
+          styles: { halign: "center" },
+        },
+      ],
+      ["NaOCl", "PE", "PAC", "NaOH", "NaCl", "Biosol", "HCL / CITRIC"],
+      ["Kg", "gm", "gm", "Kg", "Kg", "gm", "Kg"],
+    ];
 
-  const body = rows.map((r, i) => [
-    i + 1,
-    r.date,
-    r.NaOCl || "",
-    r.PE || "",
-    r.PAC || "",
-    r.NaOH || "",
-    r.NaCl || "",
-    r.Biosol || "",
-    r.HCL_CITRIC || "",
-  ]);
+    const body = rows.map((r, i) => [
+      i + 1,
+      r.date,
+      r.NaOCl || "",
+      r.PE || "",
+      r.PAC || "",
+      r.NaOH || "",
+      r.NaCl || "",
+      r.Biosol || "",
+      r.HCL_CITRIC || "",
+    ]);
 
-  doc.autoTable({
-    startY: 36,
-    head,
-    body,
-    theme: "grid",
-    styles: { fontSize: 9, halign: "center" },
-    headStyles: {
-      fillColor: [35, 106, 128],
-      textColor: 255,
-      fontStyle: "bold",
-    },
-    margin: { left: 10, right: 10 },
-  });
+    doc.autoTable({
+      startY: 36,
+      head,
+      body,
+      theme: "grid",
+      styles: { fontSize: 9, halign: "center" },
+      headStyles: {
+        fillColor: [35, 106, 128],
+        textColor: 255,
+        fontStyle: "bold",
+      },
+      margin: { left: 10, right: 10 },
+    });
 
-  /* ===== FOOTER ===== */
-  doc.setFontSize(9);
-  doc.setTextColor(120);
-  doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 290);
+    /* ===== FOOTER ===== */
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 290);
 
-  doc.save(
-    `Chemical_Consumption_${targetUser.userName}_${monthNames[month]}_${year}.pdf`
-  );
-};
+    doc.save(
+      `Chemical_Consumption_${targetUser.userName}_${monthNames[month]}_${year}.pdf`
+    );
+  };
 
+  const handleEnterVertical = (e, rowIndex, colIndex) => {
+    if (e.key !== "Enter") return;
+
+    e.preventDefault();
+
+    const nextRow = rowIndex + 1;
+
+    if (nextRow < rows.length) {
+      const nextInput = document.querySelector(
+        `[data-row="${nextRow}"][data-col="${colIndex}"]`
+      );
+      if (nextInput) nextInput.focus();
+    }
+  };
 
   /* ---------- UI ---------- */
   return (
@@ -345,12 +363,15 @@ const ChemicalConsumption = () => {
                 <tr key={i}>
                   <td>{i + 1}</td>
                   <td>{r.date}</td>
-                  {CHEMICAL_KEYS.map((c) => (
+                  {CHEMICAL_KEYS.map((c, colIndex) => (
                     <td key={c}>
                       <input
                         className="form-control"
                         value={r[c]}
+                        data-row={i}
+                        data-col={colIndex}
                         onChange={(e) => handleChange(i, c, e.target.value)}
+                        onKeyDown={(e) => handleEnterVertical(e, i, colIndex)}
                       />
                     </td>
                   ))}
