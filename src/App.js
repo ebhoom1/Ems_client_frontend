@@ -127,6 +127,7 @@ import ChemicalConsumption from "./pages/MonthlyReport/ChemicalConsumption";
 import CriticalSpareAvailability from "./pages/MonthlyReport/CriticalSpareAvailability";
 import PowerConsumption from "./pages/MonthlyReport/PowerConsumption";
 import WaterBalanceReport from "./pages/MonthlyReport/WaterBalanceReport";
+import PlantOperatingReport from "./pages/MonthlyReport/PlantOperatingReport";
 import { getSocket } from "./Autonerve/socketService";
 
 
@@ -479,6 +480,7 @@ function App() {
                       <Route path="/chemical-consumption" element={<ChemicalConsumption />} />
                       <Route path="/power-consumption" element={<PowerConsumption />} />
                       <Route path="/water-balance" element={<WaterBalanceReport />} />
+                      <Route path="/plantoperating" element={<PlantOperatingReport />} />
                     </Route>
                   )}
 

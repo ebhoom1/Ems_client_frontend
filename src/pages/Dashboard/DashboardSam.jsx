@@ -14,16 +14,15 @@ function DashboardSam() {
   const validUser = userData?.validUserOne || {};
   const navigate = useNavigate(); // Hook for navigation
   console.log("userType:", userType);
-  const [reportCategory, setReportCategory] = useState(null); 
-
+  const [reportCategory, setReportCategory] = useState(null);
 
   // --- State for the Modal ---
   const [showReportModal, setShowReportModal] = useState(false);
   // const handleCloseReportModal = () => setShowReportModal(false);
   const handleCloseReportModal = () => {
-  setShowReportModal(false);
-  setReportCategory(null);
-};
+    setShowReportModal(false);
+    setReportCategory(null);
+  };
 
   const handleShowReportModal = (e) => {
     e.preventDefault(); // Prevent the <a> tag's default behavior
@@ -393,6 +392,14 @@ function DashboardSam() {
                             <span className="title">Download</span>
                           </a>
                         </li>
+                        <li className="list active text-center">
+                          <a
+                            href="/autonerve"
+                            style={{ textDecoration: "none", color: "#ffffff" }}
+                          >
+                            <span className="title">AutoNerve</span>
+                          </a>
+                        </li>
                         {/* --- MODIFIED LINK --- */}
                         <li className="list active text-center">
                           <a
@@ -483,123 +490,127 @@ function DashboardSam() {
           <Modal.Title style={modalTitleStyle}>Select Report Type</Modal.Title>
         </Modal.Header>
 
-       <Modal.Body style={modalBodyStyle}>
-  {/* STEP 1: CATEGORY SELECTION */}
-  {!reportCategory && (
-    <div className="d-grid gap-3">
-      <Button
-        style={buttonStylePrimary}
-        onClick={() => setReportCategory("general")}
-      >
-        General Report
-      </Button>
+        <Modal.Body style={modalBodyStyle}>
+          {/* STEP 1: CATEGORY SELECTION */}
+          {!reportCategory && (
+            <div className="d-grid gap-3">
+              <Button
+                style={buttonStylePrimary}
+                onClick={() => setReportCategory("general")}
+              >
+                General Report
+              </Button>
 
-      <Button
-        style={buttonStyleSecondary}
-        onClick={() => setReportCategory("additional")}
-      >
-        Additional Report
-      </Button>
-    </div>
-  )}
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => setReportCategory("additional")}
+              >
+                Additional Report
+              </Button>
+            </div>
+          )}
 
-  {/* STEP 2: GENERAL REPORT BUTTONS */}
-  {reportCategory === "general" && (
-    <div className="d-grid gap-3">
-      <Button
-        style={buttonStylePrimary}
-        onClick={() => handleModalClick("/monthly-report")}
-      >
-        View pH &amp; MLSS Reading
-      </Button>
+          {/* STEP 2: GENERAL REPORT BUTTONS */}
+          {reportCategory === "general" && (
+            <div className="d-grid gap-3">
+              <Button
+                style={buttonStylePrimary}
+                onClick={() => handleModalClick("/monthly-report")}
+              >
+                View pH &amp; MLSS Reading
+              </Button>
 
-      <Button
-        style={buttonStyleSecondary}
-        onClick={() => handleModalClick("/inlet-outlet")}
-      >
-        View Inlet &amp; Outlet Reading
-      </Button>
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => handleModalClick("/inlet-outlet")}
+              >
+                View Inlet &amp; Outlet Reading
+              </Button>
 
-      <Button
-        style={buttonStyleSecondary}
-        onClick={() => handleModalClick("/monthly-maintenance")}
-      >
-        View Monthly Maintenance Activities
-      </Button>
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => handleModalClick("/monthly-maintenance")}
+              >
+                View Monthly Maintenance Activities
+              </Button>
 
-      <Button
-        style={buttonStyleSecondary}
-        onClick={() => handleModalClick("/monthly-treatedwaterclarity")}
-      >
-        View Treated Water Clarity
-      </Button>
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => handleModalClick("/monthly-treatedwaterclarity")}
+              >
+                View Treated Water Clarity
+              </Button>
 
-      <Button
-        style={buttonStyleSecondary}
-        onClick={() => handleModalClick("/monthly-equipmentstatus")}
-      >
-        View Equipments Status
-      </Button>
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => handleModalClick("/monthly-equipmentstatus")}
+              >
+                View Equipments Status
+              </Button>
 
-      <Button
-        variant="link"
-        onClick={() => setReportCategory(null)}
-        style={{ textDecoration: "none" }}
-      >
-        ← Back
-      </Button>
-    </div>
-  )}
+              <Button
+                variant="link"
+                onClick={() => setReportCategory(null)}
+                style={{ textDecoration: "none" }}
+              >
+                ← Back
+              </Button>
+            </div>
+          )}
 
- {/* STEP 3: ADDITIONAL REPORT LIST */}
-{reportCategory === "additional" && (
-  <div className="d-grid gap-3">
-    <Button
-      style={buttonStylePrimary}
-      onClick={() => handleModalClick("/chemical-details")}
-    >
-      Chemical Details
-    </Button>
-    <Button
-      style={buttonStyleSecondary}
-      onClick={() => handleModalClick("/chemical-consumption")}
-    >
-      Chemical Consumption
-    </Button>
+          {/* STEP 3: ADDITIONAL REPORT LIST */}
+          {reportCategory === "additional" && (
+            <div className="d-grid gap-3">
+              <Button
+                style={buttonStylePrimary}
+                onClick={() => handleModalClick("/chemical-details")}
+              >
+                Chemical Details
+              </Button>
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => handleModalClick("/chemical-consumption")}
+              >
+                Chemical Consumption
+              </Button>
 
-    <Button
-      style={buttonStyleSecondary}
-      onClick={() => handleModalClick("/power-consumption")}
-    >
-      Power Consumption
-    </Button>
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => handleModalClick("/power-consumption")}
+              >
+                Power Consumption
+              </Button>
 
-    <Button
-      style={buttonStyleSecondary}
-      onClick={() => handleModalClick("/water-balance")}
-    >
-      Water Balance
-    </Button>
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => handleModalClick("/water-balance")}
+              >
+                Water Balance
+              </Button>
 
-    <Button
-      style={buttonStyleSecondary}
-      onClick={() => handleModalClick("/critical-spare-availability")}
-    >
-      Critical Spare Availability
-    </Button>
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => handleModalClick("/critical-spare-availability")}
+              >
+                Critical Spare Availability
+              </Button>
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => handleModalClick("/plantoperating")}
+              >
+                Plant Operating Report
+              </Button>
 
-    <Button
-      variant="link"
-      onClick={() => setReportCategory(null)}
-      style={{ textDecoration: "none" }}
-    >
-      ← Back
-    </Button>
-  </div>
-)}
-
-</Modal.Body>
-
+              <Button
+                variant="link"
+                onClick={() => setReportCategory(null)}
+                style={{ textDecoration: "none" }}
+              >
+                ← Back
+              </Button>
+            </div>
+          )}
+        </Modal.Body>
 
         <Modal.Footer>
           <Button style={footerCloseButton} onClick={handleCloseReportModal}>
