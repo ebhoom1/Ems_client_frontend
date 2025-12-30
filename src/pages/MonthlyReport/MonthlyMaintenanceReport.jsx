@@ -810,10 +810,8 @@ const MonthlyMaintenanceReport = () => {
         const epm = row.photos.filter((p) => p.type === "EPM");
         const general = row.photos.filter((p) => p.type === "GENERAL");
 
-
         // if (!mpm.length && !epm.length) continue;
         if (!mpm.length && !epm.length && !general.length) continue;
-
 
         if (cursorY + 25 > pageHeight) {
           doc.addPage();
@@ -904,7 +902,6 @@ const MonthlyMaintenanceReport = () => {
         await renderBlock("MPM Photos", mpm, [35, 106, 128]);
         await renderBlock("EPM Photos", epm, [231, 76, 60]);
         await renderBlock("GENERAL Photos", general, [44, 62, 80]);
-
 
         cursorY += 4;
       }
@@ -1271,8 +1268,9 @@ const MonthlyMaintenanceReport = () => {
                               const epmCount = photos.filter(
                                 (p) => p.type === "EPM"
                               ).length;
-                              const generalCount = photos.filter((p) => p.type === "GENERAL").length;
-
+                              const generalCount = photos.filter(
+                                (p) => p.type === "GENERAL"
+                              ).length;
 
                               return (
                                 <tr
@@ -1401,10 +1399,10 @@ const MonthlyMaintenanceReport = () => {
                                                   borderRadius: "0 4px 0 0",
                                                   backgroundColor:
                                                     type === "MPM"
-    ? "#236a80"
-    : type === "EPM"
-    ? "#e74c3c"
-    : "#2c3e50",
+                                                      ? "#236a80"
+                                                      : type === "EPM"
+                                                      ? "#e74c3c"
+                                                      : "#2c3e50",
                                                   color: "#fff",
                                                 }}
                                               >
@@ -1529,36 +1527,39 @@ const MonthlyMaintenanceReport = () => {
                                             />
                                           </label>
                                           {/* Add GENERAL */}
-<label
-  style={{
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "5px 10px",
-    borderRadius: "5px",
-    border: "1px dashed #2c3e50",
-    color: "#2c3e50",
-    fontSize: "12px",
-    fontWeight: 500,
-    cursor: "pointer",
-    background: "#f4f6f8",
-  }}
->
-  + Add General Photos
-  <input
-    type="file"
-    accept="image/*"
-    capture="environment"
-    multiple
-    onChange={(e) => {
-      handlePhotoSelect(dayStr, e.target.files, "GENERAL");
-      e.target.value = "";
-    }}
-    style={{ display: "none" }}
-    disabled={loading || saving}
-  />
-</label>
-
+                                          <label
+                                            style={{
+                                              display: "inline-flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                              padding: "5px 10px",
+                                              borderRadius: "5px",
+                                              border: "1px dashed #2c3e50",
+                                              color: "#2c3e50",
+                                              fontSize: "12px",
+                                              fontWeight: 500,
+                                              cursor: "pointer",
+                                              background: "#f4f6f8",
+                                            }}
+                                          >
+                                            + Add General Photos
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              capture="environment"
+                                              multiple
+                                              onChange={(e) => {
+                                                handlePhotoSelect(
+                                                  dayStr,
+                                                  e.target.files,
+                                                  "GENERAL"
+                                                );
+                                                e.target.value = "";
+                                              }}
+                                              style={{ display: "none" }}
+                                              disabled={loading || saving}
+                                            />
+                                          </label>
                                         </div>
                                       )}
                                     </div>

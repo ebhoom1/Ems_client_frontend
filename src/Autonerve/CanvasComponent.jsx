@@ -287,9 +287,13 @@ function CanvasComponent({
             const newData = {
               ...node.data,
               realtimeValues: { ...payload.pumpData },
-              isOn: status === "ON" || status === 1,
+              isOn:
+                typeof status !== "undefined"
+                  ? status === "ON" || status === 1
+                  : node.data.isOn,
               isPending: false,
             };
+
             if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
               return { ...node, data: newData };
             }
@@ -371,62 +375,66 @@ function CanvasComponent({
 
       // ✅ 1. Update tank nodes with tank percentages
       // ✅ 1. Update tank nodes with tank percentages (only if changed)
-if (payload.tanks && typeof payload.tanks === "object") {
-  const {
-    equalization_percentage,
-    aeration_percentage,
-    sludge_percentage,
-    decant_percentage,
-    treated_water_percentage,
-  } = payload.tanks;
+      if (payload.tanks && typeof payload.tanks === "object") {
+        const {
+          equalization_percentage,
+          aeration_percentage,
+          sludge_percentage,
+          decant_percentage,
+          treated_water_percentage,
+        } = payload.tanks;
 
-  setNodes((nds) =>
-    nds.map((node) => {
-      if (node.type !== "tankNode") return node;
-      if (String(node.data?.productId) !== incomingProductId) return node;
+        setNodes((nds) =>
+          nds.map((node) => {
+            if (node.type !== "tankNode") return node;
+            if (String(node.data?.productId) !== incomingProductId) return node;
 
-      const tankName = (node.data?.tankName || node.data?.name || "")
-        .toLowerCase();
+            const tankName = (
+              node.data?.tankName ||
+              node.data?.name ||
+              ""
+            ).toLowerCase();
 
-      // pick the incoming value for this tank
-      let incoming = undefined;
-      if (tankName.includes("equal")) incoming = equalization_percentage;
-      else if (tankName.includes("aerat")) incoming = aeration_percentage;
-      else if (tankName.includes("sludge")) incoming = sludge_percentage;
-      else if (tankName.includes("decant")) incoming = decant_percentage;
-      else if (tankName.includes("treated")) incoming = treated_water_percentage;
+            // pick the incoming value for this tank
+            let incoming = undefined;
+            if (tankName.includes("equal")) incoming = equalization_percentage;
+            else if (tankName.includes("aerat")) incoming = aeration_percentage;
+            else if (tankName.includes("sludge")) incoming = sludge_percentage;
+            else if (tankName.includes("decant")) incoming = decant_percentage;
+            else if (tankName.includes("treated"))
+              incoming = treated_water_percentage;
 
-      // only accept real numbers in [0, 100]
-      if (
-        typeof incoming !== "number" ||
-        Number.isNaN(incoming) ||
-        incoming < 0 ||
-        incoming > 100
-      ) {
-        return node; // ignore bad/missing data; keep prior value
+            // only accept real numbers in [0, 100]
+            if (
+              typeof incoming !== "number" ||
+              Number.isNaN(incoming) ||
+              incoming < 0 ||
+              incoming > 100
+            ) {
+              return node; // ignore bad/missing data; keep prior value
+            }
+
+            // optional: normalize to 2 decimals to avoid micro-jitter
+            const nextPct = Math.round(incoming * 100) / 100;
+            const prevPct =
+              typeof node.data?.percentage === "number"
+                ? Math.round(node.data.percentage * 100) / 100
+                : undefined;
+
+            // update only if the value actually changed
+            if (prevPct === nextPct) return node;
+
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                percentage: nextPct,
+                lastUpdated: new Date().toISOString(),
+              },
+            };
+          })
+        );
       }
-
-      // optional: normalize to 2 decimals to avoid micro-jitter
-      const nextPct = Math.round(incoming * 100) / 100;
-      const prevPct = typeof node.data?.percentage === "number"
-        ? Math.round(node.data.percentage * 100) / 100
-        : undefined;
-
-      // update only if the value actually changed
-      if (prevPct === nextPct) return node;
-
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          percentage: nextPct,
-          lastUpdated: new Date().toISOString(),
-        },
-      };
-    })
-  );
-}
-
 
       // ✅ 2. Normal pump acknowledgment handling
       if (Array.isArray(payload.pumps)) {
@@ -457,7 +465,11 @@ if (payload.tanks && typeof payload.tanks === "object") {
             const newData = {
               ...node.data,
               realtimeValues: updatedPump,
-              isOn: updatedPump.status === 1 || updatedPump.status === "ON",
+              // isOn: updatedPump.status === 1 || updatedPump.status === "ON",
+              isOn:
+                typeof updatedPump.status !== "undefined"
+                  ? updatedPump.status === 1 || updatedPump.status === "ON"
+                  : node.data.isOn,
               isPending: false,
             };
             if (JSON.stringify(node.data) !== JSON.stringify(newData)) {

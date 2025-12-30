@@ -14,7 +14,7 @@ function PumpBlowerNode({
   const [nodeName, setNodeName] = useState(data.name);
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
-
+console.log("data in pumpblowernode:", data);
   // 🔹 Persist last values across renders
   const lastValuesRef = useRef({
     rpm: 0,
