@@ -1,0 +1,31 @@
+<svg width="260" height="360" viewBox="0 0 260 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer vessel -->
+  <rect x="60" y="40" width="140" height="260" rx="70" fill="#e8f3f6" stroke="#236a80" stroke-width="6"></rect>
+
+  <!-- Top dome -->
+  <ellipse cx="130" cy="40" rx="70" ry="25" fill="#e8f3f6" stroke="#236a80" stroke-width="6"></ellipse>
+
+  <!-- Bottom dome -->
+  <ellipse cx="130" cy="300" rx="70" ry="25" fill="#e8f3f6" stroke="#236a80" stroke-width="6"></ellipse>
+
+  <!-- Sand layers (subtle lines) -->
+  <line x1="70" y1="150" x2="190" y2="150" stroke="#236a80" stroke-width="3" opacity="0.3"></line>
+  <line x1="70" y1="200" x2="190" y2="200" stroke="#236a80" stroke-width="3" opacity="0.3"></line>
+  <line x1="70" y1="250" x2="190" y2="250" stroke="#236a80" stroke-width="3" opacity="0.3"></line>
+
+  <!-- Manhole circle -->
+  <circle cx="130" cy="120" r="18" fill="white" stroke="#236a80" stroke-width="5"></circle>
+
+  <!-- Inlet nozzle -->
+  <rect x="20" y="160" width="70" height="20" rx="5" fill="#236a80"></rect>
+  <circle cx="20" cy="170" r="12" fill="#236a80"></circle>
+
+  <!-- Outlet nozzle -->
+  <rect x="170" y="160" width="70" height="20" rx="5" fill="#236a80"></rect>
+  <circle cx="240" cy="170" r="12" fill="#236a80"></circle>
+
+  <!-- Text label -->
+  <text x="130" y="340" text-anchor="middle" font-size="22" fill="#236a80" font-family="Arial" font-weight="600">
+    PRESSURE SAND FILTER
+  </text>
+</svg>

@@ -13,6 +13,7 @@ import airblower from '../assests/images/wheel.svg';
 import pumpsingle from '../assests/images/pumpsingle.svg';
 import energymeter from '../assests/images/energymeter.svg';
 import expo from '../assests/images/expo.svg';
+import psfSVG from '../assests/images/psf.svg';
 import './Iconbar.css';
 
 const defaultShapes = [
@@ -26,6 +27,9 @@ const defaultShapes = [
   { id: 'pumpsingle', label: 'Pump Single', isSVG: true, svgPath: pumpsingle, isPump: true },
   { id: 'energymeter', label: 'Energy Meter', isSVG: true, svgPath: energymeter },
   { id: 'expo', label: 'Expo', isSVG: true, svgPath: expo },
+  { id: "psf", label: "Pressure Sand Filter", isSVG: true, svgPath: psfSVG },
+
+
 ];
 
 function Iconbar() {

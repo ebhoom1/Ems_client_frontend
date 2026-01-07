@@ -406,200 +406,444 @@ const TreatedWaterClarityReport = () => {
     toast.success("XLSX downloaded with images!");
   };
 
-  const handleDownloadPDF = async () => {
-    if (!targetUser.userId) {
-      toast.error("Select a user/site first.");
-      return;
-    }
+  // const handleDownloadPDF = async () => {
+  //   if (!targetUser.userId) {
+  //     toast.error("Select a user/site first.");
+  //     return;
+  //   }
 
-    // Build rows and keep ONLY days that have photos
-    const allRows = buildExportRows(); // [{ dateStr, photos: [...] }]
-    const rows = allRows.filter((r) => (r.photos || []).length > 0);
-    if (!rows.length) {
-      toast.info("No photos to export for this month.");
-      return;
-    }
+  //   // Build rows and keep ONLY days that have photos
+  //   const allRows = buildExportRows(); // [{ dateStr, photos: [...] }]
+  //   const rows = allRows.filter((r) => (r.photos || []).length > 0);
+  //   if (!rows.length) {
+  //     toast.info("No photos to export for this month.");
+  //     return;
+  //   }
 
-    try {
-      toast.info("Generating PDF...");
+  //   try {
+  //     toast.info("Generating PDF...");
 
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
+  //     const doc = new jsPDF();
+  //     const pageWidth = doc.internal.pageSize.getWidth();
 
-      // --- Header with logo & title ---
-      const logoImg = new Image();
-      logoImg.src = genexlogo;
-      await new Promise((resolve) => {
-        logoImg.onload = resolve;
-        logoImg.onerror = resolve;
-      });
+  //     // --- Header with logo & title ---
+  //     const logoImg = new Image();
+  //     logoImg.src = genexlogo;
+  //     await new Promise((resolve) => {
+  //       logoImg.onload = resolve;
+  //       logoImg.onerror = resolve;
+  //     });
 
-      // Top blue bar
-      doc.setFillColor("#236a80");
-      doc.rect(0, 0, pageWidth, 35, "F");
-      doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
+  //     // Top blue bar
+  //     doc.setFillColor("#236a80");
+  //     doc.rect(0, 0, pageWidth, 35, "F");
+  //     doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
 
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor("#FFFFFF");
-      doc.setFontSize(14);
-      doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2 + 10, 12, {
-        align: "center",
-      });
+  //     doc.setFont("helvetica", "bold");
+  //     doc.setTextColor("#FFFFFF");
+  //     doc.setFontSize(14);
+  //     doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2 + 10, 12, {
+  //       align: "center",
+  //     });
 
-      // 🔹 Wrapped address in two lines & moved slightly down
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.text(
-        "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony,",
-        110,
-        18,
-        { align: "center" }
-      );
-      doc.text(
-        "Shettihalli Post, Jalahalli West, Bengaluru, Karnataka 560015",
-        110,
-        22,
-        { align: "center" }
-      );
-      doc.text("Phone: +91-9663044156", 110, 26, { align: "center" });
+  //     // 🔹 Wrapped address in two lines & moved slightly down
+  //     doc.setFont("helvetica", "normal");
+  //     doc.setFontSize(8);
+  //     doc.text(
+  //       "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony,",
+  //       110,
+  //       18,
+  //       { align: "center" }
+  //     );
+  //     doc.text(
+  //       "Shettihalli Post, Jalahalli West, Bengaluru, Karnataka 560015",
+  //       110,
+  //       22,
+  //       { align: "center" }
+  //     );
+  //     doc.text("Phone: +91-9663044156", 110, 26, { align: "center" });
 
-      doc.setFontSize(9);
-      doc.text("Treated Water Clarity Report", pageWidth / 2 + 10, 31, {
-        align: "center",
-      });
+  //     doc.setFontSize(9);
+  //     doc.text("Treated Water Clarity Report", pageWidth / 2 + 10, 31, {
+  //       align: "center",
+  //     });
 
-      const monthNames = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-      ];
+  //     const monthNames = [
+  //       "January",
+  //       "February",
+  //       "March",
+  //       "April",
+  //       "May",
+  //       "June",
+  //       "July",
+  //       "August",
+  //       "September",
+  //       "October",
+  //       "November",
+  //       "December",
+  //     ];
 
-      doc.setTextColor("#000000");
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
-      doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
+  //     doc.setTextColor("#000000");
+  //     doc.setFontSize(11);
+  //     doc.setFont("helvetica", "bold");
+  //     doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
+  //     doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
 
-      // --- Prepare one row per DATE, with all images in that row ---
-      const rowsWithImages = rows.map((r) => ({
-        dateStr: r.dateStr,
-        photoUrls: r.photos || [],
-        _images: [],
-      }));
+  //     // --- Prepare one row per DATE, with all images in that row ---
+  //     const rowsWithImages = rows.map((r) => ({
+  //       dateStr: r.dateStr,
+  //       photoUrls: r.photos || [],
+  //       _images: [],
+  //     }));
 
-      // Pre-load all images
-      await Promise.all(
-        rowsWithImages.flatMap((row) =>
-          row.photoUrls.map(
-            (url) =>
-              new Promise((resolve) => {
-                const img = new Image();
-                img.crossOrigin = "Anonymous";
-                img.src = url;
+  //     // Pre-load all images
+  //     await Promise.all(
+  //       rowsWithImages.flatMap((row) =>
+  //         row.photoUrls.map(
+  //           (url) =>
+  //             new Promise((resolve) => {
+  //               const img = new Image();
+  //               img.crossOrigin = "Anonymous";
+  //               img.src = url;
 
-                img.onload = () => {
-                  row._images.push(img);
-                  resolve();
-                };
-                img.onerror = () => {
-                  resolve();
-                };
-              })
-          )
+  //               img.onload = () => {
+  //                 const lower = (url || "").toLowerCase();
+  //                 const fmt = lower.includes(".png") ? "PNG" : "JPEG";
+  //                 row._images.push({ img, fmt });
+  //                 resolve();
+  //               };
+  //               img.onerror = () => {
+  //                 resolve();
+  //               };
+  //             })
+  //         )
+  //       )
+  //     );
+
+  //     const tableBody = rowsWithImages.map((r) => ({
+  //       date: r.dateStr,
+  //       photos: "",
+  //       _images: r._images,
+  //     }));
+
+  //     doc.autoTable({
+  //       startY: 60,
+  //       columns: [
+  //         { header: "Date", dataKey: "date" },
+  //         { header: "Photos", dataKey: "photos" },
+  //       ],
+  //       body: tableBody,
+  //       theme: "grid",
+
+  //       // 🔹 Smaller header row + clear white grid line between Date / Photos
+  //       headStyles: {
+  //         fillColor: "#236a80",
+  //         minCellHeight: 16, // header height reduced
+  //         lineWidth: 0.3,
+  //         lineColor: [120, 120, 120], // white vertical separator
+  //       },
+
+  //       styles: {
+  //         fontSize: 8,
+  //         cellPadding: 3,
+  //         minCellHeight: 100, // big body rows for large photos
+  //         lineWidth: 0.1,
+  //         lineColor: [120, 120, 120],
+  //       },
+
+  //       columnStyles: {
+  //         date: { cellWidth: 30 },
+  //         photos: { cellWidth: pageWidth - 30 - 20 },
+  //       },
+
+  //       didDrawCell: (data) => {
+  //         // Draw all photos horizontally in Photos cell
+  //         if (data.section === "body" && data.column.dataKey === "photos") {
+  //           const row = data.row.raw;
+  //           const images = row._images || [];
+  //           if (!images.length) return;
+
+  //           const cellWidth = data.cell.width;
+  //           const cellHeight = data.cell.height;
+
+  //           const padding = 2;
+  //           const gap = 3;
+  //           const count = images.length;
+
+  //           const availWidth = cellWidth - padding * 2;
+  //           const maxHeight = cellHeight - padding * 2;
+
+  //           const slotWidth =
+  //             count > 0 ? (availWidth - gap * (count - 1)) / count : availWidth;
+
+  //           images.forEach((img, index) => {
+  //             const size = Math.min(slotWidth, maxHeight); // 🔹 SAME width & height
+
+  //             const xSlotStart =
+  //               data.cell.x + padding + index * (slotWidth + gap);
+  //             const ySlotStart = data.cell.y + padding;
+
+  //             const x = xSlotStart + (slotWidth - size) / 2;
+  //             const y = ySlotStart + (maxHeight - size) / 2;
+
+  //             doc.addImage(img, "PNG", x, y, size, size);
+  //           });
+  //         }
+  //       },
+  //     });
+    
+
+  //     doc.save(
+  //       `${targetUser.siteName}_${monthNames[month]}_${year}_TreatedWaterClarity.pdf`
+  //     );
+
+  //     toast.success("PDF generated successfully!");
+  //   } catch (err) {
+  //     console.error("PDF generation failed:", err);
+  //     toast.error("Failed to generate PDF.");
+  //   }
+  // };
+
+const handleDownloadPDF = async () => {
+  if (!targetUser.userId) {
+    toast.error("Select a user/site first.");
+    return;
+  }
+
+  // Build rows and keep ONLY days that have photos
+  const allRows = buildExportRows(); // [{ dateStr, photos: [...] }]
+  const rows = allRows.filter((r) => (r.photos || []).length > 0);
+  if (!rows.length) {
+    toast.info("No photos to export for this month.");
+    return;
+  }
+
+  try {
+    toast.info("Generating PDF...");
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // --- Header with logo & title ---
+    const logoImg = new Image();
+    logoImg.src = genexlogo;
+    await new Promise((resolve) => {
+      logoImg.onload = resolve;
+      logoImg.onerror = resolve;
+    });
+
+    // Top blue bar
+    doc.setFillColor("#236a80");
+    doc.rect(0, 0, pageWidth, 35, "F");
+    doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
+
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor("#FFFFFF");
+    doc.setFontSize(14);
+    doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2 + 10, 12, {
+      align: "center",
+    });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text(
+      "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony,",
+      110,
+      18,
+      { align: "center" }
+    );
+    doc.text(
+      "Shettihalli Post, Jalahalli West, Bengaluru, Karnataka 560015",
+      110,
+      22,
+      { align: "center" }
+    );
+    doc.text("Phone: +91-9663044156", 110, 26, { align: "center" });
+
+    doc.setFontSize(9);
+    doc.text("Treated Water Clarity Report", pageWidth / 2 + 10, 31, {
+      align: "center",
+    });
+
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    doc.setTextColor("#000000");
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
+    doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
+
+    // --- Prepare one row per DATE, with all images in that row ---
+    const rowsWithImages = rows.map((r) => ({
+      dateStr: r.dateStr,
+      photoUrls: r.photos || [],
+      _images: [], // [{img, fmt}]
+      _rowHeight: 0,
+    }));
+
+    // Pre-load all images
+    await Promise.all(
+      rowsWithImages.flatMap((row) =>
+        row.photoUrls.map(
+          (url) =>
+            new Promise((resolve) => {
+              const img = new Image();
+              img.crossOrigin = "Anonymous";
+              img.src = url;
+
+              img.onload = () => {
+                const lower = (url || "").toLowerCase();
+                // choose format by url; if your urls don't contain extensions, switch to always "JPEG"
+                const fmt = lower.includes(".png") ? "PNG" : "JPEG";
+                row._images.push({ img, fmt });
+                resolve();
+              };
+              img.onerror = () => resolve();
+            })
         )
-      );
+      )
+    );
 
-      const tableBody = rowsWithImages.map((r) => ({
-        date: r.dateStr,
-        photos: "",
-        _images: r._images,
-      }));
+    // ---------- GRID SETTINGS ----------
+    const PER_ROW = 3;
+    const padding = 2; // inner padding inside photos cell
+    const gapX = 3;
+    const gapY = 3;
 
-      doc.autoTable({
-        startY: 60,
-        columns: [
-          { header: "Date", dataKey: "date" },
-          { header: "Photos", dataKey: "photos" },
-        ],
-        body: tableBody,
-        theme: "grid",
+    const dateColWidth = 30;
+    const photosColWidth = pageWidth - dateColWidth - 20; // keep same margin logic
+    const availWidth = photosColWidth - padding * 2;
+    const imgSize = (availWidth - gapX * (PER_ROW - 1)) / PER_ROW;
 
-        // 🔹 Smaller header row + clear white grid line between Date / Photos
-        headStyles: {
-          fillColor: "#236a80",
-          minCellHeight: 16, // header height reduced
-          lineWidth: 0.3,
-          lineColor: [120, 120, 120], // white vertical separator
-        },
+    // Pre-calc required row height for each date (THIS prevents overlap)
+    rowsWithImages.forEach((row) => {
+      const count = row._images.length;
+      const rowsNeeded = Math.max(1, Math.ceil(count / PER_ROW));
+      const requiredHeight =
+        padding * 2 + rowsNeeded * imgSize + (rowsNeeded - 1) * gapY;
+      row._rowHeight = requiredHeight;
+    });
 
-        styles: {
-          fontSize: 8,
-          cellPadding: 3,
-          minCellHeight: 100, // big body rows for large photos
-          lineWidth: 0.1,
-          lineColor: [120, 120, 120],
-        },
+    const tableBody = rowsWithImages.map((r) => ({
+      date: r.dateStr,
+      photos: " ", // keep non-empty
+      _images: r._images,
+      _rowHeight: r._rowHeight,
+    }));
 
-        columnStyles: {
-          date: { cellWidth: 30 },
-          photos: { cellWidth: pageWidth - 30 - 20 },
-        },
+    doc.autoTable({
+      startY: 60,
+      columns: [
+        { header: "Date", dataKey: "date" },
+        { header: "Photos", dataKey: "photos" },
+      ],
+      body: tableBody,
+      theme: "grid",
+      rowPageBreak: "avoid",
 
-        didDrawCell: (data) => {
-          // Draw all photos horizontally in Photos cell
-          if (data.section === "body" && data.column.dataKey === "photos") {
-            const row = data.row.raw;
-            const images = row._images || [];
-            if (!images.length) return;
+      headStyles: {
+        fillColor: "#236a80",
+        minCellHeight: 16,
+        lineWidth: 0.3,
+        lineColor: [120, 120, 120],
+      },
 
-            const cellWidth = data.cell.width;
-            const cellHeight = data.cell.height;
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+        lineWidth: 0.1,
+        lineColor: [120, 120, 120],
+        valign: "top",
+      },
 
-            const padding = 2;
-            const gap = 3;
-            const count = images.length;
+      columnStyles: {
+        date: { cellWidth: dateColWidth },
+        // IMPORTANT: autoTable padding must be 0 for photos cell
+        photos: { cellWidth: photosColWidth, cellPadding: 0 },
+      },
 
-            const availWidth = cellWidth - padding * 2;
-            const maxHeight = cellHeight - padding * 2;
+      // ✅ Apply same row height to BOTH cells (Date + Photos)
+      didParseCell: (data) => {
+        if (data.section !== "body") return;
 
-            const slotWidth =
-              count > 0 ? (availWidth - gap * (count - 1)) / count : availWidth;
+        const rh = data.row?.raw?._rowHeight;
+        if (!rh) return;
 
-            images.forEach((img, index) => {
-              const size = Math.min(slotWidth, maxHeight); // 🔹 SAME width & height
+        data.cell.styles.minCellHeight = rh;
 
-              const xSlotStart =
-                data.cell.x + padding + index * (slotWidth + gap);
-              const ySlotStart = data.cell.y + padding;
+        // some versions collapse empty cells; keep photos cell non-empty
+        if (data.column.dataKey === "photos") {
+          data.cell.text = [" "];
+        }
+      },
 
-              const x = xSlotStart + (slotWidth - size) / 2;
-              const y = ySlotStart + (maxHeight - size) / 2;
+      // ✅ Draw images inside photos cell: 3 per row, wrap
+      didDrawCell: (data) => {
+        if (data.section !== "body") return;
+        if (data.column.dataKey !== "photos") return;
 
-              doc.addImage(img, "PNG", x, y, size, size);
-            });
+        const images = data.row?.raw?._images || [];
+        if (!images.length) return;
+
+        const startX = data.cell.x + padding;
+        const startY = data.cell.y + padding;
+
+        images.forEach(({ img, fmt }, i) => {
+          const r = Math.floor(i / PER_ROW);
+          const c = i % PER_ROW;
+
+          // center-align last row if < 3 images
+          const isLastRow = r === Math.floor((images.length - 1) / PER_ROW);
+          const countInThisRow = isLastRow ? images.length - r * PER_ROW : PER_ROW;
+
+          const rowWidth =
+            countInThisRow * imgSize + (countInThisRow - 1) * gapX;
+
+          const xOffset = (availWidth - rowWidth) / 2;
+
+          const x = startX + xOffset + c * (imgSize + gapX);
+          const y = startY + r * (imgSize + gapY);
+
+          try {
+            doc.addImage(img, fmt, x, y, imgSize, imgSize);
+          } catch (e1) {
+            // fallback if fmt guess fails (common when url has no extension)
+            try {
+              doc.addImage(img, "JPEG", x, y, imgSize, imgSize);
+            } catch (e2) {
+              try {
+                doc.addImage(img, "PNG", x, y, imgSize, imgSize);
+              } catch (e3) {}
+            }
           }
-        },
-      });
+        });
+      },
+    });
 
-      doc.save(
-        `${targetUser.siteName}_${monthNames[month]}_${year}_TreatedWaterClarity.pdf`
-      );
+    doc.save(
+      `${targetUser.siteName}_${monthNames[month]}_${year}_TreatedWaterClarity.pdf`
+    );
 
-      toast.success("PDF generated successfully!");
-    } catch (err) {
-      console.error("PDF generation failed:", err);
-      toast.error("Failed to generate PDF.");
-    }
-  };
+    toast.success("PDF generated successfully!");
+  } catch (err) {
+    console.error("PDF generation failed:", err);
+    toast.error("Failed to generate PDF.");
+  }
+};
+
 
   const handleDeletePhoto = async (dayStr, photoIndex, url) => {
     if (!targetUser.userId) {

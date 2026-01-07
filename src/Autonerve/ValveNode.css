@@ -1,0 +1,84 @@
+.valve-node {
+  width: 120px;
+  padding: 10px;
+  border-radius: 10px;
+  text-align: center;
+  background: #ffffff;
+  border: 1.5px solid #236a80;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.valve-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #236a80;
+  margin-bottom: 8px;
+}
+
+/* Toggle Switch */
+.valve-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 26px;
+}
+
+.valve-switch input {
+  display: none;
+}
+
+.valve-slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #bdbdbd;
+  border-radius: 26px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transition: 0.3s;
+}
+
+.valve-switch input:checked + .valve-slider {
+  background-color: #1a70b8;
+}
+
+.valve-slider:before {
+  position: absolute;
+  content: "";
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  left: 2px;
+  bottom: 2px;
+  background: white;
+  transition: 0.3s;
+}
+
+.valve-switch input:checked + .valve-slider:before {
+  transform: translateX(26px);
+}
+
+/* Status Tags */
+.valve-status {
+  margin-top: 8px;
+  padding: 3px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.valve-status.on {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.valve-status.off {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.valve-status.pending {
+  background: #fff3cd;
+  color: #856404;
+}

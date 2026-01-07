@@ -1,0 +1,123 @@
+.psf-box {
+  width: 260px;
+  border: 2px solid #236a80;
+  border-radius: 12px;
+  padding: 14px;
+  background: white;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+}
+
+.psf-title {
+  font-weight: 700;
+  font-size: 18px;
+  color: #236a80;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.psf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  row-gap: 18px;
+  justify-items: center;
+}
+
+.psf-bottom {
+  grid-column: 1 / span 2;
+}
+
+/* ----- Valve Card ----- */
+
+.psf-valve-card {
+  width: 100px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #f2f4f8;
+  /* background: #f7f9fc; */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.valve-label {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+/* ----- Status Dot ----- */
+
+.valve-indicator {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin-bottom: 6px;
+}
+
+.indicator-on { background: #2ecc71; }
+.indicator-off { background: #e74c3c; }
+.indicator-pending { background: #f39c12; }
+
+/* ----- Toggle Switch ----- */
+
+.valve-toggle {
+  position: relative;
+  width: 52px;
+  height: 20px;
+  margin-top: 4px;
+}
+
+.valve-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #e74c3c;   /* OFF = RED */
+  border-radius: 20px;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+
+.toggle-slider:before {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 2px;
+  top: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+/* ON */
+.valve-toggle input:checked + .toggle-slider {
+  background: #2ecc71;
+}
+
+.valve-toggle input:checked + .toggle-slider:before {
+  transform: translateX(28px);
+}
+
+/* Pending */
+.valve-toggle input:disabled + .toggle-slider {
+  background: #f39c12;
+  cursor: not-allowed;
+}
+
+/* ----- Pending Text ----- */
+
+.pending-text {
+  font-size: 11px;
+  color: #f39c12;
+  margin-top: 4px;
+}
+
+.valve-toggle input:disabled + .toggle-slider {
+  background: #f39c12 !important;   /* PENDING = ORANGE */
+  cursor: not-allowed;
+}

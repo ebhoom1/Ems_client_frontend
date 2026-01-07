@@ -16,7 +16,7 @@ import "reactflow/dist/style.css";
 import "./CanvasComponent.css";
 import { useSelector } from "react-redux";
 import io from "socket.io-client";
-
+import psfSVG from "../../src/assests/images/psf.svg";
 import PumpBlowerNode from "./PumpBlowerNode";
 import ImageNode from "./ImageNode";
 import PdfNode from "./PdfNode";
@@ -25,6 +25,8 @@ import screenfull from "screenfull";
 import { BiFullscreen } from "react-icons/bi";
 import { getSocket } from "./socketService";
 import TankNode from "./TankNode";
+import ValveNode from "./valveNode";
+import PSFNode from "./PSFNode";
 import wipro from "../../src/assests/images/wipro.jpeg";
 
 function CanvasComponent({
@@ -40,6 +42,7 @@ function CanvasComponent({
 }) {
   console.log("ownerUserNameOverride:", ownerUserNameOverride);
   console.log(" expoProductId:", expoProductId);
+  console.log(" station name:", selectedStationName);
   const reactFlowWrapper = useRef(null);
   const canvasContainerRef = useRef(null);
 
@@ -484,6 +487,47 @@ function CanvasComponent({
       setRealtimePumpData((prev) => ({ ...prev, ...pumpMap }));
     };
 
+ const handleValveAck = (payload) => {
+  console.log("🟢 Valve ACK:", payload);
+
+  setNodes((nodes) =>
+    nodes.map((node) => {
+      if (node.type !== "psfNode") return node;
+
+      const updatedVals = { ...node.data.valves };
+      const updatedPending = { ...node.data.pending };
+
+      payload.valves.forEach((v) => {
+        const map = {
+          valve_1: "V1",
+          valve_2: "V2",
+          valve_3: "V3",
+          valve_4: "V4",
+          valve_5: "V5",
+        };
+
+        const name = map[v.valveId];
+        if (!name) return;
+
+        updatedVals[name] = v.status ? 1 : 0;
+        updatedPending[name] = false;   // 🧹 clear pending
+      });
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          valves: updatedVals,
+          pending: updatedPending,
+        },
+      };
+    })
+  );
+};
+
+
+
+
     socket.current.on("connect", () => {
       console.log("Socket.IO connected:", socket.current.id);
       if (effectiveProductId)
@@ -493,6 +537,7 @@ function CanvasComponent({
     socket.current.on("data", handleTankData);
     socket.current.on("pumpFeedback", handlePumpFeedback);
     socket.current.on("pumpAck", handlePumpAck);
+    socket.current.on("valveAck", handleValveAck);
 
     socket.current.on("reconnect", () => {
       console.log("Reconnected to server");
@@ -504,6 +549,7 @@ function CanvasComponent({
       socket.current.off("data", handleTankData);
       socket.current.off("pumpFeedback", handlePumpFeedback);
       socket.current.off("pumpAck", handlePumpAck);
+      socket.current.on("valveAck", handleValveAck);
     };
   }, [
     backendUrl,
@@ -581,6 +627,18 @@ function CanvasComponent({
     },
     [showMessageBox] // showMessageBox is stable (from step 1)
   );
+ const sendValveControlMessage = (productId, valves) => {
+  const payload = {
+    product_id: productId,
+    valves,
+    msgType: "valve",
+  };
+
+  console.log("🟡 [FRONTEND → MQTT COMMAND]", payload);
+
+  socket.current.emit("controlValve", payload);
+};
+
 
   const nodeTypes = useMemo(
     () => ({
@@ -592,6 +650,13 @@ function CanvasComponent({
           portalContainer={canvasContainerRef.current || document.body}
         />
       ),
+ psfNode: (props) => (
+    <PSFNode
+      {...props}
+      sendValveControlMessage={sendValveControlMessage}
+      setNodes={setNodes}
+    />
+  ),
       imageNode: ImageNode,
       pdfNode: PdfNode,
       tankNode: TankNode,
@@ -658,6 +723,19 @@ function CanvasComponent({
           const pumpStatesResponse = await fetch(
             `${API_URL}/api/pump-states/${effectiveProductId}`
           );
+          const valveStatesResponse = await fetch(
+  `${API_URL}/api/valve-states/${effectiveProductId}`
+);
+const valveStates = await valveStatesResponse.json();
+
+const valveMap = {};
+const valvePendingMap = {};
+
+valveStates.forEach((v) => {
+  valveMap[v.valveId] = v.status ? 1 : 0;
+  valvePendingMap[v.valveId] = !!v.pending;
+});
+
           const pumpStatesData = await pumpStatesResponse.json();
           console.log("pumpStatesData:", pumpStatesData); // <-- This is the new console log you requested
 
@@ -675,28 +753,56 @@ function CanvasComponent({
           });
           setPendingPumps(newPendingPumps);
 
-          const updatedNodes = result.data.nodes.map((node) => {
-            if (node.type === "pumpBlowerNode") {
-              const isPending = pendingStatusMap.get(node.id) || false;
-              const isOn = pumpStatusMap.get(node.id) || false;
+        const updatedNodes = result.data.nodes.map((node) => {
+  if (node.type === "psfNode") {
+    const valves = { ...node.data.valves };
+    const pending = { ...node.data.pending };
 
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  isOn: isOn,
-                  isPending: isPending,
-                  productId: effectiveProductId,
-                  isEditMode: isEditMode,
-                  realtimeValues: realtimePumpData[node.id] || {},
-                },
-              };
-            }
-            return node;
-          });
+    Object.entries({
+      V1: "valve_1",
+      V2: "valve_2",
+      V3: "valve_3",
+      V4: "valve_4",
+      V5: "valve_5",
+    }).forEach(([name, id]) => {
+      if (id in valveMap) valves[name] = valveMap[id];
+      if (id in valvePendingMap) pending[name] = valvePendingMap[id];
+    });
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        productId: effectiveProductId,
+        valves,
+        pending,
+      },
+    };
+  }
+
+  if (node.type === "pumpBlowerNode") {
+    const isPending = pendingStatusMap.get(node.id) || false;
+    const isOn = pumpStatusMap.get(node.id) || false;
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        isOn,
+        isPending,
+        productId: effectiveProductId,
+        realtimeValues: realtimePumpData[node.id] || {},
+      },
+    };
+  }
+
+  return node;
+});
+
 
           setNodes(updatedNodes);
           setEdges(result.data.edges);
+
           onStationNameChange(result.data.stationName);
           if (reactFlowInstance) {
             reactFlowInstance.setViewport(result.data.viewport, {
@@ -925,6 +1031,42 @@ function CanvasComponent({
         x: event.clientX - bounds.left,
         y: event.clientY - bounds.top,
       });
+      // ⭐ Special Case: PSF block dropped
+     if (shapeData.id === "psf" || shapeData.label === "PSF") {
+  const newNode = {
+    id: `psf_${Date.now()}`,
+    type: "psfNode",
+    position,
+    data: {
+      productId: effectiveProductId,
+      sendValveControlMessage,
+      valves: { V1: 0, V2: 0, V3: 0, V4: 0, V5: 0 },
+      pending: {},
+      updateValveState: (valve, payload) => {
+        setNodes((nodes) =>
+          nodes.map((n) => {
+            if (n.id !== newNode.id) return n;
+
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                pending: {
+                  ...n.data.pending,
+                  [valve]: payload.pending,
+                },
+              },
+            };
+          })
+        );
+      },
+    },
+  };
+
+  setNodes((prev) => [...prev, newNode]);
+  return;
+}
+
 
       let nodeType = "default";
       if (isSpecialNode) nodeType = "pumpBlowerNode";
