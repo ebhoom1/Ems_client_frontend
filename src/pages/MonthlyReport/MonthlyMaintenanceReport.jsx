@@ -737,6 +737,29 @@ const MonthlyMaintenanceReport = () => {
   //   }
   // };
 
+  // put this helper above handleDownloadPDF (or inside it)
+  const fetchAsDataUrl = async (url) => {
+    const res = await fetch(url, { mode: "cors" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+
+    const dataUrl = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+
+    const fmt =
+      blob.type === "image/png"
+        ? "PNG"
+        : blob.type === "image/webp"
+        ? "WEBP"
+        : "JPEG";
+
+    return { dataUrl, fmt };
+  };
+
   const handleDownloadPDF = async () => {
     if (!targetUser.userId) {
       toast.error("Select a user/site first.");
@@ -854,46 +877,34 @@ const MonthlyMaintenanceReport = () => {
           let y = cursorY;
 
           for (const p of images) {
-            // 🚫 Skip WEBP (jsPDF unsafe)
-            if (p.url.toLowerCase().endsWith(".webp")) {
-              console.warn("Skipping WEBP image:", p.url);
-              continue;
-            }
+  // move wrapping checks before loading
+  if (x + IMAGE_W > pageWidth - 15) {
+    x = 15;
+    y += IMAGE_H + GAP;
+  }
 
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.src = p.url;
+  if (y + IMAGE_H > pageHeight - 15) {
+    doc.addPage();
+    x = 15;
+    y = 20;
+  }
 
-            let loaded = false;
+  try {
+    const { dataUrl, fmt } = await fetchAsDataUrl(p.url);
 
-            await new Promise((resolve) => {
-              img.onload = () => {
-                loaded = true;
-                resolve();
-              };
-              img.onerror = () => resolve();
-            });
+    // if your jsPDF build cannot handle WEBP, skip it
+    if (fmt === "WEBP") {
+      console.warn("Skipping WEBP:", p.url);
+      continue;
+    }
 
-            // 🚫 Skip inaccessible / private images
-            if (!loaded) {
-              console.warn("Skipping inaccessible image:", p.url);
-              continue;
-            }
+    doc.addImage(dataUrl, fmt, x, y, IMAGE_W, IMAGE_H);
+    x += IMAGE_W + GAP;
+  } catch (e) {
+    console.warn("Skipping inaccessible image:", p.url, e?.message);
+  }
+}
 
-            if (x + IMAGE_W > pageWidth - 15) {
-              x = 15;
-              y += IMAGE_H + GAP;
-            }
-
-            if (y + IMAGE_H > pageHeight - 15) {
-              doc.addPage();
-              x = 15;
-              y = 20;
-            }
-
-            doc.addImage(img, "JPEG", x, y, IMAGE_W, IMAGE_H);
-            x += IMAGE_W + GAP;
-          }
 
           cursorY = y + IMAGE_H + 8;
           doc.setTextColor("#000");

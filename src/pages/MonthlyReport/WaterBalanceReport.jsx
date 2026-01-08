@@ -328,6 +328,21 @@ const WaterBalanceReport = () => {
       "Treated via G": r.treatedViaG,
     });
 
+        const pdfTotalMap = {
+      "Grey Total": totals.greyTotal,
+      "Total Grey+Soil": totals.totalGreySoil,
+
+      "Inlet Total": totals.inletTotal,
+      "Permeate Total": totals.permeateTotal,
+
+      "C Total": totals.cTotal,
+      "M Total": totals.mTotal,
+
+      "G Total": totals.gTotal,
+      "Garden Total": totals.gardenTotal,
+      "Treated via G": totals.treatedViaG,
+    };
+
     /* ============ RENDER TABLES ============ */
     columnGroups.forEach((cols, index) => {
       if (index !== 0) doc.addPage();
@@ -336,17 +351,24 @@ const WaterBalanceReport = () => {
       const startY = index === 0 ? 32 : 14;
       if (index === 0) drawHeader();
 
-      doc.autoTable({
+            doc.autoTable({
         startY,
         head: [cols],
         body: rows.map((r) => cols.map((c) => valueMap(r)[c])),
         theme: "grid",
 
+        // ✅ FOOTER TOTAL ROW (per page/group)
+        foot: [
+          cols.map((c, idx) =>
+            idx === 0 ? "TOTAL" : pdfTotalMap[c] ?? ""
+          ),
+        ],
+
         styles: {
           fontSize: 9,
           cellPadding: 3,
-          overflow: "visible", // no vertical wrap
-          whiteSpace: "nowrap", // force horizontal
+          overflow: "visible",
+          whiteSpace: "nowrap",
           halign: "center",
           valign: "middle",
         },
@@ -358,11 +380,20 @@ const WaterBalanceReport = () => {
           whiteSpace: "nowrap",
         },
 
+        // ✅ make total row stand out
+        footStyles: {
+          fillColor: [255, 243, 205],
+          textColor: 0,
+          fontStyle: "bold",
+          halign: "center",
+        },
+
         columnStyles: cols.reduce((acc, _, i) => {
           acc[i] = { cellWidth: "auto", minCellWidth: 22 };
           return acc;
         }, {}),
       });
+
     });
 
     doc.save(
@@ -399,6 +430,40 @@ const WaterBalanceReport = () => {
 
     fetchReport();
   }, [targetUser, year, month]);
+
+    /* ---------- TOTALS (ONLY TOTAL COLUMNS) ---------- */
+  const totalKeys = [
+    "greyTotal",
+    "totalGreySoil",
+    "inletTotal",
+    "permeateTotal",
+    "cTotal",
+    "mTotal",
+    "gTotal",
+    "gardenTotal",
+    "treatedViaG",
+  ];
+
+  const totals = useMemo(() => {
+    const sum = {};
+    totalKeys.forEach((k) => (sum[k] = 0));
+
+    rows.forEach((r) => {
+      totalKeys.forEach((k) => {
+        const n = parseFloat(r?.[k]);
+        if (!isNaN(n)) sum[k] += n;
+      });
+    });
+
+    // keep as 2 decimals (string is fine for display)
+    totalKeys.forEach((k) => (sum[k] = sum[k].toFixed(2)));
+
+    return sum;
+  }, [rows]);
+
+    const fieldKeys = useMemo(() => {
+    return rows[0] ? Object.keys(rows[0]).filter((k) => k !== "date") : [];
+  }, [rows]);
 
   return (
     <div className="d-flex">
@@ -560,9 +625,8 @@ const WaterBalanceReport = () => {
                 {rows.map((r, i) => (
                   <tr key={i}>
                     <td>{r.date}</td>
-                    {Object.keys(r)
-                      .filter((k) => k !== "date")
-                      .map((k, c) => (
+                   {fieldKeys.map((k, c) => (
+
                         <td key={`${i}-${k}`}>
                           <input
                             className="form-control"
@@ -580,6 +644,27 @@ const WaterBalanceReport = () => {
                   </tr>
                 ))}
               </tbody>
+                            <tfoot>
+                <tr style={{ background: "#fff3cd", fontWeight: 800 }}>
+                  <td>TOTAL</td>
+
+                  {fieldKeys.map((k) => (
+                    <td key={`total-${k}`}>
+                      {totalKeys.includes(k) ? (
+                        <input
+                          className="form-control"
+                          style={{ minWidth: 90 }}
+                          value={totals[k]}
+                          readOnly
+                        />
+                      ) : (
+                        ""
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
+
             </table>
           </div>
 
