@@ -151,7 +151,7 @@ const TreatedWaterClarityReport = () => {
   }, [targetUser.userId, year, month]);
 
   // --- File selection: multiple photos per date, preview immediately ---
-  const handlePhotoSelect = (dayStr, fileList) => {
+  const handlePhotoSelect = (dayStr, fileList,comment) => {
     if (!fileList || !fileList.length) return;
     if (!targetUser.userId) {
       toast.error("Select a user/site first.");
@@ -225,11 +225,12 @@ const TreatedWaterClarityReport = () => {
 
     // Add previews to current entries
     setEntriesByDay((prev) => {
-      const existing = prev[dayStr] || { photos: [] };
+      const existing = prev[dayStr] || { photos: [], comment: ""};
       return {
         ...prev,
         [dayStr]: {
           photos: [...(existing.photos || []), ...previewUrls],
+          comment: comment || existing.comment,
         },
       };
     });
@@ -366,8 +367,9 @@ const TreatedWaterClarityReport = () => {
     for (const row of rows) {
       const excelRow = sheet.getRow(rowNumber);
       excelRow.getCell(1).value = row.dateStr;
+      excelRow.getCell(2).value = row.comment || "";
 
-      let col = 2; // Start placing images from column B
+      let col = 3; // Start placing images from column B
 
       for (const url of row.photos) {
         try {
@@ -740,6 +742,7 @@ const handleDownloadPDF = async () => {
     const tableBody = rowsWithImages.map((r) => ({
       date: r.dateStr,
       photos: " ", // keep non-empty
+        comment: r.comment || "",
       _images: r._images,
       _rowHeight: r._rowHeight,
     }));
@@ -749,6 +752,8 @@ const handleDownloadPDF = async () => {
       columns: [
         { header: "Date", dataKey: "date" },
         { header: "Photos", dataKey: "photos" },
+        { header: "Comment", dataKey: "comment" }, // Add comment column
+
       ],
       body: tableBody,
       theme: "grid",
@@ -1304,6 +1309,26 @@ const handleDownloadPDF = async () => {
                                           )
                                         )}
                                       </div>
+                                      {/* Add comment input */}
+    <textarea
+      placeholder="Add a comment"
+      value={entry.comment || ""}
+      onChange={(e) =>
+        setEntriesByDay((prev) => ({
+          ...prev,
+          [dayStr]: { ...prev[dayStr], comment: e.target.value },
+        }))
+      }
+      style={{
+        padding: "8px",
+        fontSize: "0.9rem",
+        borderRadius: "6px",
+        border: "2px dotted #3498db",
+        width: "100%",
+        minHeight: "50px",
+        resize: "none",
+      }}
+    />
 
                                       {(isOperator || isAdmin) && (
                                         <label
