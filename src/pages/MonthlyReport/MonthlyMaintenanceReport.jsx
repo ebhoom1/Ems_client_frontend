@@ -901,7 +901,7 @@ const MonthlyMaintenanceReport = () => {
 
         await renderBlock("MPM Photos", mpm, [35, 106, 128]);
         await renderBlock("EPM Photos", epm, [231, 76, 60]);
-        await renderBlock("GENERAL Photos", general, [44, 62, 80]);
+        await renderBlock("Photos", general, [44, 62, 80]);
 
         cursorY += 4;
       }
@@ -1542,7 +1542,7 @@ const MonthlyMaintenanceReport = () => {
                                               background: "#f4f6f8",
                                             }}
                                           >
-                                            + Add General Photos
+                                            + Add Photos
                                             <input
                                               type="file"
                                               accept="image/*"
