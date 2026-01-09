@@ -1,4 +1,3 @@
- 
 // FILE: src/Components/MonthlyMaintenance/EquipmentStatusReport.jsx
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -50,6 +49,7 @@ const EquipmentStatusReport = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState("");
 
   // --- Load users ---
   useEffect(() => {
@@ -96,7 +96,6 @@ const EquipmentStatusReport = () => {
           make: "",
           status: "WORKING",
           comment: "",
-          notes: "",
         }));
 
         // Try loading existing saved report
@@ -115,11 +114,12 @@ const EquipmentStatusReport = () => {
               make: e.make || "",
               status: e.status || "WORKING",
               comment: e.comment || "",
-              notes: e.notes || "",
             }))
           );
+          setNote(data.note || "");
         } else {
           setRows(baseRows);
+          setNote("");
         }
       } catch (err) {
         console.error("Error fetching report:", err);
@@ -137,6 +137,7 @@ const EquipmentStatusReport = () => {
             notes: "",
           }))
         );
+        setNote("");
       } finally {
         setLoading(false);
       }
@@ -185,7 +186,7 @@ const EquipmentStatusReport = () => {
           make: "",
           status: "WORKING",
           comment: "",
-          notes: "", 
+          notes: "",
         },
       ];
     });
@@ -207,7 +208,6 @@ const EquipmentStatusReport = () => {
       make: r.make || "",
       status: r.status || "",
       comment: r.comment || "",
-      notes: r.notes || "",
     }));
 
   // --- Save Report ---
@@ -234,6 +234,7 @@ const EquipmentStatusReport = () => {
         year,
         month: month + 1,
         entries: entriesToSave,
+        note,
       });
 
       MySwal.fire({
@@ -260,9 +261,9 @@ const EquipmentStatusReport = () => {
     if (!targetUser.userId) return toast.error("Select a site first.");
     const exportRows = buildExportRows();
 
-    let csv = "SL.No,Equipment,Capacity,Make,Status,Comment,Notes\n";
+    let csv = "SL.No,Equipment,Capacity,Make,Status,Comment\n";
     exportRows.forEach((r) => {
-      csv += `${r.slNo},"${r.equipmentName}","${r.capacity}","${r.make}","${r.status}","${r.comment}","${r.notes}"\n`;
+      csv += `${r.slNo},"${r.equipmentName}","${r.capacity}","${r.make}","${r.status}","${r.comment}"\n`;
     });
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -318,7 +319,7 @@ const EquipmentStatusReport = () => {
             "Make",
             "Status",
             "Comment",
-            "Notes",
+           
           ],
         ],
         body: exportRows.map((r) => [
@@ -328,12 +329,19 @@ const EquipmentStatusReport = () => {
           r.make,
           r.status,
           r.comment,
-          r.notes,
         ]),
         theme: "grid",
         headStyles: { fillColor: "#236a80", textColor: "#fff" },
         styles: { fontSize: 8 },
       });
+const finalY = doc.lastAutoTable.finalY || 58;
+
+doc.setFillColor(255, 230, 128); // yellow
+doc.rect(15, finalY + 10, pageWidth - 30, 18, "F");
+
+doc.setTextColor(0);
+doc.setFontSize(10);
+doc.text(`Note: ${note || ""}`, 18, finalY + 22);
 
       doc.save(
         `${targetUser.siteName}_${month + 1}_${year}_EquipmentStatus.pdf`
@@ -497,7 +505,6 @@ const EquipmentStatusReport = () => {
                               <th>Make</th>
                               <th>Status</th>
                               <th>Comment</th>
-                              <th>Notes</th>
                               <th>Delete Row</th>
                             </tr>
                           </thead>
@@ -601,23 +608,7 @@ const EquipmentStatusReport = () => {
                                     }}
                                   />
                                 </td>
-                                <td>
-                                  <textarea
-                                    value={row.notes}
-                                    onChange={(e) =>
-                                      handleCellChange(
-                                        index,
-                                        "notes",
-                                        e.target.value
-                                      )
-                                    }
-                                    style={{
-                                      ...inputStyle,
-                                      width: "200px",
-                                      minHeight: "50px",
-                                    }}
-                                  />
-                                </td>
+
                                 <td style={{ textAlign: "center" }}>
                                   <button
                                     type="button"
@@ -639,6 +630,32 @@ const EquipmentStatusReport = () => {
                             ))}
                           </tbody>
                         </table>
+                      </div>
+                      <div
+                        style={{
+                          marginTop: "15px",
+                          padding: "12px",
+                          border: "2px solid #c9a100",
+                          background: "#ffe680",
+                          borderRadius: "6px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        <div style={{ marginBottom: "6px" }}>Note:</div>
+                        <textarea
+                          value={note}
+                          onChange={(e) => setNote(e.target.value)}
+                          placeholder="Enter site note..."
+                          style={{
+                            width: "100%",
+                            minHeight: "50px",
+                            border: "1px solid #b58d00",
+                            borderRadius: "6px",
+                            padding: "8px",
+                            fontWeight: 500,
+                            background: "white",
+                          }}
+                        />
                       </div>
 
                       {/* Buttons */}
