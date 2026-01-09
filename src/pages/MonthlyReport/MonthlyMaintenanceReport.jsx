@@ -738,27 +738,77 @@ const MonthlyMaintenanceReport = () => {
   // };
 
   // put this helper above handleDownloadPDF (or inside it)
-  const fetchAsDataUrl = async (url) => {
-    const res = await fetch(url, { mode: "cors" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const blob = await res.blob();
+ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-    const dataUrl = await new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result);
-      r.onerror = reject;
-      r.readAsDataURL(blob);
-    });
+const fetchAsDataUrl = async (url, retries = 2) => {
+  let lastErr;
 
-    const fmt =
-      blob.type === "image/png"
-        ? "PNG"
-        : blob.type === "image/webp"
-        ? "WEBP"
-        : "JPEG";
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        mode: "cors",
+        cache: "no-store",
+      });
 
-    return { dataUrl, fmt };
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const blob = await res.blob();
+
+      const dataUrl = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(blob);
+      });
+
+      const fmt =
+        blob.type === "image/png"
+          ? "PNG"
+          : blob.type === "image/webp"
+          ? "WEBP"
+          : "JPEG";
+
+      return { dataUrl, fmt };
+    } catch (e) {
+      lastErr = e;
+      // retry only if not last attempt
+      if (attempt < retries) await sleep(350 * (attempt + 1));
+    }
+  }
+
+  throw lastErr;
+};
+
+
+  const getSignedUrlMap = async (rows) => {
+    // collect all photo urls used in PDF
+    const urls = [];
+    rows.forEach((r) =>
+      (r.photos || []).forEach((p) => p?.url && urls.push(p.url))
+    );
+
+    const unique = Array.from(new Set(urls));
+    if (!unique.length) return {};
+
+    const { data } = await axios.post(
+      `${API_URL}/api/monthly-maintenance/signed-urls`,
+      {
+        urls: unique,
+        expiresIn: 600, // 10 minutes
+      }
+    );
+
+    return data?.signedMap || {};
   };
+const getSignedUrlForOne = async (url) => {
+  const { data } = await axios.post(
+    `${API_URL}/api/monthly-maintenance/signed-urls`,
+    { urls: [url], expiresIn: 600 }
+  );
+  return data?.signedMap?.[url] || null;
+};
 
   const handleDownloadPDF = async () => {
     if (!targetUser.userId) {
@@ -770,6 +820,17 @@ const MonthlyMaintenanceReport = () => {
     if (!rows.length) {
       toast.info("No data to export for this month.");
       return;
+    }
+
+    let signedMap = {};
+    try {
+      signedMap = await getSignedUrlMap(rows);
+    } catch (e) {
+      console.warn(
+        "signed-urls failed, continuing without signed urls",
+        e?.message
+      );
+      signedMap = {};
     }
 
     try {
@@ -877,22 +938,25 @@ const MonthlyMaintenanceReport = () => {
           let y = cursorY;
 
           for (const p of images) {
-  // move wrapping checks before loading
-  if (x + IMAGE_W > pageWidth - 15) {
-    x = 15;
-    y += IMAGE_H + GAP;
-  }
+            // move wrapping checks before loading
+            if (x + IMAGE_W > pageWidth - 15) {
+              x = 15;
+              y += IMAGE_H + GAP;
+            }
 
-  if (y + IMAGE_H > pageHeight - 15) {
-    doc.addPage();
-    x = 15;
-    y = 20;
-  }
+            if (y + IMAGE_H > pageHeight - 15) {
+              doc.addPage();
+              x = 15;
+              y = 20;
+            }
+
+            try {
+  // 1) try signed url if we already have it, else try direct url
+  let workingUrl = signedMap[p.url] || p.url;
 
   try {
-    const { dataUrl, fmt } = await fetchAsDataUrl(p.url);
+    const { dataUrl, fmt } = await fetchAsDataUrl(workingUrl, 2);
 
-    // if your jsPDF build cannot handle WEBP, skip it
     if (fmt === "WEBP") {
       console.warn("Skipping WEBP:", p.url);
       continue;
@@ -900,11 +964,36 @@ const MonthlyMaintenanceReport = () => {
 
     doc.addImage(dataUrl, fmt, x, y, IMAGE_W, IMAGE_H);
     x += IMAGE_W + GAP;
-  } catch (e) {
-    console.warn("Skipping inaccessible image:", p.url, e?.message);
+  } catch (firstErr) {
+    // 2) If direct failed and we don't have signed url yet, try to get signed url just for this image and retry once
+    if (!signedMap[p.url]) {
+      try {
+        const freshSigned = await getSignedUrlForOne(p.url);
+        if (freshSigned) {
+          signedMap[p.url] = freshSigned; // cache for rest of pdf
+          const { dataUrl, fmt } = await fetchAsDataUrl(freshSigned, 1);
+
+          if (fmt === "WEBP") {
+            console.warn("Skipping WEBP:", p.url);
+            continue;
+          }
+
+          doc.addImage(dataUrl, fmt, x, y, IMAGE_W, IMAGE_H);
+          x += IMAGE_W + GAP;
+          continue;
+        }
+      } catch (signedErr) {
+        // ignore and fall through
+      }
+    }
+
+    throw firstErr;
   }
+} catch (e) {
+  console.warn("Skipping inaccessible image:", p.url, e?.message);
 }
 
+          }
 
           cursorY = y + IMAGE_H + 8;
           doc.setTextColor("#000");

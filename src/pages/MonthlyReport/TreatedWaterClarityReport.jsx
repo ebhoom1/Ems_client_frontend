@@ -38,6 +38,8 @@ const formatDate = (dayStr, monthIndex, year) => {
 };
 
 const TreatedWaterClarityReport = () => {
+  const DEBUG = true;
+
   const dispatch = useDispatch();
 
   const { userData } = useSelector((state) => state.user);
@@ -118,7 +120,17 @@ const TreatedWaterClarityReport = () => {
             month + 1
           }`
         );
-
+        if (DEBUG) {
+          console.groupCollapsed(
+            `🟦 Treated Water Clarity GET ✅ (${targetUser.userName}) ${year}-${
+              month + 1
+            }`
+          );
+          console.log("Raw response:", data);
+          console.log("entries length:", data?.entries?.length || 0);
+          console.log("first entry:", data?.entries?.[0]);
+          console.groupEnd();
+        }
         const map = {};
         days.forEach((dayStr) => {
           const dNum = parseInt(dayStr, 10);
@@ -127,6 +139,13 @@ const TreatedWaterClarityReport = () => {
             photos: entry?.photos || [],
           };
         });
+        if (DEBUG) {
+          console.groupCollapsed("🟩 Mapped entriesByDay (preview)");
+          console.log("map keys:", Object.keys(map));
+          // show only first 3 days to avoid huge logs
+          console.log("sample:", Object.entries(map).slice(0, 3));
+          console.groupEnd();
+        }
 
         setEntriesByDay(map);
         setPendingFilesByDay({});
@@ -151,81 +170,19 @@ const TreatedWaterClarityReport = () => {
   }, [targetUser.userId, year, month]);
 
   // --- File selection: multiple photos per date, preview immediately ---
-  const handlePhotoSelect = (dayStr, fileList,comment) => {
+  const handlePhotoSelect = (dayStr, fileList, comment) => {
     if (!fileList || !fileList.length) return;
     if (!targetUser.userId) {
       toast.error("Select a user/site first.");
       return;
     }
 
-    const handleDeletePhoto = async (dayStr, photoIndex, url) => {
-      if (!targetUser.userId) {
-        toast.error("Select a user/site first.");
-        return;
-      }
-
-      // 1) If it's a local preview (not yet saved), just remove it locally
-      if (url.startsWith("blob:")) {
-        setEntriesByDay((prev) => {
-          const entry = prev[dayStr] || { photos: [] };
-          const newPhotos = entry.photos.filter((p, i) => i !== photoIndex);
-          return {
-            ...prev,
-            [dayStr]: { photos: newPhotos },
-          };
-        });
-
-        setPendingFilesByDay((prev) => {
-          const files = prev[dayStr] || [];
-          if (!files.length) return prev;
-          const newFiles = files.filter((f, i) => i !== photoIndex);
-          return {
-            ...prev,
-            [dayStr]: newFiles,
-          };
-        });
-
-        return;
-      }
-
-      // 2) Confirm & delete from backend for S3 URLs
-      const confirmDelete = window.confirm("Delete this photo?");
-      if (!confirmDelete) return;
-
-      try {
-        const dayNum = parseInt(dayStr, 10);
-
-        const res = await axios.delete(
-          `${API_URL}/api/treated-water-clarity/photo/${
-            targetUser.userId
-          }/${year}/${month + 1}/${dayNum}`,
-          {
-            data: { photoUrl: url },
-          }
-        );
-
-        const updatedEntry = res.data.entry;
-
-        setEntriesByDay((prev) => ({
-          ...prev,
-          [dayStr]: {
-            photos: updatedEntry?.photos || [],
-          },
-        }));
-
-        toast.success("Photo deleted");
-      } catch (err) {
-        console.error("Failed to delete photo:", err);
-        toast.error("Failed to delete photo");
-      }
-    };
-
     const filesArray = Array.from(fileList);
     const previewUrls = filesArray.map((file) => URL.createObjectURL(file));
 
     // Add previews to current entries
     setEntriesByDay((prev) => {
-      const existing = prev[dayStr] || { photos: [], comment: ""};
+      const existing = prev[dayStr] || { photos: [], comment: "" };
       return {
         ...prev,
         [dayStr]: {
@@ -337,8 +294,7 @@ const TreatedWaterClarityReport = () => {
       return {
         dateStr: formatDate(dayStr, month, year),
         photos: entry.photos || [],
-          comment: entry.comment || "",
-
+        comment: entry.comment || "",
       };
     });
 
@@ -595,7 +551,6 @@ const TreatedWaterClarityReport = () => {
   //         }
   //       },
   //     });
-    
 
   //     doc.save(
   //       `${targetUser.siteName}_${monthNames[month]}_${year}_TreatedWaterClarity.pdf`
@@ -608,36 +563,77 @@ const TreatedWaterClarityReport = () => {
   //   }
   // };
 
-// put this helper above handleDownloadPDF
-const fetchAsDataUrl = async (url) => {
-  const res = await fetch(url, { mode: "cors" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const blob = await res.blob();
+ // ---------------- HELPERS (keep above handleDownloadPDF) ----------------
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  const dataUrl = await new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(blob);
-  });
+const fetchAsDataUrl = async (url, retries = 2) => {
+  let lastErr;
 
-  const fmt =
-    blob.type === "image/png" ? "PNG" :
-    blob.type === "image/webp" ? "WEBP" :
-    "JPEG";
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, { mode: "cors", cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-  return { dataUrl, fmt };
+      const blob = await res.blob();
+
+      const dataUrl = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(blob);
+      });
+
+      const fmt =
+        blob.type === "image/png"
+          ? "PNG"
+          : blob.type === "image/webp"
+          ? "WEBP"
+          : "JPEG";
+
+      return { dataUrl, fmt };
+    } catch (e) {
+      lastErr = e;
+      if (attempt < retries) await sleep(350 * (attempt + 1));
+    }
+  }
+
+  throw lastErr;
 };
 
+const getSignedUrlMap = async (rows) => {
+  const urls = [];
+  rows.forEach((r) => (r.photos || []).forEach((u) => u && urls.push(u)));
 
+  const unique = Array.from(new Set(urls)).filter(
+    (u) => u && !u.startsWith("blob:")
+  );
+  if (!unique.length) return {};
+
+  const { data } = await axios.post(
+    `${API_URL}/api/treated-water-clarity/signed-urls`,
+    { urls: unique, expiresIn: 600 }
+  );
+
+  return data?.signedMap || {};
+};
+
+const getSignedUrlForOne = async (url) => {
+  const { data } = await axios.post(
+    `${API_URL}/api/treated-water-clarity/signed-urls`,
+    { urls: [url], expiresIn: 600 }
+  );
+  return data?.signedMap?.[url] || null;
+};
+
+// ---------------- COMPLETE HANDLE DOWNLOAD PDF ----------------
 const handleDownloadPDF = async () => {
   if (!targetUser.userId) {
     toast.error("Select a user/site first.");
     return;
   }
 
-  // IMPORTANT: buildExportRows() should return { dateStr, photos, comment }
-  const allRows = buildExportRows();
+  // Build rows and keep ONLY days that have photos
+  const allRows = buildExportRows(); // [{ dateStr, photos, comment }]
   const rows = allRows.filter((r) => (r.photos || []).length > 0);
 
   if (!rows.length) {
@@ -651,9 +647,10 @@ const handleDownloadPDF = async () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    // --- Header with logo & title ---
+    // ---------------- Header ----------------
     const logoImg = new Image();
     logoImg.src = genexlogo;
+
     await new Promise((resolve) => {
       logoImg.onload = resolve;
       logoImg.onerror = resolve;
@@ -666,7 +663,9 @@ const handleDownloadPDF = async () => {
     doc.setFont("helvetica", "bold");
     doc.setTextColor("#FFFFFF");
     doc.setFontSize(14);
-    doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2, 12, { align: "center" });
+    doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2, 12, {
+      align: "center",
+    });
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
@@ -685,44 +684,80 @@ const handleDownloadPDF = async () => {
     doc.text("Phone: +91-9663044156", pageWidth / 2, 26, { align: "center" });
 
     doc.setFontSize(9);
-    doc.text("Treated Water Clarity Report", pageWidth / 2, 31, { align: "center" });
+    doc.text("Treated Water Clarity Report", pageWidth / 2, 31, {
+      align: "center",
+    });
 
-    const monthNames = [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December",
+    const monthNamesLocal = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
 
     doc.setTextColor("#000000");
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
-    doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
+    doc.text(`Month: ${monthNamesLocal[month]} ${year}`, 15, 52);
 
-    // --- Prepare rows ---
+    // ---------------- Signed URL map (optional) ----------------
+    let signedMap = {};
+    try {
+      signedMap = await getSignedUrlMap(rows);
+    } catch (e) {
+      console.warn("signed-urls failed, continuing without signed urls", e?.message);
+      signedMap = {};
+    }
+
+    // ---------------- Prepare rows ----------------
     const rowsWithImages = rows.map((r) => ({
       dateStr: r.dateStr,
       comment: r.comment || "",
       photoUrls: (r.photos || []).filter((u) => u && !u.startsWith("blob:")),
-      _images: [], // [{ dataUrl, fmt }]
+      _images: [], // [{ originalUrl, dataUrl, fmt }]
       _rowHeight: 0,
     }));
 
-    // Pre-load all images as DataURL (avoids CORS/tainted canvas issues)
-    await Promise.all(
-      rowsWithImages.flatMap((row) =>
-        row.photoUrls.map(async (url) => {
-          try {
-            const { dataUrl, fmt } = await fetchAsDataUrl(url);
-            if (fmt === "WEBP") return; // skip WEBP if jsPDF can't handle it
-            row._images.push({ dataUrl, fmt });
-          } catch (e) {
-            console.warn("Skipping inaccessible image:", url, e?.message);
-          }
-        })
-      )
-    );
+    // ---------------- Preload ALL images BEFORE autoTable ----------------
+    for (const row of rowsWithImages) {
+      for (const originalUrl of row.photoUrls) {
+        const directOrSigned = signedMap[originalUrl] || originalUrl;
 
-    // ---------- GRID SETTINGS ----------
+        // Try direct/signed first
+        try {
+          const { dataUrl, fmt } = await fetchAsDataUrl(directOrSigned, 2);
+          if (fmt === "WEBP") continue; // jsPDF often can't embed webp reliably
+          row._images.push({ originalUrl, dataUrl, fmt });
+          continue;
+        } catch (e1) {
+          // If not already signed, try one-time fresh signed url
+          if (!signedMap[originalUrl]) {
+            try {
+              const freshSigned = await getSignedUrlForOne(originalUrl);
+              if (freshSigned) {
+                signedMap[originalUrl] = freshSigned;
+                const { dataUrl, fmt } = await fetchAsDataUrl(freshSigned, 1);
+                if (fmt === "WEBP") continue;
+                row._images.push({ originalUrl, dataUrl, fmt });
+                continue;
+              }
+            } catch (_e2) {}
+          }
+          console.warn("Skipping inaccessible image:", originalUrl, e1?.message);
+        }
+      }
+    }
+
+    // ---------------- Layout settings ----------------
     const PER_ROW = 3;
     const padding = 2;
     const gapX = 3;
@@ -735,25 +770,27 @@ const handleDownloadPDF = async () => {
     const availWidth = photosColWidth - padding * 2;
     const imgSize = (availWidth - gapX * (PER_ROW - 1)) / PER_ROW;
 
-    // Row height calc (prevents overlap)
+    // Row height calc
     rowsWithImages.forEach((row) => {
       const count = row._images.length;
       if (!count) {
-        row._rowHeight = 18; // small height if all images skipped
+        row._rowHeight = 18; // small if no images loaded
         return;
       }
       const rowsNeeded = Math.ceil(count / PER_ROW);
-      row._rowHeight = padding * 2 + rowsNeeded * imgSize + (rowsNeeded - 1) * gapY;
+      row._rowHeight =
+        padding * 2 + rowsNeeded * imgSize + (rowsNeeded - 1) * gapY;
     });
 
     const tableBody = rowsWithImages.map((r) => ({
       date: r.dateStr,
-      photos: " ",
+      photos: " ", // keep cell not empty
       comment: r.comment || "",
       _images: r._images,
       _rowHeight: r._rowHeight,
     }));
 
+    // ---------------- Draw table ----------------
     doc.autoTable({
       startY: 60,
       columns: [
@@ -771,6 +808,7 @@ const handleDownloadPDF = async () => {
         lineWidth: 0.3,
         lineColor: [120, 120, 120],
       },
+
       styles: {
         fontSize: 8,
         cellPadding: 3,
@@ -792,7 +830,7 @@ const handleDownloadPDF = async () => {
         if (rh) data.cell.styles.minCellHeight = rh;
 
         if (data.column.dataKey === "photos") {
-          data.cell.text = [" "]; // keep non-empty
+          data.cell.text = [" "];
         }
       },
 
@@ -807,30 +845,36 @@ const handleDownloadPDF = async () => {
         const startY = data.cell.y + padding;
 
         images.forEach(({ dataUrl, fmt }, i) => {
-          const r = Math.floor(i / PER_ROW);
-          const c = i % PER_ROW;
+          const rr = Math.floor(i / PER_ROW);
+          const cc = i % PER_ROW;
 
-          const isLastRow = r === Math.floor((images.length - 1) / PER_ROW);
-          const countInThisRow = isLastRow ? images.length - r * PER_ROW : PER_ROW;
+          const isLastRow = rr === Math.floor((images.length - 1) / PER_ROW);
+          const countInThisRow = isLastRow
+            ? images.length - rr * PER_ROW
+            : PER_ROW;
 
-          const rowWidth = countInThisRow * imgSize + (countInThisRow - 1) * gapX;
+          const rowWidth =
+            countInThisRow * imgSize + (countInThisRow - 1) * gapX;
           const xOffset = (availWidth - rowWidth) / 2;
 
-          const x = startX + xOffset + c * (imgSize + gapX);
-          const y = startY + r * (imgSize + gapY);
+          const x = startX + xOffset + cc * (imgSize + gapX);
+          const y = startY + rr * (imgSize + gapY);
 
           try {
             doc.addImage(dataUrl, fmt, x, y, imgSize, imgSize);
           } catch (e) {
-            // fallback
-            try { doc.addImage(dataUrl, "JPEG", x, y, imgSize, imgSize); } catch (_e2) {}
+            // fallback to JPEG if fmt fails
+            try {
+              doc.addImage(dataUrl, "JPEG", x, y, imgSize, imgSize);
+            } catch (_e2) {}
           }
         });
       },
     });
 
+    // ---------------- Save ----------------
     doc.save(
-      `${targetUser.siteName}_${monthNames[month]}_${year}_TreatedWaterClarity.pdf`
+      `${targetUser.siteName}_${monthNamesLocal[month]}_${year}_TreatedWaterClarity.pdf`
     );
 
     toast.success("PDF generated successfully!");
@@ -839,7 +883,6 @@ const handleDownloadPDF = async () => {
     toast.error("Failed to generate PDF.");
   }
 };
-
 
 
   const handleDeletePhoto = async (dayStr, photoIndex, url) => {
@@ -1015,6 +1058,13 @@ const handleDownloadPDF = async () => {
     cursor: "pointer",
     color: "#236a80",
   };
+
+  useEffect(() => {
+    if (!DEBUG) return;
+    console.groupCollapsed("🟨 entriesByDay updated");
+    console.log(entriesByDay);
+    console.groupEnd();
+  }, [entriesByDay]);
 
   return (
     <>
@@ -1302,25 +1352,28 @@ const handleDownloadPDF = async () => {
                                         )}
                                       </div>
                                       {/* Add comment input */}
-    <textarea
-      placeholder="Add a comment"
-      value={entry.comment || ""}
-      onChange={(e) =>
-        setEntriesByDay((prev) => ({
-          ...prev,
-          [dayStr]: { ...prev[dayStr], comment: e.target.value },
-        }))
-      }
-      style={{
-        padding: "8px",
-        fontSize: "0.9rem",
-        borderRadius: "6px",
-        border: "2px dotted #3498db",
-        width: "100%",
-        minHeight: "50px",
-        resize: "none",
-      }}
-    />
+                                      <textarea
+                                        placeholder="Add a comment"
+                                        value={entry.comment || ""}
+                                        onChange={(e) =>
+                                          setEntriesByDay((prev) => ({
+                                            ...prev,
+                                            [dayStr]: {
+                                              ...prev[dayStr],
+                                              comment: e.target.value,
+                                            },
+                                          }))
+                                        }
+                                        style={{
+                                          padding: "8px",
+                                          fontSize: "0.9rem",
+                                          borderRadius: "6px",
+                                          border: "2px dotted #3498db",
+                                          width: "100%",
+                                          minHeight: "50px",
+                                          resize: "none",
+                                        }}
+                                      />
 
                                       {(isOperator || isAdmin) && (
                                         <label
