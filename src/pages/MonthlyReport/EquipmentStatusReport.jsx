@@ -1149,6 +1149,7 @@ const EquipmentStatusReport = () => {
           make: "",
           status: "WORKING",
           comment: "",
+          notes: "",
         }));
 
         // Try loading existing saved report
@@ -1167,6 +1168,7 @@ const EquipmentStatusReport = () => {
               make: e.make || "",
               status: e.status || "WORKING",
               comment: e.comment || "",
+              notes: e.notes || "",
             }))
           );
         } else {
@@ -1185,6 +1187,7 @@ const EquipmentStatusReport = () => {
             make: "",
             status: "WORKING",
             comment: "",
+            notes: "",
           }))
         );
       } finally {
@@ -1204,18 +1207,48 @@ const EquipmentStatusReport = () => {
     });
   };
 
+  // const handleAddRow = () => {
+  //   setRows((prev) => [
+  //     ...prev,
+  //     {
+  //       slNo: prev.length + 1,
+  //       equipmentName: "",
+  //       capacity: "",
+  //       make: "",
+  //       status: "WORKING",
+  //       comment: "",
+  //       notes: "",
+  //     },
+  //   ]);
+  // };
+
   const handleAddRow = () => {
-    setRows((prev) => [
-      ...prev,
-      {
-        slNo: prev.length + 1,
-        equipmentName: "",
-        capacity: "",
-        make: "",
-        status: "WORKING",
-        comment: "",
-      },
-    ]);
+    setRows((prev) => {
+      const nextSl =
+        prev.length > 0
+          ? Math.max(...prev.map((r) => Number(r.slNo) || 0)) + 1
+          : 1;
+
+      return [
+        ...prev,
+        {
+          slNo: nextSl,
+          equipmentName: "",
+          capacity: "",
+          make: "",
+          status: "WORKING",
+          comment: "",
+          notes: "", 
+        },
+      ];
+    });
+  };
+
+  const handleDeleteRow = (indexToDelete) => {
+    const ok = window.confirm("Delete this row?");
+    if (!ok) return;
+
+    setRows((prev) => prev.filter((_, idx) => idx !== indexToDelete));
   };
 
   // Build rows for saving
@@ -1227,6 +1260,7 @@ const EquipmentStatusReport = () => {
       make: r.make || "",
       status: r.status || "",
       comment: r.comment || "",
+      notes: r.notes || "",
     }));
 
   // --- Save Report ---
@@ -1279,9 +1313,9 @@ const EquipmentStatusReport = () => {
     if (!targetUser.userId) return toast.error("Select a site first.");
     const exportRows = buildExportRows();
 
-    let csv = "SL.No,Equipment,Capacity,Make,Status,Comment\n";
+    let csv = "SL.No,Equipment,Capacity,Make,Status,Comment,Notes\n";
     exportRows.forEach((r) => {
-      csv += `${r.slNo},"${r.equipmentName}","${r.capacity}","${r.make}","${r.status}","${r.comment}"\n`;
+      csv += `${r.slNo},"${r.equipmentName}","${r.capacity}","${r.make}","${r.status}","${r.comment}","${r.notes}"\n`;
     });
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -1329,7 +1363,17 @@ const EquipmentStatusReport = () => {
 
       doc.autoTable({
         startY: 58,
-        head: [["SL.No", "Equipment", "Capacity", "Make", "Status", "Comment"]],
+        head: [
+          [
+            "SL.No",
+            "Equipment",
+            "Capacity",
+            "Make",
+            "Status",
+            "Comment",
+            "Notes",
+          ],
+        ],
         body: exportRows.map((r) => [
           r.slNo,
           r.equipmentName,
@@ -1337,6 +1381,7 @@ const EquipmentStatusReport = () => {
           r.make,
           r.status,
           r.comment,
+          r.notes,
         ]),
         theme: "grid",
         headStyles: { fillColor: "#236a80", textColor: "#fff" },
@@ -1505,6 +1550,8 @@ const EquipmentStatusReport = () => {
                               <th>Make</th>
                               <th>Status</th>
                               <th>Comment</th>
+                              <th>Notes</th>
+                              <th>Delete Row</th>
                             </tr>
                           </thead>
 
@@ -1606,6 +1653,40 @@ const EquipmentStatusReport = () => {
                                       minHeight: "50px",
                                     }}
                                   />
+                                </td>
+                                <td>
+                                  <textarea
+                                    value={row.notes}
+                                    onChange={(e) =>
+                                      handleCellChange(
+                                        index,
+                                        "notes",
+                                        e.target.value
+                                      )
+                                    }
+                                    style={{
+                                      ...inputStyle,
+                                      width: "200px",
+                                      minHeight: "50px",
+                                    }}
+                                  />
+                                </td>
+                                <td style={{ textAlign: "center" }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteRow(index)}
+                                    disabled={loading || saving}
+                                    title="Delete this row"
+                                    style={{
+                                      border: "none",
+                                      background: "transparent",
+                                      cursor: "pointer",
+                                      fontSize: "18px",
+                                      lineHeight: 1,
+                                    }}
+                                  >
+                                    🗑️
+                                  </button>
                                 </td>
                               </tr>
                             ))}
