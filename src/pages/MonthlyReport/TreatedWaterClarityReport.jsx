@@ -151,7 +151,7 @@ const TreatedWaterClarityReport = () => {
   }, [targetUser.userId, year, month]);
 
   // --- File selection: multiple photos per date, preview immediately ---
-  const handlePhotoSelect = (dayStr, fileList) => {
+  const handlePhotoSelect = (dayStr, fileList,comment) => {
     if (!fileList || !fileList.length) return;
     if (!targetUser.userId) {
       toast.error("Select a user/site first.");
@@ -225,11 +225,12 @@ const TreatedWaterClarityReport = () => {
 
     // Add previews to current entries
     setEntriesByDay((prev) => {
-      const existing = prev[dayStr] || { photos: [] };
+      const existing = prev[dayStr] || { photos: [], comment: ""};
       return {
         ...prev,
         [dayStr]: {
           photos: [...(existing.photos || []), ...previewUrls],
+          comment: comment || existing.comment,
         },
       };
     });
@@ -336,6 +337,8 @@ const TreatedWaterClarityReport = () => {
       return {
         dateStr: formatDate(dayStr, month, year),
         photos: entry.photos || [],
+          comment: entry.comment || "",
+
       };
     });
 
@@ -366,8 +369,9 @@ const TreatedWaterClarityReport = () => {
     for (const row of rows) {
       const excelRow = sheet.getRow(rowNumber);
       excelRow.getCell(1).value = row.dateStr;
+      excelRow.getCell(2).value = row.comment || "";
 
-      let col = 2; // Start placing images from column B
+      let col = 3; // Start placing images from column B
 
       for (const url of row.photos) {
         try {
@@ -604,15 +608,38 @@ const TreatedWaterClarityReport = () => {
   //   }
   // };
 
+// put this helper above handleDownloadPDF
+const fetchAsDataUrl = async (url) => {
+  const res = await fetch(url, { mode: "cors" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const blob = await res.blob();
+
+  const dataUrl = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+
+  const fmt =
+    blob.type === "image/png" ? "PNG" :
+    blob.type === "image/webp" ? "WEBP" :
+    "JPEG";
+
+  return { dataUrl, fmt };
+};
+
+
 const handleDownloadPDF = async () => {
   if (!targetUser.userId) {
     toast.error("Select a user/site first.");
     return;
   }
 
-  // Build rows and keep ONLY days that have photos
-  const allRows = buildExportRows(); // [{ dateStr, photos: [...] }]
+  // IMPORTANT: buildExportRows() should return { dateStr, photos, comment }
+  const allRows = buildExportRows();
   const rows = allRows.filter((r) => (r.photos || []).length > 0);
+
   if (!rows.length) {
     toast.info("No photos to export for this month.");
     return;
@@ -632,7 +659,6 @@ const handleDownloadPDF = async () => {
       logoImg.onerror = resolve;
     });
 
-    // Top blue bar
     doc.setFillColor("#236a80");
     doc.rect(0, 0, pageWidth, 35, "F");
     doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
@@ -640,44 +666,30 @@ const handleDownloadPDF = async () => {
     doc.setFont("helvetica", "bold");
     doc.setTextColor("#FFFFFF");
     doc.setFontSize(14);
-    doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2 + 10, 12, {
-      align: "center",
-    });
+    doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2, 12, { align: "center" });
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.text(
       "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony,",
-      110,
+      pageWidth / 2,
       18,
       { align: "center" }
     );
     doc.text(
       "Shettihalli Post, Jalahalli West, Bengaluru, Karnataka 560015",
-      110,
+      pageWidth / 2,
       22,
       { align: "center" }
     );
-    doc.text("Phone: +91-9663044156", 110, 26, { align: "center" });
+    doc.text("Phone: +91-9663044156", pageWidth / 2, 26, { align: "center" });
 
     doc.setFontSize(9);
-    doc.text("Treated Water Clarity Report", pageWidth / 2 + 10, 31, {
-      align: "center",
-    });
+    doc.text("Treated Water Clarity Report", pageWidth / 2, 31, { align: "center" });
 
     const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December",
     ];
 
     doc.setTextColor("#000000");
@@ -686,60 +698,58 @@ const handleDownloadPDF = async () => {
     doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
     doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
 
-    // --- Prepare one row per DATE, with all images in that row ---
+    // --- Prepare rows ---
     const rowsWithImages = rows.map((r) => ({
       dateStr: r.dateStr,
-      photoUrls: r.photos || [],
-      _images: [], // [{img, fmt}]
+      comment: r.comment || "",
+      photoUrls: (r.photos || []).filter((u) => u && !u.startsWith("blob:")),
+      _images: [], // [{ dataUrl, fmt }]
       _rowHeight: 0,
     }));
 
-    // Pre-load all images
+    // Pre-load all images as DataURL (avoids CORS/tainted canvas issues)
     await Promise.all(
       rowsWithImages.flatMap((row) =>
-        row.photoUrls.map(
-          (url) =>
-            new Promise((resolve) => {
-              const img = new Image();
-              img.crossOrigin = "Anonymous";
-              img.src = url;
-
-              img.onload = () => {
-                const lower = (url || "").toLowerCase();
-                // choose format by url; if your urls don't contain extensions, switch to always "JPEG"
-                const fmt = lower.includes(".png") ? "PNG" : "JPEG";
-                row._images.push({ img, fmt });
-                resolve();
-              };
-              img.onerror = () => resolve();
-            })
-        )
+        row.photoUrls.map(async (url) => {
+          try {
+            const { dataUrl, fmt } = await fetchAsDataUrl(url);
+            if (fmt === "WEBP") return; // skip WEBP if jsPDF can't handle it
+            row._images.push({ dataUrl, fmt });
+          } catch (e) {
+            console.warn("Skipping inaccessible image:", url, e?.message);
+          }
+        })
       )
     );
 
     // ---------- GRID SETTINGS ----------
     const PER_ROW = 3;
-    const padding = 2; // inner padding inside photos cell
+    const padding = 2;
     const gapX = 3;
     const gapY = 3;
 
     const dateColWidth = 30;
-    const photosColWidth = pageWidth - dateColWidth - 20; // keep same margin logic
+    const commentColWidth = 55;
+    const photosColWidth = pageWidth - dateColWidth - commentColWidth - 20;
+
     const availWidth = photosColWidth - padding * 2;
     const imgSize = (availWidth - gapX * (PER_ROW - 1)) / PER_ROW;
 
-    // Pre-calc required row height for each date (THIS prevents overlap)
+    // Row height calc (prevents overlap)
     rowsWithImages.forEach((row) => {
       const count = row._images.length;
-      const rowsNeeded = Math.max(1, Math.ceil(count / PER_ROW));
-      const requiredHeight =
-        padding * 2 + rowsNeeded * imgSize + (rowsNeeded - 1) * gapY;
-      row._rowHeight = requiredHeight;
+      if (!count) {
+        row._rowHeight = 18; // small height if all images skipped
+        return;
+      }
+      const rowsNeeded = Math.ceil(count / PER_ROW);
+      row._rowHeight = padding * 2 + rowsNeeded * imgSize + (rowsNeeded - 1) * gapY;
     });
 
     const tableBody = rowsWithImages.map((r) => ({
       date: r.dateStr,
-      photos: " ", // keep non-empty
+      photos: " ",
+      comment: r.comment || "",
       _images: r._images,
       _rowHeight: r._rowHeight,
     }));
@@ -749,6 +759,7 @@ const handleDownloadPDF = async () => {
       columns: [
         { header: "Date", dataKey: "date" },
         { header: "Photos", dataKey: "photos" },
+        { header: "Comment", dataKey: "comment" },
       ],
       body: tableBody,
       theme: "grid",
@@ -760,7 +771,6 @@ const handleDownloadPDF = async () => {
         lineWidth: 0.3,
         lineColor: [120, 120, 120],
       },
-
       styles: {
         fontSize: 8,
         cellPadding: 3,
@@ -771,26 +781,21 @@ const handleDownloadPDF = async () => {
 
       columnStyles: {
         date: { cellWidth: dateColWidth },
-        // IMPORTANT: autoTable padding must be 0 for photos cell
         photos: { cellWidth: photosColWidth, cellPadding: 0 },
+        comment: { cellWidth: commentColWidth },
       },
 
-      // ✅ Apply same row height to BOTH cells (Date + Photos)
       didParseCell: (data) => {
         if (data.section !== "body") return;
 
         const rh = data.row?.raw?._rowHeight;
-        if (!rh) return;
+        if (rh) data.cell.styles.minCellHeight = rh;
 
-        data.cell.styles.minCellHeight = rh;
-
-        // some versions collapse empty cells; keep photos cell non-empty
         if (data.column.dataKey === "photos") {
-          data.cell.text = [" "];
+          data.cell.text = [" "]; // keep non-empty
         }
       },
 
-      // ✅ Draw images inside photos cell: 3 per row, wrap
       didDrawCell: (data) => {
         if (data.section !== "body") return;
         if (data.column.dataKey !== "photos") return;
@@ -801,33 +806,24 @@ const handleDownloadPDF = async () => {
         const startX = data.cell.x + padding;
         const startY = data.cell.y + padding;
 
-        images.forEach(({ img, fmt }, i) => {
+        images.forEach(({ dataUrl, fmt }, i) => {
           const r = Math.floor(i / PER_ROW);
           const c = i % PER_ROW;
 
-          // center-align last row if < 3 images
           const isLastRow = r === Math.floor((images.length - 1) / PER_ROW);
           const countInThisRow = isLastRow ? images.length - r * PER_ROW : PER_ROW;
 
-          const rowWidth =
-            countInThisRow * imgSize + (countInThisRow - 1) * gapX;
-
+          const rowWidth = countInThisRow * imgSize + (countInThisRow - 1) * gapX;
           const xOffset = (availWidth - rowWidth) / 2;
 
           const x = startX + xOffset + c * (imgSize + gapX);
           const y = startY + r * (imgSize + gapY);
 
           try {
-            doc.addImage(img, fmt, x, y, imgSize, imgSize);
-          } catch (e1) {
-            // fallback if fmt guess fails (common when url has no extension)
-            try {
-              doc.addImage(img, "JPEG", x, y, imgSize, imgSize);
-            } catch (e2) {
-              try {
-                doc.addImage(img, "PNG", x, y, imgSize, imgSize);
-              } catch (e3) {}
-            }
+            doc.addImage(dataUrl, fmt, x, y, imgSize, imgSize);
+          } catch (e) {
+            // fallback
+            try { doc.addImage(dataUrl, "JPEG", x, y, imgSize, imgSize); } catch (_e2) {}
           }
         });
       },
@@ -843,6 +839,7 @@ const handleDownloadPDF = async () => {
     toast.error("Failed to generate PDF.");
   }
 };
+
 
 
   const handleDeletePhoto = async (dayStr, photoIndex, url) => {
@@ -1304,6 +1301,26 @@ const handleDownloadPDF = async () => {
                                           )
                                         )}
                                       </div>
+                                      {/* Add comment input */}
+    <textarea
+      placeholder="Add a comment"
+      value={entry.comment || ""}
+      onChange={(e) =>
+        setEntriesByDay((prev) => ({
+          ...prev,
+          [dayStr]: { ...prev[dayStr], comment: e.target.value },
+        }))
+      }
+      style={{
+        padding: "8px",
+        fontSize: "0.9rem",
+        borderRadius: "6px",
+        border: "2px dotted #3498db",
+        width: "100%",
+        minHeight: "50px",
+        resize: "none",
+      }}
+    />
 
                                       {(isOperator || isAdmin) && (
                                         <label

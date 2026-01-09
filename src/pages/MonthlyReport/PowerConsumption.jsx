@@ -195,7 +195,7 @@ const PowerConsumption = () => {
       r.unit,
     ]);
 
-    doc.autoTable({
+       doc.autoTable({
       startY: 35,
       head: [
         [
@@ -207,14 +207,30 @@ const PowerConsumption = () => {
         ],
       ],
       body: tableBody,
+
+      // ✅ TOTAL FOOTER ROW
+      foot: [
+        ["TOTAL", "", "", String(totals.totalConsumption), String(totals.totalUnit)],
+      ],
+
       styles: { fontSize: 9, halign: "center" },
       headStyles: {
-        fillColor: [35, 106, 128], // THEME
+        fillColor: [35, 106, 128],
         textColor: 255,
         halign: "center",
       },
+
+      // ✅ (optional but nice) style for total row
+      footStyles: {
+        fillColor: [255, 243, 205], // light yellow
+        textColor: 0,
+        fontStyle: "bold",
+        halign: "center",
+      },
+
       margin: { left: 14, right: 14 },
     });
+
 
     /* ---------- FOOTER ---------- */
     doc.setFontSize(9);
@@ -226,6 +242,26 @@ const PowerConsumption = () => {
       `STP_Power_Consumption_${targetUser.siteName}_${monthNames[month]}_${year}.pdf`
     );
   };
+
+
+    /* ---------- TOTALS ---------- */
+  const totals = useMemo(() => {
+    let totalConsumption = 0;
+    let totalUnit = 0;
+
+    for (const r of rows) {
+      const c = parseFloat(r.consumption);
+      const u = parseFloat(r.unit);
+
+      if (!isNaN(c)) totalConsumption += c;
+      if (!isNaN(u)) totalUnit += u;
+    }
+
+    return {
+      totalConsumption: +totalConsumption.toFixed(2),
+      totalUnit: +totalUnit.toFixed(2),
+    };
+  }, [rows]);
 
   return (
     <div className="d-flex">
@@ -339,6 +375,28 @@ const PowerConsumption = () => {
                 </tr>
               ))}
             </tbody>
+                        <tfoot>
+              <tr style={{ background: "#fff3cd", fontWeight: 800 }}>
+                <td>TOTAL</td>
+                <td></td>
+                <td></td>
+                <td>
+                  <input
+                    className="form-control"
+                    value={totals.totalConsumption}
+                    readOnly
+                  />
+                </td>
+                <td>
+                  <input
+                    className="form-control"
+                    value={totals.totalUnit}
+                    readOnly
+                  />
+                </td>
+              </tr>
+            </tfoot>
+
           </table>
 
           <div className="text-center mb-5">
