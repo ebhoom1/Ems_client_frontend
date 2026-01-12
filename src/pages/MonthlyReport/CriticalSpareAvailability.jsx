@@ -10,7 +10,6 @@ import Swal from "sweetalert2";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import genexlogo from "../../assests/images/logonewgenex.png";
-import seal from "../../assests/images/seal.png";
 
 import { API_URL } from "../../utils/apiConfig";
 
@@ -202,34 +201,34 @@ console.log("Save response:", res.data);
     margin: { left: 14, right: 14 },
   });
 
-  /* ---------- SEAL & SIGNATURE (ALWAYS AT END) ---------- */
-  /* ---------- SEAL & SIGNATURE (ALWAYS AT END) ---------- */
-let finalY = doc.lastAutoTable.finalY + 20;
+//   /* ---------- SEAL & SIGNATURE (ALWAYS AT END) ---------- */
+//   /* ---------- SEAL & SIGNATURE (ALWAYS AT END) ---------- */
+// let finalY = doc.lastAutoTable.finalY + 20;
 
-// If not enough space, move to new page
-if (finalY > 240) {
-  doc.addPage();
-  finalY = 40;
-}
+// // If not enough space, move to new page
+// if (finalY > 240) {
+//   doc.addPage();
+//   finalY = 40;
+// }
 
-// 🔹 TEXT FIRST
-doc.setFontSize(10);
-doc.setTextColor(0);
-doc.text("Seal & Signature", 177.5, finalY, { align: "center" });
+// // 🔹 TEXT FIRST
+// doc.setFontSize(10);
+// doc.setTextColor(0);
+// doc.text("Seal & Signature", 177.5, finalY, { align: "center" });
 
-// 🔹 SEAL BELOW TEXT
-const SEAL_WIDTH = 65;
-const SEAL_HEIGHT = 65;
-const SEAL_X = 150; // left position
+// // 🔹 SEAL BELOW TEXT
+// const SEAL_WIDTH = 65;
+// const SEAL_HEIGHT = 65;
+// const SEAL_X = 150; // left position
 
-doc.addImage(
-  seal,
-  "PNG",
-  SEAL_X,
-  finalY,          // 👈 gap below text
-  SEAL_WIDTH,
-  SEAL_HEIGHT
-);
+// doc.addImage(
+//   seal,
+//   "PNG",
+//   SEAL_X,
+//   finalY,          // 👈 gap below text
+//   SEAL_WIDTH,
+//   SEAL_HEIGHT
+// );
 
   
 

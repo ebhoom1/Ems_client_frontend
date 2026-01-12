@@ -70,6 +70,7 @@ const InletAndOutlet = () => {
   const inletChartRef = useRef(null);
   const outletChartRef = useRef(null);
   const chartRefs = useRef({});
+  const chartInstanceRefs = useRef({});
 
   const { userData } = useSelector((state) => state.user);
   const selectedUserId = useSelector((state) => state.selectedUser.userId);
@@ -512,11 +513,7 @@ const InletAndOutlet = () => {
         doc.setTextColor("#000");
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
-        doc.text(
-          `Site: ${targetUser.siteName} (${targetUser.userName})`,
-          14,
-          38
-        );
+        doc.text(`Site: ${targetUser.siteName}`, 14, 38);
         doc.text(`Month: ${months[month]} ${year}`, 14, 45);
       };
 
@@ -609,22 +606,29 @@ const InletAndOutlet = () => {
       let y = 55;
 
       for (const fm of flowMeters) {
-        const canvas = chartRefs.current[fm];
-        if (!canvas) continue;
+        const chart = chartInstanceRefs.current[fm];
+        if (!chart) continue;
 
-        if (y + 80 > pageHeight - 10) {
-          doc.addPage();
-          drawHeader();
-          y = 35;
+        // ✅ BEST: chart exports itself (sharp)
+        let img = null;
+
+        if (chart?.toBase64Image) {
+          img = chart.toBase64Image(); // crisp PNG
+        } else {
+          // fallback only if needed
+          const canvasEl = chartRefs.current[fm];
+          if (!canvasEl) continue;
+
+          const imgCanvas = await html2canvas(canvasEl, {
+            scale: 4,
+            useCORS: true,
+            backgroundColor: "#fff",
+          });
+          img = imgCanvas.toDataURL("image/png", 1.0);
         }
 
-        doc.setFontSize(11);
-        doc.text(`${fm} – Monthly Flow Trend`, 14, y);
-
-        const imgCanvas = await html2canvas(canvas, { scale: 2 });
-        const img = imgCanvas.toDataURL("image/png");
-
         doc.addImage(img, "PNG", 14, y + 6, pageWidth - 28, 60);
+
         y += 75;
       }
 
@@ -804,6 +808,7 @@ const InletAndOutlet = () => {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    devicePixelRatio: 3,
     plugins: {
       legend: { position: "top" },
       title: {
@@ -1010,9 +1015,6 @@ const InletAndOutlet = () => {
                           </h3>
                           <div style={{ fontSize: "1.1rem", opacity: 0.95 }}>
                             <strong>SITE:</strong> {targetUser.siteName}{" "}
-                            <strong className="ms-2">
-                              ({targetUser.userName})
-                            </strong>
                             <span className="mx-3">|</span>
                             <strong>MONTH:</strong> {monthNames[month]} {year}
                           </div>
@@ -1270,7 +1272,7 @@ const InletAndOutlet = () => {
                                   marginBottom: "40px",
                                 }}
                               >
-                                <Line
+                                {/* <Line
                                   ref={(el) => {
                                     if (el?.canvas) {
                                       chartRefs.current[chartObj.meter] =
@@ -1283,6 +1285,33 @@ const InletAndOutlet = () => {
                                     maintainAspectRatio: false,
                                     plugins: {
                                       legend: { position: "top" },
+                                      title: {
+                                        display: true,
+                                        text: `${chartObj.meter} Total Over Time`,
+                                        font: { size: 16, weight: "bold" },
+                                        color: "#236a80",
+                                      },
+                                    },
+                                  }}
+                                /> */}
+                                <Line
+                                  ref={(chart) => {
+                                    if (!chart) return;
+
+                                    // ✅ store chart instance (best for PDF)
+                                    chartInstanceRefs.current[chartObj.meter] =
+                                      chart;
+
+                                    // optional: still store canvas if you want fallback
+                                    if (chart?.canvas)
+                                      chartRefs.current[chartObj.meter] =
+                                        chart.canvas;
+                                  }}
+                                  data={chartObj.data}
+                                  options={{
+                                    ...chartOptions,
+                                    plugins: {
+                                      ...chartOptions.plugins,
                                       title: {
                                         display: true,
                                         text: `${chartObj.meter} Total Over Time`,

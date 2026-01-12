@@ -50,6 +50,7 @@ const EquipmentStatusReport = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState("");
+  const [showNote, setShowNote] = useState(true);
 
   // --- Load users ---
   useEffect(() => {
@@ -116,10 +117,13 @@ const EquipmentStatusReport = () => {
               comment: e.comment || "",
             }))
           );
-          setNote(data.note || "");
+          const loadedNote = data.note || "";
+          setNote(loadedNote);
+          setShowNote(Boolean(loadedNote)); // if empty => hide note automatically
         } else {
           setRows(baseRows);
           setNote("");
+          setShowNote(false);
         }
       } catch (err) {
         console.error("Error fetching report:", err);
@@ -138,6 +142,7 @@ const EquipmentStatusReport = () => {
           }))
         );
         setNote("");
+        setShowNote(false);
       } finally {
         setLoading(false);
       }
@@ -234,7 +239,7 @@ const EquipmentStatusReport = () => {
         year,
         month: month + 1,
         entries: entriesToSave,
-        note,
+        note: showNote ? note : "",
       });
 
       MySwal.fire({
@@ -261,7 +266,7 @@ const EquipmentStatusReport = () => {
     if (!targetUser.userId) return toast.error("Select a site first.");
     const exportRows = buildExportRows();
 
-    let csv = "SL.No,Equipment,Capacity,Make,Status,Comment\n";
+    let csv = "SL.No,Asset List,Capacity,Make,Status,Comment\n";
     exportRows.forEach((r) => {
       csv += `${r.slNo},"${r.equipmentName}","${r.capacity}","${r.make}","${r.status}","${r.comment}"\n`;
     });
@@ -271,9 +276,7 @@ const EquipmentStatusReport = () => {
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${targetUser.siteName}_${
-      month + 1
-    }-${year}_EquipmentStatus.csv`;
+    a.download = `${targetUser.siteName}_${month + 1}-${year}_AssetList.csv`;
     a.click();
     URL.revokeObjectURL(url);
 
@@ -300,27 +303,19 @@ const EquipmentStatusReport = () => {
 
       doc.setTextColor("#fff");
       doc.setFontSize(14);
-      doc.text("Equipment Status Report", pageWidth / 2 + 10, 15, {
+      doc.text("Asset List Report", pageWidth / 2 + 10, 15, {
         align: "center",
       });
 
       doc.setTextColor("#000");
       doc.setFontSize(10);
-      doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
+      doc.text(`Site: ${targetUser.siteName}`, 15, 45);
       doc.text(`Month: ${month + 1}/${year}`, 15, 52);
 
       doc.autoTable({
         startY: 58,
         head: [
-          [
-            "SL.No",
-            "Equipment",
-            "Capacity",
-            "Make",
-            "Status",
-            "Comment",
-           
-          ],
+          ["SL.No", "Asset List", "Capacity", "Make", "Status", "Comment"],
         ],
         body: exportRows.map((r) => [
           r.slNo,
@@ -333,19 +328,65 @@ const EquipmentStatusReport = () => {
         theme: "grid",
         headStyles: { fillColor: "#236a80", textColor: "#fff" },
         styles: { fontSize: 8 },
+
+        // ✅ ADD THIS
+        didParseCell: function (data) {
+          // Status column index = 4 (0-based)
+          if (data.section === "body" && data.column.index === 4) {
+            const statusText = String(data.cell.raw || "").toLowerCase();
+            if (statusText.includes("not")) {
+              data.cell.styles.textColor = [255, 0, 0]; // red
+              data.cell.styles.fontStyle = "bold"; // optional
+            }
+          }
+        },
       });
-const finalY = doc.lastAutoTable.finalY || 58;
+      const finalY = doc.lastAutoTable.finalY || 58;
 
-doc.setFillColor(255, 230, 128); // yellow
-doc.rect(15, finalY + 10, pageWidth - 30, 18, "F");
+      if (showNote && String(note || "").trim()) {
+        const pageHeight = doc.internal.pageSize.getHeight();
 
-doc.setTextColor(0);
-doc.setFontSize(10);
-doc.text(`Note: ${note || ""}`, 18, finalY + 22);
+        const boxX = 15;
+        const boxW = pageWidth - 30;
+        const paddingX = 4;
+        const paddingY = 4;
 
-      doc.save(
-        `${targetUser.siteName}_${month + 1}_${year}_EquipmentStatus.pdf`
-      );
+        // ✅ Preserve new lines from textarea + wrap long lines
+        const rawNote = (note || "").toString();
+        const maxTextWidth = boxW - paddingX * 2;
+
+        let noteLines = ["Note:"];
+        rawNote.split(/\r?\n/).forEach((line) => {
+          if (line.trim() === "") {
+            noteLines.push(""); // keep blank lines
+          } else {
+            noteLines.push(...doc.splitTextToSize(line, maxTextWidth));
+          }
+        });
+
+        // ✅ Calculate required height for the yellow box
+        doc.setFontSize(10);
+        const textDims = doc.getTextDimensions(noteLines);
+        const boxH = textDims.h + paddingY * 2;
+
+        let boxY = finalY + 10;
+
+        // ✅ If note doesn't fit remaining space, move it to next page
+        if (boxY + boxH > pageHeight - 15) {
+          doc.addPage();
+          boxY = 20;
+        }
+
+        // ✅ Draw FULL yellow background for all lines
+        doc.setFillColor(255, 230, 128);
+        doc.rect(boxX, boxY, boxW, boxH, "F");
+
+        // ✅ Print the note inside the box
+        doc.setTextColor(0);
+        doc.text(noteLines, boxX + paddingX, boxY + paddingY + 2);
+      }
+
+      doc.save(`${targetUser.siteName}_${month + 1}_${year}_AssetList.pdf`);
 
       toast.success("PDF downloaded!");
     } catch (err) {
@@ -370,6 +411,7 @@ doc.text(`Note: ${note || ""}`, 18, finalY + 22);
   ];
 
   // Styling
+  const CONTENT_WIDTH = "1100px";
   const inputStyle = {
     border: "2px dotted #3498db",
     borderRadius: "6px",
@@ -385,6 +427,18 @@ doc.text(`Note: ${note || ""}`, 18, finalY + 22);
     padding: "1.5rem",
     marginBottom: "1.5rem",
     boxShadow: "0 6px 12px rgba(0, 0, 0, 0.1)",
+  };
+  const promptStyle = {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "400px",
+    textAlign: "center",
+    color: "#236a80",
+    backgroundColor: "#f8f9fa",
+    borderRadius: "10px",
+    border: "3px dotted #236a80",
   };
 
   return (
@@ -417,12 +471,34 @@ doc.text(`Note: ${note || ""}`, 18, finalY + 22);
           )}
 
           <div className="container-fluid py-4 px-4">
-            <div className="row" style={{ marginTop: "0", padding: "0 68px" }}>
+            <div className="row" style={{ marginTop: "0", padding: "0" }}>
               <div className="col-12">
                 {/* If no user selected */}
                 {!targetUser.userName ? (
                   <div style={cardStyle}>
-                    <h3>Please Select a User</h3>
+                    <div style={promptStyle}>
+                      <i
+                        className="fas fa-hand-pointer"
+                        style={{
+                          fontSize: "3rem",
+                          marginBottom: "1.5rem",
+                          color: "#236a80",
+                        }}
+                      ></i>
+                      <h3 style={{ fontWeight: "600", color: "#236a80" }}>
+                        Please Select a User
+                      </h3>
+                      <p
+                        style={{
+                          fontSize: "1.1rem",
+                          color: "#34495e",
+                          maxWidth: "400px",
+                        }}
+                      >
+                        Use the dropdown in the header to select a user to view
+                        or add their monthly maintenance report.
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -434,14 +510,16 @@ doc.text(`Note: ${note || ""}`, 18, finalY + 22);
                         padding: "1.5rem",
                         borderRadius: "12px",
                         marginBottom: "1.5rem",
+                        maxWidth: CONTENT_WIDTH, // ✅ same width
+                        width: "100%", // ✅ responsive
+                        margin: "0 auto 1.5rem", // ✅ centered
+                        marginTop: "20px",
                       }}
                     >
-                      <h3 style={{ fontWeight: "bold" }}>
-                        EQUIPMENT STATUS REPORT
-                      </h3>
+                      <h3 style={{ fontWeight: "bold" }}>ASSET LIST REPORT</h3>
                       <div>
-                        <strong>SITE:</strong> {targetUser.siteName} (
-                        {targetUser.userName})<span className="mx-3">|</span>
+                        <strong>SITE:</strong> {targetUser.siteName}{" "}
+                        <span className="mx-3">|</span>
                         <strong>MONTH:</strong> {monthNames[month]} {year}
                       </div>
 
@@ -474,7 +552,14 @@ doc.text(`Note: ${note || ""}`, 18, finalY + 22);
                     </div>
 
                     {/* Table */}
-                    <div style={cardStyle}>
+                    <div
+                      style={{
+                        ...cardStyle,
+                        maxWidth: CONTENT_WIDTH, // ✅ same width
+                        width: "100%",
+                        margin: "0 auto", // ✅ centered
+                      }}
+                    >
                       <div
                         style={{
                           height: "550px",
@@ -491,7 +576,10 @@ doc.text(`Note: ${note || ""}`, 18, finalY + 22);
                           </div>
                         )}
 
-                        <table className="table table-hover">
+                        <table
+                          className="table table-hover"
+                          style={{ minWidth: "1000px" }}
+                        >
                           <thead
                             style={{
                               backgroundColor: "#236a80",
@@ -500,7 +588,7 @@ doc.text(`Note: ${note || ""}`, 18, finalY + 22);
                           >
                             <tr>
                               <th>SL.No</th>
-                              <th>Equipment</th>
+                              <th>Asset List</th>
                               <th>Capacity</th>
                               <th>Make</th>
                               <th>Status</th>
@@ -587,7 +675,19 @@ doc.text(`Note: ${note || ""}`, 18, finalY + 22);
                                         e.target.value
                                       )
                                     }
-                                    style={inputStyle}
+                                    style={{
+                                      ...inputStyle,
+                                      color: String(row.status || "")
+                                        .toLowerCase()
+                                        .includes("not")
+                                        ? "red"
+                                        : inputStyle.color,
+                                      fontWeight: String(row.status || "")
+                                        .toLowerCase()
+                                        .includes("not")
+                                        ? 800
+                                        : 400,
+                                    }}
                                   />
                                 </td>
 
@@ -603,8 +703,16 @@ doc.text(`Note: ${note || ""}`, 18, finalY + 22);
                                     }
                                     style={{
                                       ...inputStyle,
-                                      width: "200px", // ⬅️ BIGGER COMMENT WIDTH
+                                      width: "200px",
                                       minHeight: "50px",
+                                      color: String(row.comment || "").trim()
+                                        ? "red"
+                                        : inputStyle.color,
+                                      fontWeight: String(
+                                        row.comment || ""
+                                      ).trim()
+                                        ? 700
+                                        : inputStyle.fontWeight || 400,
                                     }}
                                   />
                                 </td>
@@ -631,49 +739,97 @@ doc.text(`Note: ${note || ""}`, 18, finalY + 22);
                           </tbody>
                         </table>
                       </div>
-                      <div
-                        style={{
-                          marginTop: "15px",
-                          padding: "12px",
-                          border: "2px solid #c9a100",
-                          background: "#ffe680",
-                          borderRadius: "6px",
-                          fontWeight: 600,
-                        }}
-                      >
-                        <div style={{ marginBottom: "6px" }}>Note:</div>
-                        <textarea
-                          value={note}
-                          onChange={(e) => setNote(e.target.value)}
-                          placeholder="Enter site note..."
+                      {showNote && (
+                        <div
                           style={{
-                            width: "100%",
-                            minHeight: "50px",
-                            border: "1px solid #b58d00",
+                            marginTop: "15px",
+                            padding: "12px",
+                            border: "2px solid #c9a100",
+                            background: "#ffe680",
                             borderRadius: "6px",
-                            padding: "8px",
-                            fontWeight: 500,
-                            background: "white",
+                            fontWeight: 600,
+                            position: "relative",
                           }}
-                        />
-                      </div>
+                        >
+                          <div className="d-flex justify-content-between align-items-center">
+                            <div style={{ marginBottom: "6px" }}>Note:</div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const ok = window.confirm(
+                                  "Delete the note section?"
+                                );
+                                if (!ok) return;
+                                setNote("");
+                                setShowNote(false);
+                              }}
+                              title="Delete note section"
+                              style={{
+                                border: "none",
+                                background: "transparent",
+                                cursor: "pointer",
+                                fontSize: "18px",
+                                lineHeight: 1,
+                              }}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+
+                          <textarea
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            placeholder="Enter site note..."
+                            style={{
+                              width: "100%",
+                              minHeight: "50px",
+                              border: "1px solid #b58d00",
+                              borderRadius: "6px",
+                              padding: "8px",
+                              fontWeight: 500,
+                              background: "white",
+                            }}
+                          />
+                        </div>
+                      )}
 
                       {/* Buttons */}
                       <div className="d-flex justify-content-between mt-3">
-                        <button
-                          onClick={handleAddRow}
-                          style={{
-                            padding: "10px 24px",
-                            borderRadius: "8px",
-                            border: "2px dotted #27ae60",
-                            backgroundColor: "#27ae60",
-                            color: "white",
-                            fontWeight: "600",
-                          }}
-                        >
-                          + Add Row
-                        </button>
+                        {/* LEFT SIDE: Add Row + Add Note in one line */}
+                        <div className="d-flex align-items-center gap-2">
+                          <button
+                            onClick={handleAddRow}
+                            style={{
+                              padding: "10px 24px",
+                              borderRadius: "8px",
+                              border: "2px dotted #0c5a2dff",
+                              backgroundColor: "#27ae60",
+                              color: "white",
+                              fontWeight: "600",
+                            }}
+                          >
+                            + Add Row
+                          </button>
 
+                          {!showNote && (
+                            <button
+                              type="button"
+                              onClick={() => setShowNote(true)}
+                              style={{
+                                padding: "10px 24px", // ✅ same height as Add Row
+                                borderRadius: "8px",
+                                border: "2px dotted #c9a100",
+                                backgroundColor: "#ffe680",
+                                fontWeight: 700,
+                              }}
+                            >
+                              + Add Note
+                            </button>
+                          )}
+                        </div>
+
+                        {/* RIGHT SIDE */}
                         <div>
                           <button
                             onClick={handleSaveReport}

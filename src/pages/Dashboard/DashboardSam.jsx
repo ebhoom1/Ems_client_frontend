@@ -545,7 +545,7 @@ function DashboardSam() {
                 style={buttonStyleSecondary}
                 onClick={() => handleModalClick("/monthly-equipmentstatus")}
               >
-                View Equipments Status
+                View Asset List
               </Button>
 
               <Button

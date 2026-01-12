@@ -95,6 +95,8 @@ const MonthlyPh = () => {
   // const phChartRef = useRef(null);
 
   const chartRefs = useRef({});
+  const chartInstanceRefs = useRef({}); 
+
 
   // const getChartDataForParam = (paramKey, label, color) => ({
   //   labels,
@@ -371,7 +373,7 @@ const MonthlyPh = () => {
       doc.setTextColor("#000000");
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
+      doc.text(`Site: ${targetUser.siteName}`, 15, 45);
       doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
 
       const tableHead = [
@@ -404,17 +406,26 @@ const MonthlyPh = () => {
           }
 
           doc.setFontSize(14);
-          doc.text(`${p.label} Over Time`, 15, y);
+          doc.text(`${p.label}`, 15, y);
 
-          const canvas = await html2canvas(el, { scale: 2 });
-          doc.addImage(
-            canvas.toDataURL("image/png"),
-            "PNG",
-            15,
-            y + 10,
-            180,
-            90
-          );
+         const chart = chartInstanceRefs.current[p.key];
+
+// ✅ BEST: export chart canvas directly (sharp)
+let imgDataUrl = null;
+
+if (chart?.toBase64Image) {
+  imgDataUrl = chart.toBase64Image(); // PNG by default
+} else {
+  // fallback only if needed
+  const canvas = await html2canvas(el, {
+    scale: 4,              // ✅ higher
+    useCORS: true,
+    backgroundColor: "#fff",
+  });
+  imgDataUrl = canvas.toDataURL("image/png", 1.0);
+}
+
+doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
 
           y += 110;
         }
@@ -515,6 +526,7 @@ const MonthlyPh = () => {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+     devicePixelRatio: 3,
     plugins: {
       legend: {
         position: "top",
@@ -765,9 +777,7 @@ const MonthlyPh = () => {
                           <div style={{ fontSize: "1.1rem", opacity: 0.95 }}>
                             <strong>SITE:</strong>{" "}
                             {targetUser.siteName || "N/A"}
-                            <strong className="ms-2">
-                              ({targetUser.userName || "No User Selected"})
-                            </strong>
+                           
                             <span className="mx-3">|</span>
                             <strong>MONTH:</strong> {monthNames[month]} {year}
                           </div>
@@ -1049,6 +1059,9 @@ const MonthlyPh = () => {
                                   }}
                                 >
                                   <Line
+                                  ref={(chart) => {
+    if (chart) chartInstanceRefs.current[p.key] = chart; // ✅ ADD THIS
+  }}
                                     data={getChartDataForParam(
                                       p.key,
                                       p.label,
@@ -1060,7 +1073,7 @@ const MonthlyPh = () => {
                                         ...chartOptions.plugins,
                                         title: {
                                           display: true,
-                                          text: `${p.label} Over Time`,
+                                          text: `${p.label}`,
                                           color: getParameterColor(p.key, index)
                                             .border,
                                         },

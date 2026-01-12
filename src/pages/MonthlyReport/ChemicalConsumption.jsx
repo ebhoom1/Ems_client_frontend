@@ -294,8 +294,7 @@ const ChemicalConsumption = () => {
                   CHEMICAL CONSUMPTION
                 </h2>
                 <div style={{ marginTop: 6, fontSize: 14 }}>
-                  <b>SITE:</b> {targetUser?.siteName || "-"} (
-                  {targetUser?.userName || "-"}) | <b>MONTH:</b>{" "}
+                  <b>SITE:</b> {targetUser?.siteName || "-"} | <b>MONTH:</b>{" "}
                   {monthNames[month]} {year}
                 </div>
               </div>

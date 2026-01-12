@@ -64,6 +64,7 @@ const TreatedWaterClarityReport = () => {
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const [viewPhotoUrl, setViewPhotoUrl] = useState(null); // for big preview
 
@@ -366,524 +367,336 @@ const TreatedWaterClarityReport = () => {
     toast.success("XLSX downloaded with images!");
   };
 
-  // const handleDownloadPDF = async () => {
-  //   if (!targetUser.userId) {
-  //     toast.error("Select a user/site first.");
-  //     return;
-  //   }
+  // ---------------- HELPERS (keep above handleDownloadPDF) ----------------
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  //   // Build rows and keep ONLY days that have photos
-  //   const allRows = buildExportRows(); // [{ dateStr, photos: [...] }]
-  //   const rows = allRows.filter((r) => (r.photos || []).length > 0);
-  //   if (!rows.length) {
-  //     toast.info("No photos to export for this month.");
-  //     return;
-  //   }
+  const fetchAsDataUrl = async (url, retries = 2) => {
+    let lastErr;
 
-  //   try {
-  //     toast.info("Generating PDF...");
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(url, { mode: "cors", cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-  //     const doc = new jsPDF();
-  //     const pageWidth = doc.internal.pageSize.getWidth();
+        const blob = await res.blob();
 
-  //     // --- Header with logo & title ---
-  //     const logoImg = new Image();
-  //     logoImg.src = genexlogo;
-  //     await new Promise((resolve) => {
-  //       logoImg.onload = resolve;
-  //       logoImg.onerror = resolve;
-  //     });
+        const dataUrl = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = reject;
+          r.readAsDataURL(blob);
+        });
 
-  //     // Top blue bar
-  //     doc.setFillColor("#236a80");
-  //     doc.rect(0, 0, pageWidth, 35, "F");
-  //     doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
+        const fmt =
+          blob.type === "image/png"
+            ? "PNG"
+            : blob.type === "image/webp"
+            ? "WEBP"
+            : "JPEG";
 
-  //     doc.setFont("helvetica", "bold");
-  //     doc.setTextColor("#FFFFFF");
-  //     doc.setFontSize(14);
-  //     doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2 + 10, 12, {
-  //       align: "center",
-  //     });
+        return { dataUrl, fmt };
+      } catch (e) {
+        lastErr = e;
+        if (attempt < retries) await sleep(350 * (attempt + 1));
+      }
+    }
 
-  //     // 🔹 Wrapped address in two lines & moved slightly down
-  //     doc.setFont("helvetica", "normal");
-  //     doc.setFontSize(8);
-  //     doc.text(
-  //       "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony,",
-  //       110,
-  //       18,
-  //       { align: "center" }
-  //     );
-  //     doc.text(
-  //       "Shettihalli Post, Jalahalli West, Bengaluru, Karnataka 560015",
-  //       110,
-  //       22,
-  //       { align: "center" }
-  //     );
-  //     doc.text("Phone: +91-9663044156", 110, 26, { align: "center" });
+    throw lastErr;
+  };
 
-  //     doc.setFontSize(9);
-  //     doc.text("Treated Water Clarity Report", pageWidth / 2 + 10, 31, {
-  //       align: "center",
-  //     });
+  const getSignedUrlMap = async (rows) => {
+    const urls = [];
+    rows.forEach((r) => (r.photos || []).forEach((u) => u && urls.push(u)));
 
-  //     const monthNames = [
-  //       "January",
-  //       "February",
-  //       "March",
-  //       "April",
-  //       "May",
-  //       "June",
-  //       "July",
-  //       "August",
-  //       "September",
-  //       "October",
-  //       "November",
-  //       "December",
-  //     ];
+    const unique = Array.from(new Set(urls)).filter(
+      (u) => u && !u.startsWith("blob:")
+    );
+    if (!unique.length) return {};
 
-  //     doc.setTextColor("#000000");
-  //     doc.setFontSize(11);
-  //     doc.setFont("helvetica", "bold");
-  //     doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
-  //     doc.text(`Month: ${monthNames[month]} ${year}`, 15, 52);
+    const { data } = await axios.post(
+      `${API_URL}/api/treated-water-clarity/signed-urls`,
+      { urls: unique, expiresIn: 600 }
+    );
 
-  //     // --- Prepare one row per DATE, with all images in that row ---
-  //     const rowsWithImages = rows.map((r) => ({
-  //       dateStr: r.dateStr,
-  //       photoUrls: r.photos || [],
-  //       _images: [],
-  //     }));
+    return data?.signedMap || {};
+  };
 
-  //     // Pre-load all images
-  //     await Promise.all(
-  //       rowsWithImages.flatMap((row) =>
-  //         row.photoUrls.map(
-  //           (url) =>
-  //             new Promise((resolve) => {
-  //               const img = new Image();
-  //               img.crossOrigin = "Anonymous";
-  //               img.src = url;
+  const getSignedUrlForOne = async (url) => {
+    const { data } = await axios.post(
+      `${API_URL}/api/treated-water-clarity/signed-urls`,
+      { urls: [url], expiresIn: 600 }
+    );
+    return data?.signedMap?.[url] || null;
+  };
 
-  //               img.onload = () => {
-  //                 const lower = (url || "").toLowerCase();
-  //                 const fmt = lower.includes(".png") ? "PNG" : "JPEG";
-  //                 row._images.push({ img, fmt });
-  //                 resolve();
-  //               };
-  //               img.onerror = () => {
-  //                 resolve();
-  //               };
-  //             })
-  //         )
-  //       )
-  //     );
+  // ---------------- COMPLETE HANDLE DOWNLOAD PDF ----------------
+  const handleDownloadPDF = async () => {
+    if (!targetUser.userId) {
+      toast.error("Select a user/site first.");
+      return;
+    }
 
-  //     const tableBody = rowsWithImages.map((r) => ({
-  //       date: r.dateStr,
-  //       photos: "",
-  //       _images: r._images,
-  //     }));
+    // Build rows and keep ONLY days that have photos
+    const allRows = buildExportRows(); // [{ dateStr, photos, comment }]
+    const rows = allRows.filter((r) => (r.photos || []).length > 0);
 
-  //     doc.autoTable({
-  //       startY: 60,
-  //       columns: [
-  //         { header: "Date", dataKey: "date" },
-  //         { header: "Photos", dataKey: "photos" },
-  //       ],
-  //       body: tableBody,
-  //       theme: "grid",
+    if (!rows.length) {
+      toast.info("No photos to export for this month.");
+      return;
+    }
+    setDownloadingPdf(true); // ✅ start loading
 
-  //       // 🔹 Smaller header row + clear white grid line between Date / Photos
-  //       headStyles: {
-  //         fillColor: "#236a80",
-  //         minCellHeight: 16, // header height reduced
-  //         lineWidth: 0.3,
-  //         lineColor: [120, 120, 120], // white vertical separator
-  //       },
-
-  //       styles: {
-  //         fontSize: 8,
-  //         cellPadding: 3,
-  //         minCellHeight: 100, // big body rows for large photos
-  //         lineWidth: 0.1,
-  //         lineColor: [120, 120, 120],
-  //       },
-
-  //       columnStyles: {
-  //         date: { cellWidth: 30 },
-  //         photos: { cellWidth: pageWidth - 30 - 20 },
-  //       },
-
-  //       didDrawCell: (data) => {
-  //         // Draw all photos horizontally in Photos cell
-  //         if (data.section === "body" && data.column.dataKey === "photos") {
-  //           const row = data.row.raw;
-  //           const images = row._images || [];
-  //           if (!images.length) return;
-
-  //           const cellWidth = data.cell.width;
-  //           const cellHeight = data.cell.height;
-
-  //           const padding = 2;
-  //           const gap = 3;
-  //           const count = images.length;
-
-  //           const availWidth = cellWidth - padding * 2;
-  //           const maxHeight = cellHeight - padding * 2;
-
-  //           const slotWidth =
-  //             count > 0 ? (availWidth - gap * (count - 1)) / count : availWidth;
-
-  //           images.forEach((img, index) => {
-  //             const size = Math.min(slotWidth, maxHeight); // 🔹 SAME width & height
-
-  //             const xSlotStart =
-  //               data.cell.x + padding + index * (slotWidth + gap);
-  //             const ySlotStart = data.cell.y + padding;
-
-  //             const x = xSlotStart + (slotWidth - size) / 2;
-  //             const y = ySlotStart + (maxHeight - size) / 2;
-
-  //             doc.addImage(img, "PNG", x, y, size, size);
-  //           });
-  //         }
-  //       },
-  //     });
-
-  //     doc.save(
-  //       `${targetUser.siteName}_${monthNames[month]}_${year}_TreatedWaterClarity.pdf`
-  //     );
-
-  //     toast.success("PDF generated successfully!");
-  //   } catch (err) {
-  //     console.error("PDF generation failed:", err);
-  //     toast.error("Failed to generate PDF.");
-  //   }
-  // };
-
- // ---------------- HELPERS (keep above handleDownloadPDF) ----------------
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-const fetchAsDataUrl = async (url, retries = 2) => {
-  let lastErr;
-
-  for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url, { mode: "cors", cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      toast.info("Generating PDF...");
 
-      const blob = await res.blob();
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
 
-      const dataUrl = await new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(r.result);
-        r.onerror = reject;
-        r.readAsDataURL(blob);
+      // ---------------- Header ----------------
+      const logoImg = new Image();
+      logoImg.src = genexlogo;
+
+      await new Promise((resolve) => {
+        logoImg.onload = resolve;
+        logoImg.onerror = resolve;
       });
 
-      const fmt =
-        blob.type === "image/png"
-          ? "PNG"
-          : blob.type === "image/webp"
-          ? "WEBP"
-          : "JPEG";
+      doc.setFillColor("#236a80");
+      doc.rect(0, 0, pageWidth, 35, "F");
+      doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
 
-      return { dataUrl, fmt };
-    } catch (e) {
-      lastErr = e;
-      if (attempt < retries) await sleep(350 * (attempt + 1));
-    }
-  }
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor("#FFFFFF");
+      doc.setFontSize(14);
+      doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2, 12, {
+        align: "center",
+      });
 
-  throw lastErr;
-};
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text(
+        "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony,",
+        pageWidth / 2,
+        18,
+        { align: "center" }
+      );
+      doc.text(
+        "Shettihalli Post, Jalahalli West, Bengaluru, Karnataka 560015",
+        pageWidth / 2,
+        22,
+        { align: "center" }
+      );
+      doc.text("Phone: +91-9663044156", pageWidth / 2, 26, { align: "center" });
 
-const getSignedUrlMap = async (rows) => {
-  const urls = [];
-  rows.forEach((r) => (r.photos || []).forEach((u) => u && urls.push(u)));
+      doc.setFontSize(9);
+      doc.text("Treated Water Clarity Report", pageWidth / 2, 31, {
+        align: "center",
+      });
 
-  const unique = Array.from(new Set(urls)).filter(
-    (u) => u && !u.startsWith("blob:")
-  );
-  if (!unique.length) return {};
+      const monthNamesLocal = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
 
-  const { data } = await axios.post(
-    `${API_URL}/api/treated-water-clarity/signed-urls`,
-    { urls: unique, expiresIn: 600 }
-  );
+      doc.setTextColor("#000000");
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Site: ${targetUser.siteName}`, 15, 45);
+      doc.text(`Month: ${monthNamesLocal[month]} ${year}`, 15, 52);
 
-  return data?.signedMap || {};
-};
-
-const getSignedUrlForOne = async (url) => {
-  const { data } = await axios.post(
-    `${API_URL}/api/treated-water-clarity/signed-urls`,
-    { urls: [url], expiresIn: 600 }
-  );
-  return data?.signedMap?.[url] || null;
-};
-
-// ---------------- COMPLETE HANDLE DOWNLOAD PDF ----------------
-const handleDownloadPDF = async () => {
-  if (!targetUser.userId) {
-    toast.error("Select a user/site first.");
-    return;
-  }
-
-  // Build rows and keep ONLY days that have photos
-  const allRows = buildExportRows(); // [{ dateStr, photos, comment }]
-  const rows = allRows.filter((r) => (r.photos || []).length > 0);
-
-  if (!rows.length) {
-    toast.info("No photos to export for this month.");
-    return;
-  }
-
-  try {
-    toast.info("Generating PDF...");
-
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    // ---------------- Header ----------------
-    const logoImg = new Image();
-    logoImg.src = genexlogo;
-
-    await new Promise((resolve) => {
-      logoImg.onload = resolve;
-      logoImg.onerror = resolve;
-    });
-
-    doc.setFillColor("#236a80");
-    doc.rect(0, 0, pageWidth, 35, "F");
-    doc.addImage(logoImg, "PNG", 15, 5, 25, 25);
-
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor("#FFFFFF");
-    doc.setFontSize(14);
-    doc.text("Genex Utility Management Pvt Ltd", pageWidth / 2, 12, {
-      align: "center",
-    });
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.text(
-      "Sujatha Arcade, Second Floor, #32 Lake View Defence Colony,",
-      pageWidth / 2,
-      18,
-      { align: "center" }
-    );
-    doc.text(
-      "Shettihalli Post, Jalahalli West, Bengaluru, Karnataka 560015",
-      pageWidth / 2,
-      22,
-      { align: "center" }
-    );
-    doc.text("Phone: +91-9663044156", pageWidth / 2, 26, { align: "center" });
-
-    doc.setFontSize(9);
-    doc.text("Treated Water Clarity Report", pageWidth / 2, 31, {
-      align: "center",
-    });
-
-    const monthNamesLocal = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-
-    doc.setTextColor("#000000");
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 15, 45);
-    doc.text(`Month: ${monthNamesLocal[month]} ${year}`, 15, 52);
-
-    // ---------------- Signed URL map (optional) ----------------
-    let signedMap = {};
-    try {
-      signedMap = await getSignedUrlMap(rows);
-    } catch (e) {
-      console.warn("signed-urls failed, continuing without signed urls", e?.message);
-      signedMap = {};
-    }
-
-    // ---------------- Prepare rows ----------------
-    const rowsWithImages = rows.map((r) => ({
-      dateStr: r.dateStr,
-      comment: r.comment || "",
-      photoUrls: (r.photos || []).filter((u) => u && !u.startsWith("blob:")),
-      _images: [], // [{ originalUrl, dataUrl, fmt }]
-      _rowHeight: 0,
-    }));
-
-    // ---------------- Preload ALL images BEFORE autoTable ----------------
-    for (const row of rowsWithImages) {
-      for (const originalUrl of row.photoUrls) {
-        const directOrSigned = signedMap[originalUrl] || originalUrl;
-
-        // Try direct/signed first
-        try {
-          const { dataUrl, fmt } = await fetchAsDataUrl(directOrSigned, 2);
-          if (fmt === "WEBP") continue; // jsPDF often can't embed webp reliably
-          row._images.push({ originalUrl, dataUrl, fmt });
-          continue;
-        } catch (e1) {
-          // If not already signed, try one-time fresh signed url
-          if (!signedMap[originalUrl]) {
-            try {
-              const freshSigned = await getSignedUrlForOne(originalUrl);
-              if (freshSigned) {
-                signedMap[originalUrl] = freshSigned;
-                const { dataUrl, fmt } = await fetchAsDataUrl(freshSigned, 1);
-                if (fmt === "WEBP") continue;
-                row._images.push({ originalUrl, dataUrl, fmt });
-                continue;
-              }
-            } catch (_e2) {}
-          }
-          console.warn("Skipping inaccessible image:", originalUrl, e1?.message);
-        }
+      // ---------------- Signed URL map (optional) ----------------
+      let signedMap = {};
+      try {
+        signedMap = await getSignedUrlMap(rows);
+      } catch (e) {
+        console.warn(
+          "signed-urls failed, continuing without signed urls",
+          e?.message
+        );
+        signedMap = {};
       }
-    }
 
-    // ---------------- Layout settings ----------------
-    const PER_ROW = 3;
-    const padding = 2;
-    const gapX = 3;
-    const gapY = 3;
+      // ---------------- Prepare rows ----------------
+      const rowsWithImages = rows.map((r) => ({
+        dateStr: r.dateStr,
+        comment: r.comment || "",
+        photoUrls: (r.photos || []).filter((u) => u && !u.startsWith("blob:")),
+        _images: [], // [{ originalUrl, dataUrl, fmt }]
+        _rowHeight: 0,
+      }));
 
-    const dateColWidth = 30;
-    const commentColWidth = 55;
-    const photosColWidth = pageWidth - dateColWidth - commentColWidth - 20;
+      // ---------------- Preload ALL images BEFORE autoTable ----------------
+      for (const row of rowsWithImages) {
+        for (const originalUrl of row.photoUrls) {
+          const directOrSigned = signedMap[originalUrl] || originalUrl;
 
-    const availWidth = photosColWidth - padding * 2;
-    const imgSize = (availWidth - gapX * (PER_ROW - 1)) / PER_ROW;
-
-    // Row height calc
-    rowsWithImages.forEach((row) => {
-      const count = row._images.length;
-      if (!count) {
-        row._rowHeight = 18; // small if no images loaded
-        return;
-      }
-      const rowsNeeded = Math.ceil(count / PER_ROW);
-      row._rowHeight =
-        padding * 2 + rowsNeeded * imgSize + (rowsNeeded - 1) * gapY;
-    });
-
-    const tableBody = rowsWithImages.map((r) => ({
-      date: r.dateStr,
-      photos: " ", // keep cell not empty
-      comment: r.comment || "",
-      _images: r._images,
-      _rowHeight: r._rowHeight,
-    }));
-
-    // ---------------- Draw table ----------------
-    doc.autoTable({
-      startY: 60,
-      columns: [
-        { header: "Date", dataKey: "date" },
-        { header: "Photos", dataKey: "photos" },
-        { header: "Comment", dataKey: "comment" },
-      ],
-      body: tableBody,
-      theme: "grid",
-      rowPageBreak: "avoid",
-
-      headStyles: {
-        fillColor: "#236a80",
-        minCellHeight: 16,
-        lineWidth: 0.3,
-        lineColor: [120, 120, 120],
-      },
-
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-        lineWidth: 0.1,
-        lineColor: [120, 120, 120],
-        valign: "top",
-      },
-
-      columnStyles: {
-        date: { cellWidth: dateColWidth },
-        photos: { cellWidth: photosColWidth, cellPadding: 0 },
-        comment: { cellWidth: commentColWidth },
-      },
-
-      didParseCell: (data) => {
-        if (data.section !== "body") return;
-
-        const rh = data.row?.raw?._rowHeight;
-        if (rh) data.cell.styles.minCellHeight = rh;
-
-        if (data.column.dataKey === "photos") {
-          data.cell.text = [" "];
-        }
-      },
-
-      didDrawCell: (data) => {
-        if (data.section !== "body") return;
-        if (data.column.dataKey !== "photos") return;
-
-        const images = data.row?.raw?._images || [];
-        if (!images.length) return;
-
-        const startX = data.cell.x + padding;
-        const startY = data.cell.y + padding;
-
-        images.forEach(({ dataUrl, fmt }, i) => {
-          const rr = Math.floor(i / PER_ROW);
-          const cc = i % PER_ROW;
-
-          const isLastRow = rr === Math.floor((images.length - 1) / PER_ROW);
-          const countInThisRow = isLastRow
-            ? images.length - rr * PER_ROW
-            : PER_ROW;
-
-          const rowWidth =
-            countInThisRow * imgSize + (countInThisRow - 1) * gapX;
-          const xOffset = (availWidth - rowWidth) / 2;
-
-          const x = startX + xOffset + cc * (imgSize + gapX);
-          const y = startY + rr * (imgSize + gapY);
-
+          // Try direct/signed first
           try {
-            doc.addImage(dataUrl, fmt, x, y, imgSize, imgSize);
-          } catch (e) {
-            // fallback to JPEG if fmt fails
-            try {
-              doc.addImage(dataUrl, "JPEG", x, y, imgSize, imgSize);
-            } catch (_e2) {}
+            const { dataUrl, fmt } = await fetchAsDataUrl(directOrSigned, 2);
+            if (fmt === "WEBP") continue; // jsPDF often can't embed webp reliably
+            row._images.push({ originalUrl, dataUrl, fmt });
+            continue;
+          } catch (e1) {
+            // If not already signed, try one-time fresh signed url
+            if (!signedMap[originalUrl]) {
+              try {
+                const freshSigned = await getSignedUrlForOne(originalUrl);
+                if (freshSigned) {
+                  signedMap[originalUrl] = freshSigned;
+                  const { dataUrl, fmt } = await fetchAsDataUrl(freshSigned, 1);
+                  if (fmt === "WEBP") continue;
+                  row._images.push({ originalUrl, dataUrl, fmt });
+                  continue;
+                }
+              } catch (_e2) {}
+            }
+            console.warn(
+              "Skipping inaccessible image:",
+              originalUrl,
+              e1?.message
+            );
           }
-        });
-      },
-    });
+        }
+      }
 
-    // ---------------- Save ----------------
-    doc.save(
-      `${targetUser.siteName}_${monthNamesLocal[month]}_${year}_TreatedWaterClarity.pdf`
-    );
+      // ---------------- Layout settings ----------------
+      const PER_ROW = 3;
+      const padding = 2;
+      const gapX = 3;
+      const gapY = 3;
 
-    toast.success("PDF generated successfully!");
-  } catch (err) {
-    console.error("PDF generation failed:", err);
-    toast.error("Failed to generate PDF.");
-  }
-};
+      const dateColWidth = 30;
+      const commentColWidth = 55;
+      const photosColWidth = pageWidth - dateColWidth - commentColWidth - 20;
 
+      const availWidth = photosColWidth - padding * 2;
+      const imgSize = (availWidth - gapX * (PER_ROW - 1)) / PER_ROW;
+
+      // Row height calc
+      rowsWithImages.forEach((row) => {
+        const count = row._images.length;
+        if (!count) {
+          row._rowHeight = 18; // small if no images loaded
+          return;
+        }
+        const rowsNeeded = Math.ceil(count / PER_ROW);
+        row._rowHeight =
+          padding * 2 + rowsNeeded * imgSize + (rowsNeeded - 1) * gapY;
+      });
+
+      const tableBody = rowsWithImages.map((r) => ({
+        date: r.dateStr,
+        photos: " ", // keep cell not empty
+        comment: r.comment || "",
+        _images: r._images,
+        _rowHeight: r._rowHeight,
+      }));
+
+      // ---------------- Draw table ----------------
+      doc.autoTable({
+        startY: 60,
+        columns: [
+          { header: "Date", dataKey: "date" },
+          { header: "Photos", dataKey: "photos" },
+          { header: "Comment", dataKey: "comment" },
+        ],
+        body: tableBody,
+        theme: "grid",
+        rowPageBreak: "avoid",
+
+        headStyles: {
+          fillColor: "#236a80",
+          minCellHeight: 16,
+          lineWidth: 0.3,
+          lineColor: [120, 120, 120],
+        },
+
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+          lineWidth: 0.1,
+          lineColor: [120, 120, 120],
+          valign: "top",
+        },
+
+        columnStyles: {
+          date: { cellWidth: dateColWidth },
+          photos: { cellWidth: photosColWidth, cellPadding: 0 },
+          comment: { cellWidth: commentColWidth },
+        },
+
+        didParseCell: (data) => {
+          if (data.section !== "body") return;
+
+          const rh = data.row?.raw?._rowHeight;
+          if (rh) data.cell.styles.minCellHeight = rh;
+
+          if (data.column.dataKey === "photos") {
+            data.cell.text = [" "];
+          }
+        },
+
+        didDrawCell: (data) => {
+          if (data.section !== "body") return;
+          if (data.column.dataKey !== "photos") return;
+
+          const images = data.row?.raw?._images || [];
+          if (!images.length) return;
+
+          const startX = data.cell.x + padding;
+          const startY = data.cell.y + padding;
+
+          images.forEach(({ dataUrl, fmt }, i) => {
+            const rr = Math.floor(i / PER_ROW);
+            const cc = i % PER_ROW;
+
+            const isLastRow = rr === Math.floor((images.length - 1) / PER_ROW);
+            const countInThisRow = isLastRow
+              ? images.length - rr * PER_ROW
+              : PER_ROW;
+
+            const rowWidth =
+              countInThisRow * imgSize + (countInThisRow - 1) * gapX;
+            const xOffset = (availWidth - rowWidth) / 2;
+
+            const x = startX + xOffset + cc * (imgSize + gapX);
+            const y = startY + rr * (imgSize + gapY);
+
+            try {
+              doc.addImage(dataUrl, fmt, x, y, imgSize, imgSize);
+            } catch (e) {
+              // fallback to JPEG if fmt fails
+              try {
+                doc.addImage(dataUrl, "JPEG", x, y, imgSize, imgSize);
+              } catch (_e2) {}
+            }
+          });
+        },
+      });
+
+      // ---------------- Save ----------------
+      doc.save(
+        `${targetUser.siteName}_${monthNamesLocal[month]}_${year}_TreatedWaterClarity.pdf`
+      );
+
+      toast.success("PDF generated successfully!");
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF.");
+    } finally {
+      setDownloadingPdf(false); // ✅ stop loading always
+    }
+  };
 
   const handleDeletePhoto = async (dayStr, photoIndex, url) => {
     if (!targetUser.userId) {
@@ -1142,9 +955,6 @@ const handleDownloadPDF = async () => {
                           <div style={{ fontSize: "1.1rem", opacity: 0.95 }}>
                             <strong>SITE:</strong>{" "}
                             {targetUser.siteName || "N/A"}
-                            <strong className="ms-2">
-                              ({targetUser.userName || "No User Selected"})
-                            </strong>
                             <span className="mx-3">|</span>
                             <strong>MONTH:</strong> {monthNames[month]} {year}
                           </div>
@@ -1443,17 +1253,31 @@ const handleDownloadPDF = async () => {
                           </button>
 
                           <button
-                            style={downloadPdfButtonStyle}
+                            style={{
+                              ...downloadPdfButtonStyle,
+                              opacity: downloadingPdf ? 0.7 : 1,
+                              cursor: downloadingPdf
+                                ? "not-allowed"
+                                : "pointer",
+                            }}
                             onClick={handleDownloadPDF}
-                            disabled={loading || !targetUser.userId}
-                            onMouseOver={(e) =>
-                              (e.target.style.transform = "translateY(-2px)")
+                            disabled={
+                              loading ||
+                              saving ||
+                              downloadingPdf ||
+                              !targetUser.userId
                             }
+                            onMouseOver={(e) => {
+                              if (!downloadingPdf)
+                                e.target.style.transform = "translateY(-2px)";
+                            }}
                             onMouseOut={(e) =>
                               (e.target.style.transform = "translateY(0)")
                             }
                           >
-                            📥 Download PDF
+                            {downloadingPdf
+                              ? "⏳ Downloading..."
+                              : "📥 Download PDF"}
                           </button>
 
                           <button

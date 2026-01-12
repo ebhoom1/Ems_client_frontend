@@ -252,7 +252,7 @@ const ChemicalDetails = () => {
 
     doc.setTextColor("#000");
     doc.setFontSize(11);
-    doc.text(`Site: ${targetUser.siteName} (${targetUser.userName})`, 14, 42);
+    doc.text(`Site: ${targetUser.siteName}`, 14, 42);
     doc.text(
       `Chemical: ${chemicalName} | ${monthNames[month]} ${year}`,
       14,
@@ -347,7 +347,7 @@ const ChemicalDetails = () => {
                   CHEMICAL CONSUMPTION DETAILS
                 </h3>
                 <div style={{ marginTop: 6 }}>
-                  <b>SITE:</b> {targetUser?.siteName} ({targetUser?.userName}) |{" "}
+                  <b>SITE:</b> {targetUser?.siteName} |{" "}
                   <b>MONTH:</b> {monthNames[month]} {year}
                 </div>
               </div>
