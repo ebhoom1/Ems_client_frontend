@@ -19,7 +19,9 @@ import './Iconbar.css';
 const defaultShapes = [
   { id: 'settlingnew', label: 'Settling Tank', isSVG: true, svgPath: settlingnew },
   { id: 'watertanknew', label: 'Water Tank', isSVG: true, svgPath: watertanknew, isTank: true },
-  { id: 'flowmeter', label: 'Flowmeter', isSVG: true, svgPath: flowmeter, isFlowmeter: true },
+{ id: 'flow_inlet', label: 'Flow Inlet', isSVG: true, svgPath: flowmeter, isFlowmeter: true, stackName: "STP inlet", title: "Inlet Flowmeter" },
+{ id: 'flow_outlet', label: 'Flow Outlet', isSVG: true, svgPath: flowmeter, isFlowmeter: true, stackName: "STP outlet", title: "Outlet Flowmeter" },
+{ id: 'flow_garden', label: 'Flow Garden', isSVG: true, svgPath: flowmeter, isFlowmeter: true, stackName: "STP garden", title: "Garden Flowmeter" },
   { id: 'meter', label: 'Meter', isSVG: true, svgPath: meter },
   { id: 'pump', label: 'Pump', isSVG: true, svgPath: pump, isPump: true },
   { id: 'tank', label: 'Generic Tank', isSVG: true, svgPath: tank, isTank: true },

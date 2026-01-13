@@ -25,8 +25,8 @@ import screenfull from "screenfull";
 import { BiFullscreen } from "react-icons/bi";
 import { getSocket } from "./socketService";
 import TankNode from "./TankNode";
-// import ValveNode from "./valveNode";
 import PSFNode from "./PSFNode";
+import FlowMeterNode from "./FlowMeterNode";
 import wipro from "../../src/assests/images/wipro.jpeg";
 
 function CanvasComponent({
@@ -157,6 +157,11 @@ function CanvasComponent({
   console.log("effectiveProductId:", effectiveProductId);
   const socket = useRef(null);
   const backendUrl = API_URL || "http://localhost:5555";
+
+  const selectedProductIdRef = useRef("");
+  useEffect(() => {
+    selectedProductIdRef.current = String(effectiveProductId || "");
+  }, [effectiveProductId]);
 
   useEffect(() => {
     socket.current = getSocket(backendUrl);
@@ -311,62 +316,6 @@ function CanvasComponent({
         [compositeKey]: { ...payload.pumpData },
       }));
     };
-
-    // const handlePumpAck = (payload) => {
-    //   console.log("Processing pump acknowledgment:", payload);
-
-    //   const pumpMap = {};
-    //   const incomingProductId = String(
-    //     payload.productId || payload.product_id || ""
-    //   );
-
-    //   payload.pumps.forEach((p) => {
-    //     const key = `${incomingProductId}:${p.pumpId}`;
-    //     pumpMap[key] = p;
-    //   });
-
-    //   setPendingPumps((prev) => {
-    //     const copy = { ...prev };
-    //     payload.pumps.forEach((p) => {
-    //       const key = `${incomingProductId}:${p.pumpId}`;
-    //       copy[key] = false;
-    //     });
-    //     return copy;
-    //   });
-
-    //   setNodes((nds) =>
-    //     nds.map((node) => {
-    //       const key = `${String(node.data?.productId)}:${node.id}`;
-    //       const updatedPump = pumpMap[key];
-    //       // if (updatedPump) {
-    //       //   return {
-    //       //     ...node,
-    //       //     data: {
-    //       //       ...node.data,
-    //       //       realtimeValues: updatedPump,
-    //       //       isOn: updatedPump.status === 1 || updatedPump.status === "ON",
-    //       //       isPending: false,
-    //       //     },
-    //       //   };
-    //       // }
-    //       if (updatedPump) {
-    //         const newData = {
-    //           ...node.data,
-    //           realtimeValues: updatedPump,
-    //           isOn: updatedPump.status === 1 || updatedPump.status === "ON",
-    //           isPending: false,
-    //         };
-    //         if (JSON.stringify(node.data) !== JSON.stringify(newData)) {
-    //           return { ...node, data: newData };
-    //         }
-    //       }
-
-    //       return node;
-    //     })
-    //   );
-
-    //   setRealtimePumpData((prev) => ({ ...prev, ...pumpMap }));
-    // };
 
     const handlePumpAck = (payload) => {
       console.log("Processing pump acknowledgment:", payload);
@@ -573,6 +522,114 @@ function CanvasComponent({
       );
     };
 
+    const handleSensorData = (payload) => {
+      console.log("Received flometervalveData payload:", payload);
+      if (!payload || !Array.isArray(payload.stacks)) return;
+      const incomingProductId = String(
+        payload.product_id || payload.productId || ""
+      );
+      if (!incomingProductId) return;
+      // // ✅ Only accept payloads for the currently selected product in UI
+      // const selectedPid = String(selectedProductIdRef.current || "");
+      // if (selectedPid && incomingProductId !== selectedPid) {
+      //   // Optional: keep this log while debugging, then remove
+      //   console.log(
+      //     `[IGNORED sensorData] incoming=${incomingProductId} selected=${selectedPid}`
+      //   );
+      //   return;
+      // }
+
+      // Find PSF stack (STP / effluent)
+      const psfStack = payload.stacks.find(
+        (s) =>
+          String(s.stackName || "").toLowerCase() === "stp" &&
+          String(s.stationType || "").toLowerCase() === "effluent"
+      );
+
+      setNodes((nds) =>
+        nds.map((node) => {
+          // Only update nodes that belong to this product
+          if (String(node.data?.productId) !== incomingProductId) return node;
+
+          // 1) Update FlowMeter nodes by stackName binding
+          if (node.type === "flowMeterNode") {
+            const bindName = String(node.data?.stackName || "")
+              .trim()
+              .toLowerCase();
+            if (!bindName) return node;
+
+            const match = payload.stacks.find(
+              (s) =>
+                String(s.stackName || "")
+                  .trim()
+                  .toLowerCase() === bindName
+            );
+            if (!match) return node;
+
+            const nextFlowRate =
+              typeof match.flowRate === "number"
+                ? match.flowRate
+                : node.data?.flowRate;
+            const nextTotalizer =
+              typeof match.cumulatingFlow === "number"
+                ? match.cumulatingFlow
+                : node.data?.cumulatingFlow;
+
+            // update only if changed
+            if (
+              nextFlowRate === node.data?.flowRate &&
+              nextTotalizer === node.data?.cumulatingFlow
+            )
+              return node;
+
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                flowRate: nextFlowRate,
+                cumulatingFlow: nextTotalizer,
+                lastUpdated: new Date().toISOString(),
+              },
+            };
+          }
+
+          // 2) Update PSF node with TURB + PRESSUERE
+          if (node.type === "psfNode" && psfStack) {
+            const nextTurb =
+              typeof psfStack.TURB === "number"
+                ? psfStack.TURB
+                : node.data?.turb;
+
+            // your payload key is PRESSUERE (typo) so support both
+            const nextPressure =
+              typeof psfStack.PRESSUERE === "number"
+                ? psfStack.PRESSUERE
+                : typeof psfStack.PRESSURE === "number"
+                ? psfStack.PRESSURE
+                : node.data?.pressure;
+
+            if (
+              nextTurb === node.data?.turb &&
+              nextPressure === node.data?.pressure
+            )
+              return node;
+
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                turb: nextTurb,
+                pressure: nextPressure,
+                lastUpdated: new Date().toISOString(),
+              },
+            };
+          }
+
+          return node;
+        })
+      );
+    };
+    socket.current.on("flometervalveData", handleSensorData);
     socket.current.on("connect", () => {
       console.log("Socket.IO connected:", socket.current.id);
       if (effectiveProductId)
@@ -591,6 +648,7 @@ function CanvasComponent({
     });
 
     return () => {
+      socket.current.off("flometervalveData", handleSensorData);
       socket.current.off("data", handleTankData);
       socket.current.off("pumpFeedback", handlePumpFeedback);
       socket.current.off("pumpAck", handlePumpAck);
@@ -785,6 +843,7 @@ function CanvasComponent({
           setNodes={setNodes}
         />
       ),
+      flowMeterNode: FlowMeterNode,
 
       imageNode: ImageNode,
       pdfNode: PdfNode,
@@ -922,6 +981,15 @@ function CanvasComponent({
                   isPending,
                   productId: effectiveProductId,
                   realtimeValues: realtimePumpData[node.id] || {},
+                },
+              };
+            }
+            if (node.type === "flowMeterNode") {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  productId: effectiveProductId,
                 },
               };
             }
@@ -1121,6 +1189,7 @@ function CanvasComponent({
       const isSpecialNode = !!(shapeData.isPump || shapeData.isAirblower);
       const isPngNode = !!shapeData.isPNG;
       const isPdfNode = !!shapeData.isPDF;
+      const isFlowmeterNode = !!shapeData.isFlowmeter;
 
       const promptLabel =
         isPngNode || isPdfNode ? "file" : shapeData.label || "node";
@@ -1201,6 +1270,7 @@ function CanvasComponent({
       else if (shapeData.isTank) nodeType = "tankNode";
       else if (isPngNode) nodeType = "imageNode";
       else if (isPdfNode) nodeType = "pdfNode";
+      else if (isFlowmeterNode) nodeType = "flowMeterNode";
 
       // ---- upload handling (PNG/PDF) ----
       let uploadedUrl = shapeData.filePath || null;
@@ -1254,8 +1324,15 @@ function CanvasComponent({
           id: manualId,
           name: deviceName,
           productId: effectiveProductId,
+          // ✅ flow binding (works only for flowMeterNode)
+          stackName: shapeData.stackName || stackName,
+          title:
+            shapeData.title ||
+            (shapeData.stackName ? shapeData.stackName : "Flowmeter"),
+          flowRate: undefined,
+          cumulatingFlow: undefined,
           tankName,
-          stackName,
+          // stackName,
           filePath: uploadedUrl,
           fileKey: uploadedKey,
           isOn: false,

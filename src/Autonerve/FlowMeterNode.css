@@ -1,0 +1,38 @@
+.flowmeter-node {
+  min-width: 180px;
+  border: 2px solid #236a80;
+  border-radius: 12px;
+  background: #fffefe;
+  padding: 10px 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.flowmeter-title {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.flowmeter-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-top: 1px dashed #eee;
+}
+
+.flowmeter-row .k {
+  font-size: 16px;
+  color: #272829;
+}
+
+.flowmeter-row .v {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.flowmeter-meta {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #9ca3af;
+}

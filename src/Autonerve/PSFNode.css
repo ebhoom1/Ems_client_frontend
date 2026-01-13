@@ -121,3 +121,21 @@
   background: #f39c12 !important;   /* PENDING = ORANGE */
   cursor: not-allowed;
 }
+
+.psf-metrics{
+  display:flex;
+  gap:10px;
+  padding:8px 0 4px;
+  justify-content:space-between;
+}
+
+.psf-metric .k{
+  font-size:14px;
+  color:#2e2e2f;
+  margin-right:6px;
+}
+
+.psf-metric .v{
+  font-weight:700;
+  font-size:14px;
+}

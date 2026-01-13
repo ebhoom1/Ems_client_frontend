@@ -7,6 +7,7 @@ export default function PSFNode({
   sendValveControlMessage,
   setNodes,
 }) {
+  console.log("data:",data);
   const VALVE_ID_MAP = {
     V1: "valve_1",
     V2: "valve_2",
@@ -79,7 +80,23 @@ export default function PSFNode({
 
   return (
     <div className="psf-box">
-      <div className="psf-title">Pressure Sand Filter</div>
+<div className="psf-title">Pressure Sand Filter</div>
+
+<div className="psf-metrics">
+  <div className="psf-metric">
+    <span className="k">Turb</span>
+    <span className="v">
+      {typeof data?.turb === "number" ? data.turb.toFixed(2) : "--"}
+    </span>
+  </div>
+
+  <div className="psf-metric">
+    <span className="k">Pressure</span>
+    <span className="v">
+      {typeof data?.pressure === "number" ? data.pressure.toFixed(3) : "--"}
+    </span>
+  </div>
+</div>
 
       <div className="psf-grid">
         {["V1", "V4", "V3", "V5", "V2"].map((valveName) => {
