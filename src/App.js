@@ -124,6 +124,7 @@ import TreatedWaterClarityReport from "./pages/MonthlyReport/TreatedWaterClarity
 import EquipmentStatusReport from "./pages/MonthlyReport/EquipmentStatusReport";
 import ChemicalDetails from "./pages/MonthlyReport/ChemicalDetails";
 import ChemicalConsumption from "./pages/MonthlyReport/ChemicalConsumption";
+import ChemicalDetailsReport from "./pages/MonthlyReport/ChemicalDetails";
 import CriticalSpareAvailability from "./pages/MonthlyReport/CriticalSpareAvailability";
 import PowerConsumption from "./pages/MonthlyReport/PowerConsumption";
 import WaterBalanceReport from "./pages/MonthlyReport/WaterBalanceReport";
@@ -478,6 +479,7 @@ function App() {
                       <Route path="/chemical-details" element={<ChemicalDetails />} />
                       <Route path="/critical-spare-availability" element={<CriticalSpareAvailability />} />
                       <Route path="/chemical-consumption" element={<ChemicalConsumption />} />
+                      <Route path="/chemical-details" element={<ChemicalDetailsReport />} />
                       <Route path="/power-consumption" element={<PowerConsumption />} />
                       <Route path="/water-balance" element={<WaterBalanceReport />} />
                       <Route path="/plantoperating" element={<PlantOperatingReport />} />
@@ -632,6 +634,19 @@ function App() {
                       <Route path="/download" element={<DownloadData />} />
                       <Route path="/how-to-use" element={<UserManual />} />
                       <Route path="/autonerve" element={<AutonerveLayout />} />
+                      {/* monthly report */}
+                       <Route path="/monthly-report" element={<MonthlyPh />} />
+                      <Route path="/inlet-outlet" element={<InletAndOutlet />} />
+                      <Route path="/monthly-maintenance" element={<MonthlyMaintenanceReport />} />
+                      <Route path="/monthly-treatedwaterclarity" element={<TreatedWaterClarityReport />} />
+                      <Route path="/monthly-equipmentstatus" element={<EquipmentStatusReport />} />
+                      <Route path="/chemical-details" element={<ChemicalDetails />} />
+                      <Route path="/critical-spare-availability" element={<CriticalSpareAvailability />} />
+                      <Route path="/chemical-consumption" element={<ChemicalConsumption />} />
+                      <Route path="/chemical-details" element={<ChemicalDetailsReport />} />
+                      <Route path="/power-consumption" element={<PowerConsumption />} />
+                      <Route path="/water-balance" element={<WaterBalanceReport />} />
+                      <Route path="/plantoperating" element={<PlantOperatingReport />} />
                       {/* Assuming transaction-related routes */}
                       <Route
                         path="/edit-report/:userName"

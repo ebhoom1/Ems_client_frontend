@@ -248,6 +248,14 @@ function DashboardSam() {
                         <span className="title">AutoNerve</span>
                       </a>
                     </li>
+                     <li className="list active text-center">
+                          <a
+                            onClick={handleShowReportModal}
+                            style={{ textDecoration: "none", color: "#ffffff" }}
+                          >
+                            <span className="title">Monthly Report</span>
+                          </a>
+                        </li>
                     <li className="list active text-center">
                       <a
                         href="/inventory"
@@ -572,6 +580,12 @@ function DashboardSam() {
                 onClick={() => handleModalClick("/chemical-consumption")}
               >
                 Chemical Consumption
+              </Button> 
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => handleModalClick("/chemical-details")}
+              >
+                Chemical Details
               </Button>
 
               <Button

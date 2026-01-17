@@ -148,7 +148,7 @@ const MonthlyPh = () => {
   const isAdmin =
     ["admin", "super_admin"].includes(currentUser?.userType) ||
     currentUser?.adminType === "EBHOOM";
-
+const canManage = isAdmin || isOperator;    
   const DEFAULT_PARAMETERS = [
     { key: "MLSS", label: "MLSS (mg/ltr)", unit: "mg/ltr", isDefault: true },
     { key: "PH", label: "pH - TREATED WATER", unit: "", isDefault: true },
@@ -393,7 +393,7 @@ const MonthlyPh = () => {
         headStyles: { fillColor: "#236a80" },
       });
 
-      if (isAdmin) {
+      if (canManage) {
         let y = doc.autoTable.previous.finalY + 15;
 
         for (const p of parameters) {
@@ -707,21 +707,20 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
     <>
       <div className="d-flex">
         {/* Sidebar */}
-        {!isOperator && (
+       
           <div>
             <DashboardSam />
           </div>
-        )}
+        
 
         {/* Main Content Area */}
         <div
           style={{
-            marginLeft: !isOperator ? "260px" : "0",
+            marginLeft:  "260px" ,
             width: "100%",
             minHeight: "100vh",
           }}
         >
-          {!isOperator && (
             <div
               style={{
                 position: "sticky",
@@ -732,7 +731,7 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
             >
               <Header />
             </div>
-          )}
+        
 
           <div className="container-fluid py-4 px-4">
             <div className="row" style={{ marginTop: "0", padding: "0 68px" }}>
@@ -817,10 +816,10 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
 
                     <div style={cardStyle}>
                       <div className="row">
-                        <div className={isAdmin ? "col-lg-6" : "col-12"}>
+                        <div className={"col-lg-6"}>
                           <div
                             style={{
-                              height: isAdmin ? "550px" : "600px",
+                              height:"550px",
                               overflowY: "auto",
                               border: "3px dotted #236a80",
                               borderRadius: "10px",
@@ -828,7 +827,7 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
                               backgroundColor: "#f8f9fa",
                             }}
                           >
-                            {isAdmin && (
+                            {canManage && (
                               <div className="mb-3 d-flex gap-2">
                                 <input
                                   type="text"
@@ -919,7 +918,7 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
                                       {p.label}
 
                                       {/* 🗑️ Delete button (only for non-default, admin only) */}
-                                      {isAdmin && !p.isDefault && (
+                                      {canManage && !p.isDefault && (
                                         <span
                                           onClick={() =>
                                             handleDeleteParameter(p.key)
@@ -1033,7 +1032,7 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
                           </div>
                         </div>
 
-                        {isAdmin && (
+                        {canManage && (
                           <div className="col-lg-6">
                             <div
                               style={{
@@ -1103,7 +1102,7 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
                             {loading ? "Saving..." : "💾 Save Report"}
                           </button>
 
-                          {isAdmin && (
+                          {canManage && (
                             <>
                               <button
                                 style={downloadPdfButtonStyle}
@@ -1141,7 +1140,7 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
                     </div>
 
                     {/* Operator-only Inlet/Outlet + Photos */}
-                    {isOperator && (
+                    {/* {isOperator && (
                       <>
                         <div
                           style={{
@@ -1203,7 +1202,7 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
                           </div>
                         </div>
                       </>
-                    )}
+                    )} */}
                   </>
                 )}
               </div>

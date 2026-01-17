@@ -467,17 +467,16 @@ const WaterBalanceReport = () => {
 
   return (
     <div className="d-flex">
-      {!isOperator && <DashboardSam />}
+      { <DashboardSam />}
 
       <div
         style={{
-          marginLeft: !isOperator ? 260 : 0,
+          marginLeft:260,
           width: "100%",
           paddingTop: 80,
           overflowX: "hidden", // ✅ KEY LINE
         }}
       >
-        {!isOperator && (
           <div
             style={{
               position: "fixed",
@@ -489,7 +488,7 @@ const WaterBalanceReport = () => {
           >
             <Header />
           </div>
-        )}
+        
 
         <div className="container-fluid px-2 mt-4">
           {/* ===== HEADER ===== */}

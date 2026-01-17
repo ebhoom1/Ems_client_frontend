@@ -444,20 +444,20 @@ const EquipmentStatusReport = () => {
   return (
     <>
       <div className="d-flex">
-        {!isOperator && (
+       
           <div>
             <DashboardSam />
           </div>
-        )}
+      
 
         <div
           style={{
-            marginLeft: !isOperator ? "260px" : "0",
+            marginLeft: "260px",
             width: "100%",
             minHeight: "100vh",
           }}
         >
-          {!isOperator && (
+         
             <div
               style={{
                 position: "sticky",
@@ -468,7 +468,7 @@ const EquipmentStatusReport = () => {
             >
               <Header />
             </div>
-          )}
+        
 
           <div className="container-fluid py-4 px-4">
             <div className="row" style={{ marginTop: "0", padding: "0" }}>

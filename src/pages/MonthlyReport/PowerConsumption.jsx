@@ -265,16 +265,16 @@ const PowerConsumption = () => {
 
   return (
     <div className="d-flex">
-      {!isOperator && <DashboardSam />}
+      { <DashboardSam />}
 
       <div
         style={{
-          marginLeft: !isOperator ? 260 : 0,
+          marginLeft:260,
           width: "100%",
           paddingTop: 80,
         }}
       >
-        {!isOperator && (
+       
           <div
             style={{
               position: "fixed",
@@ -286,7 +286,7 @@ const PowerConsumption = () => {
           >
             <Header />
           </div>
-        )}
+      
 
         <div className="container-fluid px-5 mt-4">
           {/* ===== HEADER (AS REQUESTED) ===== */}

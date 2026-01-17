@@ -81,7 +81,7 @@ const InletAndOutlet = () => {
   const isAdmin =
     ["admin", "super_admin"].includes(currentUser?.userType) ||
     currentUser?.adminType === "EBHOOM";
-
+const canManage = isAdmin || isOperator; 
   const DEFAULT_FLOW_METERS = ["Inlet", "Outlet"];
 
   useEffect(() => {
@@ -939,19 +939,19 @@ const InletAndOutlet = () => {
   return (
     <>
       <div className="d-flex">
-        {!isOperator && (
+      
           <div>
             <DashboardSam />
           </div>
-        )}
+        
         <div
           style={{
-            marginLeft: !isOperator ? "260px" : "0",
+            marginLeft: "260px",
             width: "100%",
             minHeight: "100vh",
           }}
         >
-          {!isOperator && (
+         
             <div
               style={{
                 position: "sticky",
@@ -962,7 +962,7 @@ const InletAndOutlet = () => {
             >
               <Header />
             </div>
-          )}
+          
 
           {/* main content */}
           <div
@@ -1045,7 +1045,7 @@ const InletAndOutlet = () => {
 
                     <div style={cardStyle}>
                       <div className="row">
-                        <div className={isAdmin ? "col-lg-6" : "col-12"}>
+                        <div className={"col-lg-6"}>
                           <div className="table-container">
                             <div className="mb-3">
                               <button
@@ -1101,7 +1101,7 @@ const InletAndOutlet = () => {
                                     >
                                       {fm.toUpperCase()}
                                       {/* 🗑️ Delete (Admin + Non-default only) */}
-                                      {isAdmin &&
+                                      {canManage &&
                                         !DEFAULT_FLOW_METERS.includes(fm) && (
                                           <span
                                             title="Delete flow meter"
@@ -1262,7 +1262,7 @@ const InletAndOutlet = () => {
                           </div>
                         </div>
 
-                        {isAdmin && (
+                        {canManage && (
                           <div className="col-lg-6">
                             {dynamicChartData.map((chartObj, index) => (
                               <div
@@ -1335,7 +1335,7 @@ const InletAndOutlet = () => {
                         >
                           {loading ? "Saving..." : "💾 Save Report"}
                         </button>
-                        {isAdmin && (
+                        {canManage && (
                           <>
                             <button
                               style={downloadPdfButtonStyle}

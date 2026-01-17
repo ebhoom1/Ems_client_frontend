@@ -276,22 +276,22 @@ const PlantOperatingReport = () => {
 
   return (
     <div className="d-flex">
-      {!isOperator && <DashboardSam />}
+      {<DashboardSam />}
 
       <div
         style={{
-          marginLeft: !isOperator ? 280 : 0,
+          marginLeft: 280,
           width: "100%",
           paddingTop: 80,
         }}
       >
         <div
           style={{
-            marginLeft: !isOperator ? 55 : 0,
+            marginLeft: 55 ,
             width: "100%",
           }}
         >
-          {!isOperator && <Header />}
+           <Header />
         </div>
 
         <div className="container-fluid px-5 mt-4">

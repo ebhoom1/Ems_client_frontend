@@ -810,12 +810,7 @@ const Water = () => {
                   </div>
                 )}
 
-                {/* When operator → show MonthlyReport instead of below sections */}
-                {isOperator ? (
-                  <div className="mt-4">
-                    <MonthlyPh />
-                  </div>
-                ) : (
+                
                   <div className="container-fluid water">
                     <div className="row">
                       <div className="col-lg-12 col-12 mt-2">
@@ -1275,7 +1270,7 @@ const Water = () => {
                       </div>
                     </footer>
                   </div>
-                )}
+                
                 {/* === END: CONDITIONAL DASHBOARD CONTENT === */}
               </div>
             </div>

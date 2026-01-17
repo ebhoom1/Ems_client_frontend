@@ -1,3 +1,4 @@
+// FILE: src/Components/Chemical/ChemicalDetails.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import DashboardSam from "../Dashboard/DashboardSam";
@@ -11,24 +12,6 @@ import genexlogo from "../../assests/images/logonewgenex.png";
 import { API_URL } from "../../utils/apiConfig";
 
 const THEME = "#236a80";
-
-/* ---------- helpers ---------- */
-const getDaysInMonth = (year, month) => {
-  const d = new Date(year, month, 1);
-  const out = [];
-  while (d.getMonth() === month) {
-    out.push(new Date(d));
-    d.setDate(d.getDate() + 1);
-  }
-  return out;
-};
-
-const formatFullDate = (dateObj) => {
-  const d = String(dateObj.getDate()).padStart(2, "0");
-  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const y = dateObj.getFullYear();
-  return `${d}/${m}/${y}`;
-};
 
 const monthNames = [
   "January",
@@ -45,6 +28,58 @@ const monthNames = [
   "December",
 ];
 
+/* ---------- helpers ---------- */
+const getDaysInMonth = (year, monthIndex0) => {
+  const d = new Date(year, monthIndex0, 1);
+  const out = [];
+  while (d.getMonth() === monthIndex0) {
+    out.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+};
+
+const formatFullDate = (dateObj) => {
+  const d = String(dateObj.getDate()).padStart(2, "0");
+  const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const y = dateObj.getFullYear();
+  return `${d}/${m}/${y}`;
+};
+
+const numOrZero = (v) => {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const buildBlankRowsForMonth = (year, monthIndex0) => {
+  const days = getDaysInMonth(year, monthIndex0);
+  return days.map((d) => ({
+    dateObj: d,
+    initialQty: "",
+    receivedQty: "",
+    usedQty: "",
+    finalQty: "",
+  }));
+};
+
+const wrap = (text, max = 12) => {
+  const s = String(text || "").trim();
+  if (!s) return "";
+  const words = s.split(/\s+/);
+  const lines = [];
+  let cur = "";
+  for (const w of words) {
+    const next = cur ? `${cur} ${w}` : w;
+    if (next.length <= max) cur = next;
+    else {
+      if (cur) lines.push(cur);
+      cur = w;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines.join("\n"); // ✅ IMPORTANT
+};
+
 const ChemicalDetails = () => {
   const dispatch = useDispatch();
   const { userData } = useSelector((s) => s.user);
@@ -59,10 +94,21 @@ const ChemicalDetails = () => {
 
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());
-  const [chemicalName, setChemicalName] = useState("");
-  const [rows, setRows] = useState([]);
+  const [month, setMonth] = useState(today.getMonth()); // 0-11
+
+  // ✅ default: no chemicals
+  const [chemicals, setChemicals] = useState([]);
+  // ✅ single input to add chemicals
+  const [newChemicalName, setNewChemicalName] = useState("");
+
   const [saving, setSaving] = useState(false);
+
+  // ✅ stop whole-page horizontal scroll
+  useEffect(() => {
+    const prev = document.body.style.overflowX;
+    document.body.style.overflowX = "hidden";
+    return () => (document.body.style.overflowX = prev || "auto");
+  }, []);
 
   /* ---------- users ---------- */
   useEffect(() => {
@@ -80,7 +126,17 @@ const ChemicalDetails = () => {
     };
   }, [users, selectedUserId]);
 
-  /* ---------- fetch saved report on month/year change ---------- */
+  /* ---------- when month/year changes, rebuild rows for all existing chemicals ---------- */
+  useEffect(() => {
+    setChemicals((prev) =>
+      prev.map((c) => ({
+        ...c,
+        rows: buildBlankRowsForMonth(year, month),
+      }))
+    );
+  }, [year, month]);
+
+  /* ---------- fetch saved report ---------- */
   useEffect(() => {
     if (!targetUser || !year || month === null) return;
 
@@ -93,41 +149,28 @@ const ChemicalDetails = () => {
         );
 
         const report = res.data;
-
-        // set chemical name
-        setChemicalName(report.chemicalName || "");
-
-        // rebuild rows from saved data
         const days = getDaysInMonth(year, month);
 
-        const updatedRows = days.map((dateObj) => {
-          const dateStr = formatFullDate(dateObj);
+        const loaded = (report.chemicals || []).map((chem) => {
+          const rows = days.map((dateObj) => {
+            const dateStr = formatFullDate(dateObj);
+            const saved = (chem.readings || []).find((r) => r.date === dateStr);
+            return {
+              dateObj,
+              initialQty: saved?.initialQty ?? "",
+              receivedQty: saved?.receivedQty ?? "",
+              usedQty: saved?.usedQty ?? "",
+              finalQty: saved?.finalQty ?? "",
+            };
+          });
 
-          const saved = report.readings.find((r) => r.date === dateStr);
-
-          return {
-            dateObj,
-            received: saved?.received ?? "",
-            opening: saved?.openingStock ?? "",
-            consumption: saved?.consumption ?? "",
-            closing: saved?.closedStock ?? "",
-          };
+          return { chemicalName: chem.chemicalName || "", rows };
         });
 
-        setRows(updatedRows);
+        setChemicals(loaded);
       } catch (err) {
         if (err.response?.status === 404) {
-          // no report → reset month
-          const days = getDaysInMonth(year, month);
-          setRows(
-            days.map((d) => ({
-              dateObj: d,
-              received: "",
-              opening: "",
-              consumption: "",
-              closing: "",
-            }))
-          );
+          setChemicals([]);
         } else {
           console.error("FETCH ERROR:", err);
           Swal.fire({
@@ -144,47 +187,75 @@ const ChemicalDetails = () => {
     fetchReport();
   }, [targetUser, year, month]);
 
-  /* ---------- init rows ---------- */
-  useEffect(() => {
-    const days = getDaysInMonth(year, month);
-    setRows(
-      days.map((d) => ({
-        dateObj: d,
-        received: "",
-        opening: "",
-        consumption: "",
-        closing: "",
-      }))
+  /* ---------- add chemical ---------- */
+  const addChemical = () => {
+    const name = String(newChemicalName || "").trim();
+    if (!name) return;
+
+    const exists = chemicals.some(
+      (c) => c.chemicalName?.trim().toLowerCase() === name.toLowerCase()
     );
-  }, [year, month]);
-
-  /* ---------- input change ---------- */
-  const handleChange = (idx, field, value) => {
-    const updated = [...rows];
-    updated[idx][field] = value;
-
-    const opening = parseFloat(updated[idx].opening) || 0;
-    const received = parseFloat(updated[idx].received) || 0;
-    const consumption = parseFloat(updated[idx].consumption) || 0;
-
-    const closed = opening + received - consumption;
-    updated[idx].closing = closed >= 0 ? closed.toFixed(2) : "0.00";
-
-    if (updated[idx + 1]) {
-      updated[idx + 1].opening = updated[idx].closing;
+    if (exists) {
+      Swal.fire("Already Added", "This chemical is already added", "info");
+      return;
     }
 
-    setRows(updated);
+    setChemicals((prev) => [
+      ...prev,
+      { chemicalName: name, rows: buildBlankRowsForMonth(year, month) },
+    ]);
+    setNewChemicalName("");
+  };
+
+  const removeChemical = (chemIdx) => {
+    setChemicals((prev) => prev.filter((_, i) => i !== chemIdx));
+  };
+
+  /* ---------- cell change ---------- */
+  const handleChange = (chemIdx, rowIdx, field, value) => {
+    setChemicals((prev) => {
+      const copy = [...prev];
+      const chem = { ...copy[chemIdx] };
+      const rows = [...chem.rows];
+
+      const cur = { ...rows[rowIdx], [field]: value };
+
+      const initial = numOrZero(cur.initialQty);
+      const received = numOrZero(cur.receivedQty);
+      const used = numOrZero(cur.usedQty);
+
+      const final = initial + received - used;
+      cur.finalQty = final >= 0 ? final.toFixed(2) : "0.00";
+      rows[rowIdx] = cur;
+
+      // propagate next day initial
+      if (rows[rowIdx + 1]) {
+        const next = { ...rows[rowIdx + 1], initialQty: cur.finalQty };
+
+        const nInitial = numOrZero(next.initialQty);
+        const nReceived = numOrZero(next.receivedQty);
+        const nUsed = numOrZero(next.usedQty);
+        const nFinal = nInitial + nReceived - nUsed;
+
+        next.finalQty = nFinal >= 0 ? nFinal.toFixed(2) : "0.00";
+        rows[rowIdx + 1] = next;
+      }
+
+      chem.rows = rows;
+      copy[chemIdx] = chem;
+      return copy;
+    });
   };
 
   /* ---------- save ---------- */
   const handleSave = async () => {
-    if (!chemicalName.trim()) {
-      Swal.fire("Missing Chemical", "Please enter Chemical Name", "warning");
-      return;
-    }
     if (!targetUser) {
       Swal.fire("Site Not Selected", "Please select a site", "warning");
+      return;
+    }
+
+    if (chemicals.length === 0) {
+      Swal.fire("No Chemicals", "Please add at least one chemical", "warning");
       return;
     }
 
@@ -192,15 +263,17 @@ const ChemicalDetails = () => {
       userId: targetUser.userId,
       userName: targetUser.userName,
       siteName: targetUser.siteName,
-      chemicalName,
       year,
       month: month + 1,
-      readings: rows.map((r) => ({
-        date: formatFullDate(r.dateObj),
-        received: r.received || 0,
-        openingStock: r.opening || 0,
-        consumption: r.consumption || 0,
-        closedStock: r.closing || 0,
+      chemicals: chemicals.map((c) => ({
+        chemicalName: c.chemicalName,
+        readings: c.rows.map((r) => ({
+          date: formatFullDate(r.dateObj),
+          initialQty: numOrZero(r.initialQty),
+          receivedQty: numOrZero(r.receivedQty),
+          usedQty: numOrZero(r.usedQty),
+          finalQty: numOrZero(r.finalQty),
+        })),
       })),
     };
 
@@ -210,18 +283,17 @@ const ChemicalDetails = () => {
       Swal.fire({
         title: "Saving Report",
         text: "Please wait...",
-        timer: 1800, // ⏱ auto close in 1.8 sec
-        showConfirmButton: false, // ❌ no OK button
+        timer: 1800,
+        showConfirmButton: false,
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading(),
       });
 
-      const res = await axios.post(`${API_URL}/api/chemical-report`, payload);
-      console.log("CHEMICAL REPORT response:", res.message);
+      await axios.post(`${API_URL}/api/chemical-report`, payload);
 
       Swal.fire(
         "Saved Successfully",
-        "Chemical Consumption Report saved",
+        "Monthly Chemical Stock saved",
         "success"
       );
     } catch (err) {
@@ -238,98 +310,177 @@ const ChemicalDetails = () => {
     }
   };
 
-  /* ---------- PDF ---------- */
-  const downloadPDF = () => {
-    if (!targetUser) return;
-
-    const doc = new jsPDF();
-    doc.setFillColor(THEME);
-    doc.rect(0, 0, 210, 32, "F");
-    doc.addImage(genexlogo, "PNG", 12, 6, 20, 20);
-    doc.setTextColor("#fff");
-    doc.setFontSize(14);
-    doc.text("Chemical Consumption Report", 105, 16, { align: "center" });
-
-    doc.setTextColor("#000");
-    doc.setFontSize(11);
-    doc.text(`Site: ${targetUser.siteName}`, 14, 42);
-    doc.text(
-      `Chemical: ${chemicalName} | ${monthNames[month]} ${year}`,
-      14,
-      50
-    );
-
-    doc.autoTable({
-      startY: 58,
-      head: [
-        [
-          "DATE",
-          "RECEIVED",
-          "OPENING STOCK IN KGS",
-          "CONSUMPTION IN KGS / DAY",
-          "CLOSED STOCK IN KGS",
-        ],
-      ],
-      body: rows.map((r) => [
-        formatFullDate(r.dateObj),
-        r.received || "",
-        r.opening || "",
-        r.consumption || "",
-        r.closing || "",
-      ]),
-      headStyles: { fillColor: THEME },
-      styles: { fontSize: 8 },
-    });
-
-    doc.save(
-      `${targetUser.siteName}_${chemicalName}_${monthNames[month]}_${year}.pdf`
-    );
-  };
-
-  /* ---------- CSV ---------- */
+  /* ---------- CSV (✅ with chemicals grouped like the UI table) ---------- */
   const downloadCSV = () => {
-    let csv =
-      "DATE,RECEIVED,OPENING STOCK IN KGS,CONSUMPTION IN KGS / DAY,CLOSED STOCK IN KGS\n";
-    rows.forEach((r) => {
-      csv += `${formatFullDate(r.dateObj)},${r.received || ""},${
-        r.opening || ""
-      },${r.consumption || ""},${r.closing || ""}\n`;
+    if (!targetUser) return;
+    if (chemicals.length === 0) {
+      Swal.fire("No Chemicals", "Please add at least one chemical", "warning");
+      return;
+    }
+
+    // header row 1: Date + chemical names repeated 4 cols
+    const header1 = ["Date"];
+    chemicals.forEach((c) => {
+      header1.push(
+        `${c.chemicalName} - Initial`,
+        `${c.chemicalName} - Received`,
+        `${c.chemicalName} - Used`,
+        `${c.chemicalName} - Final`
+      );
     });
 
-    const blob = new Blob([csv], { type: "text/csv" });
+    let csv = header1.join(",") + "\n";
+
+    const days = getDaysInMonth(year, month);
+    days.forEach((dateObj, dayIdx) => {
+      const row = [formatFullDate(dateObj)];
+      chemicals.forEach((c) => {
+        const r = c.rows?.[dayIdx] || {};
+        row.push(
+          r.initialQty ?? "",
+          r.receivedQty ?? "",
+          r.usedQty ?? "",
+          r.finalQty ?? ""
+        );
+      });
+      csv += row.join(",") + "\n";
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${chemicalName}_${monthNames[month]}_${year}.csv`;
+    a.download = `${targetUser.siteName}_ChemicalStock_${monthNames[month]}_${year}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
+  /* ---------- PDF (✅ 2 CHEMICALS PER PAGE + ✅ chemical name inside table head + ✅ wrapped TH) ---------- */
+  const downloadPDF = () => {
+    if (!targetUser) return;
+
+    if (chemicals.length === 0) {
+      Swal.fire("No Chemicals", "Please add at least one chemical", "warning");
+      return;
+    }
+
+    const doc = new jsPDF("p", "mm", "a4");
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+
+    const drawTopHeader = () => {
+      doc.setFillColor(THEME);
+      doc.rect(0, 0, pageW, 30, "F");
+      doc.addImage(genexlogo, "PNG", 10, 6, 18, 18);
+
+      doc.setTextColor("#fff");
+      doc.setFontSize(16);
+      doc.text("Chemical Stock Report", pageW / 2, 18, { align: "center" });
+
+      doc.setTextColor("#000");
+      doc.setFontSize(12);
+      doc.text(`Site: ${targetUser.siteName}`, 12, 42);
+      doc.text(`Month: ${monthNames[month]} ${year}`, 12, 50);
+    };
+
+    // widths tuned for 2 chemicals per page (A4 portrait)
+    const dateW = 25;
+    const colW = 20;
+for (let i = 0, pageIndex = 0; i < chemicals.length; i += 2, pageIndex++) {
+  if (pageIndex > 0) doc.addPage();
+
+  // ✅ Only first page has header + site + month
+  if (pageIndex === 0) {
+    drawTopHeader();
+  }
+
+  // ✅ Start table higher for pages without header
+  const startY = pageIndex === 0 ? 58 : 12;
+
+  const subset = chemicals.slice(i, i + 2);
+  const daysCount = subset[0]?.rows?.length || 0;
+
+  const headRow1 = [
+    { content: "Date", rowSpan: 2, styles: { halign: "center", valign: "middle" } },
+  ];
+  subset.forEach((c) => {
+    headRow1.push({
+      content: c.chemicalName,
+      colSpan: 4,
+      styles: { halign: "center", valign: "middle" },
+    });
+  });
+
+  const headRow2 = [];
+  subset.forEach(() => {
+    headRow2.push(
+      { content: wrap("Initial Quantity in KG", 11), styles: { cellWidth: colW, overflow: "linebreak", halign: "center" } },
+      { content: wrap("Received Quantity in KG", 11), styles: { cellWidth: colW, overflow: "linebreak", halign: "center" } },
+      { content: wrap("Used in KG", 11), styles: { cellWidth: colW, overflow: "linebreak", halign: "center" } },
+      { content: wrap("Final Quantity in KG", 11), styles: { cellWidth: colW, overflow: "linebreak", halign: "center" } }
+    );
+  });
+
+  const body = Array.from({ length: daysCount }).map((_, dayIdx) => {
+    const dateObj = subset[0].rows[dayIdx].dateObj;
+    const row = [formatFullDate(dateObj)];
+    subset.forEach((c) => {
+      const r = c.rows?.[dayIdx] || {};
+      row.push(r.initialQty ?? "", r.receivedQty ?? "", r.usedQty ?? "", r.finalQty ?? "");
+    });
+    return row;
+  });
+
+  doc.autoTable({
+    startY,
+    head: [headRow1, headRow2],
+    body,
+    theme: "grid",
+    margin: { left: 10, right: 10 },
+    styles: { fontSize: 8, cellPadding: 1.5, valign: "middle", overflow: "linebreak" },
+    headStyles: { fillColor: THEME, textColor: 255, fontStyle: "bold", halign: "center" },
+    columnStyles: {
+      0: { cellWidth: dateW, halign: "left" },
+      1: { cellWidth: colW }, 2: { cellWidth: colW }, 3: { cellWidth: colW }, 4: { cellWidth: colW },
+      5: { cellWidth: colW }, 6: { cellWidth: colW }, 7: { cellWidth: colW }, 8: { cellWidth: colW },
+    },
+  });
+}
+
+
+    doc.save(
+      `${targetUser.siteName}_ChemicalStock_${monthNames[month]}_${year}.pdf`
+    );
+  };
+
   /* ---------- UI ---------- */
+  const dates = useMemo(() => getDaysInMonth(year, month), [year, month]);
+
   return (
     <div className="d-flex">
-      {!isOperator && <DashboardSam />}
+      { <DashboardSam />}
 
       <div
         style={{
-          marginLeft: !isOperator ? "260px" : 0,
+          marginLeft:  "260px" ,
           width: "100%",
-          paddingTop: !isOperator ? "70px" : "0px",
+          paddingTop: "70px",
+          overflowX: "hidden",
         }}
       >
-        {!isOperator && (
+       
           <div
             style={{
               position: "fixed",
               top: 0,
-              left: "320px", // 👈 same as sidebar width
-              width: "calc(100% - 260px)", // 👈 key line
+              left: "320px",
+              width: "calc(100% - 260px)",
               zIndex: 1000,
             }}
           >
             <Header />
           </div>
-        )}
+        
 
         <div className="container-fluid px-5 mt-6">
           {/* HEADER */}
@@ -344,11 +495,11 @@ const ChemicalDetails = () => {
             <div className="d-flex justify-content-between align-items-center">
               <div>
                 <h3 style={{ margin: 0, fontWeight: 800 }}>
-                  CHEMICAL CONSUMPTION DETAILS
+                  CHEMICAL STOCK LIST
                 </h3>
                 <div style={{ marginTop: 6 }}>
-                  <b>SITE:</b> {targetUser?.siteName} |{" "}
-                  <b>MONTH:</b> {monthNames[month]} {year}
+                  <b>SITE:</b> {targetUser?.siteName || "-"} | <b>MONTH:</b>{" "}
+                  {monthNames[month]} {year}
                 </div>
               </div>
 
@@ -364,6 +515,7 @@ const ChemicalDetails = () => {
                     </option>
                   ))}
                 </select>
+
                 <input
                   type="number"
                   value={year}
@@ -375,75 +527,209 @@ const ChemicalDetails = () => {
             </div>
           </div>
 
-          {/* CHEMICAL NAME */}
-          <div className="mt-3 mb-3">
+          {/* ADD CHEMICAL */}
+          <div className="mt-3 d-flex gap-2 align-items-center">
             <input
               className="form-control"
-              placeholder="Chemical Name"
-              value={chemicalName}
-              onChange={(e) => setChemicalName(e.target.value)}
+              placeholder="Type chemical name and press Add (eg: Sodium Hypo Chlorite)"
+              value={newChemicalName}
+              onChange={(e) => setNewChemicalName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addChemical();
+              }}
             />
+            <button className="btn btn-outline-primary" onClick={addChemical}>
+              ➕ Add
+            </button>
+
+            <div style={{ marginLeft: "auto", fontSize: 13, color: "#444" }}>
+              Total: <b>{chemicals.length}</b>
+            </div>
           </div>
 
-          {/* TABLE */}
-          <div className="table-responsive">
-            <table className="table table-bordered">
-              <thead style={{ background: THEME, color: "#fff" }}>
-                <tr>
-                  <th>DATE</th>
-                  <th>RECEIVED</th>
-                  <th>OPENING STOCK IN KGS</th>
-                  <th>CONSUMPTION IN KGS / DAY</th>
-                  <th>CLOSED STOCK IN KGS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r, i) => (
-                  <tr key={i}>
-                    <td>{formatFullDate(r.dateObj)}</td>
-                    <td>
-                      <input
-                        className="form-control"
-                        value={r.received}
-                        onChange={(e) =>
-                          handleChange(i, "received", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td>
-                      <input
-                        className="form-control"
-                        value={r.opening}
-                        onChange={(e) =>
-                          handleChange(i, "opening", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td>
-                      <input
-                        className="form-control"
-                        value={r.consumption}
-                        onChange={(e) =>
-                          handleChange(i, "consumption", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td>
-                      <input
-                        className="form-control"
-                        value={r.closing}
-                        readOnly
-                      />
-                    </td>
+          {/* chips */}
+          {chemicals.length > 0 && (
+            <div className="mt-2 d-flex flex-wrap gap-2">
+              {chemicals.map((c, idx) => (
+                <span
+                  key={idx}
+                  style={{
+                    border: "1px solid #ddd",
+                    borderRadius: 999,
+                    padding: "6px 10px",
+                    background: "#fff",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <b>{c.chemicalName}</b>
+                  <button
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => removeChemical(idx)}
+                    title="Remove"
+                    style={{ padding: "2px 8px" }}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* TABLE SCROLL ONLY */}
+          <div
+            className="mt-3"
+            style={{
+              width: "100%",
+              overflowX: "auto",
+              overflowY: "hidden",
+            }}
+          >
+            <div style={{ minWidth: "max-content" }}>
+              <table
+                className="table table-bordered"
+                style={{ marginBottom: 0 }}
+              >
+                <thead>
+                  <tr style={{ background: THEME, color: "#fff" }}>
+                    <th
+                      rowSpan={2}
+                      style={{
+                        minWidth: 120,
+                        textAlign: "center",
+                        verticalAlign: "middle",
+                        position: "sticky",
+                        left: 0,
+                        background: THEME,
+                        zIndex: 2,
+                      }}
+                    >
+                      Date
+                    </th>
+
+                    {chemicals.map((c, idx) => (
+                      <th
+                        key={idx}
+                        colSpan={4}
+                        style={{ textAlign: "center", minWidth: 4 * 140 }}
+                      >
+                        {c.chemicalName}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+
+                  <tr style={{ background: THEME, color: "#fff" }}>
+                    {chemicals.map((_, idx) => (
+                      <React.Fragment key={idx}>
+                        <th style={{ minWidth: 140 }}>
+                          Initial Quantity in KG
+                        </th>
+                        <th style={{ minWidth: 140 }}>
+                          Received Quantity in KG
+                        </th>
+                        <th style={{ minWidth: 140 }}>Used in KG</th>
+                        <th style={{ minWidth: 140 }}>Final Quantity in KG</th>
+                      </React.Fragment>
+                    ))}
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {dates.map((dateObj, dayIdx) => (
+                    <tr key={dayIdx}>
+                      <td
+                        style={{
+                          whiteSpace: "nowrap",
+                          position: "sticky",
+                          left: 0,
+                          background: "#fff",
+                          zIndex: 1,
+                        }}
+                      >
+                        {formatFullDate(dateObj)}
+                      </td>
+
+                      {chemicals.map((chem, chemIdx) => {
+                        const r = chem.rows[dayIdx] || {};
+                        return (
+                          <React.Fragment key={`${chemIdx}-${dayIdx}`}>
+                            <td>
+                              <input
+                                className="form-control"
+                                value={r.initialQty ?? ""}
+                                onChange={(e) =>
+                                  handleChange(
+                                    chemIdx,
+                                    dayIdx,
+                                    "initialQty",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </td>
+
+                            <td>
+                              <input
+                                className="form-control"
+                                value={r.receivedQty ?? ""}
+                                onChange={(e) =>
+                                  handleChange(
+                                    chemIdx,
+                                    dayIdx,
+                                    "receivedQty",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </td>
+
+                            <td>
+                              <input
+                                className="form-control"
+                                value={r.usedQty ?? ""}
+                                onChange={(e) =>
+                                  handleChange(
+                                    chemIdx,
+                                    dayIdx,
+                                    "usedQty",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </td>
+
+                            <td>
+                              <input
+                                className="form-control"
+                                value={r.finalQty ?? ""}
+                                readOnly
+                              />
+                            </td>
+                          </React.Fragment>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {chemicals.length === 0 && (
+                <div style={{ padding: 12, color: "#555" }}>
+                  Add chemicals using the input above to start entering stock
+                  values.
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ACTIONS */}
-          <div className="text-center mb-5">
-            <button className="btn btn-primary me-2" onClick={handleSave}>
+          <div className="text-center mb-5 mt-4">
+            <button
+              className="btn btn-primary me-2"
+              onClick={handleSave}
+              disabled={saving}
+            >
               💾 Save Report
             </button>
             <button className="btn btn-danger me-2" onClick={downloadPDF}>

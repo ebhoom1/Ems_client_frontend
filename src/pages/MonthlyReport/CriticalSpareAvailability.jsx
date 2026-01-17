@@ -251,14 +251,14 @@ console.log("Save response:", res.data);
   /* ---------- UI ---------- */
   return (
     <div className="d-flex">
-      {!isOperator && <DashboardSam />}
+      { <DashboardSam />}
 
-      <div style={{ marginLeft: !isOperator ? 260 : 0, width: "100%", paddingTop: 80 }}>
-        {!isOperator && (
+      <div style={{ marginLeft: 260, width: "100%", paddingTop: 80 }}>
+     
           <div style={{ position: "fixed", top: 0, left: 360, width: "calc(100% - 260px)", zIndex: 1000 }}>
             <Header />
           </div>
-        )}
+      
 
         <div className="container-fluid px-5 mt-4">
          {/* HEADER */}
