@@ -9,15 +9,13 @@ function MultipleVideo() {
   const [focusedCam, setFocusedCam] = useState(null);
 
   useEffect(() => {
-    axios
-      .get(`${API_URL}/api/cameras`)
-      .then(res => {
-        setCameras(res.data.data || []);
-      })
-      .catch(err => {
-        console.error("Failed to load cameras:", err);
-      });
-  }, []);
+  axios.get(`${API_URL}/api/cameras`)
+    .then(res => {
+      console.log("CAMERA DATA:", res.data.data);
+      setCameras(res.data.data || []);
+    });
+}, []);
+
 
   // 🔍 Focus / fullscreen view
   if (focusedCam) {
