@@ -24,6 +24,7 @@
     "date-fns": "^4.1.0",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
+    "hls.js": "^1.6.15",
     "html-to-image": "^1.11.11",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.2",

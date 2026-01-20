@@ -1,0 +1,66 @@
+/* Full grid layout */
+.camera-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  width: 100%;
+  height: calc(100vh - 160px); /* header + padding */
+}
+
+/* Each camera tile */
+.camera-tile {
+  background: #000;
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Camera title overlay */
+.camera-title {
+  text-align: center;
+  color: #fff;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* Video always fills tile */
+.camera-tile video {
+  width: 100%;
+  height: 100%;
+  max-height: calc(50vh - 120px);
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* Focus / fullscreen mode */
+.camera-focus-wrapper {
+  width: 100%;
+  height: calc(100vh - 140px);
+}
+
+.camera-focus-wrapper video {
+  width: 100%;
+  height: 80vh;
+  object-fit: contain;
+  background: #000;
+  border-radius: 12px;
+}
+
+/* Back button */
+.back-btn {
+  margin-bottom: 10px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .camera-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .camera-tile video {
+    max-height: 40vh;
+  }
+}
