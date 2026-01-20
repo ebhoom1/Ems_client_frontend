@@ -555,6 +555,12 @@ function DashboardSam() {
               >
                 View Asset List
               </Button>
+              <Button
+                style={buttonStyleSecondary}
+                onClick={() => handleModalClick("/weekly-report")}
+              >
+                View Weekly Maintenance Report
+              </Button>
 
               <Button
                 variant="link"
