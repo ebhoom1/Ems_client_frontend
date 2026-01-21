@@ -90,13 +90,15 @@ const MonthlyPh = () => {
   const [year, setYear] = useState(currentDate.getFullYear());
   const [month, setMonth] = useState(currentDate.getMonth());
   const [photos, setPhotos] = useState([]);
+  const [hiddenParamKeys, setHiddenParamKeys] = useState(new Set());
+  const [localAddedParams, setLocalAddedParams] = useState([]); // [{key,label,unit,isDefault:false}]
+
 
   // const mlssChartRef = useRef(null);
   // const phChartRef = useRef(null);
 
   const chartRefs = useRef({});
-  const chartInstanceRefs = useRef({}); 
-
+  const chartInstanceRefs = useRef({});
 
   // const getChartDataForParam = (paramKey, label, color) => ({
   //   labels,
@@ -148,7 +150,7 @@ const MonthlyPh = () => {
   const isAdmin =
     ["admin", "super_admin"].includes(currentUser?.userType) ||
     currentUser?.adminType === "EBHOOM";
-const canManage = isAdmin || isOperator;    
+  const canManage = isAdmin || isOperator;
   const DEFAULT_PARAMETERS = [
     { key: "MLSS", label: "MLSS (mg/ltr)", unit: "mg/ltr", isDefault: true },
     { key: "PH", label: "pH - TREATED WATER", unit: "", isDefault: true },
@@ -181,17 +183,48 @@ const canManage = isAdmin || isOperator;
     return { userName: null, siteName: "N/A", userId: null };
   }, [isOperator, isAdmin, selectedUserId, allUsers]);
 
-  useEffect(() => {
-    const days = getDaysInMonth(year, month);
-    const initialReadings = days.map((day) => ({
-      date: day,
-      values: Object.fromEntries(DEFAULT_PARAMETERS.map((p) => [p.key, ""])),
-      comment: "",
-    }));
+ useEffect(() => {
+  const days = getDaysInMonth(year, month);
 
-    setReadings(initialReadings);
-    setReport(null);
-  }, [year, month]);
+  const reportParams = report?.readings
+    ? buildParamsFromReport(report, DEFAULT_PARAMETERS, hiddenParamKeys)
+    : DEFAULT_PARAMETERS;
+
+  // ✅ merge report params + locally added params (and avoid duplicates)
+  const mergedParams = (() => {
+    const map = new Map();
+    [...reportParams, ...localAddedParams].forEach((p) => map.set(p.key, p));
+    return Array.from(map.values());
+  })();
+
+  setParameters(mergedParams);
+
+  const activeParams = mergedParams;
+
+  if (report?.readings) {
+    setReadings(
+      days.map((day) => {
+        const found = report.readings.find((r) => r.date === day);
+        return {
+          date: day,
+          values: activeParams.reduce((acc, p) => {
+            acc[p.key] = found?.values?.[p.key] ?? "";
+            return acc;
+          }, {}),
+          comment: found?.comment || "",
+        };
+      })
+    );
+  } else {
+    setReadings(
+      days.map((day) => ({
+        date: day,
+        values: Object.fromEntries(activeParams.map((p) => [p.key, ""])),
+        comment: "",
+      }))
+    );
+  }
+}, [report, year, month, hiddenParamKeys, localAddedParams]);
 
   useEffect(() => {
     if (!targetUser.userName) return;
@@ -215,32 +248,49 @@ const canManage = isAdmin || isOperator;
     fetchReport();
   }, [targetUser.userName, year, month]);
 
-  useEffect(() => {
-    const days = getDaysInMonth(year, month);
-    if (report?.readings) {
-      setReadings(
-        days.map((day) => {
-          const found = report.readings.find((r) => r.date === day);
-          return {
-            date: day,
-            values: parameters.reduce((acc, p) => {
-              acc[p.key] = found?.values?.[p.key] ?? "";
-              return acc;
-            }, {}),
-            comment: found?.comment || "",
-          };
-        })
-      );
-    } else {
-      setReadings(
-        days.map((day) => ({
-          date: day,
-          values: Object.fromEntries(parameters.map((p) => [p.key, ""])),
-          comment: "",
-        }))
-      );
-    }
-  }, [report, year, month]);
+  // useEffect(() => {
+  //   const days = getDaysInMonth(year, month);
+
+  //   // ✅ If report has extra parameter keys, add them into `parameters`
+  //   const nextParams = report?.readings
+  //     ? buildParamsFromReport(report, DEFAULT_PARAMETERS, hiddenParamKeys)
+  //     : parameters;
+
+  //   // Update parameters only when needed (prevents render loops)
+  //   if (report?.readings) {
+  //     setParameters((prev) => {
+  //       const prevKeys = prev.map((p) => p.key).join("|");
+  //       const nextKeys = nextParams.map((p) => p.key).join("|");
+  //       return prevKeys === nextKeys ? prev : nextParams;
+  //     });
+  //   }
+
+  //   const activeParams = report?.readings ? nextParams : parameters;
+
+  //   if (report?.readings) {
+  //     setReadings(
+  //       days.map((day) => {
+  //         const found = report.readings.find((r) => r.date === day);
+  //         return {
+  //           date: day,
+  //           values: activeParams.reduce((acc, p) => {
+  //             acc[p.key] = found?.values?.[p.key] ?? "";
+  //             return acc;
+  //           }, {}),
+  //           comment: found?.comment || "",
+  //         };
+  //       })
+  //     );
+  //   } else {
+  //     setReadings(
+  //       days.map((day) => ({
+  //         date: day,
+  //         values: Object.fromEntries(activeParams.map((p) => [p.key, ""])),
+  //         comment: "",
+  //       }))
+  //     );
+  //   }
+  // }, [report, year, month, parameters]);
 
   // const handleInputChange = (index, paramKey, value) => {
   //   const updated = [...readings];
@@ -248,38 +298,34 @@ const canManage = isAdmin || isOperator;
   //   setReadings(updated);
   // };
   const handleInputChange = (index, paramKey, value) => {
-  setReadings((prev) => {
-    const updated = [...prev];
+    setReadings((prev) => {
+      const updated = [...prev];
 
-    if (paramKey === "comment") {
-      updated[index].comment = value;
-    } else {
-      updated[index].values[paramKey] = value;
-    }
+      if (paramKey === "comment") {
+        updated[index].comment = value;
+      } else {
+        updated[index].values[paramKey] = value;
+      }
 
-    return updated;
-  });
-};
-
+      return updated;
+    });
+  };
 
   // 🔹 ENTER key handler – move to next row
   const handleFieldKeyDown = (e, rowIndex, paramKey) => {
-  if (e.key !== "Enter") return;
-  e.preventDefault();
+    if (e.key !== "Enter") return;
+    e.preventDefault();
 
-  const nextRow = rowIndex + 1;
-  if (nextRow >= readings.length) return;
+    const nextRow = rowIndex + 1;
+    if (nextRow >= readings.length) return;
 
-  // 🔽 SAME COLUMN, NEXT ROW
-  if (paramKey === "comment") {
-    document.getElementById(`comment-${nextRow}`)?.focus();
-  } else {
-    document
-      .getElementById(`cell-${nextRow}-${paramKey}`)
-      ?.focus();
-  }
-};
-
+    // 🔽 SAME COLUMN, NEXT ROW
+    if (paramKey === "comment") {
+      document.getElementById(`comment-${nextRow}`)?.focus();
+    } else {
+      document.getElementById(`cell-${nextRow}-${paramKey}`)?.focus();
+    }
+  };
 
   const handleSave = async () => {
     if (!targetUser.userId || !targetUser.userName) {
@@ -408,24 +454,24 @@ const canManage = isAdmin || isOperator;
           doc.setFontSize(14);
           doc.text(`${p.label}`, 15, y);
 
-         const chart = chartInstanceRefs.current[p.key];
+          const chart = chartInstanceRefs.current[p.key];
 
-// ✅ BEST: export chart canvas directly (sharp)
-let imgDataUrl = null;
+          // ✅ BEST: export chart canvas directly (sharp)
+          let imgDataUrl = null;
 
-if (chart?.toBase64Image) {
-  imgDataUrl = chart.toBase64Image(); // PNG by default
-} else {
-  // fallback only if needed
-  const canvas = await html2canvas(el, {
-    scale: 4,              // ✅ higher
-    useCORS: true,
-    backgroundColor: "#fff",
-  });
-  imgDataUrl = canvas.toDataURL("image/png", 1.0);
-}
+          if (chart?.toBase64Image) {
+            imgDataUrl = chart.toBase64Image(); // PNG by default
+          } else {
+            // fallback only if needed
+            const canvas = await html2canvas(el, {
+              scale: 4, // ✅ higher
+              useCORS: true,
+              backgroundColor: "#fff",
+            });
+            imgDataUrl = canvas.toDataURL("image/png", 1.0);
+          }
 
-doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
+          doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
 
           y += 110;
         }
@@ -526,7 +572,7 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-     devicePixelRatio: 3,
+    devicePixelRatio: 3,
     plugins: {
       legend: {
         position: "top",
@@ -565,23 +611,33 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
       confirmButtonColor: "#e74c3c",
       cancelButtonColor: "#236a80",
       confirmButtonText: "Yes, delete",
-    }).then((result) => {
-      if (!result.isConfirmed) return;
+   }).then((result) => {
+  if (!result.isConfirmed) return;
 
-      // 1️⃣ Remove from parameters
-      setParameters((prev) => prev.filter((p) => p.key !== paramKey));
+  setHiddenParamKeys((prev) => {
+    const next = new Set(prev);
+    next.add(paramKey);
+    return next;
+  });
 
-      // 2️⃣ Remove from readings
-      setReadings((prev) =>
-        prev.map((r) => {
-          const updatedValues = { ...r.values };
-          delete updatedValues[paramKey];
-          return { ...r, values: updatedValues };
-        })
-      );
+  // ✅ also remove from local-added list
+  setLocalAddedParams((prev) => prev.filter((p) => p.key !== paramKey));
 
-      toast.success(`Parameter "${paramKey}" deleted`);
-    });
+  // 1️⃣ Remove from parameters
+  setParameters((prev) => prev.filter((p) => p.key !== paramKey));
+
+  // 2️⃣ Remove from readings
+  setReadings((prev) =>
+    prev.map((r) => {
+      const updatedValues = { ...r.values };
+      delete updatedValues[paramKey];
+      return { ...r, values: updatedValues };
+    })
+  );
+
+  toast.success(`Parameter "${paramKey}" deleted`);
+});
+
   };
 
   const mlssData = {
@@ -615,6 +671,29 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
         tension: 0.3,
       },
     ],
+  };
+ useEffect(() => {
+  setHiddenParamKeys(new Set());
+  setLocalAddedParams([]);
+}, [targetUser.userName, year, month]);
+
+
+  const buildParamsFromReport = (report, defaultParams, hiddenSet) => {
+    const defaultKeys = new Set(defaultParams.map((p) => p.key));
+    const foundKeys = new Set();
+
+    (report?.readings || []).forEach((r) => {
+      Object.keys(r?.values || {}).forEach((k) => {
+        if (!hiddenSet?.has(k)) foundKeys.add(k);
+      });
+    });
+
+    const extraParams = [...foundKeys]
+      .filter((k) => !defaultKeys.has(k))
+      .sort()
+      .map((k) => ({ key: k, label: k, unit: "", isDefault: false }));
+
+    return [...defaultParams, ...extraParams];
   };
 
   const monthNames = [
@@ -707,31 +786,29 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
     <>
       <div className="d-flex">
         {/* Sidebar */}
-       
-          <div>
-            <DashboardSam />
-          </div>
-        
+
+        <div>
+          <DashboardSam />
+        </div>
 
         {/* Main Content Area */}
         <div
           style={{
-            marginLeft:  "260px" ,
+            marginLeft: "260px",
             width: "100%",
             minHeight: "100vh",
           }}
         >
-            <div
-              style={{
-                position: "sticky",
-                top: 0,
-                zIndex: 5,
-                marginLeft: "100px",
-              }}
-            >
-              <Header />
-            </div>
-        
+          <div
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 5,
+              marginLeft: "100px",
+            }}
+          >
+            <Header />
+          </div>
 
           <div className="container-fluid py-4 px-4">
             <div className="row" style={{ marginTop: "0", padding: "0 68px" }}>
@@ -776,7 +853,6 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
                           <div style={{ fontSize: "1.1rem", opacity: 0.95 }}>
                             <strong>SITE:</strong>{" "}
                             {targetUser.siteName || "N/A"}
-                           
                             <span className="mx-3">|</span>
                             <strong>MONTH:</strong> {monthNames[month]} {year}
                           </div>
@@ -819,7 +895,7 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
                         <div className={"col-lg-6"}>
                           <div
                             style={{
-                              height:"550px",
+                              height: "550px",
                               overflowY: "auto",
                               border: "3px dotted #236a80",
                               borderRadius: "10px",
@@ -839,38 +915,33 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
                                 <button
                                   className="btn btn-primary"
                                   onClick={() => {
-                                    const key = document
-                                      .getElementById("newParam")
-                                      .value.trim()
-                                      .toUpperCase();
+  const key = document.getElementById("newParam").value.trim().toUpperCase();
+  if (!key) return;
 
-                                    if (!key) return;
+  // prevent duplicates across all params
+  const exists =
+    parameters.some((p) => p.key === key) ||
+    localAddedParams.some((p) => p.key === key);
 
-                                    if (parameters.find((p) => p.key === key)) {
-                                      toast.error("Parameter already exists");
-                                      return;
-                                    }
+  if (exists) {
+    toast.error("Parameter already exists");
+    return;
+  }
 
-                                    setParameters([
-                                      ...parameters,
-                                      {
-                                        key,
-                                        label: key,
-                                        unit: "",
-                                        isDefault: false,
-                                      },
-                                    ]);
+  const newParam = { key, label: key, unit: "", isDefault: false };
 
-                                    setReadings((prev) =>
-                                      prev.map((r) => ({
-                                        ...r,
-                                        values: { ...r.values, [key]: "" },
-                                      }))
-                                    );
+  setLocalAddedParams((prev) => [...prev, newParam]);
 
-                                    document.getElementById("newParam").value =
-                                      "";
-                                  }}
+  setReadings((prev) =>
+    prev.map((r) => ({
+      ...r,
+      values: { ...r.values, [key]: "" },
+    }))
+  );
+
+  document.getElementById("newParam").value = "";
+}}
+
                                 >
                                   ➕ Add Parameter
                                 </button>
@@ -1058,9 +1129,11 @@ doc.addImage(imgDataUrl, "PNG", 15, y + 10, 180, 90);
                                   }}
                                 >
                                   <Line
-                                  ref={(chart) => {
-    if (chart) chartInstanceRefs.current[p.key] = chart; // ✅ ADD THIS
-  }}
+                                    ref={(chart) => {
+                                      if (chart)
+                                        chartInstanceRefs.current[p.key] =
+                                          chart; // ✅ ADD THIS
+                                    }}
                                     data={getChartDataForParam(
                                       p.key,
                                       p.label,

@@ -68,6 +68,25 @@ export default function PSFNode({
         : n
     )
   );
+ // ✅ LOG THE COMMAND (ON/OFF)
+  const payload = [
+    {
+      valveId,
+      valveName,
+      status: next, // 1 = ON, 0 = OFF
+    },
+  ];
+
+  console.log("[VALVE CMD]", {
+    nodeId: id,
+    productId: data.productId,
+    valveName,
+    valveId,
+    from: current,
+    to: next,
+    payload,
+    ts: new Date().toISOString(),
+  });
 
   sendValveControlMessage(data.productId, [
     {
