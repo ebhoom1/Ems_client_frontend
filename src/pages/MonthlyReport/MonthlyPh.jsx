@@ -183,14 +183,57 @@ const MonthlyPh = () => {
     return { userName: null, siteName: "N/A", userId: null };
   }, [isOperator, isAdmin, selectedUserId, allUsers]);
 
- useEffect(() => {
+//  useEffect(() => {
+//   const days = getDaysInMonth(year, month);
+
+//   const reportParams = report?.readings
+//     ? buildParamsFromReport(report, DEFAULT_PARAMETERS, hiddenParamKeys)
+//     : DEFAULT_PARAMETERS;
+
+//   // ✅ merge report params + locally added params (and avoid duplicates)
+//   const mergedParams = (() => {
+//     const map = new Map();
+//     [...reportParams, ...localAddedParams].forEach((p) => map.set(p.key, p));
+//     return Array.from(map.values());
+//   })();
+
+//   setParameters(mergedParams);
+
+//   const activeParams = mergedParams;
+
+//   if (report?.readings) {
+//     setReadings(
+//       days.map((day) => {
+//         const found = report.readings.find((r) => r.date === day);
+//         return {
+//           date: day,
+//           values: activeParams.reduce((acc, p) => {
+//             acc[p.key] = found?.values?.[p.key] ?? "";
+//             return acc;
+//           }, {}),
+//           comment: found?.comment || "",
+//         };
+//       })
+//     );
+//   } else {
+//     setReadings(
+//       days.map((day) => ({
+//         date: day,
+//         values: Object.fromEntries(activeParams.map((p) => [p.key, ""])),
+//         comment: "",
+//       }))
+//     );
+//   }
+// }, [report, year, month, hiddenParamKeys, localAddedParams]);
+
+useEffect(() => {
   const days = getDaysInMonth(year, month);
 
   const reportParams = report?.readings
     ? buildParamsFromReport(report, DEFAULT_PARAMETERS, hiddenParamKeys)
     : DEFAULT_PARAMETERS;
 
-  // ✅ merge report params + locally added params (and avoid duplicates)
+  // ✅ merge report params + globally added params (and avoid duplicates)
   const mergedParams = (() => {
     const map = new Map();
     [...reportParams, ...localAddedParams].forEach((p) => map.set(p.key, p));

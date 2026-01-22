@@ -249,8 +249,8 @@ function App() {
         <UserProvider>
           <NotificationProvider>
             <FaultAlertProvider>
-              <TankAlertProvider>
-                <TankAlertBanner />
+              {/* <TankAlertProvider> */}
+                {/* <TankAlertBanner /> */}
                 <Routes>
                   <Route path="/" element={<LoginNew />} />
                   <Route path="/login" element={<LogTest />} />
@@ -722,7 +722,7 @@ function App() {
                   )}
                 </Routes>
                 <FaultAlert />
-              </TankAlertProvider>
+              {/* </TankAlertProvider> */}
             </FaultAlertProvider>
           </NotificationProvider>
         </UserProvider>

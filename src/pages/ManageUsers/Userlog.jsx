@@ -515,7 +515,7 @@ const UsersLog = () => {
       // send everything, including formData.operators
       await dispatch(addUser(payload)).unwrap();
       toast.success("User added successfully", { position: "top-center" });
-console.log("formData:",payload);
+      console.log("formData:", payload);
       // reset all fields — operators too
       setformData({
         userName: "",
@@ -542,7 +542,6 @@ console.log("formData:",payload);
         // reset operators array
         operators: [],
         territorialManager: "",
-       
       });
 
       // dispatch(fetchUsers());
@@ -881,21 +880,26 @@ console.log("formData:",payload);
             </div>
           </div>
           <div className="row mt-4">
-           <div className="row mt-4">
-  <div className="col-12">
-    <div className="d-flex align-items-center">
-      <h1 className="flex-grow-1 text-center m-0 mb-2">Control and Monitor</h1>
-     {/*  {(userData?.validUserOne?.userName === "admin1_001" ||
+            <div className="row mt-4">
+              <div className="col-12">
+                <div className="d-flex align-items-center">
+                  <h1 className="flex-grow-1 text-center m-0 mb-2">
+                    Control and Monitor
+                  </h1>
+                  {/*  {(userData?.validUserOne?.userName === "admin1_001" ||
         userData?.validUserOne?.userName === "CONTI") && (
         <img src={wipro} alt="Logo" width={'200px'} height={'60px'} />
       )} */}
-    </div>
-  </div>
-</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="row justify-content-center" style={{borderRadius:'10px'}}>
+          <div
+            className="row justify-content-center"
+            style={{ borderRadius: "10px" }}
+          >
             <div className="col-12">
-              <div className=" shadow-sm" >
+              <div className=" shadow-sm">
                 <div className="card-body">
                   <h4 className="card-title text-center"></h4>
                   <KeralaMap
@@ -1115,27 +1119,42 @@ console.log("formData:",payload);
                         <th className="userlog-head">Action</th>
                       </tr>
                     </thead>
+                    {/* Territory Managers List table body */}
                     <tbody>
-                      {territoryManagerUsers.map((user) => (
-                        <tr
-                          key={user._id}
-                          onClick={() => handleUserClick(user.userName)}
-                        >
-                          <td className="userlog-head">{user.userName}</td>
-                          <td className="userlog-head">{user.fname}</td>
-                          <td className="userlog-head">{user.email}</td>
-                          <td className="userlog-head">{user.adminType}</td>
-                          <td className="userlog-head">
-                            <FaTrashAlt
-                              onClick={() =>
-                                handleDeleteTerritoryManager(user._id)
-                              }
-                              style={{ cursor: "pointer", color: "red" }}
-                              title="Delete Manager"
-                            />
-                          </td>
-                        </tr>
-                      ))}
+                      {territoryManagerUsers
+                        .filter((user) => {
+                          // 1. Logic for super_admin: Display all managers with adminType 'genex' (case-insensitive)
+                          if (currentUserType === "super_admin") {
+                            return user.adminType?.toLowerCase() === "genex";
+                          }
+
+                          // 2. Logic for EBHOOM: Usually sees all, or you can keep existing behavior
+                          if (currentUser?.adminType === "EBHOOM") return true;
+
+                          // 3. Default: Return true because territoryManagerUsers is already filtered by
+                          // creator in your fetchUsersData function for standard admins.
+                          return true;
+                        })
+                        .map((user) => (
+                          <tr
+                            key={user._id}
+                            onClick={() => handleUserClick(user.userName)}
+                          >
+                            <td className="userlog-head">{user.userName}</td>
+                            <td className="userlog-head">{user.fname}</td>
+                            <td className="userlog-head">{user.email}</td>
+                            <td className="userlog-head">{user.adminType}</td>
+                            <td className="userlog-head">
+                              <FaTrashAlt
+                                onClick={() =>
+                                  handleDeleteTerritoryManager(user._id)
+                                }
+                                style={{ cursor: "pointer", color: "red" }}
+                                title="Delete Manager"
+                              />
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -1183,14 +1202,24 @@ console.log("formData:",payload);
                         <th className="userlog-head">Action</th>
                       </tr>
                     </thead>
+                    {/* Operator List table body */}
                     <tbody>
                       {users
-                        .filter(
-                          (user) =>
-                            user.userType === "operator" &&
-                            (currentUser?.adminType === "EBHOOM" || // show all operators if EBHOOM
-                              user.createdBy === userData?.validUserOne?._id) // else show only those created by this user
-                        )
+                        .filter((user) => {
+                          // 1. Basic check: Must be an operator
+                          if (user.userType !== "operator") return false;
+
+                          // 2. Logic for super_admin: Show if adminType is 'genex' (non-case sensitive)
+                          if (currentUserType === "super_admin") {
+                            return user.adminType?.toLowerCase() === "genex";
+                          }
+
+                          // 3. Logic for EBHOOM: Show everything
+                          if (currentUser?.adminType === "EBHOOM") return true;
+
+                          // 4. Default: Show only operators created by the current user (for standard admins)
+                          return user.createdBy === userData?.validUserOne?._id;
+                        })
                         .map((user) => (
                           <tr
                             key={user._id}
