@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchUser } from "./redux/features/user/userSlice";
 import { subscribeUser, saveSubscriptionToBackend } from './utils/pushNotifications';
 import "./App.css";
+import "./index.css"
 import Log from "./pages/Login/Log";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Reset from "./pages/Resetpassword/Reset";
@@ -130,6 +131,7 @@ import PowerConsumption from "./pages/MonthlyReport/PowerConsumption";
 import WaterBalanceReport from "./pages/MonthlyReport/WaterBalanceReport";
 import PlantOperatingReport from "./pages/MonthlyReport/PlantOperatingReport";
 import WeeklyMaintenanceReport from "./pages/MonthlyReport/WeeklyMaintenanceReport";
+import SpecialDashboard from "./pages/specialSection/DashboardSpecial"
 import { getSocket } from "./Autonerve/socketService";
 
 
@@ -140,11 +142,11 @@ function App() {
   const { userData, loading, userType } = useSelector((state) => state.user);
   const backendUrl = API_URL || "http://localhost:5555";
   const publicRoutes = ["/download-data", "/reset-password", "/reset"];
-
   const isSpecialUser =
     userType === "operator" ||
     userData?.validUserOne?.isTechnician === true ||
     userData?.validUserOne?.isTerritorialManager === true;
+    const SpecialUser = userData?.validUserOne?.userName==="WTCANX";
 
   useEffect(() => {
     // Only perform user validation for routes that are not in the publicRoutes array
@@ -243,6 +245,8 @@ function App() {
     console.log("[App] joinRoom sent for product", productId);
   }, [userData]);
 
+
+  
   return (
     <div className="App">
       <CalibrationProvider>
@@ -254,6 +258,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<LoginNew />} />
                   <Route path="/login" element={<LogTest />} />
+        
                   <Route path="/reset-password" element={<Reset />} />
                   <Route path="/reset" element={<ResetEmail />} />
                   <Route path="/download-data" element={<Download />}></Route>
@@ -500,6 +505,7 @@ function App() {
                       <Route path="/download" element={<DownloadData />} />
                       <Route path="/how-to-use" element={<UserManual />} />
                       <Route path="/pump" element={<Pump />} />
+                      <Route path="/special-dashboard" element={<SpecialDashboard />} />
                       <Route
                         path="/customisable-report"
                         element={<CustomisableReport />}
