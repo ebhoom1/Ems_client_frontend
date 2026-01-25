@@ -146,8 +146,7 @@ function App() {
     userType === "operator" ||
     userData?.validUserOne?.isTechnician === true ||
     userData?.validUserOne?.isTerritorialManager === true;
-    const SpecialUser = userData?.validUserOne?.userName==="WTCANX";
-
+const wtc= userData?.validUserOne?.userName==="WTCANX";
   useEffect(() => {
     // Only perform user validation for routes that are not in the publicRoutes array
     if (!publicRoutes.includes(location.pathname)) {
