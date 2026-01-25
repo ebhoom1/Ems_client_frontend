@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import {
   LineChart,
   Line,
@@ -11,139 +11,403 @@ import {
 } from "recharts";
 import { CheckCircle2, Gauge, Cog, Recycle } from "lucide-react";
 import "./DashboardSpecial.css";
+import genexlogo from "../../assests/images/logonewgenex.png";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { API_URL } from "../../utils/apiConfig";
+import { getSocket } from "../../Autonerve/socketService"; // ✅ adjust path if needed
 
 export default function DashboardSpecial() {
-    const MediaFilterSVG = ({ className = "", style = {} }) => (
-  <svg
-    className={className}
-    style={style}
-    viewBox="0 0 160 220"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-label="Filter media tank"
-    role="img"
-  >
-    <defs>
-      <linearGradient id="tankBody" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#eaf2ff" stopOpacity="0.22" />
-        <stop offset="0.45" stopColor="#b7c7dc" stopOpacity="0.08" />
-        <stop offset="1" stopColor="#0b1322" stopOpacity="0.28" />
-      </linearGradient>
+  const navigate = useNavigate();
+  const { userData } = useSelector((state) => state.user);
 
-      <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#eef6ff" stopOpacity="0.55" />
-        <stop offset="1" stopColor="#93a7be" stopOpacity="0.18" />
-      </linearGradient>
+  // ---------------------------
+  // ✅ ProductId selection (same idea as CanvasComponent)
+  // ---------------------------
+  const getEffectiveProductId = useCallback(() => {
+    const ui = userData?.validUserOne;
+    const type = String(ui?.userType || "").toLowerCase();
 
-      <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="10" stdDeviation="8" floodColor="#000" floodOpacity="0.35" />
-      </filter>
+    if (type === "admin" || type === "operator") {
+      try {
+        const fromSession = sessionStorage.getItem("selectedProductId");
+        if (fromSession && fromSession.trim()) return fromSession.trim();
+      } catch {
+        // ignore
+      }
+    }
+    return String(ui?.productID || "");
+  }, [userData]);
 
-      <clipPath id="tankClip">
-        <rect x="18" y="26" width="124" height="168" rx="28" />
-      </clipPath>
-    </defs>
+  const effectiveProductId = getEffectiveProductId();
+  const selectedProductIdRef = useRef("");
+  useEffect(() => {
+    selectedProductIdRef.current = String(effectiveProductId || "");
+  }, [effectiveProductId]);
 
-    {/* outer shadow */}
-    <g filter="url(#softShadow)">
-      {/* tank body */}
-      <rect x="18" y="26" width="124" height="168" rx="28" fill="url(#tankBody)" stroke="rgba(255,255,255,0.20)" strokeWidth="2"/>
+  // ---------------------------
+  // ✅ Real-time states to show in UI
+  // ---------------------------
+  const [flow, setFlow] = useState({
+    inletCum: null,
+    outletCum: null,
+    inletRate: null,
+    outletRate: null,
+    lastUpdated: null,
+  });
 
-      
-     
+  const [quality, setQuality] = useState({
+    turbidity: null,
+    pressure: null,
+    lastUpdated: null,
+  });
 
-      {/* bottom rim */}
-{/* bottom rim */}
-<ellipse
-  cx="80"
-  cy="194"
-  rx="62"
-  ry="18"
-  fill="rgba(10,18,30,0.55)"
-  stroke="rgba(255,255,255,0.18)"
-  strokeWidth="2"
-/>
+  const [tanks, setTanks] = useState({
+    equalization: null,
+    aeration: null,
+    decant: null,
+    sludge: null,
+    treated: null,
+    lastUpdated: null,
+  });
 
-{/* legs */}
-<g opacity="0.95">
-  {/* left leg */}
-  <rect
-    x="38"
-    y="202"
-    width="14"
-    height="18"
-    rx="4"
-    fill="rgba(15,24,40,0.9)"
-    stroke="rgba(255,255,255,0.16)"
-    strokeWidth="1.5"
-  />
-  {/* right leg */}
-  <rect
-    x="108"
-    y="202"
-    width="14"
-    height="18"
-    rx="4"
-    fill="rgba(15,24,40,0.9)"
-    stroke="rgba(255,255,255,0.16)"
-    strokeWidth="1.5"
-  />
+  // ---------------------------
+  // ✅ Socket setup (same pattern)
+  // ---------------------------
+  const socket = useRef(null);
+  const backendUrl = API_URL || "http://localhost:5555";
 
-  {/* small foot pads */}
-  <rect x="34" y="218" width="22" height="6" rx="3" fill="rgba(0,0,0,0.45)" />
-  <rect x="104" y="218" width="22" height="6" rx="3" fill="rgba(0,0,0,0.45)" />
-</g>
-    </g>
+  useEffect(() => {
+    socket.current = getSocket(backendUrl);
 
-    {/* contents (layered media) */}
-    <g clipPath="url(#tankClip)">
-      {/* cyan water layer */}
-      <rect x="18" y="36" width="124" height="46" fill="#0e7f8c" opacity="0.85" />
-      {/* beige layer */}
-      <rect x="18" y="82" width="124" height="40" fill="#b3a98f" opacity="0.92" />
-      {/* green layer */}
-      <rect x="18" y="122" width="124" height="26" fill="#9fd67b" opacity="0.9" />
-      {/* sand layer */}
-      <rect x="18" y="148" width="124" height="24" fill="#d8cf8a" opacity="0.95" />
-      {/* purple bottom */}
-      <rect x="18" y="172" width="124" height="22" fill="#7b2e8b" opacity="0.95" />
+    socket.current.on("connect", () => {
+      console.log("✅ Dashboard Socket connected:", socket.current.id);
+      if (effectiveProductId) {
+        console.log("[DASHBOARD] joinRoom:", effectiveProductId);
+        socket.current.emit("joinRoom", effectiveProductId);
+      }
+    });
 
-      {/* tiny “media stones” pattern */}
-      {Array.from({ length: 11 }).map((_, i) => (
-        <circle
-          key={i}
-          cx={30 + i * 11}
-          cy={162 + (i % 2) * 4}
-          r={3.2}
-          fill="rgba(255,255,255,0.18)"
+    socket.current.on("reconnect", () => {
+      console.log("🔁 Dashboard reconnected");
+      if (effectiveProductId) socket.current.emit("joinRoom", effectiveProductId);
+    });
+
+    // ---------------------------
+    // ✅ Handle Flow + Quality: flometervalveData
+    // payload: { product_id, stacks: [...] }
+    // ---------------------------
+    const handleSensorData = (payload) => {
+      console.log("Received flometervalveData payload:", payload);
+
+      if (!payload || !Array.isArray(payload.stacks)) return;
+
+      const incomingProductId = String(payload.product_id || payload.productId || "");
+      if (!incomingProductId) return;
+
+      // Optional guard (keeps noise away if other products are streaming)
+      const selectedPid = String(selectedProductIdRef.current || "");
+      if (selectedPid && incomingProductId !== selectedPid) return;
+
+      // STP stack for TURB / PRESSUERE
+      const stpStack = payload.stacks.find(
+        (s) =>
+          String(s.stackName || "").trim().toLowerCase() === "stp" &&
+          String(s.stationType || "").trim().toLowerCase() === "effluent"
+      );
+
+      // STP inlet & outlet flow stacks
+      const inletStack = payload.stacks.find(
+        (s) => String(s.stackName || "").trim().toLowerCase() === "stp inlet"
+      );
+      const outletStack = payload.stacks.find(
+        (s) => String(s.stackName || "").trim().toLowerCase() === "stp outlet"
+      );
+
+      const nowIso = new Date().toISOString();
+
+      // Quality
+      if (stpStack) {
+        const nextTurb =
+          typeof stpStack.TURB === "number" ? stpStack.TURB : null;
+
+        const nextPressure =
+          typeof stpStack.PRESSUERE === "number"
+            ? stpStack.PRESSUERE
+            : typeof stpStack.PRESSURE === "number"
+            ? stpStack.PRESSURE
+            : null;
+
+        setQuality((prev) => {
+          const changed =
+            prev.turbidity !== nextTurb || prev.pressure !== nextPressure;
+          if (!changed) return prev;
+          return {
+            turbidity: nextTurb,
+            pressure: nextPressure,
+            lastUpdated: nowIso,
+          };
+        });
+      }
+
+      // Flow
+      const nextInletCum =
+        inletStack && typeof inletStack.cumulatingFlow === "number"
+          ? inletStack.cumulatingFlow
+          : null;
+
+      const nextOutletCum =
+        outletStack && typeof outletStack.cumulatingFlow === "number"
+          ? outletStack.cumulatingFlow
+          : null;
+
+      const nextInletRate =
+        inletStack && typeof inletStack.flowRate === "number"
+          ? inletStack.flowRate
+          : null;
+
+      const nextOutletRate =
+        outletStack && typeof outletStack.flowRate === "number"
+          ? outletStack.flowRate
+          : null;
+
+      setFlow((prev) => {
+        const changed =
+          prev.inletCum !== nextInletCum ||
+          prev.outletCum !== nextOutletCum ||
+          prev.inletRate !== nextInletRate ||
+          prev.outletRate !== nextOutletRate;
+        if (!changed) return prev;
+        return {
+          inletCum: nextInletCum,
+          outletCum: nextOutletCum,
+          inletRate: nextInletRate,
+          outletRate: nextOutletRate,
+          lastUpdated: nowIso,
+        };
+      });
+    };
+
+    // ---------------------------
+    // ✅ Handle Tanks: data
+    // payload: { product_id, tankData:[{tankName,percentage}] }
+    // ---------------------------
+    const handleTankData = (payload) => {
+      console.log("Processing tank payload:", payload);
+
+      if (!payload || !Array.isArray(payload.tankData)) return;
+
+      const incomingProductId = String(payload.product_id || payload.productId || "");
+      if (!incomingProductId) return;
+
+      // Optional guard
+      const selectedPid = String(selectedProductIdRef.current || "");
+      if (selectedPid && incomingProductId !== selectedPid) return;
+
+      const nowIso = new Date().toISOString();
+
+      const getPctByNameIncludes = (keyword) => {
+        const m = payload.tankData.find((t) =>
+          String(t.tankName || "")
+            .toLowerCase()
+            .includes(keyword.toLowerCase())
+        );
+        const pct = Number(m?.percentage);
+        return Number.isFinite(pct) ? Math.round(pct * 100) / 100 : null;
+      };
+
+      const next = {
+        equalization: getPctByNameIncludes("equal"),
+        aeration: getPctByNameIncludes("aerat"),
+        decant: getPctByNameIncludes("decant"),
+        sludge: getPctByNameIncludes("sludge"),
+        treated: getPctByNameIncludes("treated"),
+        lastUpdated: nowIso,
+      };
+
+      setTanks((prev) => {
+        const changed =
+          prev.equalization !== next.equalization ||
+          prev.aeration !== next.aeration ||
+          prev.decant !== next.decant ||
+          prev.sludge !== next.sludge ||
+          prev.treated !== next.treated;
+        if (!changed) return prev;
+        return next;
+      });
+    };
+
+    socket.current.on("flometervalveData", handleSensorData);
+    socket.current.on("data", handleTankData);
+
+    return () => {
+      if (!socket.current) return;
+      socket.current.off("flometervalveData", handleSensorData);
+      socket.current.off("data", handleTankData);
+    };
+  }, [backendUrl, effectiveProductId]);
+
+  // If productId changes, re-join
+  useEffect(() => {
+    if (socket.current && socket.current.connected && effectiveProductId) {
+      console.log("[DASHBOARD] product changed -> joinRoom:", effectiveProductId);
+      socket.current.emit("joinRoom", effectiveProductId);
+    }
+  }, [effectiveProductId]);
+
+  // ---------------------------
+  // Helpers
+  // ---------------------------
+  const fmt = (v, suffix = "") => {
+    if (v === null || typeof v === "undefined") return "--";
+    if (typeof v === "number") return `${v}${suffix}`;
+    return `${v}${suffix}`;
+  };
+
+  // ---------------------------
+  // Your SVG
+  // ---------------------------
+  const MediaFilterSVG = ({ className = "", style = {} }) => (
+    <svg
+      className={className}
+      style={style}
+      viewBox="0 0 160 220"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="Filter media tank"
+      role="img"
+    >
+      <defs>
+        <linearGradient id="tankBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#eaf2ff" stopOpacity="0.22" />
+          <stop offset="0.45" stopColor="#b7c7dc" stopOpacity="0.08" />
+          <stop offset="1" stopColor="#0b1322" stopOpacity="0.28" />
+        </linearGradient>
+
+        <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#eef6ff" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#93a7be" stopOpacity="0.18" />
+        </linearGradient>
+
+        <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow
+            dx="0"
+            dy="10"
+            stdDeviation="8"
+            floodColor="#000"
+            floodOpacity="0.35"
+          />
+        </filter>
+
+        <clipPath id="tankClip">
+          <rect x="18" y="26" width="124" height="168" rx="28" />
+        </clipPath>
+      </defs>
+
+      <g filter="url(#softShadow)">
+        <rect
+          x="18"
+          y="26"
+          width="124"
+          height="168"
+          rx="28"
+          fill="url(#tankBody)"
+          stroke="rgba(255,255,255,0.20)"
+          strokeWidth="2"
         />
-      ))}
 
-      {/* center dashed line */}
-      <line
-        x1="80"
-        y1="32"
-        x2="80"
-        y2="192"
-        stroke="rgba(20,25,35,0.55)"
-        strokeWidth="2"
-        strokeDasharray="6 6"
-      />
+        <ellipse
+          cx="80"
+          cy="194"
+          rx="62"
+          ry="18"
+          fill="rgba(10,18,30,0.55)"
+          stroke="rgba(255,255,255,0.18)"
+          strokeWidth="2"
+        />
 
-      {/* gloss highlight */}
-      <path
-        d="M38 36 C30 70, 30 140, 40 194"
-        stroke="rgba(255,255,255,0.20)"
-        strokeWidth="10"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.7"
-      />
-    </g>
+        <g opacity="0.95">
+          <rect
+            x="38"
+            y="202"
+            width="14"
+            height="18"
+            rx="4"
+            fill="rgba(15,24,40,0.9)"
+            stroke="rgba(255,255,255,0.16)"
+            strokeWidth="1.5"
+          />
+          <rect
+            x="108"
+            y="202"
+            width="14"
+            height="18"
+            rx="4"
+            fill="rgba(15,24,40,0.9)"
+            stroke="rgba(255,255,255,0.16)"
+            strokeWidth="1.5"
+          />
 
-   
-  </svg>
-);
+          <rect
+            x="34"
+            y="218"
+            width="22"
+            height="6"
+            rx="3"
+            fill="rgba(0,0,0,0.45)"
+          />
+          <rect
+            x="104"
+            y="218"
+            width="22"
+            height="6"
+            rx="3"
+            fill="rgba(0,0,0,0.45)"
+          />
+        </g>
+      </g>
 
+      <g clipPath="url(#tankClip)">
+        <rect x="18" y="36" width="124" height="46" fill="#0e7f8c" opacity="0.85" />
+        <rect x="18" y="82" width="124" height="40" fill="#b3a98f" opacity="0.92" />
+        <rect x="18" y="122" width="124" height="26" fill="#9fd67b" opacity="0.9" />
+        <rect x="18" y="148" width="124" height="24" fill="#d8cf8a" opacity="0.95" />
+        <rect x="18" y="172" width="124" height="22" fill="#7b2e8b" opacity="0.95" />
+
+        {Array.from({ length: 11 }).map((_, i) => (
+          <circle
+            key={i}
+            cx={30 + i * 11}
+            cy={162 + (i % 2) * 4}
+            r={3.2}
+            fill="rgba(255,255,255,0.18)"
+          />
+        ))}
+
+        <line
+          x1="80"
+          y1="32"
+          x2="80"
+          y2="192"
+          stroke="rgba(20,25,35,0.55)"
+          strokeWidth="2"
+          strokeDasharray="6 6"
+        />
+
+        <path
+          d="M38 36 C30 70, 30 140, 40 194"
+          stroke="rgba(255,255,255,0.20)"
+          strokeWidth="10"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.7"
+        />
+      </g>
+    </svg>
+  );
+
+  // ---------------------------
+  // Existing chart demo data
+  // ---------------------------
   const graphData = useMemo(
     () => [
       { time: 0, val: 10 },
@@ -182,19 +446,44 @@ export default function DashboardSpecial() {
       <div className="dashboard-content">
         {/* ===== HEADER ===== */}
         <div className="top-header">
+          <div className="top-header-left">
+            <img className="hdr-logo" src={genexlogo} alt="Genex" width={100} height={100} />
+          </div>
+
           <div className="top-header-center">
             48 KLD SBR STP - PLANT OVERVIEW SCREEN
           </div>
 
           <div className="top-header-right">
+            <button
+              type="button"
+              onClick={() => navigate("/autonerve")}
+              style={{
+                backgroundColor: "#ffffff",
+                color: "#1f9d55",
+                fontWeight: "700",
+                padding: "8px 14px",
+                borderRadius: "8px",
+                border: "1px solid #1f9d55",
+                cursor: "pointer",
+                letterSpacing: "0.4px",
+                boxShadow: "0 6px 14px rgba(0,0,0,0.18)",
+              }}
+            >
+              Control Panel
+            </button>
+
             <div className="hdr-pill">
-              Power Supply:&nbsp;<span className="hdr-ok">EQ</span>
+              Product:&nbsp;<span className="hdr-ok">{fmt(effectiveProductId)}</span>
             </div>
-            <div className="hdr-date">24-Apr-2026 10:45 AM</div>
+
+            <div className="hdr-date">
+              RT Updated: {fmt(flow.lastUpdated || tanks.lastUpdated || quality.lastUpdated)}
+            </div>
           </div>
         </div>
 
-        {/* ===== PROCESS PANEL (SINGLE BOX + COMPACT TANKS LIKE REF) ===== */}
+        {/* ===== PROCESS PANEL ===== */}
         <div className="panel panel-process panel-process-flat">
           <div className="process-stage pf-fit pf-fit-compact">
             {/* INLET */}
@@ -203,10 +492,18 @@ export default function DashboardSpecial() {
                 <Gauge size={34} />
               </div>
               <div className="pf-label-top">Inlet</div>
-              <div className="pf-label-sub">Inlet Flow: 12.5 m³/hr</div>
+
+              {/* ✅ Showing what you asked: STP inlet cumulative flow */}
+              <div className="pf-label-sub">
+                Inlet Cum: <b>{fmt(flow.inletCum, " m³")}</b>
+              </div>
+
+              {/* Optional: flow rate (keeps useful if you want) */}
+              <div className="pf-label-sub" style={{ opacity: 0.85 }}>
+                Inlet Rate: <b>{fmt(flow.inletRate, " m³/hr")}</b>
+              </div>
             </div>
 
-            {/* PIPE inlet -> EQ */}
             <div className="pf-pipe pf-pipe-inlet pf-arrow" />
 
             {/* EQ TANK */}
@@ -214,12 +511,15 @@ export default function DashboardSpecial() {
               <div className="pf-tank-title">EQ Tank</div>
               <div className="pf-tank-box">
                 <div className="pf-tank-headspace" />
-                <div className="pf-liquid" style={{ height: "75%" }} />
-                <div className="pf-level-text">Level: 75%</div>
+                <div
+                  className="pf-liquid"
+                  style={{ height: `${tanks.equalization ?? 0}%` }}
+                />
+                <div className="pf-level-text">
+                  Level: {fmt(tanks.equalization, "%")}
+                </div>
               </div>
-              <div className="pf-tank-footer">
-                {/* <div className="pf-footer-title-spl">EQ Tank</div> */}
-              </div>
+              <div className="pf-tank-footer" />
             </div>
 
             <div className="pf-pipe pf-pipe-eq-to-p1 pf-arrow" />
@@ -232,16 +532,20 @@ export default function DashboardSpecial() {
               <div className="pf-pump-label">Pump</div>
             </div>
 
-            {/* SBR TANK */}
+            {/* SBR TANK (mapped to aeration if needed) */}
             <div className="pf-tank  pf-sbr pf-tank-compact">
               <div className="pf-tank-title">SBR Tank</div>
               <div className="pf-tank-box">
                 <div className="pf-tank-headspace" />
-                <div className="pf-liquid" style={{ height: "60%" }} />
-                <div className="pf-level-text">Level: 60%</div>
+                <div
+                  className="pf-liquid"
+                  style={{ height: `${tanks.aeration ?? 0}%` }}
+                />
+                <div className="pf-level-text">
+                  Level: {fmt(tanks.aeration, "%")}
+                </div>
               </div>
               <div className="pf-tank-footer-sbr">
-                {/* <div className="pf-footer-title-spl">SBR Tank</div> */}
                 <div className="pf-footer-title">Cycle:'React'</div>
                 <div className="pf-footer-title">Remaining Time:12 min</div>
               </div>
@@ -255,20 +559,13 @@ export default function DashboardSpecial() {
               <div className="pf-pump-label">Pump</div>
             </div>
 
-            {/* PIPE Pump2 -> Filter */}
             <div className="pf-pipe pf-pipe-p2-to-filter pf-arrow" />
 
             {/* FILTER */}
             <div className="pf-filter pf-filter-compact">
-              {/* <div className="pf-filter-box">
-                <div className="pf-filter-col" />
-                <div className="pf-filter-col" />
-                <div className="pf-filter-u" />
-              </div> */}
               <div className="pf-filter-box pf-filter-box-svg">
-  <MediaFilterSVG className="pf-filter-svg" />
-</div>
-
+                <MediaFilterSVG className="pf-filter-svg" />
+              </div>
 
               <div className="pf-filter-title">Filter</div>
               <div className="pf-filter-sub">Cycle: 'Backwash'</div>
@@ -281,15 +578,17 @@ export default function DashboardSpecial() {
               <div className="pf-tank-title">Treated Water Tank</div>
               <div className="pf-tank-box">
                 <div className="pf-tank-headspace" />
-                <div className="pf-liquid" style={{ height: "85%" }} />
-                <div className="pf-level-text">Level: 85%</div>
+                <div
+                  className="pf-liquid"
+                  style={{ height: `${tanks.treated ?? 0}%` }}
+                />
+                <div className="pf-level-text">
+                  Level: {fmt(tanks.treated, "%")}
+                </div>
               </div>
-              <div className="pf-tank-footer">
-                {/* <div className="pf-footer-title">Treated Water Tank</div> */}
-              </div>
+              <div className="pf-tank-footer" />
             </div>
 
-            {/* PIPE treated -> outlet */}
             <div className="pf-pipe pf-pipe-treated-to-outlet pf-arrow" />
 
             {/* OUTLET */}
@@ -298,14 +597,21 @@ export default function DashboardSpecial() {
               <div className="pf-iconBox">
                 <Recycle size={34} />
               </div>
+
+              {/* ✅ Showing what you asked: STP outlet cumulative flow */}
               <div className="pf-label-sub-treated">
-                Treated Water Flow: 10.8 m³/hr
+                Outlet Cum: <b>{fmt(flow.outletCum, " m³")}</b>
+              </div>
+
+              {/* Optional: outlet rate */}
+              <div className="pf-label-sub-treated" style={{ opacity: 0.85 }}>
+                Outlet Rate: <b>{fmt(flow.outletRate, " m³/hr")}</b>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ===== BOTTOM GRID (LEFT | MIDDLE | RIGHT) ===== */}
+        {/* ===== BOTTOM GRID ===== */}
         <div className="bottom-layout">
           {/* LEFT STACK */}
           <div className="stack-col">
@@ -313,19 +619,28 @@ export default function DashboardSpecial() {
               <div className="panel-title">WATER QUALITY MONITORING</div>
               <div className="panel-body">
                 <div className="kv">
-                  <span>pH:</span> <strong>7.2</strong>
+                  <span>pH:</span> <strong>--</strong>
+                </div>
+
+                {/* ✅ Real Turbidity from STP stack */}
+                <div className="kv">
+                  <span>Turbidity:</span>{" "}
+                  <strong>{fmt(quality.turbidity, " NTU")}</strong>
+                </div>
+
+                <div className="kv">
+                  <span>Pressure:</span>{" "}
+                  <strong>{fmt(quality.pressure, "")}</strong>
+                </div>
+
+                <div className="kv">
+                  <span>Residual Chlorine:</span> <strong>--</strong>
                 </div>
                 <div className="kv">
-                  <span>Turbidity:</span> <strong>2.5 NTU</strong>
+                  <span>TSS:</span> <strong>--</strong>
                 </div>
                 <div className="kv">
-                  <span>Residual Chlorine:</span> <strong>0.6 mg/L</strong>
-                </div>
-                <div className="kv">
-                  <span>TSS:</span> <strong>8 mg/L</strong>
-                </div>
-                <div className="kv">
-                  <span>BOD / COD:</span> <strong>12 mg/L</strong>
+                  <span>BOD / COD:</span> <strong>--</strong>
                 </div>
               </div>
             </div>
@@ -335,22 +650,22 @@ export default function DashboardSpecial() {
               <div className="panel-body alarms">
                 <div className="alarm-row">
                   <div className="alarm-name">Blower Trip</div>
-                  <div className="alarm-time">10:42 AM</div>
-                  <div className="alarm-status active">Active</div>
+                  <div className="alarm-time">--</div>
+                  <div className="alarm-status active">--</div>
                   <div className="alarm-led red" />
                 </div>
 
                 <div className="alarm-row">
                   <div className="alarm-name">High Level</div>
-                  <div className="alarm-time">10:30 AM</div>
-                  <div className="alarm-status ack">Acknowledged</div>
+                  <div className="alarm-time">--</div>
+                  <div className="alarm-status ack">--</div>
                   <div className="alarm-led yellow" />
                 </div>
 
                 <div className="alarm-row last">
                   <div className="alarm-name">Power Failure</div>
-                  <div className="alarm-time">10:15 AM</div>
-                  <div className="alarm-status active">Active</div>
+                  <div className="alarm-time">--</div>
+                  <div className="alarm-status active">--</div>
                   <div className="alarm-led red" />
                 </div>
               </div>
@@ -427,23 +742,32 @@ export default function DashboardSpecial() {
               <div className="panel-body">
                 <div className="kv">
                   <span>EQ Tank Level:</span>{" "}
-                  <strong className="ok">75% (Green)</strong>
+                  <strong className="ok">{fmt(tanks.equalization, "%")}</strong>
                 </div>
+
+                {/* If you really want SBR specifically, you can map to aeration for now */}
                 <div className="kv">
-                  <span>SBR Tank Level:</span>{" "}
-                  <strong className="ok">60% (Green)</strong>
+                  <span>Aeration Tank Level:</span>{" "}
+                  <strong className="ok">{fmt(tanks.aeration, "%")}</strong>
                 </div>
+
                 <div className="kv">
-                  <span>Treated Water Tank Level:</span>{" "}
-                  <strong className="ok">85% (Green)</strong>
+                  <span>Decant Tank Level:</span>{" "}
+                  <strong className="ok">{fmt(tanks.decant, "%")}</strong>
                 </div>
+
                 <div className="kv">
-                  <span>Blower Status:</span>{" "}
-                  <strong className="ok">Running (Green)</strong>
+                  <span>Sludge Tank Level:</span>{" "}
+                  <strong className="ok">{fmt(tanks.sludge, "%")}</strong>
                 </div>
+
                 <div className="kv">
-                  <span>Disinfection System:</span>{" "}
-                  <strong className="ok">ON (Green)</strong>
+                  <span>Treated Tank Level:</span>{" "}
+                  <strong className="ok">{fmt(tanks.treated, "%")}</strong>
+                </div>
+
+                <div className="kv" style={{ opacity: 0.75 }}>
+                  <span>Updated:</span> <strong>{fmt(tanks.lastUpdated)}</strong>
                 </div>
               </div>
             </div>
@@ -466,6 +790,9 @@ export default function DashboardSpecial() {
             </div>
           </div>
         </div>
+
+        {/* Optional debug strip */}
+        {/* <pre style={{ color: "#fff" }}>{JSON.stringify({ flow, quality, tanks }, null, 2)}</pre> */}
       </div>
     </div>
   );
