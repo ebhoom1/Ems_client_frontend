@@ -655,7 +655,7 @@ const FILTER_EXPECTED_MIN = {
                     if (!expected) return `Running: ${sbrElapsedMin} min`;
 
                     const remaining = Math.max(0, expected - sbrElapsedMin);
-                    return `Elapsed: ${sbrElapsedMin} min | Remaining: ${remaining} min`;
+                    return `Running: ${sbrElapsedMin} min`;
                   })()}
                 </div>
               </div>
