@@ -134,7 +134,8 @@ import WeeklyMaintenanceReport from "./pages/MonthlyReport/WeeklyMaintenanceRepo
 import SpecialDashboard from "./pages/specialSection/DashboardSpecial"
 import { getSocket } from "./Autonerve/socketService";
 import TreatedWaterClarityWeeklyReport from "./pages/MonthlyReport/TreatedWaterClarityWeeklyReport";
-
+import EquipmentStatusWeeklyReport from "./pages/MonthlyReport/EquipmentStatusWeeklyReport";
+import CriticalSpareAvailabilityWeeklyReport from "./pages/MonthlyReport/CriticalSpareAvailabilityWeeklyReport";
 
 function App() {
   const dispatch = useDispatch();
@@ -509,6 +510,8 @@ console.log("userdata check:",isWtc);
                       <Route path="/plantoperating" element={<PlantOperatingReport />} />
                       <Route path="/weekly-report" element={<WeeklyMaintenanceReport />} />
                       <Route path="/weekly-report-treated" element={<TreatedWaterClarityWeeklyReport />} />
+                      <Route path="/weekly-equipmentstatus" element={<EquipmentStatusWeeklyReport />} />
+                      <Route path="/weekly-critical-spare-availability" element={<CriticalSpareAvailabilityWeeklyReport />} />
                     </Route>
                   )}
 
@@ -676,6 +679,10 @@ console.log("userdata check:",isWtc);
                       <Route path="/plantoperating" element={<PlantOperatingReport />} />
                       <Route path="/weekly-report" element={<WeeklyMaintenanceReport />} />
                  <Route path="/weekly-report-treated" element={<TreatedWaterClarityWeeklyReport />} />
+                 <Route path="/weekly-equipmentstatus" element={<EquipmentStatusWeeklyReport />} />
+                  <Route path="/weekly-critical-spare-availability" element={<CriticalSpareAvailabilityWeeklyReport />} />
+
+                 
 
                       {/* Assuming transaction-related routes */}
                       <Route
