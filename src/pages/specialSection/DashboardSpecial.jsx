@@ -73,17 +73,17 @@ export default function DashboardSpecial() {
   });
 
   const SBR_EXPECTED_MIN = {
-  Filling: 20,
-  Aeration: 60,
-  Settling: 30,
-  Decanting: 15,
-};
+    Filling: 20,
+    Aeration: 60,
+    Settling: 30,
+    Decanting: 15,
+  };
 
-const FILTER_EXPECTED_MIN = {
-  Filtration: 60,
-  Backwash: 10,
-  Rinse: 5,
-};
+  const FILTER_EXPECTED_MIN = {
+    Filtration: 60,
+    Backwash: 10,
+    Rinse: 5,
+  };
 
   const [cycleStatus, setCycleStatus] = useState(null);
   const [cycleUpdatedAt, setCycleUpdatedAt] = useState(null);
@@ -556,6 +556,11 @@ const FILTER_EXPECTED_MIN = {
           </div>
 
           <div className="top-header-right">
+
+            <div className="hdr-pill">
+              Product:&nbsp;<span className="hdr-ok">{fmt(effectiveProductId)}</span>
+            </div>
+
             <button
               type="button"
               onClick={() => navigate("/autonerve")}
@@ -574,13 +579,9 @@ const FILTER_EXPECTED_MIN = {
               Control Panel
             </button>
 
-            <div className="hdr-pill">
-              Product:&nbsp;<span className="hdr-ok">{fmt(effectiveProductId)}</span>
-            </div>
-
-            <div className="hdr-date">
+            {/* <div className="hdr-date">
               RT Updated: {fmt(flow.lastUpdated || tanks.lastUpdated || quality.lastUpdated)}
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -661,6 +662,28 @@ const FILTER_EXPECTED_MIN = {
               </div>
             </div>
 
+            {/* PIPE SBR TO DECANT */}
+            <div className="pf-pipe pf-pipe-sbr-to-decant pf-arrow" />
+
+            {/* DECANT TANK */}
+            <div className="pf-tank pf-decant pf-tank-compact">
+              <div className="pf-tank-title">Decant Tank</div>
+              <div className="pf-tank-box">
+                <div className="pf-tank-headspace" />
+                <div
+                  className="pf-liquid"
+                  style={{ height: `${tanks.decant ?? 0}%` }}
+                />
+                <div className="pf-level-text">
+                  Level: {fmt(tanks.decant, "%")}
+                </div>
+              </div>
+              <div className="pf-tank-footer" />
+            </div>
+
+            {/* PIPE DECANT TO PUMP 2 */}
+            <div className="pf-pipe pf-pipe-decant-to-p2 pf-arrow" />
+
             {/* PUMP 2 */}
             <div className="pf-pump pf-pump2 pf-pump-compact">
               <div className="pf-pump-icon spin-slow">
@@ -668,8 +691,6 @@ const FILTER_EXPECTED_MIN = {
               </div>
               <div className="pf-pump-label">Pump</div>
             </div>
-
-            <div className="pf-pipe pf-pipe-p2-to-filter pf-arrow" />
 
             {/* FILTER */}
             <div className="pf-filter pf-filter-compact">
@@ -681,7 +702,8 @@ const FILTER_EXPECTED_MIN = {
               <div className="pf-filter-sub">Cycle: '{filterPhase}'</div>
             </div>
 
-            <div className="pf-pipe pf-pipe-p2-to-treated pf-arrow" />
+            <div className="pf-pipe pf-pipe-filter-to-treated pf-arrow" />
+
 
             {/* TREATED WATER TANK */}
             <div className="pf-tank pf-treated pf-tank-compact">
@@ -747,13 +769,13 @@ const FILTER_EXPECTED_MIN = {
                   <span>Chlorine:</span> <strong>--</strong>
                 </div>
                 <div className="kv">
-                  <span>TSS:</span> <strong>{fmt(300, " mg/L")}</strong>
+                  <span>TSS:</span> <strong>{fmt(8, " mg/L")}</strong>
                 </div>
                 <div className="kv">
-                  <span>BOD</span> <strong>{fmt(260, " mg/L")}</strong>
+                  <span>BOD</span> <strong>{fmt(16, " mg/L")}</strong>
                 </div>
                 <div className="kv">
-                  <span>COD</span> <strong>{fmt(500, " mg/L")}</strong>
+                  <span>COD</span> <strong>{fmt(23, " mg/L")}</strong>
                 </div>
               </div>
             </div>

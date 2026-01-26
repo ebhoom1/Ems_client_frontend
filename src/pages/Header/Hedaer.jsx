@@ -41,11 +41,11 @@ function Header() {
 
   const { userData } = useSelector((state) => state.user);
 
-//   const selectedUserId = sessionStorage.getItem("selectedUserId");
-//   // 🔔 notify same-tab listeners to refetch
-// window.dispatchEvent(new CustomEvent("selectedUserIdChanged"));
+  //   const selectedUserId = sessionStorage.getItem("selectedUserId");
+  //   // 🔔 notify same-tab listeners to refetch
+  // window.dispatchEvent(new CustomEvent("selectedUserIdChanged"));
 
-const selectedUserId = sessionStorage.getItem("selectedUserId") || "";
+  const selectedUserId = sessionStorage.getItem("selectedUserId") || "";
 
 
   // Create an audio instance for the notification sound.
@@ -234,17 +234,17 @@ const selectedUserId = sessionStorage.getItem("selectedUserId") || "";
   // };
 
   const handleUserSelect = (userName, productId) => {
-  // Store both userName and productId in sessionStorage
-  sessionStorage.setItem("selectedUserId", userName);
-  sessionStorage.setItem("selectedProductId", productId);
+    // Store both userName and productId in sessionStorage
+    sessionStorage.setItem("selectedUserId", userName);
+    sessionStorage.setItem("selectedProductId", productId);
 
-  // Dispatch Redux action
-  dispatch(setSelectedUser(userName));
-  setUserName(userName);
+    // Dispatch Redux action
+    dispatch(setSelectedUser(userName));
+    setUserName(userName);
 
-  // 🔔 Notify other tabs/components
-  window.dispatchEvent(new CustomEvent("selectedUserIdChanged"));
-};
+    // 🔔 Notify other tabs/components
+    window.dispatchEvent(new CustomEvent("selectedUserIdChanged"));
+  };
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
@@ -320,6 +320,7 @@ const selectedUserId = sessionStorage.getItem("selectedUserId") || "";
                 </span>
               </span>
             </Navbar.Brand>
+
             <div className="d-flex align-items-center">
               {/* ✅ Show dropdown */}
               {/* {userData?.validUserOne?.userType !== "user" &&
@@ -335,6 +336,24 @@ const selectedUserId = sessionStorage.getItem("selectedUserId") || "";
                     </b>
                   </div>
                 )} */}
+              <button
+                type="button"
+                onClick={() => navigate("/special-dashboard")}
+                style={{
+                  backgroundColor: "#035574",
+                  color: "#ffff",
+                  fontWeight: "700",
+                  padding: "8px 14px",
+                  borderRadius: "8px",
+                  border: "1px solid #035574",
+                  cursor: "pointer",
+                  letterSpacing: "0.4px",
+                  boxShadow: "0 6px 14px rgba(0,0,0,0.18)",
+                }}
+                className="me-3 mt-2"
+              >
+                Dashboard
+              </button>
               {userData?.validUserOne?.userType !== "user" && (
                 <div
                   className="me-4 mt-2 text-dark fw-semibold"
@@ -367,10 +386,10 @@ const selectedUserId = sessionStorage.getItem("selectedUserId") || "";
                       {isMobile
                         ? selectedUserId || "Select User"
                         : selectedUserId
-                        ? allFetchedUsers.find(
+                          ? allFetchedUsers.find(
                             (u) => u.userName === selectedUserId
                           )?.companyName || selectedUserId
-                        : "Select User"}
+                          : "Select User"}
                     </Dropdown.Toggle>
 
                     <Dropdown.Menu
@@ -405,7 +424,7 @@ const selectedUserId = sessionStorage.getItem("selectedUserId") || "";
                         filteredUsers.map((user, index) => (
                           <Dropdown.Item
                             key={index}
-                            onClick={() => handleUserSelect(user.userName,user.productID)}
+                            onClick={() => handleUserSelect(user.userName, user.productID)}
                             style={{
                               whiteSpace: "nowrap",
                               textOverflow: "ellipsis",

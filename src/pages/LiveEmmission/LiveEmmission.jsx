@@ -13,7 +13,7 @@ function LiveEmmission() {
 
         <div className="col-lg-9 col-12">
           <Hedaer />
-          <h2 className="mt-4">Live Emission Dashboard</h2>
+          <h2 className="mt-4">Live View Dashboard</h2>
           <MultipleVideo />
         </div>
       </div>
