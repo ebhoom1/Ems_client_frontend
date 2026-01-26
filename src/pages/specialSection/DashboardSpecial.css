@@ -21,11 +21,12 @@
   color: var(--text);
   padding: 0 !important;
 
-  margin-left: calc(-1 * var(--bs-gutter-x, 0.75rem)) !important;
-  margin-right: calc(-1 * var(--bs-gutter-x, 0.75rem)) !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   /* width: calc(100% + (var(--bs-gutter-x, 0.75rem) * 2)) !important; */
-  max-width: none !important;
-  width: 99.8vw
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden;
 }
 
 .dashboard-content {
@@ -121,9 +122,10 @@
 }
 
 .panel-process {
-  height: 270px;
+  height: clamp(250px, 20vw, 290px);
   margin-bottom: 12px;
-  overflow: hidden;
+   overflow-x: hidden; /* desktop default */
+  overflow-y: hidden;
   /* ✅ no scroll */
 }
 
@@ -210,7 +212,7 @@
 /* Pipes */
 .pf-pipe {
   position: absolute;
-  height: 14px;
+  height: clamp(10px, 0.9vw, 14px);
   border-radius: 10px;
   background: linear-gradient(180deg, #d2deef, #93a7be);
   box-shadow:
@@ -222,14 +224,14 @@
 .pf-pipe.pf-arrow::after {
   content: "";
   position: absolute;
-  right: -12px;
+  right: clamp(-10px, -0.7vw, -12px);
   top: 50%;
   transform: translateY(-50%);
   width: 0;
   height: 0;
-  border-left: 16px solid #9fb3c9;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
+  border-left: clamp(12px, 1.1vw, 16px) solid #9fb3c9;
+  border-top: clamp(8px, 0.8vw, 10px) solid transparent;
+  border-bottom: clamp(8px, 0.8vw, 10px) solid transparent;
   filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.25));
 }
 
@@ -636,7 +638,7 @@
 .bottom-layout {
   margin-top: 12px;
   display: grid;
-  grid-template-columns: 1.1fr 1.5fr 1.1fr;
+  grid-template-columns: 360px minmax(420px, 1fr) 360px;
   gap: 12px;
 }
 
@@ -852,7 +854,7 @@
 /* Responsive (keep NO scroll) */
 @media (max-width: 1200px) {
   .bottom-layout {
-    grid-template-columns: 1fr;
+   grid-template-columns: 320px minmax(380px, 1fr) 320px;
   }
 
   .stack-col {
@@ -869,27 +871,66 @@
   }
 }
 
+@media (max-width: 1024px){panel-process,
+  .panel-process-flat{
+    overflow-x: auto !important;     /* ✅ horizontal scroll */
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* keep strip in one line */
+  .process-stage.pf-fit.pf-fit-compact{
+    width: 1200px;                  /* ✅ fixed strip width */
+    transform: scale(0.92);         /* ✅ shrink */
+    transform-origin: top left;
+    margin: 0;
+  }
+
+  /* IMPORTANT: cancel older scale rules */
+  .process-stage{
+    transform: none !important;
+  }
+
+  .bottom-layout{
+    grid-template-columns: 1fr;     /* stack panels */
+  }
+}
+
+/* =========================
+   TABLET (portrait)
+   ========================= */
+@media (max-width: 820px){
+  .panel-process,
+  .panel-process-flat{
+    overflow-x: auto !important;
+  }
+
+  .process-stage.pf-fit.pf-fit-compact{
+    width: 1200px;
+    transform: scale(0.86);
+    transform-origin: top left;
+  }
+}
+
 @media (max-width: 768px) {
-  .top-header {
-    grid-template-columns: 1fr;
-    height: auto;
-    padding: 10px;
-    gap: 10px;
+ /* header already handled in your file */
+  .panel-process,
+  .panel-process-flat{
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .top-header-center {
-    grid-column: 1;
+  .process-stage.pf-fit.pf-fit-compact{
+    width: 1200px;                 /* keep same strip width */
+    transform: scale(0.78);        /* more shrink */
+    transform-origin: top left;
+    margin: 0;
   }
 
-  .top-header-right {
-    grid-column: 1;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .process-stage {
-    transform: scale(0.80);
-    transform-origin: top center;
+  /* reduce vertical padding so it fits */
+  .panel-process-flat{
+    height: 240px;
   }
 }
 
@@ -899,37 +940,45 @@
    ========================= */
 
 .panel-process-flat {
-  height: 270px;
+ height: clamp(250px, 20vw, 290px);
   padding: 6px;
   /* single box padding */
   background:
     radial-gradient(1200px 320px at 50% 25%, rgba(255, 255, 255, 0.10), rgba(0, 0, 0, 0) 60%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-  overflow: hidden;
+  overflow-x: hidden; /* desktop default */
+  overflow-y: hidden;
 }
 
 /* compact stage */
 .process-stage.pf-fit.pf-fit-compact {
-  height: 260px;
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
 
-  /* ✅ SINGLE straight pipe center-line (match your 2nd reference) */
-  --pfLineY: 96px;
+  /* ✅ responsive scaling for 13"–15" */
+  --pfScale: clamp(0.82, (100vw / 1600), 1);
+  transform: scale(var(--pfScale));
+  transform-origin: top center;
+
+  /* ✅ keep one straight pipe center line */
+  --pfLineY: clamp(88px, 6.2vw, 96px);
+
+  /* height becomes flexible (no “different laptop” jumps) */
+  height: clamp(230px, 18vw, 260px);
 }
 
 
 /* === compact tanks (reduce width) === */
 .pf-tank-compact {
-  width: 112px;
+  width: clamp(96px, 8.2vw, 112px);
   /* ✅ reduced */
 }
 
 .pf-tank-compact .pf-tank-box {
-  width: 106px;
+  width: 100%;
   /* ✅ reduced */
-  height: 128px;
+  height: clamp(112px, 9.8vw, 128px);
 }
 
 .pf-tank-compact .pf-tank-title {
@@ -1066,9 +1115,10 @@
 }
 
 .pf-filter-box-svg {
-  width: 98px;
-  height: 132px;
-  left: 0;              /* ✅ stop shifting left */
+  width: clamp(84px, 7vw, 98px);
+  height: clamp(112px, 9vw, 132px);
+  left: 0;
+  /* ✅ stop shifting left */
   background: transparent;
   border: none;
   box-shadow: none;
@@ -1077,7 +1127,7 @@
 }
 
 .pf-filter-svg {
-  width: 98px;
-  height: 132px;
+   width: clamp(84px, 7vw, 98px);
+  height: clamp(112px, 9vw, 132px);
   filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.35));
 }
