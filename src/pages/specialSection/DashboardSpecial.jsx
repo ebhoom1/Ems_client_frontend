@@ -72,8 +72,31 @@ export default function DashboardSpecial() {
     lastUpdated: null,
   });
 
+  const SBR_EXPECTED_MIN = {
+  Filling: 20,
+  Aeration: 60,
+  Settling: 30,
+  Decanting: 15,
+};
+
+const FILTER_EXPECTED_MIN = {
+  Filtration: 60,
+  Backwash: 10,
+  Rinse: 5,
+};
+
   const [cycleStatus, setCycleStatus] = useState(null);
   const [cycleUpdatedAt, setCycleUpdatedAt] = useState(null);
+
+  // ===== SBR Cycle (cycle_status) =====
+  const [sbrPhase, setSbrPhase] = useState("--");
+  const [sbrSince, setSbrSince] = useState(null); // Date
+  const [sbrElapsedMin, setSbrElapsedMin] = useState(0);
+
+  // ===== Filter Cycle (filling_status) =====
+  const [filterPhase, setFilterPhase] = useState("--");
+  const [filterSince, setFilterSince] = useState(null); // Date
+  const [filterElapsedMin, setFilterElapsedMin] = useState(0);
 
 
   // ---------------------------
@@ -242,21 +265,49 @@ export default function DashboardSpecial() {
       });
     };
 
-    // const handlePumpUpdates = (payload) => {
-    //   console.log("Dashboard pump update:", payload);
+    const handlePumpUpdates = (payload) => {
+      console.log("Dashboard pump update:", payload);
 
-    //   const cycleObj = Array.isArray(payload?.cycle_status)
-    //     ? payload.cycle_status[0]
-    //     : payload?.cycle_status;
+      const now = getPayloadTime(payload);
 
-    //   if (cycleObj) {
-    //     setCycleStatus(cycleObj);
-    //     setCycleUpdatedAt(new Date().toISOString());
-    //   }
-    // };
+      const cycleObj = Array.isArray(payload?.cycle_status)
+        ? payload.cycle_status[0]
+        : payload?.cycle_status;
 
-    // socket.current.on("pumpAck", handlePumpUpdates);
-    // socket.current.on("pumpStateUpdate", handlePumpUpdates);
+      if (cycleObj) {
+        setCycleStatus(cycleObj);
+        setCycleUpdatedAt(new Date().toISOString());
+      }
+
+      // ---- SBR (cycle_status) ----
+      const activeSbr = getActiveOnKey(payload?.cycle_status);
+      if (activeSbr) {
+        setSbrPhase((prev) => {
+          if (prev !== activeSbr) {
+            setSbrSince(now);
+            setSbrElapsedMin(0);
+          }
+          return activeSbr;
+        });
+        setSbrSince((prev) => prev || now);
+      }
+
+      // ---- FILTER (filling_status) ----
+      const activeFilter = getActiveOnKey(payload?.filling_status);
+      if (activeFilter) {
+        setFilterPhase((prev) => {
+          if (prev !== activeFilter) {
+            setFilterSince(now);
+            setFilterElapsedMin(0);
+          }
+          return activeFilter;
+        });
+        setFilterSince((prev) => prev || now);
+      }
+    };
+
+    socket.current.on("pumpAck", handlePumpUpdates);
+    socket.current.on("pumpStateUpdate", handlePumpUpdates);
 
 
     socket.current.on("flometervalveData", handleSensorData);
@@ -266,8 +317,8 @@ export default function DashboardSpecial() {
       if (!socket.current) return;
       socket.current.off("flometervalveData", handleSensorData);
       socket.current.off("data", handleTankData);
-      // socket.current?.off("pumpAck", handlePumpUpdates);
-      // socket.current?.off("pumpStateUpdate", handlePumpUpdates);
+      socket.current?.off("pumpAck", handlePumpUpdates);
+      socket.current?.off("pumpStateUpdate", handlePumpUpdates);
 
     };
   }, [backendUrl, effectiveProductId]);
@@ -280,6 +331,17 @@ export default function DashboardSpecial() {
     }
   }, [effectiveProductId]);
 
+  useEffect(() => {
+    const t = setInterval(() => {
+      const now = new Date();
+      if (sbrSince) setSbrElapsedMin(minsBetween(sbrSince, now));
+      if (filterSince) setFilterElapsedMin(minsBetween(filterSince, now));
+    }, 10000); // every 10s
+
+    return () => clearInterval(t);
+  }, [sbrSince, filterSince]);
+
+
   // ---------------------------
   // Helpers
   // ---------------------------
@@ -288,6 +350,32 @@ export default function DashboardSpecial() {
     if (typeof v === "number") return `${v}${suffix}`;
     return `${v}${suffix}`;
   };
+
+  const getActiveOnKey = (objOrArr) => {
+    const obj = Array.isArray(objOrArr) ? objOrArr[0] : objOrArr;
+    if (!obj || typeof obj !== "object") return null;
+
+    for (const [k, v] of Object.entries(obj)) {
+      const s = String(v).trim().toUpperCase();
+      if (s === "ON" || v === 1 || v === true) return k;
+    }
+    return null;
+  };
+
+  const getPayloadTime = (payload) => {
+    if (payload?.timestamp) {
+      const d = new Date(payload.timestamp);
+      if (!Number.isNaN(d.getTime())) return d;
+    }
+    if (payload?.ntpTime && typeof payload.ntpTime === "string") {
+      const d = new Date(payload.ntpTime.trim().replace(" ", "T"));
+      if (!Number.isNaN(d.getTime())) return d;
+    }
+    return new Date();
+  };
+
+  const minsBetween = (a, b) => Math.max(0, Math.floor((b - a) / 60000));
+
 
   // ---------------------------
   // Your SVG
@@ -559,8 +647,17 @@ export default function DashboardSpecial() {
                 </div>
               </div>
               <div className="pf-tank-footer-sbr">
-                <div className="pf-footer-title">Cycle:'React'</div>
-                <div className="pf-footer-title">Remaining Time:12 min</div>
+                <div className="pf-footer-title">Cycle: '{sbrPhase}'</div>
+
+                <div className="pf-footer-title">
+                  {(() => {
+                    const expected = SBR_EXPECTED_MIN[sbrPhase];
+                    if (!expected) return `Running: ${sbrElapsedMin} min`;
+
+                    const remaining = Math.max(0, expected - sbrElapsedMin);
+                    return `Elapsed: ${sbrElapsedMin} min | Remaining: ${remaining} min`;
+                  })()}
+                </div>
               </div>
             </div>
 
@@ -581,7 +678,7 @@ export default function DashboardSpecial() {
               </div>
 
               <div className="pf-filter-title">Filter</div>
-              <div className="pf-filter-sub">Cycle: 'Backwash'</div>
+              <div className="pf-filter-sub">Cycle: '{filterPhase}'</div>
             </div>
 
             <div className="pf-pipe pf-pipe-p2-to-treated pf-arrow" />
