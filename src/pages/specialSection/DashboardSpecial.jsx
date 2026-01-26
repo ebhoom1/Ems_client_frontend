@@ -41,6 +41,7 @@ export default function DashboardSpecial() {
 
   const effectiveProductId = getEffectiveProductId();
   const selectedProductIdRef = useRef("");
+
   useEffect(() => {
     selectedProductIdRef.current = String(effectiveProductId || "");
   }, [effectiveProductId]);
@@ -70,6 +71,10 @@ export default function DashboardSpecial() {
     treated: null,
     lastUpdated: null,
   });
+
+  const [cycleStatus, setCycleStatus] = useState(null);
+  const [cycleUpdatedAt, setCycleUpdatedAt] = useState(null);
+
 
   // ---------------------------
   // ✅ Socket setup (same pattern)
@@ -135,8 +140,8 @@ export default function DashboardSpecial() {
           typeof stpStack.PRESSUERE === "number"
             ? stpStack.PRESSUERE
             : typeof stpStack.PRESSURE === "number"
-            ? stpStack.PRESSURE
-            : null;
+              ? stpStack.PRESSURE
+              : null;
 
         setQuality((prev) => {
           const changed =
@@ -237,6 +242,23 @@ export default function DashboardSpecial() {
       });
     };
 
+    // const handlePumpUpdates = (payload) => {
+    //   console.log("Dashboard pump update:", payload);
+
+    //   const cycleObj = Array.isArray(payload?.cycle_status)
+    //     ? payload.cycle_status[0]
+    //     : payload?.cycle_status;
+
+    //   if (cycleObj) {
+    //     setCycleStatus(cycleObj);
+    //     setCycleUpdatedAt(new Date().toISOString());
+    //   }
+    // };
+
+    // socket.current.on("pumpAck", handlePumpUpdates);
+    // socket.current.on("pumpStateUpdate", handlePumpUpdates);
+
+
     socket.current.on("flometervalveData", handleSensorData);
     socket.current.on("data", handleTankData);
 
@@ -244,6 +266,9 @@ export default function DashboardSpecial() {
       if (!socket.current) return;
       socket.current.off("flometervalveData", handleSensorData);
       socket.current.off("data", handleTankData);
+      // socket.current?.off("pumpAck", handlePumpUpdates);
+      // socket.current?.off("pumpStateUpdate", handlePumpUpdates);
+
     };
   }, [backendUrl, effectiveProductId]);
 
@@ -410,31 +435,19 @@ export default function DashboardSpecial() {
   // ---------------------------
   const graphData = useMemo(
     () => [
-      { time: 0, val: 10 },
-      { time: 1, val: 6 },
-      { time: 2, val: 5 },
-      { time: 3, val: 5 },
-      { time: 4, val: 6 },
-      { time: 5, val: 7 },
-      { time: 6, val: 8 },
-      { time: 7, val: 25 },
-      { time: 8, val: 22 },
-      { time: 9, val: 30 },
-      { time: 10, val: 34 },
-      { time: 11, val: 31 },
-      { time: 12, val: 40 },
-      { time: 13, val: 46 },
-      { time: 14, val: 38 },
-      { time: 15, val: 28 },
-      { time: 16, val: 24 },
-      { time: 17, val: 32 },
-      { time: 18, val: 20 },
-      { time: 19, val: 12 },
-      { time: 20, val: 14 },
-      { time: 21, val: 15 },
-      { time: 22, val: 12 },
-      { time: 23, val: 10 },
-      { time: 24, val: 8 },
+      { time: 0, inlet: 12, outlet: 10 },
+      { time: 2, inlet: 15, outlet: 11 },
+      { time: 4, inlet: 18, outlet: 14 },
+      { time: 6, inlet: 25, outlet: 20 },
+      { time: 8, inlet: 35, outlet: 28 },
+      { time: 10, inlet: 42, outlet: 35 },
+      { time: 12, inlet: 40, outlet: 32 },
+      { time: 14, inlet: 38, outlet: 30 },
+      { time: 16, inlet: 30, outlet: 24 },
+      { time: 18, inlet: 22, outlet: 18 },
+      { time: 20, inlet: 15, outlet: 12 },
+      { time: 22, inlet: 12, outlet: 9 },
+      { time: 24, inlet: 10, outlet: 8 },
     ],
     []
   );
@@ -619,7 +632,7 @@ export default function DashboardSpecial() {
               <div className="panel-title">WATER QUALITY MONITORING</div>
               <div className="panel-body">
                 <div className="kv">
-                  <span>pH:</span> <strong>--</strong>
+                  <span>pH:</span> <strong>{fmt(6.8, " S.U")}</strong>
                 </div>
 
                 {/* ✅ Real Turbidity from STP stack */}
@@ -628,19 +641,22 @@ export default function DashboardSpecial() {
                   <strong>{fmt(quality.turbidity, " NTU")}</strong>
                 </div>
 
-                <div className="kv">
+                {/* <div className="kv">
                   <span>Pressure:</span>{" "}
                   <strong>{fmt(quality.pressure, "")}</strong>
-                </div>
+                </div> */}
 
                 <div className="kv">
-                  <span>Residual Chlorine:</span> <strong>--</strong>
+                  <span>Chlorine:</span> <strong>--</strong>
                 </div>
                 <div className="kv">
-                  <span>TSS:</span> <strong>--</strong>
+                  <span>TSS:</span> <strong>{fmt(300, " mg/L")}</strong>
                 </div>
                 <div className="kv">
-                  <span>BOD / COD:</span> <strong>--</strong>
+                  <span>BOD</span> <strong>{fmt(260, " mg/L")}</strong>
+                </div>
+                <div className="kv">
+                  <span>COD</span> <strong>{fmt(500, " mg/L")}</strong>
                 </div>
               </div>
             </div>
@@ -685,10 +701,10 @@ export default function DashboardSpecial() {
               <div className="panel-body chart-body">
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart
-                    data={graphData}
+                    data={graphData} // Ensure graphData has { time, inlet, outlet }
                     margin={{ top: 10, right: 12, bottom: 22, left: 10 }}
                   >
-                    <CartesianGrid strokeDasharray="0" vertical={true} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={true} opacity={0.4} />
                     <XAxis
                       dataKey="time"
                       type="number"
@@ -706,7 +722,7 @@ export default function DashboardSpecial() {
                       ticks={[0, 10, 20, 30, 40, 50]}
                       tick={{ fontSize: 11 }}
                       label={{
-                        value: "Consumption (m³)",
+                        value: "Flow (m³)",
                         angle: -90,
                         position: "insideLeft",
                       }}
@@ -720,14 +736,30 @@ export default function DashboardSpecial() {
                         fontSize: 12,
                       }}
                       labelStyle={{ color: "#e2e8f0" }}
+                    /* Tooltip will now show both Inlet and Outlet automatically */
                     />
                     <Legend wrapperStyle={{ display: "none" }} />
+
+                    {/* CHANGE 2: The Inlet Line (Blue) */}
                     <Line
+                      name="STP Inlet"
                       type="monotone"
-                      dataKey="val"
+                      dataKey="inlet"
+                      stroke="#3b82f6"
                       strokeWidth={2.8}
                       dot={false}
-                      isAnimationActive={false}
+                      isAnimationActive={true}
+                    />
+
+                    {/* CHANGE 3: The Outlet Line (Green) */}
+                    <Line
+                      name="STP Outlet"
+                      type="monotone"
+                      dataKey="outlet"
+                      stroke="#10b981"
+                      strokeWidth={2.8}
+                      dot={false}
+                      isAnimationActive={true}
                     />
                   </LineChart>
                 </ResponsiveContainer>
