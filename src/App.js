@@ -133,6 +133,7 @@ import PlantOperatingReport from "./pages/MonthlyReport/PlantOperatingReport";
 import WeeklyMaintenanceReport from "./pages/MonthlyReport/WeeklyMaintenanceReport";
 import SpecialDashboard from "./pages/specialSection/DashboardSpecial"
 import { getSocket } from "./Autonerve/socketService";
+import TreatedWaterClarityWeeklyReport from "./pages/MonthlyReport/TreatedWaterClarityWeeklyReport";
 
 
 function App() {
@@ -167,21 +168,39 @@ const wtc= userData?.validUserOne?.userName==="WTCANX";
     }
   }, [dispatch, navigate, location.pathname]);
 
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-    const userType = localStorage.getItem("userType");
-    console.log(userType);
+  // useEffect(() => {
+  //   const isLoggedIn = localStorage.getItem("isLoggedIn");
+  //   const userType = localStorage.getItem("userType");
+  //   console.log(userType);
 
-    // Check if user is logged in and not already on the intended route
-    if (isLoggedIn && userType && location.pathname === "/") {
-      navigate("/water"); // Navigate to '/water' only when the user is on the home route
-    } else if (
-      !isLoggedIn &&
-      !["/", "/reset-password", "/reset"].includes(location.pathname)
-    ) {
-      navigate("/"); // Redirect to login if not logged in and on a restricted route
-    }
-  }, [navigate, location.pathname]);
+  //   // Check if user is logged in and not already on the intended route
+  //   if (isLoggedIn && userType && location.pathname === "/") {
+  //     navigate("/water"); // Navigate to '/water' only when the user is on the home route
+  //   } else if (
+  //     !isLoggedIn &&
+  //     !["/", "/reset-password", "/reset"].includes(location.pathname)
+  //   ) {
+  //     navigate("/"); // Redirect to login if not logged in and on a restricted route
+  //   }
+  // }, [navigate, location.pathname]);
+  useEffect(() => {
+  const isLoggedIn = localStorage.getItem("isLoggedIn");
+  const userTypeLS = localStorage.getItem("userType");
+
+  // WTC check (prefer redux userData if available, fallback to localStorage if you store it)
+  const isWtc = userData?.validUserOne?.userName === "WTCANX";
+console.log("userdata check:",isWtc);
+  // Redirect only when user is on login page
+  if (isLoggedIn && userTypeLS && location.pathname === "/") {
+    navigate(isWtc ? "/special-dashboard" : "/water", { replace: true });
+  } else if (
+    !isLoggedIn &&
+    !["/", "/reset-password", "/reset"].includes(location.pathname)
+  ) {
+    navigate("/", { replace: true });
+  }
+}, [navigate, location.pathname, userData]);
+
 
 
   // Add this to your existing App.js useEffect hooks
@@ -489,6 +508,7 @@ const wtc= userData?.validUserOne?.userName==="WTCANX";
                       <Route path="/water-balance" element={<WaterBalanceReport />} />
                       <Route path="/plantoperating" element={<PlantOperatingReport />} />
                       <Route path="/weekly-report" element={<WeeklyMaintenanceReport />} />
+                      <Route path="/weekly-report-treated" element={<TreatedWaterClarityWeeklyReport />} />
                     </Route>
                   )}
 
@@ -655,6 +675,8 @@ const wtc= userData?.validUserOne?.userName==="WTCANX";
                       <Route path="/water-balance" element={<WaterBalanceReport />} />
                       <Route path="/plantoperating" element={<PlantOperatingReport />} />
                       <Route path="/weekly-report" element={<WeeklyMaintenanceReport />} />
+                 <Route path="/weekly-report-treated" element={<TreatedWaterClarityWeeklyReport />} />
+
                       {/* Assuming transaction-related routes */}
                       <Route
                         path="/edit-report/:userName"

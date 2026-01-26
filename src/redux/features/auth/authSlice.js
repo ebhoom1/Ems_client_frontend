@@ -14,7 +14,7 @@ export const loginUser = createAsyncThunk(
       });
 
       const data = response.data;
-
+console.log("data:",data);
       const user  = data.result?.user || null;
       const token = data.result?.token || data.token || null;
 

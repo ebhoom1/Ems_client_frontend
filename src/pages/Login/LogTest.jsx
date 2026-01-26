@@ -329,25 +329,25 @@ const [emissionStacks, setEmissionStacks] = useState([]); // Store air stacks
         return;
       }
     
-      try {
-        // Dispatch the login action
-        const result = await dispatch(loginUser({ email, password, userType })).unwrap();
-     // Save the login flag and user details in localStorage
-     localStorage.setItem("isLoggedIn", "true");
-     localStorage.setItem("userEmail", email);
-     localStorage.setItem("userType", userType);
-        // Navigate based on user type
-        navigate("/water");
-    
-        // Reset the form
-        setInpval({ email: "", password: "", userType: "select" });
-      } catch (error) {
-              // Handle errors
-              toast.error("Invalid credentials");
-              console.error("Error during login:", error);
-              localStorage.removeItem("isLoggedIn");
-        
-      }
+     try {
+  const res = await dispatch(loginUser({ email, password, userType })).unwrap();
+
+  localStorage.setItem("isLoggedIn", "true");
+  localStorage.setItem("userEmail", email);
+  localStorage.setItem("userType", userType);
+
+  const username = res?.user?.userName; // ✅ WTCANX comes from here
+
+  navigate(username === "WTCANX" ? "/special-dashboard" : "/water", { replace: true });
+
+  setInpval({ email: "", password: "", userType: "select" });
+} catch (error) {
+  toast.error("Invalid credentials");
+  console.error("Error during login:", error);
+  localStorage.removeItem("isLoggedIn");
+}
+
+
     };
     
   

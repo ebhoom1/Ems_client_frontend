@@ -1058,6 +1058,7 @@ function DashboardSam() {
               <Button style={buttonStyleSecondary} onClick={() => handleModalClick("/monthly-treatedwaterclarity")}>View Treated Water Clarity</Button>
               <Button style={buttonStyleSecondary} onClick={() => handleModalClick("/monthly-equipmentstatus")}>View Asset List</Button>
               <Button style={buttonStyleSecondary} onClick={() => handleModalClick("/weekly-report")}>View Weekly Maintenance Report</Button>
+              <Button style={buttonStyleSecondary} onClick={() => handleModalClick("/weekly-report-treated")}>View Weekly Treated Water Clarity Report</Button>
               <Button variant="link" onClick={() => setReportCategory(null)} style={{ textDecoration: "none" }}>← Back</Button>
             </div>
           )}
