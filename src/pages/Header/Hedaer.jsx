@@ -40,6 +40,8 @@ function Header() {
 
 
   const { userData } = useSelector((state) => state.user);
+  console.log("UserData", userData);
+
 
   //   const selectedUserId = sessionStorage.getItem("selectedUserId");
   //   // 🔔 notify same-tab listeners to refetch
@@ -336,7 +338,26 @@ function Header() {
                     </b>
                   </div>
                 )} */}
-              <button
+                {userData?.validUserOne?.email === "wtcannexbng@envirobotics.in" && (<button
+                type="button"
+                onClick={() => navigate("/live-emmision")}
+                style={{
+                  backgroundColor: "#035574",
+                  color: "#ffff",
+                  fontWeight: "700",
+                  padding: "8px 14px",
+                  borderRadius: "8px",
+                  border: "1px solid #035574",
+                  cursor: "pointer",
+                  letterSpacing: "0.4px",
+                  boxShadow: "0 6px 14px rgba(0,0,0,0.18)",
+                }}
+                className="me-3 mt-2"
+              >
+                Live view
+              </button>)}
+
+              {userData?.validUserOne?.email === "wtcannexbng@envirobotics.in" && (<button
                 type="button"
                 onClick={() => navigate("/special-dashboard")}
                 style={{
@@ -353,7 +374,7 @@ function Header() {
                 className="me-3 mt-2"
               >
                 Dashboard
-              </button>
+              </button>)}
               {userData?.validUserOne?.userType !== "user" && (
                 <div
                   className="me-4 mt-2 text-dark fw-semibold"
