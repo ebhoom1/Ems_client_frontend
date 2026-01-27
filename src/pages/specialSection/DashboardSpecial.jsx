@@ -282,27 +282,32 @@ export default function DashboardSpecial() {
       // ---- SBR (cycle_status) ----
       const activeSbr = getActiveOnKey(payload?.cycle_status);
       if (activeSbr) {
-        setSbrPhase((prev) => {
-          if (prev !== activeSbr) {
-            setSbrSince(now);
-            setSbrElapsedMin(0);
-          }
-          return activeSbr;
-        });
-        setSbrSince((prev) => prev || now);
+        setSbrPhase(activeSbr);
+
+        // ✅ FIX: Prioritize backend start time
+        if (payload.sbrStartTime) {
+          const start = new Date(payload.sbrStartTime);
+          setSbrSince(start);
+          setSbrElapsedMin(minsBetween(start, new Date()));
+        } else {
+          // Fallback if backend doesn't send time yet
+          setSbrSince((prev) => (prev ? prev : now));
+        }
       }
 
       // ---- FILTER (filling_status) ----
       const activeFilter = getActiveOnKey(payload?.filling_status);
       if (activeFilter) {
-        setFilterPhase((prev) => {
-          if (prev !== activeFilter) {
-            setFilterSince(now);
-            setFilterElapsedMin(0);
-          }
-          return activeFilter;
-        });
-        setFilterSince((prev) => prev || now);
+        setFilterPhase(activeFilter);
+
+        // ✅ FIX: Prioritize backend start time
+        if (payload.filterStartTime) {
+          const start = new Date(payload.filterStartTime);
+          setFilterSince(start);
+          setFilterElapsedMin(minsBetween(start, new Date()));
+        } else {
+          setFilterSince((prev) => (prev ? prev : now));
+        }
       }
     };
 
