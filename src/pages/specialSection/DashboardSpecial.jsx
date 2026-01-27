@@ -95,6 +95,8 @@ export default function DashboardSpecial() {
 
   // ===== Filter Cycle (filling_status) =====
   const [filterPhase, setFilterPhase] = useState("--");
+  console.log("filterPhase: ", filterPhase);
+  
   const [filterSince, setFilterSince] = useState(null); // Date
   const [filterElapsedMin, setFilterElapsedMin] = useState(0);
 
@@ -922,9 +924,26 @@ export default function DashboardSpecial() {
                   <strong className="ok">{fmt(tanks.treated, "%")}</strong>
                 </div>
 
-                <div className="kv" style={{ opacity: 0.75 }}>
-                  <span>Updated:</span> <strong>{fmt(tanks.lastUpdated)}</strong>
-                </div>
+                {cycleStatus && cycleStatus.Aeration === "ON" && (
+                  <div className="kv">
+                    <span>Blower Status:</span>{" "}
+                    <strong className="status-running">Running</strong>
+                  </div>
+                )}
+
+                {cycleStatus && cycleStatus.Filling === "ON" && (
+                  <div className="kv">
+                    <span>Raw Water Pump:</span>{" "}
+                    <strong className="status-running">Running</strong>
+                  </div>
+                )}
+                {filterPhase && filterPhase === 'Filtration' && (
+                  <div className="kv">
+                    <span>Filter Feed Pump:</span>{" "}
+                    <strong className="status-running">Running</strong>
+                  </div>
+                )}
+
               </div>
             </div>
 

@@ -2,29 +2,36 @@
    FULL SCREEN + BACKGROUND
    ========================= */
 .special-dashboard-wrapper {
- --bg: #f4f9fc; /* Lighter background color */
---panel: #ffffff; /* White panels */
---panel2: #e8f0fc; /* Soft light blue for inner panels */
---text: #2c3e50; /* Darker text for contrast */
---ok: #35d26b; /* Keep the green color */
---warn: #f39c12; /* Yellow */
---bad: #e74c3c; /* Red */
---blue: #2980b9; /* Adjusted blue color */
+  --bg: #f4f9fc;
+  /* Lighter background color */
+  --panel: #ffffff;
+  /* White panels */
+  --panel2: #e8f0fc;
+  /* Soft light blue for inner panels */
+  --text: #2c3e50;
+  /* Darker text for contrast */
+  --ok: #35d26b;
+  /* Keep the green color */
+  --warn: #f39c12;
+  /* Yellow */
+  --bad: #e74c3c;
+  /* Red */
+  --blue: #2980b9;
+  /* Adjusted blue color */
 
   min-height: 100vh;
-background:
-  radial-gradient(1100px 520px at 50% 20%, rgba(221, 221, 221, 0.1), rgba(172, 171, 171, 0.127) 60%),
-  linear-gradient(180deg, #e8e9eb 0%, #f2f3f5 65%, #edeeef 100%);
+  background:
+    radial-gradient(1100px 520px at 50% 20%, rgba(221, 221, 221, 0.1), rgba(172, 171, 171, 0.127) 60%),
+    linear-gradient(180deg, #e8e9eb 0%, #f2f3f5 65%, #edeeef 100%);
 
   color: var(--text);
   padding: 0 !important;
 
- margin-left: calc(-1 * var(--bs-gutter-x, 0.75rem)) !important;
+  margin-left: calc(-1 * var(--bs-gutter-x, 0.75rem)) !important;
   margin-right: calc(-1 * var(--bs-gutter-x, 0.75rem)) !important;
   /* width: calc(100% + (var(--bs-gutter-x, 0.75rem) * 2)) !important; */
-  max-width: none !important; 
-  width:99.8vw
-
+  max-width: none !important;
+  width: 99.8vw
 }
 
 .dashboard-content {
@@ -47,7 +54,7 @@ background:
   background: #f5f2f2;
   border: 1px solid var(--stroke2);
   border-radius: 10px;
-  
+
   padding: 0 14px;
 }
 
@@ -58,21 +65,28 @@ background:
   letter-spacing: 1px;
   font-size: 16px;
   text-transform: uppercase;
-  color: #14547b; /* Adjust as needed */
+  color: #14547b;
+  /* Adjust as needed */
   position: relative;
-  padding-bottom: 8px; /* Adds space for the shadow */
+  padding-bottom: 8px;
+  /* Adds space for the shadow */
 }
 
 .top-header-center::after {
   content: '';
   position: absolute;
   bottom: 0;
-  left: 50%; /* Centers the line */
-  width: 100%; /* Adjust this width to control the length of the line */
-  height: 3px; /* Adjust the thickness of the line */
+  left: 50%;
+  /* Centers the line */
+  width: 100%;
+  /* Adjust this width to control the length of the line */
+  height: 3px;
+  /* Adjust the thickness of the line */
   background: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%);
-  transform: translateX(-50%); /* Centers the line */
-  border-radius: 2px; /* Optional: softens the corners */
+  transform: translateX(-50%);
+  /* Centers the line */
+  border-radius: 2px;
+  /* Optional: softens the corners */
 }
 
 .top-header-right {
@@ -106,7 +120,7 @@ background:
 .panel {
   border-radius: 12px;
   border: 1px solid rgba(228, 224, 224, 0.12);
-   background: #fafafa;
+  background: #fafafa;
   overflow: hidden;
   /* ✅ */
 }
@@ -129,7 +143,8 @@ background:
 .panel-process {
   height: clamp(250px, 20vw, 290px);
   margin-bottom: 8px;
-   overflow-x: hidden; /* desktop default */
+  overflow-x: hidden;
+  /* desktop default */
   overflow-y: hidden;
   /* ✅ no scroll */
 }
@@ -151,14 +166,15 @@ background:
   font-weight: 900;
   font-size: 14px;
   text-align: center;
-color: #14547b;
+  color: #14547b;
 }
 
 .pf-label-sub {
   margin-top: 4px;
   font-size: 13px;
   font-weight: 800;
-  color: #14547b; /* Change to a blue for clarity */
+  color: #14547b;
+  /* Change to a blue for clarity */
   white-space: nowrap;
 }
 
@@ -167,7 +183,7 @@ color: #14547b;
   margin-left: 0;
   font-size: 13px;
   font-weight: 800;
-color: #14547b;
+  color: #14547b;
   white-space: nowrap;
   text-align: center;
 }
@@ -189,7 +205,7 @@ color: #14547b;
   border-radius: 14px;
   background: linear-gradient(180deg, rgba(44, 42, 42, 0.14), rgba(62, 58, 58, 0.04));
   border: 1px solid rgba(255, 255, 255, 0.14);
-  
+
   color: #062454;
 }
 
@@ -214,7 +230,7 @@ color: #14547b;
   height: clamp(10px, 0.9vw, 14px);
   border-radius: 10px;
   background: #7494bd;
-  
+
 }
 
 .pf-pipe.pf-arrow::after {
@@ -264,7 +280,7 @@ color: #14547b;
   height: 150px;
   border: 2px solid rgba(255, 255, 255, 0.22);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.22));
-  
+
   overflow: hidden;
 }
 
@@ -296,7 +312,7 @@ color: #14547b;
   transform: translateX(-50%);
   font-weight: 900;
   font-size: 14px;
-color: #f6f7f8;
+  color: #f6f7f8;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
 }
 
@@ -454,7 +470,7 @@ color: #f6f7f8;
   height: 63px;
   border-radius: 4px;
   background: linear-gradient(180deg, #c9d6e8, #8297ad);
- 
+
 }
 
 /* .pf-filter-u{
@@ -507,6 +523,16 @@ color: #f6f7f8;
   <path d='M96 18 L106 28 M96 18 L86 28' \
         fill='none' stroke='url(%23g)' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' filter='url(%23ds)'/>\
 </svg>");
+}
+
+.status-running {
+  background-color: #35d26b;
+  color: white !important;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: bold;
+  display: inline-block;
+  text-transform: capitalize;
 }
 
 
@@ -661,11 +687,15 @@ color: #f6f7f8;
   content: '';
   position: absolute;
   bottom: 0;
-  left: 50%; /* Centers the line */
-  width: 95%; /* Adjust this width to control the length of the line */
-  height: 2px; /* Adjust thickness */
+  left: 50%;
+  /* Centers the line */
+  width: 95%;
+  /* Adjust this width to control the length of the line */
+  height: 2px;
+  /* Adjust thickness */
   background: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%);
-  transform: translateX(-50%); /* Centers the line based on width */
+  transform: translateX(-50%);
+  /* Centers the line based on width */
 }
 
 .panel-title.center {
@@ -675,7 +705,7 @@ color: #f6f7f8;
 .panel-body {
   padding: 10px;
   font-size: 12px;
-  background:#fbfbfb;
+  background: #fbfbfb;
   height: calc(100% - 18px);
 }
 
@@ -844,7 +874,7 @@ color: #f6f7f8;
 /* Responsive (keep NO scroll) */
 @media (max-width: 1200px) {
   .bottom-layout {
-   grid-template-columns: 320px minmax(380px, 1fr) 320px;
+    grid-template-columns: 320px minmax(380px, 1fr) 320px;
   }
 
   .stack-col {
@@ -861,41 +891,48 @@ color: #f6f7f8;
   }
 }
 
-@media (max-width: 1024px){panel-process,
-  .panel-process-flat{
-    overflow-x: auto !important;     /* ✅ horizontal scroll */
+@media (max-width: 1024px) {
+
+  panel-process,
+  .panel-process-flat {
+    overflow-x: auto !important;
+    /* ✅ horizontal scroll */
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch;
   }
 
   /* keep strip in one line */
-  .process-stage.pf-fit.pf-fit-compact{
-    width: 1200px;                  /* ✅ fixed strip width */
-    transform: scale(0.92);         /* ✅ shrink */
+  .process-stage.pf-fit.pf-fit-compact {
+    width: 1200px;
+    /* ✅ fixed strip width */
+    transform: scale(0.92);
+    /* ✅ shrink */
     transform-origin: top left;
     margin: 0;
   }
 
   /* IMPORTANT: cancel older scale rules */
-  .process-stage{
+  .process-stage {
     transform: none !important;
   }
 
-  .bottom-layout{
-    grid-template-columns: 1fr;     /* stack panels */
+  .bottom-layout {
+    grid-template-columns: 1fr;
+    /* stack panels */
   }
 }
 
 /* =========================
    TABLET (portrait)
    ========================= */
-@media (max-width: 820px){
+@media (max-width: 820px) {
+
   .panel-process,
-  .panel-process-flat{
+  .panel-process-flat {
     overflow-x: auto !important;
   }
 
-  .process-stage.pf-fit.pf-fit-compact{
+  .process-stage.pf-fit.pf-fit-compact {
     width: 1200px;
     transform: scale(0.86);
     transform-origin: top left;
@@ -903,23 +940,26 @@ color: #f6f7f8;
 }
 
 @media (max-width: 768px) {
- /* header already handled in your file */
+
+  /* header already handled in your file */
   .panel-process,
-  .panel-process-flat{
+  .panel-process-flat {
     overflow-x: auto !important;
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch;
   }
 
-  .process-stage.pf-fit.pf-fit-compact{
-    width: 1200px;                 /* keep same strip width */
-    transform: scale(0.78);        /* more shrink */
+  .process-stage.pf-fit.pf-fit-compact {
+    width: 1200px;
+    /* keep same strip width */
+    transform: scale(0.78);
+    /* more shrink */
     transform-origin: top left;
     margin: 0;
   }
 
   /* reduce vertical padding so it fits */
-  .panel-process-flat{
+  .panel-process-flat {
     height: 240px;
   }
 }
@@ -930,13 +970,14 @@ color: #f6f7f8;
    ========================= */
 
 .panel-process-flat {
- height: clamp(250px, 20vw, 290px);
+  height: clamp(250px, 20vw, 290px);
   padding: 6px;
   /* single box padding */
   background:
     radial-gradient(1200px 320px at 50% 25%, rgba(255, 255, 255, 0.10), rgba(0, 0, 0, 0) 60%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-  overflow-x: hidden; /* desktop default */
+  overflow-x: hidden;
+  /* desktop default */
   overflow-y: hidden;
 }
 
@@ -1117,28 +1158,40 @@ color: #f6f7f8;
 }
 
 .pf-filter-svg {
-   width: clamp(84px, 7vw, 98px);
+  width: clamp(84px, 7vw, 98px);
   height: clamp(112px, 9vw, 132px);
 }
 
 .recharts-cartesian-grid-vertical line {
-  stroke: rgba(32, 31, 31, 0.216);  /* Soft gray color */
-}.recharts-cartesian-grid-horizontal line {
-  stroke: rgba(32, 31, 31, 0.263);  /* Soft gray color */
+  stroke: rgba(32, 31, 31, 0.216);
+  /* Soft gray color */
+}
+
+.recharts-cartesian-grid-horizontal line {
+  stroke: rgba(32, 31, 31, 0.263);
+  /* Soft gray color */
 }
 
 
 .cycle-label {
-  background-color: #3498db; /* Blue background color */
-  color: white; /* White text */
-  padding: 6px 8px; /* Adjust padding for more width and controlled height */
-  font-weight: bold; /* Bold text */
-  font-size: 12px; /* Adjust font size */
-  border-radius: 5px; /* Optional: rounded corners */
-  display: inline-block; /* Display as inline element */
-  text-transform: capitalize; /* Capitalize the first letter */
+  background-color: #3498db;
+  /* Blue background color */
+  color: white;
+  /* White text */
+  padding: 6px 8px;
+  /* Adjust padding for more width and controlled height */
+  font-weight: bold;
+  /* Bold text */
+  font-size: 12px;
+  /* Adjust font size */
+  border-radius: 5px;
+  /* Optional: rounded corners */
+  display: inline-block;
+  /* Display as inline element */
+  text-transform: capitalize;
+  /* Capitalize the first letter */
   margin-top: 4px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Optional soft shadow */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  /* Optional soft shadow */
 
 }
-
