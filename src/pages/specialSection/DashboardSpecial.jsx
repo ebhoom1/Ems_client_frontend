@@ -758,8 +758,10 @@ export default function DashboardSpecial() {
               <div className="panel-title center">WATER QUALITY MONITORING</div>
               <div className="panel-body">
                 <div className="kv">
-                  <span>pH:</span> <strong>{fmt(6.8, " S.U")}</strong>
-                </div>
+{/*                   <span>pH:</span> <strong>{fmt(6.8, " S.U")}</strong>
+ */}                
+   <span>pH:</span> <strong>-</strong>
+ </div>
 
                 {/* ✅ Real Turbidity from STP stack */}
                 <div className="kv">
@@ -776,13 +778,13 @@ export default function DashboardSpecial() {
                   <span>Chlorine:</span> <strong>--</strong>
                 </div>
                 <div className="kv">
-                  <span>TSS:</span> <strong>{fmt(8, " mg/L")}</strong>
+                  <span>TSS:</span> {/* <strong>{fmt(8, " mg/L")}</strong> */}  <strong>-</strong>
                 </div>
                 <div className="kv">
-                  <span>BOD</span> <strong>{fmt(16, " mg/L")}</strong>
+                  <span>BOD</span>{/*  <strong>{fmt(16, " mg/L")}</strong> */} <strong>-</strong>
                 </div>
                 <div className="kv">
-                  <span>COD</span> <strong>{fmt(23, " mg/L")}</strong>
+                  <span>COD</span> {/* <strong>{fmt(23, " mg/L")}</strong> */}<strong>-</strong>
                 </div>
               </div>
             </div>
