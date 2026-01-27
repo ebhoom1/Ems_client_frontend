@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { CheckCircle2, Gauge, Cog, Recycle } from "lucide-react";
 import "./DashboardSpecial.css";
-import genexlogo from "../../assests/images/logonewgenex.png";
+import genexlogo from "../../assests/images/genex.png";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { API_URL } from "../../utils/apiConfig";
@@ -553,7 +553,7 @@ export default function DashboardSpecial() {
         {/* ===== HEADER ===== */}
         <div className="top-header">
           <div className="top-header-left">
-            <img className="hdr-logo" src={genexlogo} alt="Genex" width={100} height={100} />
+            <img className="hdr-logo" src={genexlogo} alt="Genex" width={100} height={90} />
           </div>
 
           <div className="top-header-center">
@@ -571,11 +571,11 @@ export default function DashboardSpecial() {
               onClick={() => navigate("/autonerve")}
               style={{
                 backgroundColor: "#ffffff",
-                color: "#1f9d55",
+                color: "#193b6c",
                 fontWeight: "700",
                 padding: "8px 14px",
                 borderRadius: "8px",
-                border: "1px solid #1f9d55",
+                border: "1px solid #1f799d95",
                 cursor: "pointer",
                 letterSpacing: "0.4px",
                 boxShadow: "0 6px 14px rgba(0,0,0,0.18)",
@@ -633,7 +633,7 @@ export default function DashboardSpecial() {
 
             {/* PUMP 1 */}
             <div className="pf-pump pf-pump1 pf-pump-compact">
-              <div className="pf-pump-icon spin-slow">
+              <div className="pf-pump-icon">
                 <Cog size={34} />
               </div>
               <div className="pf-pump-label">Pump</div>
@@ -653,7 +653,7 @@ export default function DashboardSpecial() {
                 </div>
               </div>
               <div className="pf-tank-footer-sbr">
-                <div className="pf-footer-title">Cycle: '{sbrPhase}'</div>
+                <div className="cycle-label">Cycle: '{sbrPhase}'</div>
 
                 <div className="pf-footer-title">
                   {(() => {
@@ -691,7 +691,7 @@ export default function DashboardSpecial() {
 
             {/* PUMP 2 */}
             <div className="pf-pump pf-pump2 pf-pump-compact">
-              <div className="pf-pump-icon spin-slow">
+              <div className="pf-pump-icon">
                 <Cog size={34} />
               </div>
               <div className="pf-pump-label">Pump</div>
@@ -704,7 +704,7 @@ export default function DashboardSpecial() {
               </div>
 
               <div className="pf-filter-title">Filter</div>
-              <div className="pf-filter-sub">Cycle: '{filterPhase}'</div>
+              <div className="cycle-label">Cycle: '{filterPhase}'</div>
             </div>
 
             <div className="pf-pipe pf-pipe-filter-to-treated pf-arrow" />
@@ -753,7 +753,7 @@ export default function DashboardSpecial() {
           {/* LEFT STACK */}
           <div className="stack-col">
             <div className="panel panel-card">
-              <div className="panel-title">WATER QUALITY MONITORING</div>
+              <div className="panel-title center">WATER QUALITY MONITORING</div>
               <div className="panel-body">
                 <div className="kv">
                   <span>pH:</span> <strong>{fmt(6.8, " S.U")}</strong>
@@ -786,7 +786,7 @@ export default function DashboardSpecial() {
             </div>
 
             <div className="panel panel-card">
-              <div className="panel-title">ALARMS &amp; INTERLOCKS</div>
+              <div className="panel-title center">ALARMS &amp; INTERLOCKS</div>
               <div className="panel-body alarms">
                 <div className="alarm-row">
                   <div className="alarm-name">Blower Trip</div>
@@ -828,7 +828,7 @@ export default function DashboardSpecial() {
                     data={graphData} // Ensure graphData has { time, inlet, outlet }
                     margin={{ top: 10, right: 12, bottom: 22, left: 10 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={true} opacity={0.4} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={true} opacity={0.4} stroke="#B0B0B0" />
                     <XAxis
                       dataKey="time"
                       type="number"
@@ -894,7 +894,7 @@ export default function DashboardSpecial() {
           {/* RIGHT STACK */}
           <div className="stack-col">
             <div className="panel panel-card">
-              <div className="panel-title">TANK &amp; EQUIPMENT STATUS</div>
+              <div className="panel-title center">TANK &amp; EQUIPMENT STATUS</div>
               <div className="panel-body">
                 <div className="kv">
                   <span>EQ Tank Level:</span>{" "}
