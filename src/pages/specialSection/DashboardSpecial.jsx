@@ -654,7 +654,7 @@ export default function DashboardSpecial() {
                   boxShadow: "0 6px 14px rgba(0,0,0,0.18)",
                 }}
               >
-                Live Video
+                Live View
               </button>
             ) : (
               <button
