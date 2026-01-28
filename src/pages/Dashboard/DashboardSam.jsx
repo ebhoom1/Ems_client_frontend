@@ -853,11 +853,11 @@ const isWtcAnnexe = normalize(ui?.companyName).startsWith("wtcannex");
                 {/* --- SEPCIAL USER (WTCANX) RESTRICTION --- */}
                 {sepcialUser ? (
                   <>
-                    <li className="list active text-center">
+                   {/*  <li className="list active text-center">
                       <a href="/autonerve" style={{ textDecoration: "none", color: "#ffffff" }}>
                         <span className="title">AutoNerve</span>
                       </a>
-                    </li>
+                    </li> */}
                     <li className="list active text-center">
                       <a href="/live-emmision" style={{ textDecoration: "none", color: "#ffffff" }}>
                         <span className="title">Live View</span>
@@ -893,7 +893,7 @@ const isWtcAnnexe = normalize(ui?.companyName).startsWith("wtcannex");
                     )}
 
                     {/* Operator */}
-                    {userRole === "operator" && (
+                    {userRole === "operator" && name !== "WTCANX" && (
                       <>
                         <li className="list active text-center">
                           <a href="/autonerve" style={{ textDecoration: "none", color: "#ffffff" }}>
