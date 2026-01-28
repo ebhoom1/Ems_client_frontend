@@ -1,4 +1,10 @@
-import React, { useMemo, useEffect, useRef, useState, useCallback } from "react";
+import React, {
+  useMemo,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import {
   LineChart,
   Line,
@@ -96,10 +102,9 @@ export default function DashboardSpecial() {
   // ===== Filter Cycle (filling_status) =====
   const [filterPhase, setFilterPhase] = useState("--");
   console.log("filterPhase: ", filterPhase);
-  
+
   const [filterSince, setFilterSince] = useState(null); // Date
   const [filterElapsedMin, setFilterElapsedMin] = useState(0);
-
 
   // ---------------------------
   // ✅ Socket setup (same pattern)
@@ -120,7 +125,8 @@ export default function DashboardSpecial() {
 
     socket.current.on("reconnect", () => {
       console.log("🔁 Dashboard reconnected");
-      if (effectiveProductId) socket.current.emit("joinRoom", effectiveProductId);
+      if (effectiveProductId)
+        socket.current.emit("joinRoom", effectiveProductId);
     });
 
     // ---------------------------
@@ -132,7 +138,9 @@ export default function DashboardSpecial() {
 
       if (!payload || !Array.isArray(payload.stacks)) return;
 
-      const incomingProductId = String(payload.product_id || payload.productId || "");
+      const incomingProductId = String(
+        payload.product_id || payload.productId || "",
+      );
       if (!incomingProductId) return;
 
       // Optional guard (keeps noise away if other products are streaming)
@@ -142,16 +150,26 @@ export default function DashboardSpecial() {
       // STP stack for TURB / PRESSUERE
       const stpStack = payload.stacks.find(
         (s) =>
-          String(s.stackName || "").trim().toLowerCase() === "stp" &&
-          String(s.stationType || "").trim().toLowerCase() === "effluent"
+          String(s.stackName || "")
+            .trim()
+            .toLowerCase() === "stp" &&
+          String(s.stationType || "")
+            .trim()
+            .toLowerCase() === "effluent",
       );
 
       // STP inlet & outlet flow stacks
       const inletStack = payload.stacks.find(
-        (s) => String(s.stackName || "").trim().toLowerCase() === "stp inlet"
+        (s) =>
+          String(s.stackName || "")
+            .trim()
+            .toLowerCase() === "stp inlet",
       );
       const outletStack = payload.stacks.find(
-        (s) => String(s.stackName || "").trim().toLowerCase() === "stp outlet"
+        (s) =>
+          String(s.stackName || "")
+            .trim()
+            .toLowerCase() === "stp outlet",
       );
 
       const nowIso = new Date().toISOString();
@@ -227,7 +245,9 @@ export default function DashboardSpecial() {
 
       if (!payload || !Array.isArray(payload.tankData)) return;
 
-      const incomingProductId = String(payload.product_id || payload.productId || "");
+      const incomingProductId = String(
+        payload.product_id || payload.productId || "",
+      );
       if (!incomingProductId) return;
 
       // Optional guard
@@ -240,7 +260,7 @@ export default function DashboardSpecial() {
         const m = payload.tankData.find((t) =>
           String(t.tankName || "")
             .toLowerCase()
-            .includes(keyword.toLowerCase())
+            .includes(keyword.toLowerCase()),
         );
         const pct = Number(m?.percentage);
         return Number.isFinite(pct) ? Math.round(pct * 100) / 100 : null;
@@ -316,7 +336,6 @@ export default function DashboardSpecial() {
     socket.current.on("pumpAck", handlePumpUpdates);
     socket.current.on("pumpStateUpdate", handlePumpUpdates);
 
-
     socket.current.on("flometervalveData", handleSensorData);
     socket.current.on("data", handleTankData);
 
@@ -326,14 +345,16 @@ export default function DashboardSpecial() {
       socket.current.off("data", handleTankData);
       socket.current?.off("pumpAck", handlePumpUpdates);
       socket.current?.off("pumpStateUpdate", handlePumpUpdates);
-
     };
   }, [backendUrl, effectiveProductId]);
 
   // If productId changes, re-join
   useEffect(() => {
     if (socket.current && socket.current.connected && effectiveProductId) {
-      console.log("[DASHBOARD] product changed -> joinRoom:", effectiveProductId);
+      console.log(
+        "[DASHBOARD] product changed -> joinRoom:",
+        effectiveProductId,
+      );
       socket.current.emit("joinRoom", effectiveProductId);
     }
   }, [effectiveProductId]);
@@ -347,7 +368,6 @@ export default function DashboardSpecial() {
 
     return () => clearInterval(t);
   }, [sbrSince, filterSince]);
-
 
   // ---------------------------
   // Helpers
@@ -382,7 +402,6 @@ export default function DashboardSpecial() {
   };
 
   const minsBetween = (a, b) => Math.max(0, Math.floor((b - a) / 60000));
-
 
   // ---------------------------
   // Your SVG
@@ -487,11 +506,46 @@ export default function DashboardSpecial() {
       </g>
 
       <g clipPath="url(#tankClip)">
-        <rect x="18" y="36" width="124" height="46" fill="#0e7f8c" opacity="0.85" />
-        <rect x="18" y="82" width="124" height="40" fill="#b3a98f" opacity="0.92" />
-        <rect x="18" y="122" width="124" height="26" fill="#9fd67b" opacity="0.9" />
-        <rect x="18" y="148" width="124" height="24" fill="#d8cf8a" opacity="0.95" />
-        <rect x="18" y="172" width="124" height="22" fill="#7b2e8b" opacity="0.95" />
+        <rect
+          x="18"
+          y="36"
+          width="124"
+          height="46"
+          fill="#0e7f8c"
+          opacity="0.85"
+        />
+        <rect
+          x="18"
+          y="82"
+          width="124"
+          height="40"
+          fill="#b3a98f"
+          opacity="0.92"
+        />
+        <rect
+          x="18"
+          y="122"
+          width="124"
+          height="26"
+          fill="#9fd67b"
+          opacity="0.9"
+        />
+        <rect
+          x="18"
+          y="148"
+          width="124"
+          height="24"
+          fill="#d8cf8a"
+          opacity="0.95"
+        />
+        <rect
+          x="18"
+          y="172"
+          width="124"
+          height="22"
+          fill="#7b2e8b"
+          opacity="0.95"
+        />
 
         {Array.from({ length: 11 }).map((_, i) => (
           <circle
@@ -544,10 +598,20 @@ export default function DashboardSpecial() {
       { time: 22, inlet: 12, outlet: 9 },
       { time: 24, inlet: 10, outlet: 8 },
     ],
-    []
+    [],
   );
 
   const xTicks = useMemo(() => Array.from({ length: 25 }, (_, i) => i), []);
+
+  const ui = userData?.validUserOne;
+
+  const normalize = (s) =>
+    String(s || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, ""); // removes spaces, commas, etc.
+
+  const isWtcAnnexe = normalize(ui?.companyName).startsWith("wtcannex");
+  // matches: "WTC Annexe", "wtcannexe", "WTC Annex", "WTC Annexe,"
 
   return (
     <div className="special-dashboard-wrapper container-fluid">
@@ -555,7 +619,13 @@ export default function DashboardSpecial() {
         {/* ===== HEADER ===== */}
         <div className="top-header">
           <div className="top-header-left">
-            <img className="hdr-logo" src={genexlogo} alt="Genex" width={100} height={90} />
+            <img
+              className="hdr-logo"
+              src={genexlogo}
+              alt="Genex"
+              width={100}
+              height={90}
+            />
           </div>
 
           <div className="top-header-center">
@@ -563,28 +633,48 @@ export default function DashboardSpecial() {
           </div>
 
           <div className="top-header-right">
-
             <div className="hdr-pill">
-              Product:&nbsp;<span className="hdr-ok">{fmt(effectiveProductId)}</span>
+              Product:&nbsp;
+              <span className="hdr-ok">{fmt(effectiveProductId)}</span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigate("/autonerve")}
-              style={{
-                backgroundColor: "#ffffff",
-                color: "#193b6c",
-                fontWeight: "700",
-                padding: "8px 14px",
-                borderRadius: "8px",
-                border: "1px solid #1f799d95",
-                cursor: "pointer",
-                letterSpacing: "0.4px",
-                boxShadow: "0 6px 14px rgba(0,0,0,0.18)",
-              }}
-            >
-              Control Panel
-            </button>
+            {isWtcAnnexe ? (
+              <button
+                type="button"
+                onClick={() => navigate("/live-emmision")}
+                style={{
+                  backgroundColor: "#ffffff",
+                  color: "#193b6c",
+                  fontWeight: "700",
+                  padding: "8px 14px",
+                  borderRadius: "8px",
+                  border: "1px solid #1f799d95",
+                  cursor: "pointer",
+                  letterSpacing: "0.4px",
+                  boxShadow: "0 6px 14px rgba(0,0,0,0.18)",
+                }}
+              >
+                Live Video
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate("/autonerve")}
+                style={{
+                  backgroundColor: "#ffffff",
+                  color: "#193b6c",
+                  fontWeight: "700",
+                  padding: "8px 14px",
+                  borderRadius: "8px",
+                  border: "1px solid #1f799d95",
+                  cursor: "pointer",
+                  letterSpacing: "0.4px",
+                  boxShadow: "0 6px 14px rgba(0,0,0,0.18)",
+                }}
+              >
+                Control Panel
+              </button>
+            )}
 
             {/* <div className="hdr-date">
               RT Updated: {fmt(flow.lastUpdated || tanks.lastUpdated || quality.lastUpdated)}
@@ -711,7 +801,6 @@ export default function DashboardSpecial() {
 
             <div className="pf-pipe pf-pipe-filter-to-treated pf-arrow" />
 
-
             {/* TREATED WATER TANK */}
             <div className="pf-tank pf-treated pf-tank-compact">
               <div className="pf-tank-title">Treated Water Tank</div>
@@ -758,10 +847,10 @@ export default function DashboardSpecial() {
               <div className="panel-title center">WATER QUALITY MONITORING</div>
               <div className="panel-body">
                 <div className="kv">
-{/*                   <span>pH:</span> <strong>{fmt(6.8, " S.U")}</strong>
- */}                
-   <span>pH:</span> <strong>-</strong>
- </div>
+                  {/*                   <span>pH:</span> <strong>{fmt(6.8, " S.U")}</strong>
+                   */}
+                  <span>pH:</span> <strong>-</strong>
+                </div>
 
                 {/* ✅ Real Turbidity from STP stack */}
                 <div className="kv">
@@ -778,13 +867,17 @@ export default function DashboardSpecial() {
                   <span>Chlorine:</span> <strong>--</strong>
                 </div>
                 <div className="kv">
-                  <span>TSS:</span> {/* <strong>{fmt(8, " mg/L")}</strong> */}  <strong>-</strong>
+                  <span>TSS:</span> {/* <strong>{fmt(8, " mg/L")}</strong> */}{" "}
+                  <strong>-</strong>
                 </div>
                 <div className="kv">
-                  <span>BOD</span>{/*  <strong>{fmt(16, " mg/L")}</strong> */} <strong>-</strong>
+                  <span>BOD</span>
+                  {/*  <strong>{fmt(16, " mg/L")}</strong> */}{" "}
+                  <strong>-</strong>
                 </div>
                 <div className="kv">
-                  <span>COD</span> {/* <strong>{fmt(23, " mg/L")}</strong> */}<strong>-</strong>
+                  <span>COD</span> {/* <strong>{fmt(23, " mg/L")}</strong> */}
+                  <strong>-</strong>
                 </div>
               </div>
             </div>
@@ -832,7 +925,12 @@ export default function DashboardSpecial() {
                     data={graphData} // Ensure graphData has { time, inlet, outlet }
                     margin={{ top: 10, right: 12, bottom: 22, left: 10 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={true} opacity={0.4} stroke="#B0B0B0" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={true}
+                      opacity={0.4}
+                      stroke="#B0B0B0"
+                    />
                     <XAxis
                       dataKey="time"
                       type="number"
@@ -864,7 +962,7 @@ export default function DashboardSpecial() {
                         fontSize: 12,
                       }}
                       labelStyle={{ color: "#e2e8f0" }}
-                    /* Tooltip will now show both Inlet and Outlet automatically */
+                      /* Tooltip will now show both Inlet and Outlet automatically */
                     />
                     <Legend wrapperStyle={{ display: "none" }} />
 
@@ -898,7 +996,9 @@ export default function DashboardSpecial() {
           {/* RIGHT STACK */}
           <div className="stack-col">
             <div className="panel panel-card">
-              <div className="panel-title center">TANK &amp; EQUIPMENT STATUS</div>
+              <div className="panel-title center">
+                TANK &amp; EQUIPMENT STATUS
+              </div>
               <div className="panel-body">
                 <div className="kv">
                   <span>EQ Tank Level:</span>{" "}
@@ -939,13 +1039,12 @@ export default function DashboardSpecial() {
                     <strong className="status-running">Running</strong>
                   </div>
                 )}
-                {filterPhase && filterPhase === 'Filtration' && (
+                {filterPhase && filterPhase === "Filtration" && (
                   <div className="kv">
                     <span>Filter Feed Pump:</span>{" "}
                     <strong className="status-running">Running</strong>
                   </div>
                 )}
-
               </div>
             </div>
 

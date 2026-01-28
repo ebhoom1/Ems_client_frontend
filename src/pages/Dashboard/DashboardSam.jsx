@@ -786,6 +786,17 @@ function DashboardSam() {
     backgroundColor: "#f0f0f0",
   };
 
+
+  const ui = userData?.validUserOne;
+
+const normalize = (s) =>
+  String(s || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, ""); // removes spaces, commas, etc.
+
+const isWtcAnnexe = normalize(ui?.companyName).startsWith("wtcannex"); 
+// matches: "WTC Annexe", "wtcannexe", "WTC Annex", "WTC Annexe,"
+
   return (
     <>
       <div className="dashboard-sam">

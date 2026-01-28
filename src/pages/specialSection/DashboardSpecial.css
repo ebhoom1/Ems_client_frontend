@@ -247,6 +247,22 @@
   filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.25));
 }
 
+/* Modify only the arrowhead */
+.pf-pipe.pf-arrow::after {
+  content: "";
+  position: absolute;
+  right: clamp(-12px, -1vw, -18px);  /* Position the arrowhead */
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(18px, 2vw, 24px); /* Increase the width of the arrowhead */
+  height: clamp(16px, 1.5vw, 24px); /* Increase the height of the arrowhead */
+  border-left: clamp(16px, 1.5vw, 20px) solid #8ea6c1; /* Increase the width of the left side of the arrow */
+  border-top: clamp(10px, 1vw, 14px) solid transparent;  /* Adjust the top of the arrow */
+  border-bottom: clamp(10px, 1vw, 14px) solid transparent; /* Adjust the bottom of the arrow */
+  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.25)); /* Add a shadow for visual effect */
+}
+
+
 /* Elbow */
 .pf-elbow {
   position: absolute;
@@ -263,7 +279,7 @@
 .pf-tank {
   position: absolute;
   top: 10px;
-  width: 220px;
+  width: 250px;
   text-align: center;
 }
 
@@ -276,7 +292,7 @@
 
 .pf-tank-box {
   position: relative;
-  width: 220px;
+  width: 240px;
   height: 150px;
   border: 2px solid rgba(255, 255, 255, 0.22);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.22));
@@ -560,7 +576,7 @@
 }
 
 .pf-sbr {
-  left: 33.5%;
+  left: 30%;
 }
 
 .pf-decant {
@@ -609,13 +625,13 @@
 .pf-pipe-p1-to-sbr {
   left: 29.0%;
   top: var(--pfLineY);
-  width: 4.6%;
+  width: 3.5%;
 }
 
 .pf-pipe-sbr-to-decant {
   left: 42.0%;
   top: var(--pfLineY);
-  width: 6.2%;
+  width: 3.5%;
 }
 
 .pf-pipe-decant-to-p2 {
@@ -632,7 +648,7 @@
 
 /* Filter sits slightly higher (like your screenshot) */
 .pf-filter {
-  left: 68.5%;
+  left: 56.5%;
   top: 28px;
 }
 
@@ -1002,14 +1018,14 @@
 
 /* === compact tanks (reduce width) === */
 .pf-tank-compact {
-  width: clamp(96px, 8.2vw, 112px);
+  width: clamp(120px, 10vw, 160px);
   /* ✅ reduced */
 }
 
 .pf-tank-compact .pf-tank-box {
   width: 100%;
   /* ✅ reduced */
-  height: clamp(112px, 9.8vw, 128px);
+  height: clamp(120px, 10vw, 160px);
 }
 
 .pf-tank-compact .pf-tank-title {
@@ -1057,28 +1073,28 @@
 }
 
 .pf-sbr {
-  left: 32%;
+  left: 30%;
 }
 
 .pf-decant {
-  left: 50%;
+  left: 45%;
 }
 
 .pf-treated {
-  left: 80%;
+  left: 76%;
 }
 
 /* Pipes & Pumps */
 .pf-pipe-inlet {
   left: 8%;
   top: 96px;
-  width: 4%;
+  width: 3.5%;
 }
 
 .pf-pipe-eq-to-p1 {
   left: 24.5%;
   top: 96px;
-  width: 5%;
+  width: 3.5%;
 }
 
 .pf-pump1 {
@@ -1093,23 +1109,23 @@
 .pf-pipe-into-sbr {
   left: 31%;
   top: 96px;
-  width: 2%;
+  width: 3.5%;
 }
 
 .pf-pipe-sbr-to-decant {
   left: 40.5%;
   top: 96px;
-  width: 7.5%;
+  width: 3.5%;
 }
 
 .pf-pipe-decant-to-p2 {
-  left: 60%;
+  left: 56%;
   top: 96px;
-  width: 5%;
+  width: 3.5%;
 }
 
 .pf-pump2 {
-  left: 60.5%;
+  left: 56%;
 }
 
 .pf-pipe-p2-to-filter {
@@ -1119,19 +1135,19 @@
 }
 
 .pf-filter {
-  left: 66.5%;
+  left: 62.5%;
 }
 
 .pf-pipe-filter-to-treated {
-  left: 75.0%;
+  left: 71%;
   top: 96px;
   width: 3.3%;
 }
 
 .pf-pipe-treated-to-outlet {
-  left: 88.2%;
+  left: 87.2%;
   top: 96px;
-  width: 1.8%;
+  width: 3.5%;
 }
 
 /* Fix for overlapping text in nodes */
